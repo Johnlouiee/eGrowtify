@@ -1,23 +1,189 @@
 <!DOCTYPE html>
-
-<html>
+<html lang="en">
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content ="width=device-width , initial-scale=1">
-        <title>{% block title %}Home {% endblock %}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>{% block title %}eGrowtify{% endblock %}</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            primary: {
+                                50: '#f0fdf4',
+                                100: '#dcfce7',
+                                200: '#bbf7d0',
+                                300: '#86efac',
+                                400: '#4ade80',
+                                500: '#22c55e',
+                                600: '#16a34a',
+                                700: '#15803d',
+                                800: '#166534',
+                                900: '#14532d',
+                            }
+                        }
+                    }
+                }
+            }
+        </script>
+        <style>
+            .dropdown:hover .dropdown-menu {
+                display: block;
+            }
+        </style>
     </head>
 
-    <body>
-        <nav>
-            <button> Features</button>
-            <div>
-                <div>
-                    <a href = "/login">Login</a>
-                    <a href ="/register">Register</a>
-                    <a href ="/logout">Logout</a>
-                    <a href="/">Home</a>
+    <body class="bg-gray-50 min-h-screen">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-lg border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <a href="{{ url_for('views.home') }}" class="flex items-center space-x-2">
+                            <i class="fas fa-seedling text-2xl text-primary-600"></i>
+                            <span class="text-xl font-bold text-primary-600">eGrowtify</span>
+                        </a>
+                    </div>
+                    
+                    <div class="hidden md:flex items-center space-x-8">
+                        <a href="{{ url_for('views.home') }}" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            Home
+                        </a>
+                        {% if current_user.is_authenticated %}
+                            {% if current_user.__class__.__name__ == 'Admin' %}
+                                <a href="{{ url_for('views.admin_dashboard') }}" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                                    Admin Dashboard
+                                </a>
+                                <a href="{{ url_for('auth.admin_users') }}" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                                    Manage Users
+                                </a>
+                                {% if current_user.is_super_admin %}
+                                    <a href="{{ url_for('auth.admin_register') }}" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                                        Create Admin
+                                    </a>
+                                {% endif %}
+                            {% else %}
+                                <a href="{{ url_for('views.user_dashboard') }}" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                                    Dashboard
+                                </a>
+                            {% endif %}
+                            <a href="{{ url_for('auth.profile') }}" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                                Profile
+                            </a>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        {% if current_user.is_authenticated %}
+                            <div class="relative dropdown">
+                                <button class="flex items-center space-x-2 text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                                    <i class="fas fa-user"></i>
+                                    <span>
+                                        {% if current_user.__class__.__name__ == 'Admin' %}
+                                            {{ current_user.username }}
+                                        {% else %}
+                                            {{ current_user.firstname }}
+                                        {% endif %}
+                                    </span>
+                                    <i class="fas fa-chevron-down text-xs"></i>
+                                </button>
+                                <div class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 hidden">
+                                    <a href="{{ url_for('auth.profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-user-edit mr-2"></i>Profile
+                                    </a>
+                                    <div class="border-t border-gray-100"></div>
+                                    <a href="{{ url_for('auth.logout') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                                    </a>
+                                </div>
+                            </div>
+                        {% else %}
+                            <a href="{{ url_for('auth.login') }}" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                                Login
+                            </a>
+                            <a href="{{ url_for('auth.register') }}" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                                Register
+                            </a>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Mobile menu button -->
+                    <div class="md:hidden flex items-center">
+                        <button class="text-gray-700 hover:text-primary-600 p-2">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </nav>
+
+        <!-- Flash Messages -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-4 p-4 rounded-md {% if category == 'error' %}bg-red-50 border border-red-200 text-red-700{% elif category == 'success' %}bg-green-50 border border-green-200 text-green-700{% else %}bg-blue-50 border border-blue-200 text-blue-700{% endif %}">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    {% if category == 'error' %}
+                                        <i class="fas fa-exclamation-circle text-red-400"></i>
+                                    {% elif category == 'success' %}
+                                        <i class="fas fa-check-circle text-green-400"></i>
+                                    {% else %}
+                                        <i class="fas fa-info-circle text-blue-400"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm">{{ message }}</p>
+                                </div>
+                                <div class="ml-auto pl-3">
+                                    <button class="text-gray-400 hover:text-gray-600" onclick="this.parentElement.parentElement.parentElement.remove()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t border-gray-200 mt-16">
+            <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+                <div class="text-center text-gray-500">
+                    <p>&copy; 2024 eGrowtify. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+
+        <script>
+            // Simple dropdown functionality
+            document.addEventListener('DOMContentLoaded', function() {
+                const dropdowns = document.querySelectorAll('.dropdown');
+                dropdowns.forEach(dropdown => {
+                    dropdown.addEventListener('click', function(e) {
+                        const menu = this.querySelector('.dropdown-menu');
+                        menu.classList.toggle('hidden');
+                    });
+                });
+                
+                // Close dropdowns when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!e.target.closest('.dropdown')) {
+                        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                            menu.classList.add('hidden');
+                        });
+                    }
+                });
+            });
+        </script>
     </body>
 </html>

@@ -1,2 +1,76 @@
-{%  extends "base.html"  %} {%block title %}Changed{% endblock %}
+{% extends "base.html" %}
 
+{% block title %}Home - eGrowtify{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto text-center">
+    <div class="mb-12">
+        <h1 class="text-5xl font-bold text-gray-900 mb-6">
+            <i class="fas fa-seedling text-primary-600"></i> Welcome to eGrowtify
+        </h1>
+        <p class="text-xl text-gray-600 mb-8">
+            Your comprehensive platform for growth and development. 
+            Join our community and start your journey today.
+        </p>
+        
+        {% if not current_user.is_authenticated %}
+            <div class="max-w-md mx-auto">
+                <div class="bg-white rounded-lg shadow-lg p-8">
+                    <h5 class="text-xl font-semibold text-gray-900 mb-4">Get Started</h5>
+                    <p class="text-gray-600 mb-6">Create an account to access all features and start your journey.</p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="{{ url_for('auth.register') }}" class="flex-1 bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center">
+                            <i class="fas fa-user-plus mr-2"></i> Register
+                        </a>
+                        <a href="{{ url_for('auth.login') }}" class="flex-1 border border-primary-600 text-primary-600 hover:bg-primary-50 px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center">
+                            <i class="fas fa-sign-in-alt mr-2"></i> Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="max-w-2xl mx-auto">
+                <div class="bg-white rounded-lg shadow-lg p-8">
+                    <h5 class="text-xl font-semibold text-gray-900 mb-4">Welcome back!</h5>
+                    <p class="text-gray-600 mb-6">
+                        {% if current_user.__class__.__name__ == 'Admin' %}
+                            You are logged in as an administrator. Access your admin dashboard to manage the platform.
+                        {% else %}
+                            You are logged in as a user. Access your dashboard to view your profile and activities.
+                        {% endif %}
+                    </p>
+                    {% if current_user.__class__.__name__ == 'Admin' %}
+                        <a href="{{ url_for('views.admin_dashboard') }}" class="inline-flex items-center bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                            <i class="fas fa-tachometer-alt mr-2"></i> Admin Dashboard
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('views.user_dashboard') }}" class="inline-flex items-center bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                            <i class="fas fa-tachometer-alt mr-2"></i> User Dashboard
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid md:grid-cols-3 gap-8 mt-16">
+    <div class="bg-white rounded-lg shadow-lg p-8 text-center">
+        <i class="fas fa-users text-4xl text-primary-600 mb-4"></i>
+        <h5 class="text-xl font-semibold text-gray-900 mb-2">Community</h5>
+        <p class="text-gray-600">Join our growing community of users and administrators.</p>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-lg p-8 text-center">
+        <i class="fas fa-shield-alt text-4xl text-primary-600 mb-4"></i>
+        <h5 class="text-xl font-semibold text-gray-900 mb-2">Secure</h5>
+        <p class="text-gray-600">Your data is protected with industry-standard security measures.</p>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-lg p-8 text-center">
+        <i class="fas fa-chart-line text-4xl text-primary-600 mb-4"></i>
+        <h5 class="text-xl font-semibold text-gray-900 mb-2">Growth</h5>
+        <p class="text-gray-600">Track your progress and achieve your goals with our platform.</p>
+    </div>
+</div>
+{% endblock %}
