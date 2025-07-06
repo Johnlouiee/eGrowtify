@@ -17,8 +17,14 @@ def create_app():
     app.config['MYSQL_DB'] = 'egrowtify_db'
 
     # SQLAlchemy Configuration
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@localhost/egrowtify_db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@localhost/egrowtify_db?charset=utf8mb4'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+        'pool_timeout': 20,
+        'max_overflow': 0
+    }
 
     # Initialize extensions
     mysql.init_app(app)
