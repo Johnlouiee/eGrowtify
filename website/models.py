@@ -52,3 +52,40 @@ class Admin(UserMixin, db.Model):
 
     def __repr__(self):
         return f'<Admin {self.username}>'
+
+class Plant(db.Model):
+    __tablename__ = 'plant'
+    id = db.Column('PLANT_ID', db.Integer, primary_key=True)
+    name = db.Column('NAME', db.String(100), nullable=False)
+    type = db.Column('TYPE', db.String(20), nullable=False)
+    environment = db.Column('ENVIRONMENT', db.String(20), nullable=False)
+    care_guide = db.Column('CARE_GUIDE', db.Text, nullable=False)
+    ideal_soil_type = db.Column('IDEAL_SOIL_TYPE', db.String(100))
+    watering_frequency = db.Column('WATERING_FREQUENCY', db.Integer)
+    fertilizing_frequency = db.Column('FERTILIZING_FREQUENCY', db.Integer)
+    pruning_frequency = db.Column('PRUNING_FREQUENCY', db.Integer)
+    # Relationship to PlantTracking
+    plant_trackings = db.relationship('PlantTracking', backref='plant', cascade='all, delete')
+
+class Garden(db.Model):
+    __tablename__ = 'garden'
+    id = db.Column('GARDEN_ID', db.Integer, primary_key=True)
+    user_id = db.Column('USER_ID', db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    name = db.Column('NAME', db.String(100), nullable=False)
+    garden_type = db.Column('GARDEN_TYPE', db.String(20), nullable=False)
+    location_city = db.Column('LOCATION_CITY', db.String(100))
+    location_country = db.Column('LOCATION_COUNTRY', db.String(100))
+    created_at = db.Column('CREATED_AT', db.DateTime, default=datetime.utcnow)
+    # Relationship to PlantTracking
+    plant_trackings = db.relationship('PlantTracking', backref='garden', cascade='all, delete')
+
+class PlantTracking(db.Model):
+    __tablename__ = 'planttracking'
+    id = db.Column('TRACKING_ID', db.Integer, primary_key=True)
+    garden_id = db.Column('GARDEN_ID', db.Integer, db.ForeignKey('garden.GARDEN_ID', ondelete='CASCADE'), nullable=False)
+    plant_id = db.Column('PLANT_ID', db.Integer, db.ForeignKey('plant.PLANT_ID'), nullable=False)
+    planting_date = db.Column('PLANTING_DATE', db.Date, nullable=False)
+    last_watered = db.Column('LAST_WATERED', db.Date)
+    last_fertilized = db.Column('LAST_FERTILIZED', db.Date)
+    last_pruned = db.Column('LAST_PRUNED', db.Date)
+    notes = db.Column('NOTES', db.Text)

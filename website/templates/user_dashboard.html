@@ -3,94 +3,125 @@
 {% block title %}User Dashboard - eGrowtify{% endblock %}
 
 {% block content %}
-<div class="mb-8">
-    <h2 class="text-3xl font-bold text-gray-900 flex items-center">
-        <i class="fas fa-tachometer-alt text-primary-600 mr-3"></i> User Dashboard
-    </h2>
+<!-- Green Gradient Welcome Header -->
+<div class="w-full mb-8">
+    <div class="flex items-center justify-between rounded-2xl px-10 py-6 font-bold text-white text-xl md:text-2xl" style="background: linear-gradient(90deg, #355e2c 0%, #4b8050 100%);">
+        <span>Welcome back, {{ current_user.firstname }}! <span class="ml-2">🌱</span></span>
+        <span class="flex items-center text-base font-normal"><span class="text-pink-400 text-lg mr-2">📍</span> Cebu City, Philippines</span>
+    </div>
 </div>
-
-<div class="grid lg:grid-cols-3 gap-8">
-    <div class="lg:col-span-1">
-        <div class="bg-white rounded-lg shadow-lg">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h5 class="text-lg font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-user text-primary-600 mr-2"></i> Profile Information
-                </h5>
-            </div>
-            <div class="p-6">
-                <div class="flex items-center mb-6">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-user-circle text-4xl text-primary-600"></i>
+<div class="flex flex-col md:flex-row gap-6">
+            <div class="flex flex-col gap-3">
+                {% for item in plants %}
+                <div class="bg-white rounded-xl p-3 flex items-center justify-between shadow border-l-4 border-green-400">
+                    <div>
+                        <span class="mr-2">🥗</span><span class="font-semibold">{{ item.plant.name }}</span>
+                        <div class="text-xs text-gray-500">{{ item.status or 'Ready to harvest!' }} • {{ item.garden.name }}</div>
                     </div>
-                    <div class="ml-4">
-                        <h6 class="text-lg font-semibold text-gray-900">{{ current_user.firstname }} {{ current_user.lastname }}</h6>
-                        <p class="text-gray-600">{{ current_user.email }}</p>
-                        <p class="text-gray-600">{{ current_user.contact }}</p>
+                    <div class="flex items-center gap-2">
+                        <a href="#" class="text-yellow-600 hover:text-yellow-800" title="Edit"><i class="fas fa-pen"></i></a>
+                        <form action="{{ url_for('views.delete_plant', tracking_id=item.tracking.id) }}" method="POST" style="display:inline">
+                            <button type="submit" class="text-gray-400 hover:text-red-600" title="Delete"><i class="fas fa-trash"></i></button>
+                        </form>
                     </div>
                 </div>
-                
-                <div class="border-t border-gray-200 pt-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <p class="text-sm text-gray-500">Member Since</p>
-                            <p class="font-medium text-gray-900">{{ current_user.created_at.strftime('%B %Y') }}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500">Status</p>
-                            <p class="font-medium">
-                                {% if current_user.is_active %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
-                                {% else %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Inactive</span>
-                                {% endif %}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                {% else %}
+            
+                {% endfor %}
             </div>
         </div>
     </div>
-    
-    <div class="lg:col-span-2">
-        <div class="grid md:grid-cols-2 gap-6 mb-6">
-            <div class="bg-white rounded-lg shadow-lg p-6 text-center">
-                <i class="fas fa-calendar-check text-3xl text-primary-600 mb-4"></i>
-                <h5 class="text-lg font-semibold text-gray-900 mb-2">Account Status</h5>
-                <p class="text-gray-600">
-                    {% if current_user.is_active %}
-                        Your account is active and you have full access to all features.
-                    {% else %}
-                        Your account is currently inactive. Please contact support.
-                    {% endif %}
-                </p>
-            </div>
-            
-            <div class="bg-white rounded-lg shadow-lg p-6 text-center">
-                <i class="fas fa-clock text-3xl text-blue-600 mb-4"></i>
-                <h5 class="text-lg font-semibold text-gray-900 mb-2">Last Updated</h5>
-                <p class="text-gray-600">{{ current_user.updated_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
-            </div>
+    <!-- Main Content: AI Analyzer, Stats, Tasks, Features, Learning Path -->
+    <div class="flex-1 flex flex-col gap-6">
+        <!-- AI Analyzer Card (Camera) -->
+        <div class="bg-green-100 rounded-lg p-6 shadow flex flex-col items-center">
+            <div class="font-bold text-lg text-green-900 flex items-center mb-2"><i class="fas fa-robot mr-2"></i> AI Analyzer</div>
+            <div class="text-green-900 mb-4">Use your camera to analyze your plants and soil instantly with our smart AI tools.</div>
+            <a href="{{ url_for('views.camera') }}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center mb-2">
+                <i class="fas fa-camera mr-2"></i> Open Camera
+            </a>
         </div>
-        
-        <div class="bg-white rounded-lg shadow-lg">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h5 class="text-lg font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-cog text-primary-600 mr-2"></i> Quick Actions
-                </h5>
-            </div>
-            <div class="p-6">
-                <div class="grid md:grid-cols-3 gap-4">
-                    <a href="{{ url_for('auth.profile') }}" class="flex items-center justify-center px-4 py-3 border border-primary-600 text-primary-600 hover:bg-primary-50 rounded-lg font-medium transition-colors">
-                        <i class="fas fa-user-edit mr-2"></i> Edit Profile
-                    </a>
-                    <a href="#" class="flex items-center justify-center px-4 py-3 border border-green-600 text-green-600 hover:bg-green-50 rounded-lg font-medium transition-colors">
-                        <i class="fas fa-chart-line mr-2"></i> View Progress
-                    </a>
-                    <a href="#" class="flex items-center justify-center px-4 py-3 border border-blue-600 text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-colors">
-                        <i class="fas fa-question-circle mr-2"></i> Get Help
-                    </a>
+        <!-- Stats -->
+    
+        <!-- Features Card -->
+        <div class="bg-green-100 rounded-xl shadow-md p-6 flex flex-col items-center justify-center">
+            <i class="fas fa-star text-4xl text-yellow-500 mb-4"></i>
+            <h3 class="text-xl font-semibold text-green-900 mb-2">Features</h3>
+            <p class="text-green-800 text-center mb-4">Explore all the smart features available for your garden.</p>
+            <button onclick="document.getElementById('features-section').classList.toggle('hidden')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center mb-2">
+                <i class="fas fa-list mr-2"></i> View Features
+            </button>
+            <div id="features-section" class="w-full mt-4 hidden">
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <i class="fas fa-calendar-alt text-3xl text-green-600 mb-2"></i>
+                        <h4 class="text-lg font-bold text-green-900 mb-1">Seasonal Gardening Tips</h4>
+                        <p class="text-gray-700 text-center mb-2">Get expert advice for every season to keep your garden thriving all year round.</p>
+                        <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">View Tips</button>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <i class="fas fa-route text-3xl text-blue-600 mb-2"></i>
+                        <h4 class="text-lg font-bold text-green-900 mb-1">Learning Paths</h4>
+                        <p class="text-gray-700 text-center mb-2">Follow step-by-step guides to become a gardening pro, no matter your skill level.</p>
+                        <button onclick="document.getElementById('learning-path-section').classList.toggle('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Explore Paths</button>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <i class="fas fa-seedling text-3xl text-green-700 mb-2"></i>
+                        <h4 class="text-lg font-bold text-green-900 mb-1">Track Plants</h4>
+                        <p class="text-gray-700 text-center mb-2">Monitor your plants' progress and get reminders for watering, fertilizing, and more.</p>
+                        <button class="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded">Track Now</button>
+                    </div>
                 </div>
             </div>
+        </div>
+        <!-- Learning Path Section (hidden by default, shown when Explore Paths is clicked) -->
+        <div id="learning-path-section" class="hidden mt-8">
+            <h2 class="text-2xl font-bold text-green-900 mb-6">Learning Path</h2>
+            {% if not current_user.subscribed %}
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center {% if not current_user.learning_level or current_user.learning_level == 'beginner' %}border-4 border-green-500{% endif %}">
+                    <i class="fas fa-leaf text-3xl text-green-600 mb-2"></i>
+                    <h3 class="text-lg font-bold text-green-900 mb-1">Beginner</h3>
+                    <p class="text-gray-700 text-center mb-2">Start your gardening journey with the basics.</p>
+                    <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mt-2">Start Beginner</button>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center {% if current_user.learning_level == 'intermediate' %}border-4 border-green-500{% endif %} opacity-50 cursor-not-allowed">
+                    <i class="fas fa-seedling text-3xl text-yellow-600 mb-2"></i>
+                    <h3 class="text-lg font-bold text-green-900 mb-1">Intermediate</h3>
+                    <p class="text-gray-700 text-center mb-2">Unlock after finishing Beginner.</p>
+                    <button class="bg-yellow-500 text-white px-4 py-2 rounded mt-2 cursor-not-allowed" disabled>Locked</button>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center opacity-50 cursor-not-allowed">
+                    <i class="fas fa-crown text-3xl text-blue-600 mb-2"></i>
+                    <h3 class="text-lg font-bold text-green-900 mb-1">Pro</h3>
+                    <p class="text-gray-700 text-center mb-2">Unlock after finishing Intermediate.</p>
+                    <button class="bg-blue-500 text-white px-4 py-2 rounded mt-2 cursor-not-allowed" disabled>Locked</button>
+                </div>
+            </div>
+            <p class="text-center text-gray-500 mt-4">Subscribe to unlock all learning paths and skip modules!</p>
+            {% else %}
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center border-4 border-yellow-400">
+                    <i class="fas fa-leaf text-3xl text-green-600 mb-2"></i>
+                    <h3 class="text-lg font-bold text-green-900 mb-1">Beginner</h3>
+                    <p class="text-gray-700 text-center mb-2">Start your gardening journey with the basics.</p>
+                    <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mt-2">Go to Beginner</button>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center border-4 border-yellow-400">
+                    <i class="fas fa-seedling text-3xl text-yellow-600 mb-2"></i>
+                    <h3 class="text-lg font-bold text-green-900 mb-1">Intermediate</h3>
+                    <p class="text-gray-700 text-center mb-2">Jump in at any level or skip modules as you wish.</p>
+                    <button class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded mt-2">Go to Intermediate</button>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center border-4 border-yellow-400">
+                    <i class="fas fa-crown text-3xl text-blue-600 mb-2"></i>
+                    <h3 class="text-lg font-bold text-green-900 mb-1">Pro</h3>
+                    <p class="text-gray-700 text-center mb-2">Access advanced gardening knowledge and tips.</p>
+                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-2">Go to Pro</button>
+                </div>
+            </div>
+            <p class="text-center text-yellow-600 mt-4 font-semibold">As a premium subscriber, you can access and skip any module!</p>
+            {% endif %}
         </div>
     </div>
 </div>

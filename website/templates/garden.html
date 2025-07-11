@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Gardens - eGrowtify{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row gap-6">
+    <!-- Sidebar: Gardens & Plants CRUD -->
+    <div class="w-full md:w-1/3 max-w-xs">
+        <div class="bg-gray-50 rounded-2xl p-4 shadow mb-6">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-lg font-bold text-green-900">My Gardens</span>
+                <button class="bg-green-400 hover:bg-green-500 text-white rounded-full p-2" title="Add Garden"><i class="fas fa-plus"></i></button>
+            </div>
+            <div class="flex flex-col gap-3">
+                {% for garden in gardens %}
+                <div class="bg-white rounded-xl p-3 flex items-center justify-between shadow border-l-4 border-green-400">
+                    <div>
+                        <span class="mr-2">🏡</span><span class="font-semibold">{{ garden.name }}</span>
+                        <div class="text-xs text-gray-500">{{ garden.size or '15m²' }} • {{ garden.garden_type|lower }}</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="#" class="text-yellow-600 hover:text-yellow-800" title="Edit"><i class="fas fa-pen"></i></a>
+                        <form action="{{ url_for('views.delete_garden', garden_id=garden.id) }}" method="POST" style="display:inline">
+                            <button type="submit" class="text-gray-400 hover:text-red-600" title="Delete"><i class="fas fa-trash"></i></button>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-gray-400 text-sm">No gardens yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="bg-gray-50 rounded-2xl p-4 shadow">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-lg font-bold text-green-900">My Plants</span>
+                <button class="bg-green-400 hover:bg-green-500 text-white rounded-full p-2" title="Add Plant"><i class="fas fa-plus"></i></button>
+            </div>
+            <div class="flex flex-col gap-3">
+                {% for item in plants %}
+                <div class="bg-white rounded-xl p-3 flex items-center justify-between shadow border-l-4 border-green-400">
+                    <div>
+                        <span class="mr-2">🥗</span><span class="font-semibold">{{ item.plant.name }}</span>
+                        <div class="text-xs text-gray-500">{{ item.status or 'Ready to harvest!' }} • {{ item.garden.name }}</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="#" class="text-yellow-600 hover:text-yellow-800" title="Edit"><i class="fas fa-pen"></i></a>
+                        <form action="{{ url_for('views.delete_plant', tracking_id=item.tracking.id) }}" method="POST" style="display:inline">
+                            <button type="submit" class="text-gray-400 hover:text-red-600" title="Delete"><i class="fas fa-trash"></i></button>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-gray-400 text-sm">No plants yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <!-- Optionally, add a main content area here if needed -->
+</div>
+{% endblock %} 

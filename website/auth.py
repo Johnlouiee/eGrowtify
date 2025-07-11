@@ -150,6 +150,78 @@ def logout():
 def profile():
     return render_template("profile.html")
 
+# Edit Profile
+@auth.route('/edit_profile', methods=['GET', 'POST'])
+def edit_profile():
+    from flask import request, redirect, url_for, flash, render_template
+    from flask_login import current_user, login_required
+    if request.method == 'POST':
+        firstname = request.form.get('firstname')
+        lastname = request.form.get('lastname')
+        contact = request.form.get('contact')
+        if firstname and lastname and contact:
+            current_user.firstname = firstname
+            current_user.lastname = lastname
+            current_user.contact = contact
+            from website import db
+            db.session.commit()
+            flash('Profile updated successfully!', 'success')
+            return redirect(url_for('auth.profile'))
+        else:
+            flash('All fields are required.', 'danger')
+    return render_template('edit_profile.html', user=current_user)
+
+# Change Password
+@auth.route('/change_password', methods=['GET', 'POST'])
+def change_password():
+    from flask import request, redirect, url_for, flash, render_template
+    from flask_login import current_user, login_required
+    if request.method == 'POST':
+        old_password = request.form.get('old_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        if not current_user.check_password(old_password):
+            flash('Old password is incorrect.', 'danger')
+        elif new_password != confirm_password:
+            flash('New passwords do not match.', 'danger')
+        else:
+            current_user.set_password(new_password)
+            from website import db
+            db.session.commit()
+            flash('Password changed successfully!', 'success')
+            return redirect(url_for('auth.profile'))
+    return render_template('change_password.html')
+
+# Notification Settings
+@auth.route('/notification_settings', methods=['GET', 'POST'])
+def notification_settings():
+    from flask import request, redirect, url_for, flash, render_template
+    from flask_login import current_user, login_required
+    # Example: just a dummy toggle for email notifications
+    if request.method == 'POST':
+        email_notifications = request.form.get('email_notifications') == 'on'
+        current_user.email_notifications = email_notifications
+        from website import db
+        db.session.commit()
+        flash('Notification settings updated!', 'success')
+        return redirect(url_for('auth.profile'))
+    return render_template('notification_settings.html', user=current_user)
+
+# Remove Export Data
+# Add Subscription
+@auth.route('/subscription', methods=['GET', 'POST'])
+def subscription():
+    from flask import request, redirect, url_for, flash, render_template
+    from flask_login import current_user, login_required
+    if request.method == 'POST':
+        subscribe = request.form.get('subscribe') == 'on'
+        current_user.subscribed = subscribe
+        from website import db
+        db.session.commit()
+        flash('Subscription status updated!', 'success')
+        return redirect(url_for('auth.profile'))
+    return render_template('subscription.html', user=current_user)
+
 @auth.route('/admin/users')
 @login_required
 def admin_users():

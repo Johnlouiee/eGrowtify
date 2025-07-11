@@ -37,6 +37,7 @@
 
     <body class="bg-gray-50 min-h-screen">
         <!-- Navigation -->
+        {% if not request.endpoint or request.endpoint != 'views.home' %}
         <nav class="bg-white shadow-lg border-b border-gray-200">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16">
@@ -51,28 +52,10 @@
                         <a href="{{ url_for('views.home') }}" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
                             Home
                         </a>
-                        {% if current_user.is_authenticated %}
-                            {% if current_user.__class__.__name__ == 'Admin' %}
-                                <a href="{{ url_for('views.admin_dashboard') }}" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                                    Admin Dashboard
-                                </a>
-                                <a href="{{ url_for('auth.admin_users') }}" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                                    Manage Users
-                                </a>
-                                {% if current_user.is_super_admin %}
-                                    <a href="{{ url_for('auth.admin_register') }}" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                                        Create Admin
-                                    </a>
-                                {% endif %}
-                            {% else %}
-                                <a href="{{ url_for('views.user_dashboard') }}" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                                    Dashboard
-                                </a>
-                            {% endif %}
-                            <a href="{{ url_for('auth.profile') }}" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                                Profile
-                            </a>
-                        {% endif %}
+                        <a href="#" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">View Notifications</a>
+                        <a href="{{ url_for('views.garden') }}" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">Garden</a>
+                        <a href="#" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">Set Smart Alert</a>
+                        <a href="#" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">About</a>
                     </div>
                     
                     <div class="flex items-center space-x-4">
@@ -89,12 +72,18 @@
                                     </span>
                                     <i class="fas fa-chevron-down text-xs"></i>
                                 </button>
-                                <div class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 hidden">
-                                    <a href="{{ url_for('auth.profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <div class="dropdown-menu absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50 hidden">
+                                    <a href="{{ url_for('auth.profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
                                         <i class="fas fa-user-edit mr-2"></i>Profile
                                     </a>
-                                    <div class="border-t border-gray-100"></div>
-                                    <a href="{{ url_for('auth.logout') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                                        <i class="fas fa-comment-dots mr-2"></i>Feedback
+                                    </a>
+                                    <a href="{{ url_for('auth.subscription') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                                        <i class="fas fa-credit-card mr-2"></i>Manage Subscription
+                                    </a>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <a href="{{ url_for('auth.logout') }}" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center">
                                         <i class="fas fa-sign-out-alt mr-2"></i>Logout
                                     </a>
                                 </div>
@@ -118,6 +107,7 @@
                 </div>
             </div>
         </nav>
+        {% endif %}
 
         <!-- Flash Messages -->
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">

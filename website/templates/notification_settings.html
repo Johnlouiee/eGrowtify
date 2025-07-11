@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Settings - eGrowtify{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="bg-white rounded-lg shadow-lg">
+        <div class="px-6 py-8 border-b border-gray-200">
+            <h4 class="text-2xl font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-bell text-blue-600 mr-3"></i> Notification Settings
+            </h4>
+        </div>
+        <div class="px-6 py-8">
+            <form method="POST">
+                <div class="mb-6 flex items-center">
+                    <input type="checkbox" id="email_notifications" name="email_notifications" class="mr-2" {% if user.email_notifications %}checked{% endif %}>
+                    <label for="email_notifications" class="text-sm font-medium text-gray-700">Enable Email Notifications</label>
+                </div>
+                <div class="mb-6">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-md transition-colors flex items-center justify-center">
+                        <i class="fas fa-save mr-2"></i> Save Settings
+                    </button>
+                </div>
+                <div class="text-center">
+                    <a href="{{ url_for('auth.profile') }}" class="text-blue-600 hover:underline">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 
