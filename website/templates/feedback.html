@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Feedback - eGrowtify{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('auth.profile') }}" class="text-primary-600 hover:underline"><i class="fas fa-arrow-left mr-1"></i> Back to Profile</a>
+</div>
+
+<div class="max-w-4xl mx-auto">
+    <div class="mb-8">
+        <h2 class="text-3xl font-bold text-gray-900 flex items-center">
+            <i class="fas fa-comment-dots text-pink-600 mr-3"></i> Feedback
+        </h2>
+        <p class="text-gray-600 mt-2">Help us improve eGrowtify by sharing your thoughts and suggestions.</p>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-8">
+        <!-- Feedback Form -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h5 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-paper-plane text-pink-600 mr-2"></i> Send Feedback
+                    </h5>
+                </div>
+                <div class="p-6">
+                    <form method="POST" action="{{ url_for('auth.submit_feedback') }}">
+                        <div class="mb-6">
+                            <label for="category" class="block text-sm font-medium text-gray-700 mb-2">Feedback Category</label>
+                            <select id="category" name="category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500" required>
+                                <option value="">Select a category</option>
+                                <option value="bug">🐛 Bug Report</option>
+                                <option value="feature">💡 Feature Request</option>
+                                <option value="improvement">⚡ Improvement Suggestion</option>
+                                <option value="general">💬 General Feedback</option>
+                                <option value="praise">⭐ Praise</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-6">
+                            <label for="rating" class="block text-sm font-medium text-gray-700 mb-2">Overall Experience Rating</label>
+                            <div class="flex items-center space-x-4">
+                                <div class="flex items-center">
+                                    <input type="radio" id="rating-1" name="rating" value="1" class="mr-2">
+                                    <label for="rating-1" class="text-2xl">😞</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="radio" id="rating-2" name="rating" value="2" class="mr-2">
+                                    <label for="rating-2" class="text-2xl">😐</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="radio" id="rating-3" name="rating" value="3" class="mr-2">
+                                    <label for="rating-3" class="text-2xl">🙂</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="radio" id="rating-4" name="rating" value="4" class="mr-2">
+                                    <label for="rating-4" class="text-2xl">😊</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="radio" id="rating-5" name="rating" value="5" class="mr-2">
+                                    <label for="rating-5" class="text-2xl">😍</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <label for="subject" class="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                            <input type="text" id="subject" name="subject" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500" placeholder="Brief description of your feedback" required>
+                        </div>
+
+                        <div class="mb-6">
+                            <label for="message" class="block text-sm font-medium text-gray-700 mb-2">Detailed Message</label>
+                            <textarea id="message" name="message" rows="6" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500" placeholder="Please provide detailed feedback, suggestions, or describe any issues you've encountered..." required></textarea>
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="anonymous" class="mr-2">
+                                <span class="text-sm text-gray-700">Submit anonymously</span>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <button type="submit" class="bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center">
+                                <i class="fas fa-paper-plane mr-2"></i> Submit Feedback
+                            </button>
+                            <button type="reset" class="text-gray-500 hover:text-gray-700 px-4 py-2 rounded-lg transition-colors">
+                                Clear Form
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback Guidelines -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow-lg mb-6">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h5 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-lightbulb text-yellow-600 mr-2"></i> Feedback Guidelines
+                    </h5>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4 text-sm text-gray-700">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                            <span>Be specific and detailed in your feedback</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                            <span>Include steps to reproduce if reporting a bug</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                            <span>Suggest improvements with clear reasoning</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                            <span>Be constructive and respectful</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                            <span>Include your device/browser info if relevant</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h5 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-history text-blue-600 mr-2"></i> Recent Feedback
+                    </h5>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        {% if feedback_history %}
+                            {% for feedback in feedback_history %}
+                            <div class="border-l-4 border-pink-500 pl-4">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-sm font-medium text-gray-900">{{ feedback.subject }}</span>
+                                    <span class="text-xs text-gray-500">{{ feedback.created_at.strftime('%M/%d') }}</span>
+                                </div>
+                                <p class="text-xs text-gray-600 mb-2">{{ feedback.message[:50] }}...</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
+                                        {{ feedback.category }}
+                                    </span>
+                                    <div class="flex">
+                                        {% for i in range(feedback.rating) %}
+                                        <span class="text-yellow-400">⭐</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center text-gray-500 py-4">
+                                <i class="fas fa-comment-slash text-3xl mb-2"></i>
+                                <p class="text-sm">No feedback submitted yet</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

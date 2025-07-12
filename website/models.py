@@ -16,6 +16,9 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default='user')  # 'user' or 'admin'
     is_active = db.Column(db.Boolean, default=True)
+    subscribed = db.Column(db.Boolean, default=False)  # Add subscribed property
+    email_notifications = db.Column(db.Boolean, default=True)  # Add email_notifications property
+    learning_level = db.Column(db.String(20), default='beginner')  # Add learning_level property
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

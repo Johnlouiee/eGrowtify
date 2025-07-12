@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Features - eGrowtify{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-green-900 mb-2">Features</h1>
+        <p class="text-gray-600">Explore all the smart features available for your garden.</p>
+    </div>
+
+    <!-- Features Grid -->
+    <div class="grid md:grid-cols-3 gap-8">
+        <!-- Seasonal Gardening Tips -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="text-center mb-6">
+                <i class="fas fa-calendar-alt text-4xl text-green-600 mb-4"></i>
+                <h3 class="text-xl font-bold text-green-900 mb-2">Seasonal Gardening Tips</h3>
+                <p class="text-gray-600">Get expert advice for every season to keep your garden thriving all year round.</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-green-50 rounded-lg p-4">
+                    <h4 class="font-semibold text-green-800 mb-2">🌱 Spring (March-May)</h4>
+                    <ul class="text-sm text-gray-700 space-y-1">
+                        <li>• Start seeds indoors for warm-season crops</li>
+                        <li>• Prepare soil with compost and organic matter</li>
+                        <li>• Plant cool-season vegetables like lettuce and spinach</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-yellow-50 rounded-lg p-4">
+                    <h4 class="font-semibold text-yellow-800 mb-2">☀️ Summer (June-August)</h4>
+                    <ul class="text-sm text-gray-700 space-y-1">
+                        <li>• Water deeply in the morning to avoid evaporation</li>
+                        <li>• Mulch around plants to retain moisture</li>
+                        <li>• Harvest vegetables regularly to encourage growth</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-orange-50 rounded-lg p-4">
+                    <h4 class="font-semibold text-orange-800 mb-2">🍂 Fall (September-November)</h4>
+                    <ul class="text-sm text-gray-700 space-y-1">
+                        <li>• Plant garlic and onions for next year</li>
+                        <li>• Clean up garden debris to prevent diseases</li>
+                        <li>• Add compost to prepare for winter</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-blue-50 rounded-lg p-4">
+                    <h4 class="font-semibold text-blue-800 mb-2">❄️ Winter (December-February)</h4>
+                    <ul class="text-sm text-gray-700 space-y-1">
+                        <li>• Plan next year's garden layout</li>
+                        <li>• Order seeds and supplies early</li>
+                        <li>• Protect perennial plants from frost</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Learning Paths -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="text-center mb-6">
+                <i class="fas fa-route text-4xl text-blue-600 mb-4"></i>
+                <h3 class="text-xl font-bold text-green-900 mb-2">Learning Paths</h3>
+                <p class="text-gray-600">Follow step-by-step guides to become a gardening pro, no matter your skill level.</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="border-2 border-green-500 rounded-lg p-4 bg-green-50">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-bold text-green-900">🌱 Beginner Path</h4>
+                        <span class="bg-green-500 text-white px-2 py-1 rounded text-xs">Current</span>
+                    </div>
+                    <p class="text-sm text-gray-700 mb-3">Start your gardening journey with the basics.</p>
+                    <div class="space-y-2">
+                        <div class="flex items-center text-sm">
+                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                            <span>Understanding soil types</span>
+                        </div>
+                        <div class="flex items-center text-sm">
+                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                            <span>Basic plant care</span>
+                        </div>
+                        <div class="flex items-center text-sm">
+                            <i class="fas fa-circle text-gray-300 mr-2"></i>
+                            <span>Watering techniques</span>
+                        </div>
+                        <div class="flex items-center text-sm">
+                            <i class="fas fa-circle text-gray-300 mr-2"></i>
+                            <span>Simple pest control</span>
+                        </div>
+                    </div>
+                    <button class="w-full mt-3 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors">
+                        Continue Learning
+                    </button>
+                </div>
+                
+                <div class="border-2 border-gray-200 rounded-lg p-4 opacity-60">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-bold text-gray-700">🌿 Intermediate Path</h4>
+                        <span class="bg-gray-400 text-white px-2 py-1 rounded text-xs">Locked</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-3">Unlock after finishing Beginner path.</p>
+                    <button class="w-full mt-3 bg-gray-400 text-white py-2 px-4 rounded-md text-sm font-medium cursor-not-allowed" disabled>
+                        Complete Beginner First
+                    </button>
+                </div>
+                
+                <div class="border-2 border-gray-200 rounded-lg p-4 opacity-60">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-bold text-gray-700">👑 Pro Path</h4>
+                        <span class="bg-gray-400 text-white px-2 py-1 rounded text-xs">Locked</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-3">Unlock after finishing Intermediate path.</p>
+                    <button class="w-full mt-3 bg-gray-400 text-white py-2 px-4 rounded-md text-sm font-medium cursor-not-allowed" disabled>
+                        Complete Intermediate First
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Track Plants -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="text-center mb-6">
+                <i class="fas fa-seedling text-4xl text-green-700 mb-4"></i>
+                <h3 class="text-xl font-bold text-green-900 mb-2">Track Plants</h3>
+                <p class="text-gray-600">Monitor your plants' progress and get reminders for watering, fertilizing, and more.</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-blue-50 rounded-lg p-4">
+                    <h4 class="font-semibold text-blue-900 mb-2">📊 Plant Progress</h4>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-700">Tomato Plant</span>
+                            <span class="text-sm font-medium text-green-600">75% Growth</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-500 h-2 rounded-full" style="width: 75%"></div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-700">Lettuce</span>
+                            <span class="text-sm font-medium text-green-600">Ready to Harvest</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-500 h-2 rounded-full" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-yellow-50 rounded-lg p-4">
+                    <h4 class="font-semibold text-yellow-900 mb-2">⏰ Upcoming Tasks</h4>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between text-sm">
+                            <span>Water tomatoes</span>
+                            <span class="text-yellow-600 font-medium">Today</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span>Fertilize lettuce</span>
+                            <span class="text-gray-500">Tomorrow</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span>Harvest basil</span>
+                            <span class="text-gray-500">In 3 days</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-green-50 rounded-lg p-4">
+                    <h4 class="font-semibold text-green-900 mb-2">📈 Health Status</h4>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between text-sm">
+                            <span>Tomato Plant</span>
+                            <span class="text-green-600 font-medium">Healthy</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span>Lettuce</span>
+                            <span class="text-green-600 font-medium">Healthy</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span>Basil</span>
+                            <span class="text-yellow-600 font-medium">Needs Water</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <a href="{{ url_for('views.garden') }}" class="block w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-md text-center font-medium transition-colors">
+                    <i class="fas fa-seedling mr-2"></i>Go to Garden
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

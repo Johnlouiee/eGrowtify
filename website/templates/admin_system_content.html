@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Manage System Content - eGrowtify{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex justify-between items-center">
+        <h2 class="text-3xl font-bold text-gray-900 flex items-center">
+            <i class="fas fa-cogs text-primary-600 mr-3"></i> Manage System Content
+        </h2>
+        <a href="{{ url_for('views.admin_dashboard') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- AI Data Management -->
+<div class="bg-white rounded-xl shadow-lg mb-8">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-robot text-primary-600 mr-2"></i> AI Data Management
+            </h3>
+            <a href="{{ url_for('views.admin_ai_data') }}" class="inline-flex items-center px-3 py-1 border border-blue-600 text-xs leading-4 font-medium rounded-md text-blue-600 hover:bg-blue-50 transition-colors">
+                <i class="fas fa-edit mr-1"></i> Manage
+            </a>
+        </div>
+    </div>
+    <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-blue-50 rounded-lg p-4">
+                <div class="flex items-center">
+                    <i class="fas fa-brain text-blue-600 text-xl mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Model Version</p>
+                        <p class="text-lg font-bold text-gray-900">{{ ai_data.plant_recognition_model }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-green-50 rounded-lg p-4">
+                <div class="flex items-center">
+                    <i class="fas fa-chart-line text-green-600 text-xl mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Accuracy</p>
+                        <p class="text-lg font-bold text-gray-900">{{ ai_data.accuracy }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-purple-50 rounded-lg p-4">
+                <div class="flex items-center">
+                    <i class="fas fa-seedling text-purple-600 text-xl mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Plants</p>
+                        <p class="text-lg font-bold text-gray-900">{{ ai_data.total_plants }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-yellow-50 rounded-lg p-4">
+                <div class="flex items-center">
+                    <i class="fas fa-calendar text-yellow-600 text-xl mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Last Updated</p>
+                        <p class="text-lg font-bold text-gray-900">{{ ai_data.last_updated }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Learning Paths Management -->
+<div class="bg-white rounded-xl shadow-lg mb-8">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-book text-primary-600 mr-2"></i> Learning Paths
+            </h3>
+            <a href="{{ url_for('views.admin_learning_paths') }}" class="inline-flex items-center px-3 py-1 border border-blue-600 text-xs leading-4 font-medium rounded-md text-blue-600 hover:bg-blue-50 transition-colors">
+                <i class="fas fa-edit mr-1"></i> Manage
+            </a>
+        </div>
+    </div>
+    <div class="p-6">
+        <div class="space-y-4">
+            {% for path in learning_paths %}
+            <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                <div class="flex items-center">
+                    <div class="mr-4">
+                        {% if path.status == 'active' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                        {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Draft</span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-900">{{ path.name }}</h4>
+                        <p class="text-xs text-gray-500">{{ path.users }} users enrolled</p>
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button class="text-blue-600 hover:text-blue-800" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="text-gray-400 hover:text-red-600" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Seasonal Planning -->
+<div class="bg-white rounded-xl shadow-lg mb-8">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-calendar-alt text-primary-600 mr-2"></i> Seasonal Planning
+            </h3>
+            <a href="{{ url_for('views.admin_seasonal_planning') }}" class="inline-flex items-center px-3 py-1 border border-blue-600 text-xs leading-4 font-medium rounded-md text-blue-600 hover:bg-blue-50 transition-colors">
+                <i class="fas fa-edit mr-1"></i> Manage
+            </a>
+        </div>
+    </div>
+    <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {% for season in seasonal_content %}
+            <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-medium text-gray-900">{{ season.season }}</h4>
+                    {% if season.status == 'published' %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Published</span>
+                    {% else %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Draft</span>
+                    {% endif %}
+                </div>
+                <p class="text-xs text-gray-500">Updated: {{ season.last_updated }}</p>
+                <div class="mt-3 flex space-x-2">
+                    <button class="text-blue-600 hover:text-blue-800 text-xs" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="text-green-600 hover:text-green-800 text-xs" title="Publish">
+                        <i class="fas fa-upload"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Notification Templates -->
+<div class="bg-white rounded-xl shadow-lg mb-8">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-bell text-primary-600 mr-2"></i> Notification Templates
+            </h3>
+            <a href="{{ url_for('views.admin_notifications') }}" class="inline-flex items-center px-3 py-1 border border-blue-600 text-xs leading-4 font-medium rounded-md text-blue-600 hover:bg-blue-50 transition-colors">
+                <i class="fas fa-edit mr-1"></i> Manage
+            </a>
+        </div>
+    </div>
+    <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for template in notification_templates %}
+            <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-medium text-gray-900">{{ template.name }}</h4>
+                    {% if template.status == 'active' %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                    {% else %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Draft</span>
+                    {% endif %}
+                </div>
+                <div class="flex space-x-2 mt-3">
+                    <button class="text-blue-600 hover:text-blue-800 text-xs" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="text-green-600 hover:text-green-800 text-xs" title="Activate">
+                        <i class="fas fa-toggle-on"></i>
+                    </button>
+                    <button class="text-gray-400 hover:text-red-600 text-xs" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Content Rollback -->
+<div class="bg-white rounded-xl shadow-lg">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-undo text-primary-600 mr-2"></i> Content Rollback
+            </h3>
+            <a href="{{ url_for('views.admin_rollback_content') }}" class="inline-flex items-center px-3 py-1 border border-red-600 text-xs leading-4 font-medium rounded-md text-red-600 hover:bg-red-50 transition-colors">
+                <i class="fas fa-history mr-1"></i> Rollback
+            </a>
+        </div>
+    </div>
+    <div class="p-6">
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div class="flex items-start">
+                <i class="fas fa-exclamation-triangle text-yellow-600 mt-1 mr-3"></i>
+                <div>
+                    <h4 class="text-sm font-medium text-yellow-800">Content Version Control</h4>
+                    <p class="text-sm text-yellow-700 mt-1">
+                        Use this feature to rollback system content to previous versions. This action cannot be undone.
+                    </p>
+                    <div class="mt-3">
+                        <button class="inline-flex items-center px-3 py-1 border border-yellow-600 text-xs leading-4 font-medium rounded-md text-yellow-700 hover:bg-yellow-100 transition-colors">
+                            <i class="fas fa-history mr-1"></i> View Version History
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -14,28 +14,22 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
-        user_type = request.form.get('user_type', 'user')  # 'user' or 'admin'
         
-        if user_type == 'admin':
-            # Try to login as admin
-            admin = Admin.query.filter_by(email=email).first()
-            if admin and admin.check_password(password) and admin.is_active:
-                login_user(admin)
-                admin.last_login = datetime.utcnow()
-                db.session.commit()
+        # Try to login as user (both regular users and admins)
+        user = User.query.filter_by(email=email).first()
+        
+        if user and user.check_password(password) and user.is_active:
+            login_user(user)
+            
+            # Redirect based on role
+            if user.role == 'admin':
                 flash('Logged in successfully as admin!', category='success')
                 return redirect(url_for('views.admin_dashboard'))
             else:
-                flash('Invalid admin credentials or account inactive.', category='error')
-        else:
-            # Try to login as user
-            user = User.query.filter_by(email=email).first()
-            if user and user.check_password(password) and user.is_active:
-                login_user(user)
                 flash('Logged in successfully!', category='success')
                 return redirect(url_for('views.user_dashboard'))
-            else:
-                flash('Invalid credentials or account inactive.', category='error')
+        else:
+            flash('Invalid credentials or account inactive.', category='error')
     
     return render_template("login.html")
 
@@ -91,9 +85,9 @@ def register():
 @auth.route('/admin/register', methods=['GET', 'POST'])
 @login_required
 def admin_register():
-    # Only super admins can create new admin accounts
-    if not isinstance(current_user, Admin) or not current_user.is_super_admin:
-        flash('Access denied. Only super admins can create admin accounts.', category='error')
+    # Only admins can create new admin accounts
+    if not current_user.is_admin():
+        flash('Access denied. Admin privileges required.', category='error')
         return redirect(url_for('views.admin_dashboard'))
     
     if request.method == 'POST':
@@ -113,17 +107,16 @@ def admin_register():
             flash('Passwords don\'t match.', category='error')
         elif len(password1) < 7:
             flash('Password must be at least 7 characters.', category='error')
-        elif Admin.query.filter_by(username=username).first():
-            flash('Username already exists.', category='error')
-        elif Admin.query.filter_by(email=email).first():
+        elif User.query.filter_by(email=email).first():
             flash('Email already exists.', category='error')
         else:
-            # Create new admin
-            new_admin = Admin(
-                username=username,
+            # Create new admin user
+            new_admin = User(
                 email=email,
-                full_name=full_name,
-                is_super_admin=is_super_admin
+                firstname=full_name.split()[0] if ' ' in full_name else full_name,
+                lastname=full_name.split()[-1] if ' ' in full_name else '',
+                contact='0000000000',  # Default contact
+                role='admin'
             )
             new_admin.set_password(password1)
             
@@ -148,6 +141,8 @@ def logout():
 @auth.route('/profile')
 @login_required
 def profile():
+    if current_user.role == 'admin':
+        return render_template("admin_profile.html")
     return render_template("profile.html")
 
 # Edit Profile
@@ -225,7 +220,7 @@ def subscription():
 @auth.route('/admin/users')
 @login_required
 def admin_users():
-    if not isinstance(current_user, Admin):
+    if not current_user.is_admin():
         flash('Access denied. Admin privileges required.', category='error')
         return redirect(url_for('views.home'))
     
@@ -235,7 +230,7 @@ def admin_users():
 @auth.route('/admin/users/<int:user_id>/toggle')
 @login_required
 def toggle_user_status(user_id):
-    if not isinstance(current_user, Admin):
+    if not current_user.is_admin():
         flash('Access denied. Admin privileges required.', category='error')
         return redirect(url_for('views.home'))
     
@@ -246,3 +241,13 @@ def toggle_user_status(user_id):
     status = "activated" if user.is_active else "deactivated"
     flash(f'User {user.email} has been {status}.', category='success')
     return redirect(url_for('auth.admin_users'))
+
+@auth.route('/admin/subscription')
+@login_required
+def admin_subscription():
+    if not current_user.role == 'admin':
+        flash('Access denied.', 'error')
+        return redirect(url_for('views.home'))
+    from .models import User
+    subscribed_users = User.query.filter_by(subscribed=True).all()
+    return render_template('admin_subscription.html', users=subscribed_users)
