@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_mysqldb import MySQL
 from flask_login import LoginManager
+from flask_cors import CORS
 from .models import db, User, Admin
 
 mysql = MySQL()
@@ -9,6 +10,9 @@ login_manager = LoginManager()
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = 'OPAW'
+
+    # Enable CORS for React frontend
+    CORS(app, origins=['http://localhost:3000'], supports_credentials=True)
 
     # MySQL Configuration for XAMPP
     app.config['MYSQL_HOST'] = 'localhost'
