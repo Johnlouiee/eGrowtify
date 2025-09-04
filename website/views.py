@@ -166,6 +166,9 @@ def notifications():
 @views.route('/garden', methods=['GET'])
 @login_required
 def garden():
+    # Only regular users can manage gardens
+    if hasattr(current_user, 'is_admin') and current_user.is_admin():
+        return jsonify({"error": "Only user accounts can access gardens. Please sign in with a user account."}), 403
     # List gardens and plants for the current user
     gardens = Garden.query.filter_by(user_id=current_user.id).all()
     # For each garden, get plants via PlantTracking
@@ -213,26 +216,33 @@ def garden():
 @views.route('/garden/add', methods=['POST'])
 @login_required
 def add_garden():
-    data = request.get_json()
-    name = data.get('name')
-    garden_type = data.get('garden_type')
-    location_city = data.get('location_city')
-    location_country = data.get('location_country')
-    
-    if not name or not garden_type:
-        return jsonify({"error": "Name and type are required."}), 400
-    
-    garden = Garden(
-        user_id=current_user.id, 
-        name=name, 
-        garden_type=garden_type, 
-        location_city=location_city, 
-        location_country=location_country
-    )
-    db.session.add(garden)
-    db.session.commit()
-    
-    return jsonify({"message": "Garden added successfully!", "garden_id": garden.id})
+    # Only regular users can create gardens
+    if hasattr(current_user, 'is_admin') and current_user.is_admin():
+        return jsonify({"error": "Admins cannot create gardens. Please use a user account."}), 403
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        name = data.get('name')
+        garden_type = data.get('garden_type')
+        location_city = data.get('location_city')
+        location_country = data.get('location_country')
+
+        if not name or not garden_type:
+            return jsonify({"error": "Name and type are required."}), 400
+
+        garden = Garden(
+            user_id=current_user.id,
+            name=name,
+            garden_type=garden_type,
+            location_city=location_city,
+            location_country=location_country
+        )
+        db.session.add(garden)
+        db.session.commit()
+
+        return jsonify({"success": True, "message": "Garden added successfully!", "garden_id": garden.id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @views.route('/garden/edit/<int:garden_id>', methods=['POST'])
 @login_required
@@ -265,6 +275,9 @@ def delete_garden(garden_id):
 @views.route('/plant/add', methods=['POST'])
 @login_required
 def add_plant():
+    # Only regular users can add plants to gardens
+    if hasattr(current_user, 'is_admin') and current_user.is_admin():
+        return jsonify({"error": "Admins cannot add plants. Please use a user account."}), 403
     data = request.get_json()
     name = data.get('name')
     type_ = data.get('type')

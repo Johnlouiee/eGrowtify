@@ -32,10 +32,11 @@ def login():
                     "full_name": user.full_name,
                     "role": user.role,
                     "is_active": user.is_active
-                }
+                },
+                "is_admin": user.is_admin()
             })
         else:
-            return jsonify({"success": False, "error": "Invalid credentials or account inactive."}), 401
+            return jsonify({"success": False, "message": "Invalid credentials or account inactive."}), 401
     
     return jsonify({"message": "Login endpoint - send POST request with email and password"})
 
@@ -55,19 +56,19 @@ def register():
 
         # Validation
         if len(email) < 5:
-            return jsonify({"success": False, "error": "Email must be greater than 4 characters."}), 400
+            return jsonify({"success": False, "message": "Email must be greater than 4 characters."}), 400
         elif len(firstname) < 2:
-            return jsonify({"success": False, "error": "First name must be greater than 1 character."}), 400
+            return jsonify({"success": False, "message": "First name must be greater than 1 character."}), 400
         elif len(lastname) < 2:
-            return jsonify({"success": False, "error": "Last name must be greater than 1 character."}), 400
+            return jsonify({"success": False, "message": "Last name must be greater than 1 character."}), 400
         elif len(contact) < 10:
-            return jsonify({"success": False, "error": "Contact number must be at least 10 digits."}), 400
+            return jsonify({"success": False, "message": "Contact number must be at least 10 digits."}), 400
         elif password1 != password2:
-            return jsonify({"success": False, "error": "Passwords don't match."}), 400
+            return jsonify({"success": False, "message": "Passwords don't match."}), 400
         elif len(password1) < 7:
-            return jsonify({"success": False, "error": "Password must be at least 7 characters."}), 400
+            return jsonify({"success": False, "message": "Password must be at least 7 characters."}), 400
         elif User.query.filter_by(email=email).first():
-            return jsonify({"success": False, "error": "Email already exists."}), 400
+            return jsonify({"success": False, "message": "Email already exists."}), 400
         else:
             # Create new user
             new_user = User(
@@ -84,13 +85,51 @@ def register():
                 return jsonify({
                     "success": True,
                     "message": "Account created successfully!",
-                    "user_id": new_user.id
+                    "user": {
+                        "id": new_user.id,
+                        "email": new_user.email,
+                        "full_name": new_user.full_name,
+                        "role": new_user.role,
+                        "is_active": new_user.is_active
+                    },
+                    "is_admin": False
                 })
             except Exception as e:
                 db.session.rollback()
-                return jsonify({"success": False, "error": "An error occurred while creating the account."}), 500
+                return jsonify({"success": False, "message": "An error occurred while creating the account."}), 500
     
     return jsonify({"message": "Register endpoint - send POST request with user data"})
+
+# Frontend-friendly aliases under /auth/*
+@auth.route('/auth/status', methods=['GET'])
+def auth_status():
+    if current_user.is_authenticated:
+        user = current_user
+        return jsonify({
+            "authenticated": True,
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "full_name": user.full_name,
+                "role": user.role
+            },
+            "is_admin": user.is_admin()
+        })
+    return jsonify({"authenticated": False})
+
+@auth.route('/auth/login', methods=['GET', 'POST'])
+def login_alias():
+    return login()
+
+@auth.route('/auth/register', methods=['GET', 'POST'])
+def register_alias():
+    return register()
+
+@auth.route('/auth/logout', methods=['POST'])
+@login_required
+def logout_alias():
+    logout_user()
+    return jsonify({"success": True, "message": "Logged out successfully"})
 
 @auth.route('/admin/register', methods=['GET', 'POST'])
 @login_required
@@ -110,19 +149,19 @@ def admin_register():
 
         # Validation
         if len(username) < 3:
-            return jsonify({"success": False, "error": "Username must be at least 3 characters."}), 400
+            return jsonify({"success": False, "message": "Username must be at least 3 characters."}), 400
         elif len(email) < 5:
-            return jsonify({"success": False, "error": "Email must be at least 5 characters."}), 400
+            return jsonify({"success": False, "message": "Email must be at least 5 characters."}), 400
         elif len(full_name) < 2:
-            return jsonify({"success": False, "error": "Full name must be at least 2 characters."}), 400
+            return jsonify({"success": False, "message": "Full name must be at least 2 characters."}), 400
         elif password1 != password2:
-            return jsonify({"success": False, "error": "Passwords don't match."}), 400
+            return jsonify({"success": False, "message": "Passwords don't match."}), 400
         elif len(password1) < 7:
-            return jsonify({"success": False, "error": "Password must be at least 7 characters."}), 400
+            return jsonify({"success": False, "message": "Password must be at least 7 characters."}), 400
         elif Admin.query.filter_by(username=username).first():
-            return jsonify({"success": False, "error": "Username already exists."}), 400
+            return jsonify({"success": False, "message": "Username already exists."}), 400
         elif Admin.query.filter_by(email=email).first():
-            return jsonify({"success": False, "error": "Email already exists."}), 400
+            return jsonify({"success": False, "message": "Email already exists."}), 400
         else:
             # Create new admin
             new_admin = Admin(
@@ -143,7 +182,7 @@ def admin_register():
                 })
             except Exception as e:
                 db.session.rollback()
-                return jsonify({"success": False, "error": "An error occurred while creating the admin account."}), 500
+                return jsonify({"success": False, "message": "An error occurred while creating the admin account."}), 500
     
     return jsonify({"message": "Admin register endpoint - send POST request with admin data"})
 
@@ -161,13 +200,13 @@ def change_password():
     new_password = data.get('new_password')
     
     if not current_password or not new_password:
-        return jsonify({"success": False, "error": "Both current and new password are required."}), 400
+        return jsonify({"success": False, "message": "Both current and new password are required."}), 400
     
     if not current_user.check_password(current_password):
-        return jsonify({"success": False, "error": "Current password is incorrect."}), 400
+        return jsonify({"success": False, "message": "Current password is incorrect."}), 400
     
     if len(new_password) < 6:
-        return jsonify({"success": False, "error": "New password must be at least 6 characters."}), 400
+        return jsonify({"success": False, "message": "New password must be at least 6 characters."}), 400
     
     try:
         current_user.set_password(new_password)
@@ -175,7 +214,7 @@ def change_password():
         return jsonify({"success": True, "message": "Password changed successfully!"})
     except Exception as e:
         db.session.rollback()
-        return jsonify({"success": False, "error": "An error occurred while changing password."}), 500
+        return jsonify({"success": False, "message": "An error occurred while changing password."}), 500
 
 @auth.route('/profile', methods=['GET', 'PUT'])
 @login_required
@@ -208,6 +247,6 @@ def profile():
             return jsonify({"success": True, "message": "Profile updated successfully!"})
         except Exception as e:
             db.session.rollback()
-            return jsonify({"success": False, "error": "An error occurred while updating profile."}), 500
+            return jsonify({"success": False, "message": "An error occurred while updating profile."}), 500
 
 # Add more API endpoints as needed...

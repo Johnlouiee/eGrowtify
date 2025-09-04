@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Plus, Edit, Trash2, Leaf, MapPin, Calendar, Droplets, Sun, Scissors } from 'lucide-react'
 import axios from 'axios'
@@ -6,6 +7,7 @@ import toast from 'react-hot-toast'
 
 const Garden = () => {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [gardens, setGardens] = useState([])
   const [plants, setPlants] = useState([])
   const [showAddGarden, setShowAddGarden] = useState(false)
@@ -41,19 +43,29 @@ const Garden = () => {
 
   const fetchGardens = async () => {
     try {
-      const response = await axios.get('/api/garden')
+      const response = await axios.get('/garden')
       setGardens(response.data.gardens || [])
     } catch (error) {
+      if (error?.response?.status === 401) {
+        toast.error('Please sign in to manage your garden')
+        navigate('/login')
+        return
+      }
       console.error('Error fetching gardens:', error)
     }
   }
 
   const fetchPlants = async () => {
     try {
-      const response = await axios.get('/api/garden')
+      const response = await axios.get('/garden')
       setPlants(response.data.plants || [])
       setLoading(false)
     } catch (error) {
+      if (error?.response?.status === 401) {
+        toast.error('Please sign in to view your plants')
+        navigate('/login')
+        return
+      }
       console.error('Error fetching plants:', error)
       setLoading(false)
     }
@@ -63,30 +75,54 @@ const Garden = () => {
     e.preventDefault()
     try {
       if (editingGarden) {
-        await axios.post(`/api/garden/edit/${editingGarden.id}`, gardenForm)
+        await axios.post(`/garden/edit/${editingGarden.id}`, gardenForm)
         toast.success('Garden updated successfully!')
         setEditingGarden(null)
       } else {
-        await axios.post('/api/garden/add', gardenForm)
+        await axios.post('/garden/add', gardenForm)
         toast.success('Garden added successfully!')
       }
       setGardenForm({ name: '', garden_type: '', location_city: '', location_country: '' })
       setShowAddGarden(false)
       fetchGardens()
     } catch (error) {
-      toast.error('Error saving garden')
+      if (error?.response?.status === 401) {
+        toast.error('Please sign in first')
+        navigate('/login')
+        return
+      }
+      const raw = error.response?.data
+      console.error('Garden save error response:', raw)
+      const msg = raw?.error || raw?.message || (typeof raw === 'string' ? raw : 'Error saving garden')
+      toast.error(msg)
     }
+  }
+
+  const toIntOrNull = (val) => {
+    if (val === '' || val === null || val === undefined) return null
+    const num = Number(val)
+    return Number.isNaN(num) ? null : num
   }
 
   const handlePlantSubmit = async (e) => {
     e.preventDefault()
     try {
+      // Normalize payload to match backend (INT frequencies, required care_guide)
+      const payload = {
+        ...plantForm,
+        watering_frequency: toIntOrNull(plantForm.watering_frequency),
+        fertilizing_frequency: toIntOrNull(plantForm.fertilizing_frequency),
+        pruning_frequency: toIntOrNull(plantForm.pruning_frequency),
+        garden_id: Number(plantForm.garden_id),
+        care_guide: plantForm.care_guide || 'General care'
+      }
+
       if (editingPlant) {
-        await axios.post(`/api/plant/edit/${editingPlant.tracking.id}`, plantForm)
+        await axios.post(`/plant/edit/${editingPlant.tracking.id}`, payload)
         toast.success('Plant updated successfully!')
         setEditingPlant(null)
       } else {
-        await axios.post('/api/plant/add', plantForm)
+        await axios.post('/plant/add', payload)
         toast.success('Plant added successfully!')
       }
       setPlantForm({
@@ -97,14 +133,20 @@ const Garden = () => {
       setShowAddPlant(false)
       fetchPlants()
     } catch (error) {
-      toast.error('Error saving plant')
+      if (error?.response?.status === 401) {
+        toast.error('Please sign in first')
+        navigate('/login')
+        return
+      }
+      const msg = error.response?.data?.error || error.response?.data?.message || 'Error saving plant'
+      toast.error(msg)
     }
   }
 
   const deleteGarden = async (gardenId) => {
     if (window.confirm('Are you sure you want to delete this garden?')) {
       try {
-        await axios.post(`/api/garden/delete/${gardenId}`)
+        await axios.post(`/garden/delete/${gardenId}`)
         toast.success('Garden deleted successfully!')
         fetchGardens()
       } catch (error) {
@@ -116,7 +158,7 @@ const Garden = () => {
   const deletePlant = async (trackingId) => {
     if (window.confirm('Are you sure you want to delete this plant?')) {
       try {
-        await axios.post(`/api/plant/delete/${trackingId}`)
+        await axios.post(`/plant/delete/${trackingId}`)
         toast.success('Plant deleted successfully!')
         fetchPlants()
       } catch (error) {
@@ -144,9 +186,9 @@ const Garden = () => {
       environment: plantData.plant.environment,
       care_guide: plantData.plant.care_guide,
       ideal_soil_type: plantData.plant.ideal_soil_type,
-      watering_frequency: plantData.plant.watering_frequency,
-      fertilizing_frequency: plantData.plant.fertilizing_frequency,
-      pruning_frequency: plantData.plant.pruning_frequency,
+      watering_frequency: plantData.plant.watering_frequency ?? '',
+      fertilizing_frequency: plantData.plant.fertilizing_frequency ?? '',
+      pruning_frequency: plantData.plant.pruning_frequency ?? '',
       garden_id: plantData.garden.id,
       planting_date: plantData.tracking.planting_date
     })
@@ -265,11 +307,11 @@ const Garden = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Droplets className="h-4 w-4" />
-                    <span>Water: {plantData.plant.watering_frequency}</span>
+                    <span>Water: {plantData.plant.watering_frequency ?? 'n/a'} days</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Scissors className="h-4 w-4" />
-                    <span>Prune: {plantData.plant.pruning_frequency}</span>
+                    <span>Prune: {plantData.plant.pruning_frequency ?? 'n/a'} days</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Calendar className="h-4 w-4" />
@@ -433,37 +475,40 @@ const Garden = () => {
                     onChange={(e) => setPlantForm({...plantForm, care_guide: e.target.value})}
                     className="input-field"
                     rows="3"
+                    required
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Watering Frequency</label>
-                    <select
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Watering Frequency (days)</label>
+                    <input
+                      type="number"
+                      min="0"
                       value={plantForm.watering_frequency}
                       onChange={(e) => setPlantForm({...plantForm, watering_frequency: e.target.value})}
                       className="input-field"
-                    >
-                      <option value="">Select</option>
-                      <option value="daily">Daily</option>
-                      <option value="every_2_days">Every 2 days</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="biweekly">Bi-weekly</option>
-                    </select>
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Fertilizing Frequency</label>
-                    <select
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Fertilizing Frequency (days)</label>
+                    <input
+                      type="number"
+                      min="0"
                       value={plantForm.fertilizing_frequency}
                       onChange={(e) => setPlantForm({...plantForm, fertilizing_frequency: e.target.value})}
                       className="input-field"
-                    >
-                      <option value="">Select</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="biweekly">Bi-weekly</option>
-                      <option value="monthly">Monthly</option>
-                      <option value="seasonal">Seasonal</option>
-                    </select>
+                    />
                   </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Pruning Frequency (days)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={plantForm.pruning_frequency}
+                    onChange={(e) => setPlantForm({...plantForm, pruning_frequency: e.target.value})}
+                    className="input-field"
+                  />
                 </div>
                 <div className="flex space-x-4">
                   <button type="submit" className="btn-primary flex-1">

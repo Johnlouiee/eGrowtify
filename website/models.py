@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timezone
 
 db = SQLAlchemy()
 
@@ -19,8 +19,8 @@ class User(UserMixin, db.Model):
     subscribed = db.Column(db.Boolean, default=False)  # Add subscribed property
     email_notifications = db.Column(db.Boolean, default=True)  # Add email_notifications property
     learning_level = db.Column(db.String(20), default='beginner')  # Add learning_level property
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     @property
     def full_name(self):
@@ -48,7 +48,7 @@ class Admin(UserMixin, db.Model):
     full_name = db.Column(db.String(100), nullable=False)
     is_super_admin = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     last_login = db.Column(db.DateTime)
 
     def set_password(self, password):
@@ -82,7 +82,7 @@ class Garden(db.Model):
     garden_type = db.Column('GARDEN_TYPE', db.String(20), nullable=False)
     location_city = db.Column('LOCATION_CITY', db.String(100))
     location_country = db.Column('LOCATION_COUNTRY', db.String(100))
-    created_at = db.Column('CREATED_AT', db.DateTime, default=datetime.utcnow)
+    created_at = db.Column('CREATED_AT', db.DateTime, default=lambda: datetime.now(timezone.utc))
     # Relationship to PlantTracking
     plant_trackings = db.relationship('PlantTracking', backref='garden', cascade='all, delete')
 
