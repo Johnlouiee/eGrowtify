@@ -24,7 +24,6 @@ const Garden = () => {
   })
 
   const [plantForm, setPlantForm] = useState({
-    name: '',
     type: '',
     environment: '',
     care_guide: '',
@@ -181,7 +180,6 @@ const Garden = () => {
   const editPlant = (plantData) => {
     setEditingPlant(plantData)
     setPlantForm({
-      name: plantData.plant.name,
       type: plantData.plant.type,
       environment: plantData.plant.environment,
       care_guide: plantData.plant.care_guide,
@@ -404,16 +402,7 @@ const Garden = () => {
                 {editingPlant ? 'Edit Plant' : 'Add New Plant'}
               </h3>
               <form onSubmit={handlePlantSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Plant Name</label>
-                  <input
-                    type="text"
-                    value={plantForm.name}
-                    onChange={(e) => setPlantForm({...plantForm, name: e.target.value})}
-                    className="input-field"
-                    required
-                  />
-                </div>
+                {/* Plant name removed: backend will default to type if omitted */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Plant Type</label>
                   <select
@@ -441,7 +430,6 @@ const Garden = () => {
                     <option value="">Select Environment</option>
                     <option value="indoor">Indoor</option>
                     <option value="outdoor">Outdoor</option>
-                    <option value="greenhouse">Greenhouse</option>
                   </select>
                 </div>
                 <div>

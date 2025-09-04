@@ -9,9 +9,18 @@ const AIPlantRecognition = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisResult, setAnalysisResult] = useState(null)
   const [showCamera, setShowCamera] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const fileInputRef = useRef(null)
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
+
+  // Detect mobile to prioritize camera UX
+  React.useEffect(() => {
+    const ua = navigator.userAgent || ''
+    const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua) ||
+      (window.matchMedia && window.matchMedia('(max-width: 768px)').matches)
+    setIsMobile(mobile)
+  }, [])
 
   const handleImageUpload = (event) => {
     const file = event.target.files[0]
@@ -40,13 +49,53 @@ const AIPlantRecognition = () => {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+      if (!navigator.mediaDevices?.getUserMedia) {
+        toast.error('Camera not supported on this device/browser')
+        return
+      }
+
+      // Prefer back camera on mobile; fallback gracefully
+      const constraints = {
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints)
       if (videoRef.current) {
-        videoRef.current.srcObject = stream
+        const videoEl = videoRef.current
+        videoEl.srcObject = stream
+        videoEl.muted = true
+        // Ensure autoplay works on desktop and mobile
+        videoEl.setAttribute('playsinline', 'true')
         setShowCamera(true)
+        const playVideo = async () => {
+          try {
+            await videoEl.play()
+          } catch (e) {
+            // Some browsers require user gesture; show guidance
+            console.warn('Video play blocked, waiting for user interaction')
+          }
+        }
+        if (videoEl.readyState >= 2) {
+          playVideo()
+        } else {
+          videoEl.onloadedmetadata = () => playVideo()
+        }
       }
     } catch (error) {
-      toast.error('Unable to access camera')
+      if (!window.isSecureContext) {
+        toast.error('Camera requires HTTPS on mobile. Use https dev URL or upload a photo.')
+      } else if (error?.name === 'NotAllowedError') {
+        toast.error('Camera permission denied. Allow access in browser settings and retry.')
+      } else if (error?.name === 'NotFoundError') {
+        toast.error('No camera device found')
+      } else {
+        toast.error('Unable to access camera')
+      }
       console.error('Camera access error:', error)
     }
   }
@@ -70,32 +119,17 @@ const AIPlantRecognition = () => {
       const formData = new FormData()
       formData.append('image', selectedImage)
 
-      // Simulate AI analysis (replace with actual API call)
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Mock result - replace with actual API response
-      const mockResult = {
-        plant_name: 'Tomato Plant',
-        confidence: 94.5,
-        health_status: 'Healthy',
-        care_recommendations: {
-          watering: 'Water every 2-3 days, keeping soil moist but not soggy',
-          sunlight: 'Full sun (6-8 hours daily)',
-          temperature: '65-85°F (18-29°C)',
-          soil: 'Well-draining, rich soil with pH 6.0-6.8',
-          fertilizing: 'Fertilize every 2-3 weeks with balanced fertilizer'
-        },
-        common_issues: [
-          'Blossom end rot - caused by calcium deficiency',
-          'Early blight - fungal disease, remove affected leaves',
-          'Aphids - wash with soapy water or use neem oil'
-        ],
-        growth_stage: 'Flowering',
-        estimated_yield: '10-15 tomatoes per plant'
-      }
+      const { data } = await axios.post('/api/ai-recognition', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
 
-      setAnalysisResult(mockResult)
-      toast.success('Plant analysis completed!')
+      if (data && data.error) {
+        setAnalysisResult(null)
+        toast.error(typeof data.error === 'string' ? data.error : 'Unable to analyze image')
+      } else {
+        setAnalysisResult(data)
+        toast.success('Plant analysis completed!')
+      }
     } catch (error) {
       toast.error('Error analyzing plant image')
       console.error('Analysis error:', error)
@@ -194,25 +228,47 @@ const AIPlantRecognition = () => {
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   onChange={handleImageUpload}
                   className="hidden"
                 />
 
                 <div className="flex space-x-4">
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="btn-secondary flex items-center space-x-2"
-                  >
-                    <Upload className="h-4 w-4" />
-                    <span>Choose File</span>
-                  </button>
-                  <button
-                    onClick={startCamera}
-                    className="btn-secondary flex items-center space-x-2"
-                  >
-                    <Camera className="h-4 w-4" />
-                    <span>Use Camera</span>
-                  </button>
+                  {isMobile ? (
+                    <>
+                      <button
+                        onClick={startCamera}
+                        className="btn-primary flex items-center space-x-2 flex-1"
+                      >
+                        <Camera className="h-4 w-4" />
+                        <span>Use Camera</span>
+                      </button>
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="btn-secondary flex items-center space-x-2"
+                      >
+                        <Upload className="h-4 w-4" />
+                        <span>Upload</span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="btn-secondary flex items-center space-x-2"
+                      >
+                        <Upload className="h-4 w-4" />
+                        <span>Choose File</span>
+                      </button>
+                      <button
+                        onClick={startCamera}
+                        className="btn-secondary flex items-center space-x-2"
+                      >
+                        <Camera className="h-4 w-4" />
+                        <span>Use Camera</span>
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 {selectedImage && (

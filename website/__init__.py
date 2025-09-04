@@ -3,13 +3,16 @@ from flask_mysqldb import MySQL
 from flask_login import LoginManager
 from flask_cors import CORS
 from .models import db, User, Admin
+from dotenv import load_dotenv
+import os
 
 mysql = MySQL()
 login_manager = LoginManager()
 
 def create_app():
+    load_dotenv()
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'OPAW'
+    app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'OPAW')
 
     # Enable CORS for React frontend
     CORS(app, origins=['http://localhost:3000'], supports_credentials=True)
