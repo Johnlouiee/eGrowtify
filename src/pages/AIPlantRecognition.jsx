@@ -48,57 +48,77 @@ const AIPlantRecognition = () => {
   }
 
   const startCamera = async () => {
-    try {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        toast.error('Camera not supported on this device/browser')
-        return
-      }
+    // Toggle UI first so the <video> element exists, then effect will attach stream
+    setShowCamera(true)
+  }
 
-      // Prefer back camera on mobile; fallback gracefully
-      const constraints = {
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
-      }
+  // Start/attach camera stream when UI is shown
+  React.useEffect(() => {
+    if (!showCamera) return
+    let activeStream = null
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints)
-      if (videoRef.current) {
-        const videoEl = videoRef.current
-        videoEl.srcObject = stream
-        videoEl.muted = true
-        // Ensure autoplay works on desktop and mobile
-        videoEl.setAttribute('playsinline', 'true')
-        setShowCamera(true)
-        const playVideo = async () => {
-          try {
-            await videoEl.play()
-          } catch (e) {
-            // Some browsers require user gesture; show guidance
-            console.warn('Video play blocked, waiting for user interaction')
+    const enableCamera = async () => {
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          toast.error('Camera not supported on this device/browser')
+          setShowCamera(false)
+          return
+        }
+
+        const constraints = {
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: false
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints)
+        activeStream = stream
+        if (videoRef.current) {
+          const videoEl = videoRef.current
+          videoEl.srcObject = stream
+          videoEl.muted = true
+          videoEl.setAttribute('playsinline', 'true')
+          const playVideo = async () => {
+            try {
+              await videoEl.play()
+            } catch (e) {
+              console.warn('Video play blocked, waiting for user interaction')
+            }
+          }
+          if (videoEl.readyState >= 2) {
+            playVideo()
+          } else {
+            videoEl.onloadedmetadata = () => playVideo()
           }
         }
-        if (videoEl.readyState >= 2) {
-          playVideo()
+      } catch (error) {
+        if (!window.isSecureContext) {
+          toast.error('Camera requires HTTPS on mobile. Use https dev URL or upload a photo.')
+        } else if (error?.name === 'NotAllowedError') {
+          toast.error('Camera permission denied. Allow access in browser settings and retry.')
+        } else if (error?.name === 'NotFoundError') {
+          toast.error('No camera device found')
         } else {
-          videoEl.onloadedmetadata = () => playVideo()
+          toast.error('Unable to access camera')
         }
+        console.error('Camera access error:', error)
+        setShowCamera(false)
       }
-    } catch (error) {
-      if (!window.isSecureContext) {
-        toast.error('Camera requires HTTPS on mobile. Use https dev URL or upload a photo.')
-      } else if (error?.name === 'NotAllowedError') {
-        toast.error('Camera permission denied. Allow access in browser settings and retry.')
-      } else if (error?.name === 'NotFoundError') {
-        toast.error('No camera device found')
-      } else {
-        toast.error('Unable to access camera')
-      }
-      console.error('Camera access error:', error)
     }
-  }
+
+    enableCamera()
+
+    return () => {
+      try {
+        if (activeStream) {
+          activeStream.getTracks().forEach(t => t.stop())
+        }
+      } catch {}
+    }
+  }, [showCamera])
 
   const stopCamera = () => {
     if (videoRef.current && videoRef.current.srcObject) {
