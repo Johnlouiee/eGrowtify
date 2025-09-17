@@ -1,12 +1,28 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Menu, X, User, LogOut } from 'lucide-react'
+import { Menu, X, User, LogOut, Calendar, Star, Info, Settings, Heart, ChevronDown } from 'lucide-react'
 
 const Navbar = () => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const userMenuRef = useRef(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const handleLogout = async () => {
     try {
@@ -29,12 +45,16 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-              Home
-            </Link>
-            <Link to="/features" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-              Features
-            </Link>
+            {!user && (
+              <>
+                <Link to="/" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                  Home
+                </Link>
+                <Link to="/features" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                  Features
+                </Link>
+              </>
+            )}
             
             {user ? (
               <>
@@ -43,7 +63,7 @@ const Navbar = () => {
                     Admin Dashboard
                   </Link>
                 ) : (
-                  <Link to="/user/dashboard" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                  <Link to="/dashboard" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                     Dashboard
                   </Link>
                 )}
@@ -56,19 +76,74 @@ const Navbar = () => {
                 <Link to="/smart-alerts" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                   Alerts
                 </Link>
-                <Link to="/seasonal-planning" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                  Planning
-                </Link>
-                <Link to="/profile" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                  Profile
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
-                </button>
+                
+                {/* User Menu Dropdown */}
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center space-x-1 text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>Menu</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+                  
+                  {isUserMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border">
+                      <Link
+                        to="/seasonal-planning"
+                        className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <Calendar className="h-4 w-4" />
+                        <span>Planning</span>
+                      </Link>
+                      <Link
+                        to="/subscription"
+                        className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <Star className="h-4 w-4" />
+                        <span>Subscription</span>
+                      </Link>
+                      <Link
+                        to="/about"
+                        className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <Info className="h-4 w-4" />
+                        <span>About</span>
+                      </Link>
+                      <Link
+                        to="/profile"
+                        className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <Settings className="h-4 w-4" />
+                        <span>Manage Account</span>
+                      </Link>
+                      <Link
+                        to="/feedback"
+                        className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <Heart className="h-4 w-4" />
+                        <span>Feedback</span>
+                      </Link>
+                      <hr className="my-1" />
+                      <button
+                        onClick={() => {
+                          handleLogout()
+                          setIsUserMenuOpen(false)
+                        }}
+                        className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <>
@@ -98,20 +173,24 @@ const Navbar = () => {
       {isMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
-            <Link
-              to="/"
-              className="text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              to="/features"
-              className="text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Features
-            </Link>
+            {!user && (
+              <>
+                <Link
+                  to="/"
+                  className="text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Home
+                </Link>
+                <Link
+                  to="/features"
+                  className="text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Features
+                </Link>
+              </>
+            )}
             
             {user ? (
               <>
@@ -125,7 +204,7 @@ const Navbar = () => {
                   </Link>
                 ) : (
                   <Link
-                    to="/user/dashboard"
+                    to="/dashboard"
                     className="text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
                     onClick={() => setIsMenuOpen(false)}
                   >
@@ -153,30 +232,63 @@ const Navbar = () => {
                 >
                   Smart Alerts
                 </Link>
-                <Link
-                  to="/seasonal-planning"
-                  className="text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Seasonal Planning
-                </Link>
-                <Link
-                  to="/profile"
-                  className="text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Profile
-                </Link>
-                <button
-                  onClick={() => {
-                    handleLogout()
-                    setIsMenuOpen(false)
-                  }}
-                  className="text-gray-700 hover:text-primary-600 block w-full text-left px-3 py-2 rounded-md text-base font-medium flex items-center space-x-2"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
-                </button>
+                
+                {/* Mobile Menu Items */}
+                <div className="border-t pt-2 mt-2">
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2">
+                    Menu
+                  </div>
+                  <Link
+                    to="/seasonal-planning"
+                    className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Calendar className="h-4 w-4" />
+                    <span>Planning</span>
+                  </Link>
+                  <Link
+                    to="/subscription"
+                    className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Star className="h-4 w-4" />
+                    <span>Subscription</span>
+                  </Link>
+                  <Link
+                    to="/about"
+                    className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Info className="h-4 w-4" />
+                    <span>About</span>
+                  </Link>
+                  <Link
+                    to="/profile"
+                    className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span>Manage Account</span>
+                  </Link>
+                  <Link
+                    to="/feedback"
+                    className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Heart className="h-4 w-4" />
+                    <span>Feedback</span>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout()
+                      setIsMenuOpen(false)
+                    }}
+                    className="flex items-center space-x-2 text-red-600 hover:text-red-700 block w-full text-left px-3 py-2 rounded-md text-base font-medium"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
+                  </button>
+                </div>
               </>
             ) : (
               <>

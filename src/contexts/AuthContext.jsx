@@ -16,6 +16,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isPremium, setIsPremium] = useState(false)
 
   // Configure axios defaults
   axios.defaults.baseURL = '/api'
@@ -31,6 +32,7 @@ export const AuthProvider = ({ children }) => {
       if (response.data.authenticated) {
         setUser(response.data.user)
         setIsAdmin(response.data.is_admin)
+        setIsPremium(response.data.is_premium || false)
       }
     } catch (error) {
       console.log('Not authenticated')
@@ -42,11 +44,22 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await axios.post('/auth/login', { email, password })
-      setUser(response.data.user)
-      setIsAdmin(response.data.is_admin)
-      toast.success('Login successful!')
-      return { success: true }
+      console.log('Login response:', response.data) // Debug log
+      
+      // Check if login was successful
+      if (response.data.success) {
+        setUser(response.data.user)
+        setIsAdmin(response.data.is_admin)
+        setIsPremium(response.data.is_premium || false)
+        console.log('User set to:', response.data.user) // Debug log
+        toast.success('Login successful!')
+        return { success: true }
+      } else {
+        toast.error(response.data.message || 'Login failed')
+        return { success: false, message: response.data.message }
+      }
     } catch (error) {
+      console.error('Login error details:', error) // Debug log
       const message = error.response?.data?.message || 'Login failed'
       toast.error(message)
       return { success: false, message }
@@ -58,6 +71,7 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.post('/auth/register', userData)
       setUser(response.data.user)
       setIsAdmin(false)
+      setIsPremium(false) // New users start with free plan
       toast.success('Registration successful!')
       return { success: true }
     } catch (error) {
@@ -72,6 +86,7 @@ export const AuthProvider = ({ children }) => {
       await axios.post('/auth/logout')
       setUser(null)
       setIsAdmin(false)
+      setIsPremium(false)
       toast.success('Logged out successfully')
     } catch (error) {
       console.error('Logout error:', error)
@@ -95,6 +110,7 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     isAdmin,
+    isPremium,
     login,
     register,
     logout,

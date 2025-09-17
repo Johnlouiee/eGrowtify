@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
@@ -11,8 +11,15 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   
-  const { login } = useAuth()
+  const { login, user } = useAuth()
   const navigate = useNavigate()
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard')
+    }
+  }, [user, navigate])
 
   const handleChange = (e) => {
     setFormData({
@@ -27,8 +34,18 @@ const Login = () => {
     
     try {
       const result = await login(formData.email, formData.password)
+      console.log('Login result:', result) // Debug log
       if (result.success) {
-        navigate('/dashboard')
+        console.log('Login successful, navigating to dashboard') // Debug log
+        // Try multiple navigation methods
+        try {
+          navigate('/dashboard')
+        } catch (navError) {
+          console.log('Navigation error, trying alternative:', navError)
+          window.location.href = '/dashboard'
+        }
+      } else {
+        console.log('Login failed:', result.message)
       }
     } catch (error) {
       console.error('Login error:', error)

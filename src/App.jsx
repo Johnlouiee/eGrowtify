@@ -18,6 +18,7 @@ import Subscription from './pages/Subscription'
 import AIPlantRecognition from './pages/AIPlantRecognition'
 import SmartAlerts from './pages/SmartAlerts'
 import SeasonalPlanning from './pages/SeasonalPlanning'
+import About from './pages/About'
 
 // Components
 import Navbar from './components/Navbar'
@@ -36,6 +37,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/features" element={<Features />} />
+              <Route path="/about" element={<About />} />
               
               {/* Protected User Routes */}
               <Route path="/user/dashboard" element={
