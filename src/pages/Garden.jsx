@@ -10,6 +10,7 @@ const Garden = () => {
   const navigate = useNavigate()
   const [gardens, setGardens] = useState([])
   const [plants, setPlants] = useState([])
+  const [plantSearch, setPlantSearch] = useState('')
   const [showAddGarden, setShowAddGarden] = useState(false)
   const [showAddPlant, setShowAddPlant] = useState(false)
   const [editingGarden, setEditingGarden] = useState(null)
@@ -273,51 +274,103 @@ const Garden = () => {
 
         {/* Plants Section */}
         <div className="mb-12">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">My Plants</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {plants.map((plantData, index) => (
-              <div key={index} className="card">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-semibold text-gray-900">{plantData.plant.name}</h3>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => editPlant(plantData)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => deletePlant(plantData.tracking.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex items-center space-x-2">
-                    <Leaf className="h-4 w-4" />
-                    <span>{plantData.plant.type}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Sun className="h-4 w-4" />
-                    <span>{plantData.plant.environment}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Droplets className="h-4 w-4" />
-                    <span>Water: {plantData.plant.watering_frequency ?? 'n/a'} days</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Scissors className="h-4 w-4" />
-                    <span>Prune: {plantData.plant.pruning_frequency ?? 'n/a'} days</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4" />
-                    <span>Planted: {new Date(plantData.tracking.planting_date).toLocaleDateString()}</span>
-                  </div>
-                </div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold text-gray-900">My Plants</h2>
+            <div className="w-full max-w-xs">
+              <input
+                type="text"
+                value={plantSearch}
+                onChange={(e) => setPlantSearch(e.target.value)}
+                placeholder="Search plants, gardens, or environment..."
+                className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400"
+              />
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 px-6 py-3 border-b border-gray-200">
+              <div className="grid grid-cols-12 text-xs font-semibold text-gray-600">
+                <div className="col-span-3">Plant</div>
+                <div className="col-span-2">Garden</div>
+                <div className="col-span-2">Environment</div>
+                <div className="col-span-2">Watering (days)</div>
+                <div className="col-span-2">Pruning (days)</div>
+                <div className="col-span-1 text-right">Actions</div>
               </div>
-            ))}
+            </div>
+            <ul className="divide-y divide-gray-200">
+              {plants
+                .filter((p) => {
+                  const q = plantSearch.trim().toLowerCase()
+                  if (!q) return true
+                  return (
+                    (p.plant.name || '').toLowerCase().includes(q) ||
+                    (p.garden?.name || '').toLowerCase().includes(q) ||
+                    (p.plant.environment || '').toLowerCase().includes(q) ||
+                    (p.plant.type || '').toLowerCase().includes(q)
+                  )
+                })
+                .map((plantData, index) => (
+                <li key={index} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                  <div className="grid grid-cols-12 items-center gap-2">
+                    <div className="col-span-3 flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
+                        <Leaf className="h-5 w-5 text-green-700" />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-gray-900 leading-none">{plantData.plant.name}</div>
+                        <div className="text-xs text-gray-500 capitalize">{plantData.plant.type}</div>
+                      </div>
+                    </div>
+                    <div className="col-span-2 text-sm text-gray-700 truncate">{plantData.garden?.name || '—'}</div>
+                    <div className="col-span-2">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
+                        <Sun className="h-3 w-3" /> {plantData.plant.environment}
+                      </span>
+                    </div>
+                    <div className="col-span-2 text-sm text-gray-700">
+                      <div className="flex items-center gap-2">
+                        <Droplets className="h-4 w-4 text-blue-600" />
+                        <span>{plantData.plant.watering_frequency ?? 'n/a'}</span>
+                      </div>
+                    </div>
+                    <div className="col-span-2 text-sm text-gray-700">
+                      <div className="flex items-center gap-2">
+                        <Scissors className="h-4 w-4 text-rose-600" />
+                        <span>{plantData.plant.pruning_frequency ?? 'n/a'}</span>
+                      </div>
+                    </div>
+                    <div className="col-span-1">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => editPlant(plantData)}
+                          className="p-2 rounded-lg text-blue-600 hover:bg-blue-50"
+                          title="Edit"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => deletePlant(plantData.tracking.id)}
+                          className="p-2 rounded-lg text-red-600 hover:bg-red-50"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className="mt-1 text-[10px] text-gray-400 text-right">
+                        <span className="inline-flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(plantData.tracking.planting_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+              {plants.length === 0 && (
+                <li className="px-6 py-12 text-center text-gray-500">No plants yet. Add your first plant to get started.</li>
+              )}
+            </ul>
           </div>
         </div>
 

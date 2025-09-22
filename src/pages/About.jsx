@@ -120,65 +120,36 @@ const About = () => {
           </div>
         </div>
 
-        {/* Stats Section */}
-        <div className="mb-16 bg-primary-600 rounded-2xl p-8 text-white">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            Our Impact
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-4xl font-bold mb-2">10,000+</div>
-              <div className="text-primary-100">Active Gardeners</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">50,000+</div>
-              <div className="text-primary-100">Plants Identified</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">95%</div>
-              <div className="text-primary-100">Success Rate</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">24/7</div>
-              <div className="text-primary-100">Support Available</div>
-            </div>
-          </div>
-        </div>
+        
 
         {/* Team Section */}
         <div className="mb-16">
           <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">
             Meet Our Team
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="card text-center">
               <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-4"></div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Dr. Sarah Chen</h3>
-              <p className="text-primary-600 mb-3">Chief Horticulturist</p>
-              <p className="text-gray-600">
-                PhD in Plant Science with 15+ years of experience in sustainable 
-                agriculture and urban gardening.
-              </p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Justin Morales</h3>
+              <p className="text-primary-600 mb-3">Project Manager</p>
             </div>
 
             <div className="card text-center">
               <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-4"></div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Marcus Rodriguez</h3>
-              <p className="text-primary-600 mb-3">AI Technology Lead</p>
-              <p className="text-gray-600">
-                Machine learning expert specializing in computer vision and 
-                plant identification algorithms.
-              </p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">John Louie N. Purisima</h3>
+              <p className="text-primary-600 mb-3">Database Manager</p>
             </div>
 
             <div className="card text-center">
               <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-4"></div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Emily Johnson</h3>
-              <p className="text-primary-600 mb-3">User Experience Director</p>
-              <p className="text-gray-600">
-                Passionate about creating intuitive interfaces that make 
-                gardening accessible to everyone.
-              </p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">John Aries Rizada</h3>
+              <p className="text-primary-600 mb-3">Developer</p>
+            </div>
+
+            <div className="card text-center">
+              <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-4"></div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Nathaniel Ron Singco</h3>
+              <p className="text-primary-600 mb-3">UI/UX Designer</p>
             </div>
           </div>
         </div>

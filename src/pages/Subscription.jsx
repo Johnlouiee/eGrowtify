@@ -1,9 +1,17 @@
-import React from 'react'
-import { Check, X, Star, Leaf, Droplets, Zap, Crown, ArrowRight } from 'lucide-react'
+import React, { useMemo, useState } from 'react'
+import { Check, X, Star, Leaf, Droplets, Zap, Crown, ArrowRight, CreditCard, Wallet, Smartphone, MoreHorizontal } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 const Subscription = () => {
   const { isPremium } = useAuth()
+
+  const [showCheckout, setShowCheckout] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState('card')
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+
+  const priceDisplay = useMemo(() => ({ amount: '9.99', currency: 'USD', plan: 'Premium Monthly' }), [])
 
   const freeFeatures = {
     plants: [
@@ -68,7 +76,7 @@ const Subscription = () => {
                 )}
               </div>
               {!isPremium && (
-                <button className="btn-primary flex items-center space-x-2">
+                <button onClick={() => setShowCheckout(true)} className="btn-primary flex items-center space-x-2">
                   <span>Upgrade Now</span>
                   <ArrowRight className="h-4 w-4" />
                 </button>
@@ -265,13 +273,137 @@ const Subscription = () => {
                   <span className="text-sm text-gray-700">Priority customer support</span>
                 </li>
               </ul>
-              <button className="btn-primary w-full flex items-center justify-center space-x-2">
+              <button onClick={() => setShowCheckout(true)} className="btn-primary w-full flex items-center justify-center space-x-2">
                 <span>Upgrade to Premium</span>
                 <Zap className="h-4 w-4" />
               </button>
             </div>
           </div>
         </div>
+
+        {/* Checkout Modal */}
+        {showCheckout && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black bg-opacity-40" onClick={() => setShowCheckout(false)}></div>
+            <div className="relative bg-white w-full max-w-xl mx-4 rounded-2xl shadow-xl border border-gray-200">
+              <div className="p-6 border-b">
+                <h3 className="text-xl font-bold text-gray-900">Upgrade to {priceDisplay.plan}</h3>
+                <p className="text-sm text-gray-600 mt-1">${priceDisplay.amount} per month, cancel anytime</p>
+              </div>
+              <div className="p-6 space-y-6">
+                {/* Payment Method Selector */}
+                <div>
+                  <div className="text-sm font-medium text-gray-900 mb-3">Select payment method</div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <button onClick={() => setPaymentMethod('card')} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${paymentMethod === 'card' ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 bg-white'}`}>
+                      <CreditCard className="h-4 w-4" />
+                      <span>Card</span>
+                    </button>
+                    <button onClick={() => setPaymentMethod('gcash')} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${paymentMethod === 'gcash' ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 bg-white'}`}>
+                      <Wallet className="h-4 w-4" />
+                      <span>GCash</span>
+                    </button>
+                    <button onClick={() => setPaymentMethod('paymaya')} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${paymentMethod === 'paymaya' ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 bg-white'}`}>
+                      <Smartphone className="h-4 w-4" />
+                      <span>PayMaya</span>
+                    </button>
+                    <button onClick={() => setPaymentMethod('other')} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${paymentMethod === 'other' ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 bg-white'}`}>
+                      <MoreHorizontal className="h-4 w-4" />
+                      <span>Others</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Dynamic Payment Fields */}
+                {paymentMethod === 'card' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Cardholder Name</label>
+                      <input type="text" placeholder="Jane D. Doe" className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400" />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
+                        <input type="text" placeholder="4242 4242 4242 4242" className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Expiry</label>
+                          <input type="text" placeholder="MM/YY" className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">CVC</label>
+                          <input type="text" placeholder="123" className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {paymentMethod === 'gcash' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">GCash Mobile Number</label>
+                      <input type="tel" placeholder="09XX XXX XXXX" className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400" />
+                    </div>
+                    <p className="text-xs text-gray-500">Youll be redirected to GCash to authorize the payment.</p>
+                  </div>
+                )}
+
+                {paymentMethod === 'paymaya' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">PayMaya Mobile Number</label>
+                      <input type="tel" placeholder="09XX XXX XXXX" className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400" />
+                    </div>
+                    <p className="text-xs text-gray-500">Youll be redirected to PayMaya to authorize the payment.</p>
+                  </div>
+                )}
+
+                {paymentMethod === 'other' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Select Provider</label>
+                      <select className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400">
+                        <option value="maya-bank">Maya Bank</option>
+                        <option value="grabpay">GrabPay</option>
+                        <option value="paypal">PayPal</option>
+                        <option value="bank-transfer">Bank Transfer</option>
+                      </select>
+                    </div>
+                    <p className="text-xs text-gray-500">Well show the right steps after you choose a provider.</p>
+                  </div>
+                )}
+
+                {error && (
+                  <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
+                )}
+                {success && (
+                  <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">Payment successful! Your premium will be activated shortly.</div>
+                )}
+              </div>
+              <div className="p-6 border-t flex items-center justify-end gap-3">
+                <button disabled={isProcessing} onClick={() => setShowCheckout(false)} className="btn-secondary">Cancel</button>
+                <button disabled={isProcessing} onClick={async () => {
+                  try {
+                    setIsProcessing(true)
+                    setError('')
+                    setSuccess(false)
+                    // Mock checkout call
+                    await new Promise(r => setTimeout(r, 1200))
+                    setSuccess(true)
+                  } catch (e) {
+                    setError('Something went wrong. Please try again.')
+                  } finally {
+                    setIsProcessing(false)
+                  }
+                }} className={`btn-primary ${isProcessing ? 'opacity-70 cursor-not-allowed' : ''}`}>
+                  {isProcessing ? 'Processing…' : `Pay $${priceDisplay.amount}`}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* FAQ Section */}
         <div className="card">

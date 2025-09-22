@@ -20,6 +20,9 @@ import AIPlantRecognition from './pages/AIPlantRecognition'
 import SmartAlerts from './pages/SmartAlerts'
 import SeasonalPlanning from './pages/SeasonalPlanning'
 import About from './pages/About'
+import BeginnerLearningPath from './pages/BeginnerLearningPath'
+import IntermediateLearningPath from './pages/IntermediateLearningPath'
+import ExpertLearningPath from './pages/ExpertLearningPath'
 
 // Components
 import Navbar from './components/Navbar'
@@ -40,6 +43,21 @@ function App() {
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/features" element={<Features />} />
               <Route path="/about" element={<About />} />
+              <Route path="/learning/beginner" element={
+                <PrivateRoute>
+                  <BeginnerLearningPath />
+                </PrivateRoute>
+              } />
+              <Route path="/learning/intermediate" element={
+                <PrivateRoute>
+                  <IntermediateLearningPath />
+                </PrivateRoute>
+              } />
+              <Route path="/learning/expert" element={
+                <PrivateRoute>
+                  <ExpertLearningPath />
+                </PrivateRoute>
+              } />
               
               {/* Protected User Routes */}
               <Route path="/user/dashboard" element={

@@ -115,10 +115,21 @@ const UserDashboard = () => {
       }
       return
     }
-    
-    // Navigate to learning path or show learning content
+
+    // Navigate to learning path content
+    if (path.id === 'beginner') {
+      window.location.href = '/learning/beginner'
+      return
+    }
+    if (path.id === 'intermediate' && path.isAccessible) {
+      window.location.href = '/learning/intermediate'
+      return
+    }
+    if (path.id === 'expert' && path.isAccessible) {
+      window.location.href = '/learning/expert'
+      return
+    }
     toast.success(`Starting ${path.title} learning path!`)
-    // Here you would navigate to the actual learning content
   }
 
   const fetchDashboardData = async () => {
