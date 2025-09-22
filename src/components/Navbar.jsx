@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Menu, X, User, LogOut, Calendar, Star, Info, Settings, Heart, ChevronDown } from 'lucide-react'
+import { Menu, X, User, LogOut, Calendar, Star, Info, Settings, Heart, ChevronDown, Bell } from 'lucide-react'
 
 const Navbar = () => {
   const { user, logout } = useAuth()
@@ -68,13 +68,17 @@ const Navbar = () => {
                   </Link>
                 )}
                 <Link to="/garden" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                  Garden
+                  My Plants
                 </Link>
                 <Link to="/ai-recognition" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                   AI Recognition
                 </Link>
-                <Link to="/smart-alerts" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                <Link to="/smart-alerts" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1">
+                  <Bell className="h-4 w-4" />
                   Alerts
+                </Link>
+                <Link to="/seasonal-planning" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                  Seasonal Planning
                 </Link>
                 
                 {/* User Menu Dropdown */}
@@ -84,7 +88,7 @@ const Navbar = () => {
                     className="flex items-center space-x-1 text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
                   >
                     <User className="h-4 w-4" />
-                    <span>Menu</span>
+                    <span>Profile</span>
                     <ChevronDown className="h-4 w-4" />
                   </button>
                   
@@ -119,8 +123,8 @@ const Navbar = () => {
                         className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        <Settings className="h-4 w-4" />
-                        <span>Manage Account</span>
+                        <User className="h-4 w-4" />
+                        <span>Profile</span>
                       </Link>
                       <Link
                         to="/feedback"
@@ -216,7 +220,7 @@ const Navbar = () => {
                   className="text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Garden
+                  My Plants
                 </Link>
                 <Link
                   to="/ai-recognition"
@@ -231,6 +235,13 @@ const Navbar = () => {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Smart Alerts
+                </Link>
+                <Link
+                  to="/seasonal-planning"
+                  className="text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Seasonal Planning
                 </Link>
                 
                 {/* Mobile Menu Items */}

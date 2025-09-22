@@ -98,8 +98,26 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (profileData) => {
     try {
-      const response = await axios.put('/auth/profile', profileData)
-      setUser(response.data.user)
+      // PUT to backend route: /profile (not /auth/profile)
+      const putResponse = await axios.put('/profile', profileData)
+      if (!putResponse.data?.success) {
+        const msg = putResponse.data?.message || 'Profile update failed'
+        toast.error(msg)
+        return { success: false, message: msg }
+      }
+
+      // Fetch the latest user snapshot and attach avatar path from localStorage if present
+      const getResponse = await axios.get('/profile')
+      const updatedUser = getResponse.data?.user
+      if (updatedUser) {
+        try {
+          const avatarPath = localStorage.getItem('profilePhotoPath')
+          if (avatarPath) {
+            updatedUser.avatar_path = avatarPath
+          }
+        } catch {}
+        setUser(updatedUser)
+      }
       toast.success('Profile updated successfully')
       return { success: true }
     } catch (error) {

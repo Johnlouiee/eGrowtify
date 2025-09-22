@@ -5,7 +5,7 @@ import {
   Leaf, BarChart3, Camera, Settings, Plus, Bell, Calendar, 
   BookOpen, TrendingUp, Users, Star, MapPin, Droplets, 
   Scissors, Sun, Thermometer, AlertCircle, CheckCircle,
-  Play, Award, Target, Clock, Heart, Zap, Lock, Crown
+  Play, Award, Target, Clock, Heart, Zap, Lock, Crown, User
 } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
@@ -80,10 +80,10 @@ const UserDashboard = () => {
       color: 'bg-purple-500'
     },
     {
-      title: 'My Garden',
-      description: 'Manage your plants and gardens',
+      title: 'Photo Capture',
+      description: 'Open AI camera to scan plants & soil',
       icon: Leaf,
-      path: '/garden',
+      path: '/ai-recognition',
       color: 'bg-green-500'
     },
     {
@@ -174,6 +174,29 @@ const UserDashboard = () => {
     return notifications.filter(n => n.urgent).length
   }
 
+  const getProfilePhoto = () => {
+    try {
+      return localStorage.getItem('profilePhotoPath') || null
+    } catch {
+      return null
+    }
+  }
+
+  // Update avatar in header when profile photo is changed in Profile page
+  useEffect(() => {
+    const handler = (e) => {
+      try {
+        const path = (e && e.detail && e.detail.path) || localStorage.getItem('profilePhotoPath')
+        if (path) {
+          // Trigger rerender by updating a dummy state or via forceful read
+          setNotifications((n) => [...n])
+        }
+      } catch {}
+    }
+    window.addEventListener('profilePhotoUpdated', handler)
+    return () => window.removeEventListener('profilePhotoUpdated', handler)
+  }, [])
+
   const getTotalPlants = () => {
     return plants.length
   }
@@ -222,76 +245,23 @@ const UserDashboard = () => {
           </p>
           </div>
           <div className="flex items-center space-x-4">
-            <Link
-              to="/smart-alerts"
-              className="relative p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
-            >
-              <Bell className="h-6 w-6 text-gray-600" />
-              {getUrgentNotifications() > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {getUrgentNotifications()}
-                </span>
+            <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+              {getProfilePhoto() ? (
+                <img src={`/${getProfilePhoto()}`} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <User className="h-6 w-6 text-gray-500" />
               )}
-            </Link>
+            </div>
             <Link
               to="/profile"
-              className="p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
+              className="px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-700 hover:bg-gray-50"
             >
-              <Settings className="h-6 w-6 text-gray-600" />
+              Edit Profile
             </Link>
           </div>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="card">
-            <div className="flex items-center">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <Leaf className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Plants</p>
-                <p className="text-2xl font-bold text-gray-900">{getTotalPlants()}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="card">
-            <div className="flex items-center">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <CheckCircle className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Healthy Plants</p>
-                <p className="text-2xl font-bold text-gray-900">{getHealthyPlants()}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="card">
-            <div className="flex items-center">
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <AlertCircle className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Needs Attention</p>
-                <p className="text-2xl font-bold text-gray-900">{getNeedsAttention()}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="card">
-            <div className="flex items-center">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <Bell className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Notifications</p>
-                <p className="text-2xl font-bold text-gray-900">{notifications.length}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
@@ -420,35 +390,8 @@ const UserDashboard = () => {
             </div>
           </div>
 
-          {/* Quick Stats & Notifications */}
+          {/* Right column */}
           <div className="space-y-6">
-            {/* Notifications Summary */}
-        <div className="card">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
-                <Link to="/smart-alerts" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-                  View All
-                </Link>
-              </div>
-              <div className="space-y-3">
-                {notifications.slice(0, 3).map((notification) => (
-                  <div key={notification.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <div className={`w-2 h-2 rounded-full mt-2 ${notification.urgent ? 'bg-red-500' : 'bg-blue-500'}`}></div>
-              <div className="flex-1">
-                      <p className="text-sm text-gray-900">{notification.message}</p>
-                      <p className="text-xs text-gray-500 mt-1">{notification.type}</p>
-                    </div>
-                  </div>
-                ))}
-                {notifications.length === 0 && (
-                  <div className="text-center py-4">
-                    <Bell className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">No notifications</p>
-                  </div>
-                )}
-              </div>
-            </div>
-            
             {/* Weather & Seasonal Info */}
             <div className="card">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Today's Garden</h3>
@@ -480,14 +423,13 @@ const UserDashboard = () => {
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">My Plants</h2>
-                <p className="text-sm text-gray-500 mt-1">Track your garden's progress</p>
+                <p className="text-sm text-gray-500 mt-1">Your current plants</p>
               </div>
               <Link
                 to="/garden"
-                className="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+                className="text-primary-600 hover:text-primary-700 text-sm font-medium"
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Plant
+                View All →
               </Link>
             </div>
             <div className="space-y-4">
@@ -523,14 +465,8 @@ const UserDashboard = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                          plantData.plant?.health_status === 'healthy' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {plantData.plant?.health_status || 'Unknown'}
-                        </span>
+                      <div className="text-right text-xs text-gray-500">
+                        Planted {new Date(plantData.tracking?.planting_date).toLocaleDateString()}
                       </div>
                     </div>
                   </div>
@@ -542,17 +478,12 @@ const UserDashboard = () => {
                     <Leaf className="h-10 w-10 text-gray-400" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">No plants yet</h3>
-                  <p className="text-gray-600 mb-4">Start your gardening journey by adding your first plant</p>
-                  <Link
-                    to="/garden"
-                    className="inline-flex items-center px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
-                  >
-                    <Plus className="h-5 w-5 mr-2" />
-                    Add Your First Plant
-                  </Link>
+                  <p className="text-gray-600">Your added plants will appear here</p>
                 </div>
               )}
             </div>
+
+            
           </div>
 
           {/* Seasonal Gardening Tips */}

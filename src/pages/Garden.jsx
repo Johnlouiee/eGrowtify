@@ -23,6 +23,13 @@ const Garden = () => {
     location_city: '',
     location_country: ''
   })
+  const countryToCities = {
+    Philippines: ['Manila', 'Quezon City', 'Cebu City', 'Davao City', 'Baguio'],
+    USA: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Seattle'],
+    Canada: ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Ottawa'],
+    UK: ['London', 'Manchester', 'Birmingham', 'Leeds', 'Bristol'],
+    Australia: ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide']
+  }
 
   const [plantForm, setPlantForm] = useState({
     type: '',
@@ -409,22 +416,35 @@ const Garden = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                  <input
-                    type="text"
-                    value={gardenForm.location_city}
-                    onChange={(e) => setGardenForm({...gardenForm, location_city: e.target.value})}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                  <select
+                    value={gardenForm.location_country}
+                    onChange={(e) => {
+                      const country = e.target.value
+                      const defaultCity = country ? (countryToCities[country]?.[0] || '') : ''
+                      setGardenForm({ ...gardenForm, location_country: country, location_city: defaultCity })
+                    }}
                     className="input-field"
-                  />
+                  >
+                    <option value="">Select Country</option>
+                    {Object.keys(countryToCities).map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-                  <input
-                    type="text"
-                    value={gardenForm.location_country}
-                    onChange={(e) => setGardenForm({...gardenForm, location_country: e.target.value})}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                  <select
+                    value={gardenForm.location_city}
+                    onChange={(e) => setGardenForm({ ...gardenForm, location_city: e.target.value })}
                     className="input-field"
-                  />
+                    disabled={!gardenForm.location_country}
+                  >
+                    <option value="">{gardenForm.location_country ? 'Select City' : 'Select a country first'}</option>
+                    {(countryToCities[gardenForm.location_country] || []).map((city) => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex space-x-4">
                   <button type="submit" className="btn-primary flex-1">

@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request, flash, redirect, url_for
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash
+from werkzeug.utils import secure_filename
 from .models import db, User, Admin
 from .email_service import send_email_verification
 from datetime import datetime
@@ -375,20 +376,59 @@ def profile():
         })
     
     elif request.method == 'PUT':
-        data = request.get_json()
-        
+        data = request.get_json() or {}
+
         try:
-            if 'full_name' in data:
-                current_user.full_name = data['full_name']
-            if 'email' in data:
+            # Support "full_name" by splitting into firstname/lastname
+            if 'full_name' in data and data['full_name'] is not None:
+                full_name = str(data['full_name']).strip()
+                if full_name:
+                    parts = full_name.split(' ', 1)
+                    current_user.firstname = parts[0]
+                    current_user.lastname = parts[1] if len(parts) > 1 else ''
+
+            # Allow updating email
+            if 'email' in data and data['email']:
                 current_user.email = data['email']
+
+            # Map phone to contact column
             if 'phone' in data:
-                current_user.contact = data['phone']
-            
+                current_user.contact = data['phone'] or ''
+
             db.session.commit()
-            return jsonify({"success": True, "message": "Profile updated successfully!"})
+            return jsonify({
+                "success": True,
+                "message": "Profile updated successfully!",
+                "user": {
+                    "id": current_user.id,
+                    "email": current_user.email,
+                    "full_name": current_user.full_name,
+                    "phone": current_user.contact,
+                    "role": current_user.role,
+                    "is_active": current_user.is_active
+                }
+            })
         except Exception as e:
             db.session.rollback()
             return jsonify({"success": False, "message": "An error occurred while updating profile."}), 500
+
+@auth.route('/profile/photo', methods=['POST'])
+@login_required
+def upload_profile_photo():
+    if 'photo' not in request.files:
+        return jsonify({"success": False, "message": "No photo provided"}), 400
+    file = request.files['photo']
+    if file.filename == '':
+        return jsonify({"success": False, "message": "Empty filename"}), 400
+    try:
+        filename = secure_filename(file.filename)
+        upload_dir = os.path.join('uploads', 'profiles')
+        os.makedirs(upload_dir, exist_ok=True)
+        path = os.path.join(upload_dir, f"user_{current_user.id}_{filename}")
+        file.save(path)
+        # In a real app, you would store this path/url in the DB
+        return jsonify({"success": True, "message": "Photo uploaded", "path": path})
+    except Exception as e:
+        return jsonify({"success": False, "message": "Upload failed"}), 500
 
 # Add more API endpoints as needed...

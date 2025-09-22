@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { User, Mail, Phone, Eye, EyeOff, Lock, Save, Edit } from 'lucide-react'
+import { User, Mail, Phone, Eye, EyeOff, Lock, Save, Edit, Upload } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
@@ -22,15 +22,43 @@ const Profile = () => {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [photoPreview, setPhotoPreview] = useState(null)
+  const [photoFile, setPhotoFile] = useState(null)
 
   useEffect(() => {
-    if (user) {
-      setProfileData({
-        full_name: user.full_name || '',
-        email: user.email || '',
-        phone: user.phone || ''
-      })
+    const loadProfile = async () => {
+      if (!user) return
+      try {
+        // Prefer backend snapshot to ensure phone/contact is accurate
+        const resp = await axios.get('/profile')
+        const u = resp.data?.user || {}
+        setProfileData({
+          full_name: u.full_name ?? user.full_name ?? '',
+          email: u.email ?? user.email ?? '',
+          phone: u.phone ?? user.phone ?? ''
+        })
+        // Initialize avatar preview from stored path or user data
+        try {
+          const stored = localStorage.getItem('profilePhotoPath')
+          const candidate = stored || user.avatar_path || null
+          if (candidate) {
+            setPhotoPreview(candidate.startsWith('http') || candidate.startsWith('/') ? candidate : `/${candidate}`)
+          }
+        } catch {}
+      } catch (e) {
+        // Fallback to context if API fails
+        setProfileData({
+          full_name: user.full_name || '',
+          email: user.email || '',
+          phone: user.phone || ''
+        })
+        try {
+          const stored = localStorage.getItem('profilePhotoPath')
+          if (stored) setPhotoPreview(stored.startsWith('http') || stored.startsWith('/') ? stored : `/${stored}`)
+        } catch {}
+      }
     }
+    loadProfile()
   }, [user])
 
   const handleProfileSubmit = async (e) => {
@@ -65,7 +93,7 @@ const Profile = () => {
     setLoading(true)
     
     try {
-      const response = await axios.put('/api/auth/change-password', {
+      const response = await axios.put('/auth/change-password', {
         current_password: passwordData.current_password,
         new_password: passwordData.new_password
       })
@@ -123,7 +151,7 @@ const Profile = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Profile Information */}
           <div className="lg:col-span-2">
-            <div className="card">
+             <div className="card">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Personal Information</h2>
                 {!isEditing && (
@@ -138,6 +166,68 @@ const Profile = () => {
               </div>
 
               <form onSubmit={handleProfileSubmit} className="space-y-6">
+                {/* Photo uploader at top of form */}
+                <div className="p-3 rounded-lg border border-dashed border-gray-300 bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-white border flex items-center justify-center">
+                        {photoPreview ? (
+                          <img src={photoPreview} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="h-6 w-6 text-gray-500" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Profile Photo</div>
+                        <div className="text-xs text-gray-500">PNG, JPG up to 2MB</div>
+                      </div>
+                    </div>
+                    <label className={`btn-secondary ${!isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={!isEditing}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          setPhotoFile(file)
+                          setPhotoPreview(URL.createObjectURL(file))
+                        }}
+                      />
+                      Choose
+                    </label>
+                  </div>
+                  {photoFile && isEditing && (
+                    <div className="mt-3 flex items-center justify-end">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const form = new FormData()
+                            form.append('photo', photoFile)
+                            const { data } = await axios.post('/profile/photo', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+                            if (data?.success && data?.path) {
+                              localStorage.setItem('profilePhotoPath', data.path)
+                            const normalized = data.path.startsWith('http') || data.path.startsWith('/') ? data.path : `/${data.path}`
+                            setPhotoPreview(normalized)
+                            // Notify other parts of the app (e.g., dashboard) that avatar changed
+                            try { window.dispatchEvent(new CustomEvent('profilePhotoUpdated', { detail: { path: data.path } })) } catch {}
+                            toast.success('Photo uploaded!')
+                            } else {
+                              toast.error(data?.message || 'Upload failed')
+                            }
+                          } catch (e) {
+                            toast.error('Upload failed')
+                          }
+                        }}
+                        className="btn-primary"
+                      >
+                        Upload Photo
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Full Name
@@ -173,18 +263,21 @@ const Profile = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Phone Number
                   </label>
+                  <div className="text-xs text-gray-500 mb-2">Current: {profileData.phone || 'Not set'}</div>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <input
                       type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="Enter phone number"
                       value={profileData.phone}
-                      onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
+                      onChange={(e) => setProfileData({...profileData, phone: e.target.value.replace(/[^0-9+\-\s]/g, '')})}
                       className="input-field pl-10"
                       disabled={!isEditing}
-                      required
                     />
                   </div>
                 </div>
@@ -330,8 +423,12 @@ const Profile = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Summary</h3>
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                    <User className="h-6 w-6 text-primary-600" />
+                  <div className="w-14 h-14 bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
+                    {photoPreview ? (
+                      <img src={photoPreview} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="h-7 w-7 text-gray-500" />
+                    )}
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">{user.full_name || 'Not set'}</p>
@@ -364,31 +461,7 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="card mt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-              <div className="space-y-3">
-                <button
-                  onClick={() => setShowPasswordChange(true)}
-                  className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center space-x-3">
-                    <Lock className="h-5 w-5 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-700">Change Password</span>
-                  </div>
-                </button>
-                
-                <button
-                  onClick={startEditing}
-                  className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center space-x-3">
-                    <Edit className="h-5 w-5 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-700">Edit Profile</span>
-                  </div>
-                </button>
-              </div>
-            </div>
+            
           </div>
         </div>
       </div>

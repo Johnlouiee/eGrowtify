@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Camera, Upload, Leaf, Info, AlertCircle, CheckCircle } from 'lucide-react'
+import { Camera, Upload, Leaf, Info, AlertCircle, CheckCircle, Droplets, Beaker, Thermometer } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
@@ -8,6 +8,8 @@ const AIPlantRecognition = () => {
   const [previewUrl, setPreviewUrl] = useState(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisResult, setAnalysisResult] = useState(null)
+  const [soilResult, setSoilResult] = useState(null)
+  const [analysisMode, setAnalysisMode] = useState('plant') // 'plant' | 'soil'
   const [showCamera, setShowCamera] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const fileInputRef = useRef(null)
@@ -28,6 +30,7 @@ const AIPlantRecognition = () => {
       setSelectedImage(file)
       setPreviewUrl(URL.createObjectURL(file))
       setAnalysisResult(null)
+      setSoilResult(null)
     }
   }
 
@@ -43,6 +46,7 @@ const AIPlantRecognition = () => {
         setPreviewUrl(URL.createObjectURL(blob))
         setShowCamera(false)
         setAnalysisResult(null)
+        setSoilResult(null)
       }, 'image/jpeg')
     }
   }
@@ -158,6 +162,36 @@ const AIPlantRecognition = () => {
     }
   }
 
+  const analyzeSoil = async () => {
+    if (!selectedImage) {
+      toast.error('Please select an image first')
+      return
+    }
+
+    setIsAnalyzing(true)
+    try {
+      const formData = new FormData()
+      formData.append('image', selectedImage)
+
+      const { data } = await axios.post('/api/soil-analysis', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+
+      if (data && data.error) {
+        setSoilResult(null)
+        toast.error(typeof data.error === 'string' ? data.error : 'Unable to analyze soil image')
+      } else {
+        setSoilResult(data)
+        toast.success('Soil analysis completed!')
+      }
+    } catch (error) {
+      toast.error('Error analyzing soil image')
+      console.error('Soil analysis error:', error)
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
   const addToGarden = async () => {
     if (!analysisResult) return
 
@@ -175,11 +209,10 @@ const AIPlantRecognition = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            AI Plant Recognition
+            AI Plant & Soil Analysis
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Upload a photo or take a picture of your plant to get instant identification, 
-            health assessment, and personalized care recommendations.
+            Identify plants and analyze soil from a photo. Get identification, health status, moisture, texture, pH, and care suggestions.
           </p>
         </div>
 
@@ -187,8 +220,24 @@ const AIPlantRecognition = () => {
           {/* Image Upload Section */}
           <div className="card">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Upload Plant Photo
+              Upload Photo
             </h2>
+
+            {/* Mode Toggle */}
+            <div className="mb-4 inline-flex rounded-lg border border-gray-200 overflow-hidden">
+              <button
+                onClick={() => { setAnalysisMode('plant'); setSoilResult(null) }}
+                className={`px-4 py-2 text-sm font-medium ${analysisMode === 'plant' ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+              >
+                Plant
+              </button>
+              <button
+                onClick={() => { setAnalysisMode('soil'); setAnalysisResult(null) }}
+                className={`px-4 py-2 text-sm font-medium border-l border-gray-200 ${analysisMode === 'soil' ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+              >
+                Soil
+              </button>
+            </div>
             
             {/* Camera Interface */}
             {showCamera && (
@@ -293,7 +342,7 @@ const AIPlantRecognition = () => {
 
                 {selectedImage && (
                   <button
-                    onClick={analyzePlant}
+                    onClick={analysisMode === 'plant' ? analyzePlant : analyzeSoil}
                     disabled={isAnalyzing}
                     className="btn-primary w-full flex items-center justify-center space-x-2"
                   >
@@ -304,8 +353,8 @@ const AIPlantRecognition = () => {
                       </>
                     ) : (
                       <>
-                        <Leaf className="h-4 w-4" />
-                        <span>Analyze Plant</span>
+                        {analysisMode === 'plant' ? <Leaf className="h-4 w-4" /> : <Droplets className="h-4 w-4" />}
+                        <span>{analysisMode === 'plant' ? 'Analyze Plant' : 'Analyze Soil'}</span>
                       </>
                     )}
                   </button>
@@ -317,18 +366,19 @@ const AIPlantRecognition = () => {
           {/* Analysis Results */}
           <div className="card">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Analysis Results
+              {analysisMode === 'plant' ? 'Plant Results' : 'Soil Results'}
             </h2>
             
-            {!analysisResult ? (
-              <div className="text-center py-12">
-                <Leaf className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">
-                  Upload a plant photo to see analysis results
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-6">
+            {analysisMode === 'plant' ? (
+              !analysisResult ? (
+                <div className="text-center py-12">
+                  <Leaf className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">
+                    Upload a plant photo to see analysis results
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
                 {/* Plant Identification */}
                 <div className="bg-green-50 rounded-lg p-4">
                   <div className="flex items-center space-x-3 mb-2">
@@ -399,7 +449,71 @@ const AIPlantRecognition = () => {
                   <Leaf className="h-4 w-4" />
                   <span>Add to My Garden</span>
                 </button>
-              </div>
+                </div>
+              )
+            ) : (
+              !soilResult ? (
+                <div className="text-center py-12">
+                  <Droplets className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">Upload a soil photo to see analysis results</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Moisture */}
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <div className="flex items-center space-x-3 mb-1">
+                      <Droplets className="h-5 w-5 text-blue-600" />
+                      <h3 className="font-semibold text-blue-900">Moisture</h3>
+                    </div>
+                    <p className="text-sm text-blue-800">{soilResult.moisture_level}</p>
+                  </div>
+
+                  {/* Texture & pH */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-amber-50 rounded-lg p-4">
+                      <div className="flex items-center space-x-3 mb-1">
+                        <Beaker className="h-5 w-5 text-amber-700" />
+                        <h3 className="font-semibold text-amber-900">Texture</h3>
+                      </div>
+                      <p className="text-sm text-amber-800">{soilResult.texture}</p>
+                    </div>
+                    <div className="bg-violet-50 rounded-lg p-4">
+                      <div className="flex items-center space-x-3 mb-1">
+                        <Thermometer className="h-5 w-5 text-violet-700" />
+                        <h3 className="font-semibold text-violet-900">pH</h3>
+                      </div>
+                      <p className="text-sm text-violet-800">{soilResult.ph}</p>
+                    </div>
+                  </div>
+
+                  {/* Recommendations */}
+                  {Array.isArray(soilResult.recommendations) && soilResult.recommendations.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-2">Recommendations</h4>
+                      <ul className="space-y-2">
+                        {soilResult.recommendations.map((rec, i) => (
+                          <li key={i} className="flex items-start space-x-2">
+                            <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                            <span className="text-sm text-gray-700">{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Suitable Plants */}
+                  {Array.isArray(soilResult.suitable_plants) && soilResult.suitable_plants.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-2">Suitable Plants</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {soilResult.suitable_plants.map((p, i) => (
+                          <span key={i} className="px-2 py-1 rounded-md text-xs bg-green-100 text-green-800">{p}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
             )}
           </div>
         </div>
