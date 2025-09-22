@@ -29,6 +29,16 @@ def api_seasonal_planning():
     from website.views import seasonal_planning
     return seasonal_planning()
 
+@app.route('/api/verify-email', methods=['POST'])
+def api_verify_email():
+    from website.auth import verify_email
+    return verify_email()
+
+@app.route('/api/resend-verification', methods=['POST'])
+def api_resend_verification():
+    from website.auth import resend_verification
+    return resend_verification()
+
 if __name__ == '__main__':
     print("🚀 Starting Flask Backend...")
     print("📍 Backend will run on: http://127.0.0.1:5000")

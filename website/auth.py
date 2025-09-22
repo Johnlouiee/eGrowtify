@@ -2,7 +2,10 @@ from flask import Blueprint, jsonify, request, flash, redirect, url_for
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash
 from .models import db, User, Admin
+from .email_service import send_email_verification
 from datetime import datetime
+import os
+import re
 
 auth = Blueprint('auth', __name__)
 
@@ -19,24 +22,35 @@ def login():
         # Try to login as user (both regular users and admins)
         user = User.query.filter_by(email=email).first()
         
-        if user and user.check_password(password) and user.is_active:
-            login_user(user)
-            
-            # Return user info
-            return jsonify({
-                "success": True,
-                "message": "Logged in successfully!",
-                "user": {
-                    "id": user.id,
-                    "email": user.email,
-                    "full_name": user.full_name,
-                    "role": user.role,
-                    "is_active": user.is_active
-                },
-                "is_admin": user.is_admin()
-            })
+        if user and user.check_password(password):
+            if not user.email_verified:
+                return jsonify({
+                    "success": False, 
+                    "message": "Please verify your email address before logging in. Check your email for a verification link.",
+                    "email_verified": False,
+                    "email": user.email
+                }), 401
+            elif not user.is_active:
+                return jsonify({"success": False, "message": "Account is inactive. Please contact support."}), 401
+            else:
+                login_user(user)
+                
+                # Return user info
+                return jsonify({
+                    "success": True,
+                    "message": "Logged in successfully!",
+                    "user": {
+                        "id": user.id,
+                        "email": user.email,
+                        "full_name": user.full_name,
+                        "role": user.role,
+                        "is_active": user.is_active,
+                        "email_verified": user.email_verified
+                    },
+                    "is_admin": user.is_admin()
+                })
         else:
-            return jsonify({"success": False, "message": "Invalid credentials or account inactive."}), 401
+            return jsonify({"success": False, "message": "Invalid credentials."}), 401
     
     return jsonify({"message": "Login endpoint - send POST request with email and password"})
 
@@ -61,8 +75,8 @@ def register():
             return jsonify({"success": False, "message": "First name must be greater than 1 character."}), 400
         elif len(lastname) < 2:
             return jsonify({"success": False, "message": "Last name must be greater than 1 character."}), 400
-        elif len(contact) < 10:
-            return jsonify({"success": False, "message": "Contact number must be at least 10 digits."}), 400
+        elif not re.fullmatch(r"\d{11}", str(contact or "")):
+            return jsonify({"success": False, "message": "Phone number must be exactly 11 digits."}), 400
         elif password1 != password2:
             return jsonify({"success": False, "message": "Passwords don't match."}), 400
         elif len(password1) < 7:
@@ -75,25 +89,64 @@ def register():
                 email=email,
                 firstname=firstname,
                 lastname=lastname,
-                contact=contact
+                contact=contact,
+                is_active=False  # User is inactive until email is verified
             )
             new_user.set_password(password1)
+            
+            # Generate email verification token
+            verification_token = new_user.generate_email_verification_token()
             
             try:
                 db.session.add(new_user)
                 db.session.commit()
-                return jsonify({
-                    "success": True,
-                    "message": "Account created successfully!",
-                    "user": {
-                        "id": new_user.id,
-                        "email": new_user.email,
-                        "full_name": new_user.full_name,
-                        "role": new_user.role,
-                        "is_active": new_user.is_active
-                    },
-                    "is_admin": False
-                })
+                
+                # Send verification email
+                email_sent = send_email_verification(
+                    user_email=email,
+                    user_name=new_user.full_name,
+                    verification_token=verification_token,
+                    sender_email=os.getenv('MAIL_SENDER_OVERRIDE') or os.getenv('MAIL_DEFAULT_SENDER') or os.getenv('MAIL_USERNAME')
+                )
+                
+                dev_expose = os.getenv('EXPOSE_VERIFICATION_URL_IN_DEV', 'true').lower() == 'true'
+                frontend_base = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+                verify_url = f"{frontend_base}/verify-email?token={verification_token}"
+
+                if email_sent:
+                    return jsonify({
+                        "success": True,
+                        "message": "Account created successfully! Please check your email to verify your account.",
+                        "email_verification_sent": True,
+                        "dev_verification_url": verify_url if dev_expose else None,
+                        "user": {
+                            "id": new_user.id,
+                            "email": new_user.email,
+                            "full_name": new_user.full_name,
+                            "role": new_user.role,
+                            "is_active": new_user.is_active,
+                            "email_verified": new_user.email_verified
+                        },
+                        "is_admin": False
+                    })
+                else:
+                    # Email failed to send, but user was created
+                    return jsonify({
+                        "success": True,
+                        "message": "Account created successfully! However, we couldn't send the verification email. Please contact support.",
+                        "email_verification_sent": False,
+                        "dev_verification_url": verify_url if dev_expose else None,
+                        "user": {
+                            "id": new_user.id,
+                            "email": new_user.email,
+                            "full_name": new_user.full_name,
+                            "role": new_user.role,
+                            "is_active": new_user.is_active,
+                            "email_verified": new_user.email_verified
+                        },
+                        "is_admin": False
+                    })
+                    
             except Exception as e:
                 db.session.rollback()
                 return jsonify({"success": False, "message": "An error occurred while creating the account."}), 500
@@ -130,6 +183,95 @@ def register_alias():
 def logout_alias():
     logout_user()
     return jsonify({"success": True, "message": "Logged out successfully"})
+
+@auth.route('/verify-email', methods=['GET', 'POST'])
+def verify_email():
+    """Verify user email with token"""
+    if request.method == 'GET':
+        token = request.args.get('token')
+    else:
+        data = request.get_json()
+        token = data.get('token')
+    
+    if not token:
+        return jsonify({"success": False, "message": "Verification token is required."}), 400
+    
+    # Find user by verification token
+    user = User.query.filter_by(email_verification_token=token).first()
+    
+    if not user:
+        return jsonify({"success": False, "message": "Invalid verification token."}), 400
+    
+    # Check if token is still valid
+    if not user.is_email_verification_token_valid(token):
+        return jsonify({"success": False, "message": "Verification token has expired. Please request a new one."}), 400
+    
+    # Verify the email
+    user.verify_email()
+    user.is_active = True  # Activate the user account
+    
+    try:
+        db.session.commit()
+        return jsonify({
+            "success": True,
+            "message": "Email verified successfully! You can now log in to your account.",
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "full_name": user.full_name,
+                "email_verified": user.email_verified,
+                "is_active": user.is_active
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": "An error occurred while verifying your email."}), 500
+
+@auth.route('/resend-verification', methods=['POST'])
+def resend_verification():
+    """Resend verification email"""
+    data = request.get_json()
+    email = data.get('email')
+    
+    if not email:
+        return jsonify({"success": False, "message": "Email is required."}), 400
+    
+    # Find user by email
+    user = User.query.filter_by(email=email).first()
+    
+    if not user:
+        return jsonify({"success": False, "message": "No account found with this email address."}), 400
+    
+    if user.email_verified:
+        return jsonify({"success": False, "message": "Email is already verified."}), 400
+    
+    # Generate new verification token
+    verification_token = user.generate_email_verification_token()
+    
+    try:
+        db.session.commit()
+        
+        # Send verification email
+        email_sent = send_email_verification(
+            user_email=email,
+            user_name=user.full_name,
+            verification_token=verification_token
+        )
+        
+        if email_sent:
+            return jsonify({
+                "success": True,
+                "message": "Verification email sent successfully! Please check your email."
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "message": "Failed to send verification email. Please try again later."
+            }), 500
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": "An error occurred while sending verification email."}), 500
 
 @auth.route('/admin/register', methods=['GET', 'POST'])
 @login_required

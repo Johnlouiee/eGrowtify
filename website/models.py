@@ -1,7 +1,9 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+import secrets
+import uuid
 
 db = SQLAlchemy()
 
@@ -19,6 +21,9 @@ class User(UserMixin, db.Model):
     subscribed = db.Column(db.Boolean, default=False)  # Add subscribed property
     email_notifications = db.Column(db.Boolean, default=True)  # Add email_notifications property
     learning_level = db.Column(db.String(20), default='beginner')  # Add learning_level property
+    email_verified = db.Column(db.Boolean, default=False)  # Email verification status
+    email_verification_token = db.Column(db.String(100), unique=True)  # Verification token
+    email_verification_expires = db.Column(db.DateTime)  # Token expiration
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
@@ -34,6 +39,30 @@ class User(UserMixin, db.Model):
 
     def is_admin(self):
         return self.role == 'admin'
+    
+    def generate_email_verification_token(self):
+        """Generate a new email verification token"""
+        self.email_verification_token = secrets.token_urlsafe(32)
+        # Use UTC naive datetime to match MySQL DATETIME (no timezone)
+        self.email_verification_expires = datetime.utcnow() + timedelta(hours=24)
+        return self.email_verification_token
+    
+    def is_email_verification_token_valid(self, token):
+        """Check if the email verification token is valid"""
+        if not (self.email_verification_token and self.email_verification_expires):
+            return False
+        if self.email_verification_token != token:
+            return False
+        # Compare as naive UTC datetimes to avoid tz mismatch
+        now_utc_naive = datetime.utcnow()
+        expires = self.email_verification_expires
+        return now_utc_naive < expires
+    
+    def verify_email(self):
+        """Mark email as verified and clear token"""
+        self.email_verified = True
+        self.email_verification_token = None
+        self.email_verification_expires = None
 
     def __repr__(self):
         return f'<User {self.email}>'

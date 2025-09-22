@@ -39,6 +39,8 @@ const Register = () => {
     
     if (!formData.contact.trim()) {
       newErrors.contact = 'Phone number is required'
+    } else if (!/^\d{11}$/.test(formData.contact)) {
+      newErrors.contact = 'Phone number must be exactly 11 digits'
     }
     
     if (!formData.password1) {
@@ -56,10 +58,21 @@ const Register = () => {
   }
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
+    const { name, value } = e.target
+
+    if (name === 'contact') {
+      // Keep only digits and hard-limit to 11 characters while typing
+      const digitsOnly = value.replace(/\D/g, '').slice(0, 11)
+      setFormData({
+        ...formData,
+        [name]: digitsOnly
+      })
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      })
+    }
     
     // Clear error when user starts typing
     if (errors[e.target.name]) {
@@ -82,7 +95,29 @@ const Register = () => {
     try {
       const result = await register(formData)
       if (result.success) {
-        navigate('/dashboard')
+        const directUrl = result.dev_verification_url
+        if (directUrl) {
+          // In dev, we may expose a direct verification link: use it
+          window.location.href = directUrl
+          return
+        }
+        if (result.email_verification_sent) {
+          toast.success('Account created! Please check your email to verify your account.')
+          navigate('/verify-email', { 
+            state: { 
+              email: formData.email,
+              message: 'Please check your email for a verification link.'
+            }
+          })
+        } else {
+          toast.error('Account created but verification email failed to send. Use the resend option on the next page.')
+          navigate('/verify-email', { 
+            state: { 
+              email: formData.email,
+              message: 'We could not send the email automatically. You can resend it here.'
+            }
+          })
+        }
       }
     } catch (error) {
       console.error('Registration error:', error)
@@ -188,10 +223,14 @@ const Register = () => {
                   type="tel"
                   autoComplete="tel"
                   required
+                  inputMode="numeric"
+                  pattern="[0-9]{11}"
+                  maxLength={11}
+                  title="Enter exactly 11 digits"
                   value={formData.contact}
                   onChange={handleChange}
                   className={`input-field pl-10 ${errors.contact ? 'border-red-500' : ''}`}
-                  placeholder="Enter your phone number"
+                  placeholder="phone number"
                 />
               </div>
               {errors.contact && (

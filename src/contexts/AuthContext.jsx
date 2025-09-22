@@ -69,11 +69,14 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await axios.post('/auth/register', userData)
-      setUser(response.data.user)
-      setIsAdmin(false)
-      setIsPremium(false) // New users start with free plan
-      toast.success('Registration successful!')
-      return { success: true }
+      // Do NOT log the user in here; require email verification first
+      const data = response.data || {}
+      if (data.success) {
+        toast.success('Registration successful! Please verify your email.')
+      } else {
+        toast.error(data.message || 'Registration failed')
+      }
+      return { ...data, success: !!data.success }
     } catch (error) {
       const message = error.response?.data?.message || 'Registration failed'
       toast.error(message)
