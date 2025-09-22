@@ -3,14 +3,16 @@ from flask_mysqldb import MySQL
 from flask_login import LoginManager
 from flask_cors import CORS
 from .models import db, User, Admin
-from dotenv import load_dotenv
+from .email_service import init_mail
+from dotenv import load_dotenv, find_dotenv
 import os
 
 mysql = MySQL()
 login_manager = LoginManager()
 
 def create_app():
-    load_dotenv()
+    # Load .env reliably from project root
+    load_dotenv(find_dotenv(), override=True)
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'OPAW')
 
@@ -38,6 +40,7 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
+    init_mail(app)
 
     @login_manager.unauthorized_handler
     def handle_unauthorized():

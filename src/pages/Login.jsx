@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -10,6 +11,7 @@ const Login = () => {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [emailVerificationError, setEmailVerificationError] = useState(null)
   
   const { login, user } = useAuth()
   const navigate = useNavigate()
@@ -31,12 +33,15 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setEmailVerificationError(null)
     
     try {
       const result = await login(formData.email, formData.password)
       console.log('Login result:', result) // Debug log
+      
       if (result.success) {
         console.log('Login successful, navigating to dashboard') // Debug log
+        toast.success('Welcome back!')
         // Try multiple navigation methods
         try {
           navigate('/dashboard')
@@ -46,9 +51,21 @@ const Login = () => {
         }
       } else {
         console.log('Login failed:', result.message)
+        
+        // Check if it's an email verification error
+        if (result.email_verified === false) {
+          setEmailVerificationError({
+            message: result.message,
+            email: result.email
+          })
+          toast.error('Please verify your email address')
+        } else {
+          toast.error(result.message)
+        }
       }
     } catch (error) {
       console.error('Login error:', error)
+      toast.error('Login failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -67,6 +84,31 @@ const Login = () => {
         </div>
         
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {/* Email Verification Error */}
+          {emailVerificationError && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-yellow-800">
+                    Email Verification Required
+                  </h3>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    {emailVerificationError.message}
+                  </p>
+                  <div className="mt-3">
+                    <Link
+                      to="/verify-email"
+                      className="text-sm text-yellow-800 hover:text-yellow-900 font-medium underline"
+                    >
+                      Go to Email Verification →
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
