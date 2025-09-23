@@ -209,11 +209,7 @@ const Profile = () => {
                             const { data } = await axios.post('/profile/photo', form, { headers: { 'Content-Type': 'multipart/form-data' } })
                             if (data?.success && data?.path) {
                               localStorage.setItem('profilePhotoPath', data.path)
-                            const normalized = data.path.startsWith('http') || data.path.startsWith('/') ? data.path : `/${data.path}`
-                            setPhotoPreview(normalized)
-                            // Notify other parts of the app (e.g., dashboard) that avatar changed
-                            try { window.dispatchEvent(new CustomEvent('profilePhotoUpdated', { detail: { path: data.path } })) } catch {}
-                            toast.success('Photo uploaded!')
+                              toast.success('Photo uploaded!')
                             } else {
                               toast.error(data?.message || 'Upload failed')
                             }

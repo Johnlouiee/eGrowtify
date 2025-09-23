@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Bell, Droplets, Scissors, Leaf, Calendar, Settings, CheckCircle, AlertCircle, Clock } from 'lucide-react'
+import { Bell, Droplets, Scissors, Leaf, Calendar, Settings, CheckCircle, AlertCircle, Clock, BarChart3, TrendingUp, Eye, Download, FileText, Sun, Cloud, Thermometer, Wind, Droplets as WaterDrop, Zap, Shield, Bug, Heart, X, ArrowRight } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
@@ -8,17 +8,24 @@ const SmartAlerts = () => {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all') // all, pending, completed
   const [showSettings, setShowSettings] = useState(false)
+  const [showProgressReports, setShowProgressReports] = useState(false)
+  const [progressReports, setProgressReports] = useState([])
+  const [reportsLoading, setReportsLoading] = useState(false)
   const [notificationSettings, setNotificationSettings] = useState({
     email: true,
     push: true,
     watering: true,
     fertilizing: true,
     pruning: true,
-    general: true
+    general: true,
+    weather: true,
+    pest: true,
+    growth: true
   })
 
   useEffect(() => {
     fetchAlerts()
+    fetchProgressReports()
   }, [])
 
   const fetchAlerts = async () => {
@@ -33,51 +40,81 @@ const SmartAlerts = () => {
           type: 'watering',
           plant_name: 'Tomato Plant',
           garden_name: 'Backyard Garden',
-          message: 'Time to water your tomato plant',
+          message: 'Time to water your tomato plant - soil moisture is at 20%',
           due_date: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
           priority: 'high',
           status: 'pending',
-          icon: Droplets,
-          color: 'blue'
+          icon: WaterDrop,
+          color: 'blue',
+          details: 'Optimal watering time: early morning. Use 1-2 inches of water.'
         },
         {
           id: 2,
           type: 'fertilizing',
           plant_name: 'Basil',
           garden_name: 'Herb Garden',
-          message: 'Your basil plant needs fertilizer',
+          message: 'Your basil plant needs fertilizer - last fed 3 weeks ago',
           due_date: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day from now
           priority: 'medium',
           status: 'pending',
           icon: Leaf,
-          color: 'green'
+          color: 'green',
+          details: 'Use balanced liquid fertilizer diluted to half strength.'
         },
         {
           id: 3,
           type: 'pruning',
           plant_name: 'Rose Bush',
           garden_name: 'Flower Garden',
-          message: 'Time to prune your rose bush',
+          message: 'Time to prune your rose bush - deadheading needed',
           due_date: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
           priority: 'high',
           status: 'overdue',
           icon: Scissors,
-          color: 'red'
+          color: 'red',
+          details: 'Remove spent blooms to encourage new growth. Cut at 45-degree angle.'
         },
         {
           id: 4,
-          type: 'general',
+          type: 'pest',
           plant_name: 'Lettuce',
           garden_name: 'Vegetable Garden',
-          message: 'Check for pests on your lettuce plants',
+          message: 'Potential aphid activity detected on lettuce plants',
           due_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-          priority: 'low',
+          priority: 'medium',
           status: 'pending',
-          icon: Bell,
-          color: 'yellow'
+          icon: Bug,
+          color: 'yellow',
+          details: 'Check undersides of leaves. Use neem oil spray if confirmed.'
         },
         {
           id: 5,
+          type: 'weather',
+          plant_name: 'All Plants',
+          garden_name: 'All Gardens',
+          message: 'High temperature warning - 95°F expected tomorrow',
+          due_date: new Date(Date.now() + 12 * 60 * 60 * 1000), // 12 hours from now
+          priority: 'high',
+          status: 'pending',
+          icon: Thermometer,
+          color: 'red',
+          details: 'Provide extra shade and increase watering frequency.'
+        },
+        {
+          id: 6,
+          type: 'growth',
+          plant_name: 'Pepper Plant',
+          garden_name: 'Vegetable Garden',
+          message: 'Pepper plant showing excellent growth - 15% increase this week',
+          due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1 week from now
+          priority: 'low',
+          status: 'pending',
+          icon: TrendingUp,
+          color: 'green',
+          details: 'Continue current care routine. Consider staking if needed.'
+        },
+        {
+          id: 7,
           type: 'watering',
           plant_name: 'Succulent',
           garden_name: 'Indoor Garden',
@@ -85,8 +122,9 @@ const SmartAlerts = () => {
           due_date: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
           priority: 'medium',
           status: 'completed',
-          icon: Droplets,
-          color: 'gray'
+          icon: WaterDrop,
+          color: 'gray',
+          details: 'Watered with 1/4 cup of water as recommended.'
         }
       ]
       
@@ -96,6 +134,94 @@ const SmartAlerts = () => {
       console.error('Error fetching alerts:', error)
       toast.error('Error loading alerts')
       setLoading(false)
+    }
+  }
+
+  const fetchProgressReports = async () => {
+    try {
+      setReportsLoading(true)
+      // Simulate API call - replace with actual endpoint
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      // Mock progress reports data
+      const mockProgressReports = [
+        {
+          id: 1,
+          title: 'Weekly Garden Health Report',
+          date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+          type: 'weekly',
+          summary: 'Overall garden health improved by 12% this week',
+          metrics: {
+            plantsHealthy: 15,
+            plantsNeedingAttention: 3,
+            tasksCompleted: 8,
+            growthRate: 12
+          },
+          insights: [
+            'Tomato plants showing excellent growth',
+            'Basil needs more frequent watering',
+            'Rose bush requires pruning'
+          ],
+          recommendations: [
+            'Increase watering frequency for herbs',
+            'Apply fertilizer to flowering plants',
+            'Check for pest activity on lettuce'
+          ]
+        },
+        {
+          id: 2,
+          title: 'Monthly Growth Analysis',
+          date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+          type: 'monthly',
+          summary: 'Significant growth across all plant categories',
+          metrics: {
+            plantsHealthy: 18,
+            plantsNeedingAttention: 2,
+            tasksCompleted: 35,
+            growthRate: 25
+          },
+          insights: [
+            'Pepper plants doubled in size',
+            'Herb garden thriving with new additions',
+            'Vegetable yield increased by 30%'
+          ],
+          recommendations: [
+            'Consider expanding vegetable garden',
+            'Add more herbs to maximize space',
+            'Plan for fall planting season'
+          ]
+        },
+        {
+          id: 3,
+          title: 'Seasonal Planning Report',
+          date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+          type: 'seasonal',
+          summary: 'Spring planting season preparation complete',
+          metrics: {
+            plantsHealthy: 20,
+            plantsNeedingAttention: 1,
+            tasksCompleted: 12,
+            growthRate: 18
+          },
+          insights: [
+            'Soil preparation successful',
+            'Seed starting on schedule',
+            'Weather conditions optimal'
+          ],
+          recommendations: [
+            'Begin hardening off seedlings',
+            'Prepare garden beds for transplanting',
+            'Monitor for late frost warnings'
+          ]
+        }
+      ]
+      
+      setProgressReports(mockProgressReports)
+    } catch (error) {
+      console.error('Error fetching progress reports:', error)
+      toast.error('Error loading progress reports')
+    } finally {
+      setReportsLoading(false)
     }
   }
 
@@ -148,6 +274,88 @@ const SmartAlerts = () => {
       setShowSettings(false)
     } catch (error) {
       toast.error('Error updating settings')
+    }
+  }
+
+  const downloadProgressReport = async (reportId) => {
+    try {
+      // Simulate download
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      toast.success('Progress report downloaded successfully!')
+    } catch (error) {
+      toast.error('Error downloading report')
+    }
+  }
+
+  const viewReportDetails = (report) => {
+    // For now, just show an alert with report details
+    // In a real app, this would open a detailed view or navigate to a report page
+    const details = `
+Title: ${report.title}
+Date: ${new Date(report.date).toLocaleDateString()}
+Type: ${report.type}
+Summary: ${report.summary}
+
+Metrics:
+- Healthy Plants: ${report.metrics.plantsHealthy}
+- Plants Needing Attention: ${report.metrics.plantsNeedingAttention}
+- Tasks Completed: ${report.metrics.tasksCompleted}
+- Growth Rate: ${report.metrics.growthRate}%
+
+Key Insights:
+${report.insights.map(insight => `• ${insight}`).join('\n')}
+
+Recommendations:
+${report.recommendations.map(rec => `• ${rec}`).join('\n')}
+    `
+    
+    // Create a temporary textarea to copy the details
+    const textarea = document.createElement('textarea')
+    textarea.value = details
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+    
+    toast.success('Report details copied to clipboard!')
+  }
+
+  const generateNewReport = async () => {
+    try {
+      setReportsLoading(true)
+      // Simulate generating a new report
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      const newReport = {
+        id: Date.now(),
+        title: 'Latest Garden Health Report',
+        date: new Date(),
+        type: 'weekly',
+        summary: 'Fresh analysis of your garden\'s current status and growth patterns',
+        metrics: {
+          plantsHealthy: Math.floor(Math.random() * 10) + 15,
+          plantsNeedingAttention: Math.floor(Math.random() * 5) + 1,
+          tasksCompleted: Math.floor(Math.random() * 10) + 8,
+          growthRate: Math.floor(Math.random() * 20) + 10
+        },
+        insights: [
+          'Recent weather conditions have been optimal for growth',
+          'Watering schedule adjustments showing positive results',
+          'New plant additions are adapting well to garden environment'
+        ],
+        recommendations: [
+          'Continue current watering routine',
+          'Consider adding more companion plants',
+          'Monitor soil pH levels for optimal nutrition'
+        ]
+      }
+      
+      setProgressReports(prev => [newReport, ...prev])
+      toast.success('New progress report generated!')
+    } catch (error) {
+      toast.error('Error generating new report')
+    } finally {
+      setReportsLoading(false)
     }
   }
 
@@ -224,19 +432,33 @@ const SmartAlerts = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Smart Alerts
+              Smart Alerts & Reports
             </h1>
             <p className="text-gray-600">
-              Stay on top of your garden care with intelligent reminders
+              Stay on top of your garden care with intelligent reminders and progress tracking
             </p>
           </div>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="btn-secondary flex items-center space-x-2"
-          >
-            <Settings className="h-4 w-4" />
-            <span>Settings</span>
-          </button>
+          <div className="flex space-x-3">
+            <button
+              onClick={() => {
+                setShowProgressReports(true)
+                if (progressReports.length === 0) {
+                  fetchProgressReports()
+                }
+              }}
+              className="btn-secondary flex items-center space-x-2"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span>View Reports</span>
+            </button>
+            <button
+              onClick={() => setShowSettings(true)}
+              className="btn-secondary flex items-center space-x-2"
+            >
+              <Settings className="h-4 w-4" />
+              <span>Settings</span>
+            </button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -345,12 +567,17 @@ const SmartAlerts = () => {
                       
                       <p className="text-gray-600 mb-2">{alert.message}</p>
                       
+                      {alert.details && (
+                        <p className="text-sm text-gray-500 mb-2 italic">{alert.details}</p>
+                      )}
+                      
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
                         <span className="flex items-center space-x-1">
                           <Calendar className="h-4 w-4" />
                           <span>{formatTimeRemaining(alert.due_date)}</span>
                         </span>
                         <span>{alert.garden_name}</span>
+                        <span className="capitalize">{alert.type}</span>
                       </div>
                     </div>
                   </div>
@@ -393,6 +620,139 @@ const SmartAlerts = () => {
           )}
         </div>
 
+        {/* Progress Reports Modal */}
+        {showProgressReports && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-semibold">Progress Reports</h3>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={generateNewReport}
+                      disabled={reportsLoading}
+                      className="px-3 py-1 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {reportsLoading ? 'Generating...' : 'Generate New'}
+                    </button>
+                    <button
+                      onClick={fetchProgressReports}
+                      disabled={reportsLoading}
+                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                      title="Refresh Reports"
+                    >
+                      <Clock className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => setShowProgressReports(false)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-6 w-6" />
+                    </button>
+                  </div>
+                </div>
+                <p className="text-gray-600 mt-1">Track your garden's progress and performance</p>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                {reportsLoading ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading progress reports...</p>
+                  </div>
+                ) : progressReports.length > 0 ? (
+                  progressReports.map((report) => (
+                  <div key={report.id} className="border border-gray-200 rounded-lg p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900">{report.title}</h4>
+                        <p className="text-sm text-gray-600">
+                          {new Date(report.date).toLocaleDateString()} • {report.type}
+                        </p>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => downloadProgressReport(report.id)}
+                          className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg"
+                          title="Download Report"
+                        >
+                          <Download className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => viewReportDetails(report)}
+                          className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg"
+                          title="View Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <p className="text-gray-700 mb-4">{report.summary}</p>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div className="text-center p-3 bg-green-50 rounded-lg">
+                        <div className="text-2xl font-bold text-green-600">{report.metrics.plantsHealthy}</div>
+                        <div className="text-sm text-gray-600">Healthy Plants</div>
+                      </div>
+                      <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                        <div className="text-2xl font-bold text-yellow-600">{report.metrics.plantsNeedingAttention}</div>
+                        <div className="text-sm text-gray-600">Need Attention</div>
+                      </div>
+                      <div className="text-center p-3 bg-blue-50 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600">{report.metrics.tasksCompleted}</div>
+                        <div className="text-sm text-gray-600">Tasks Done</div>
+                      </div>
+                      <div className="text-center p-3 bg-purple-50 rounded-lg">
+                        <div className="text-2xl font-bold text-purple-600">{report.metrics.growthRate}%</div>
+                        <div className="text-sm text-gray-600">Growth Rate</div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h5 className="font-medium text-gray-900 mb-2 flex items-center">
+                          <TrendingUp className="h-4 w-4 mr-2" />
+                          Key Insights
+                        </h5>
+                        <ul className="space-y-1">
+                          {report.insights.map((insight, index) => (
+                            <li key={index} className="text-sm text-gray-600 flex items-start">
+                              <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 mr-2 flex-shrink-0" />
+                              {insight}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      
+                      <div>
+                        <h5 className="font-medium text-gray-900 mb-2 flex items-center">
+                          <Heart className="h-4 w-4 mr-2" />
+                          Recommendations
+                        </h5>
+                        <ul className="space-y-1">
+                          {report.recommendations.map((rec, index) => (
+                            <li key={index} className="text-sm text-gray-600 flex items-start">
+                              <ArrowRight className="h-3 w-3 text-primary-500 mt-0.5 mr-2 flex-shrink-0" />
+                              {rec}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12">
+                    <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">No progress reports available yet</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Notification Settings Modal */}
         {showSettings && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -427,7 +787,7 @@ const SmartAlerts = () => {
                 <div>
                   <h4 className="font-medium text-gray-900 mb-2">Alert Types</h4>
                   <div className="space-y-2">
-                    {['watering', 'fertilizing', 'pruning', 'general'].map((type) => (
+                    {['watering', 'fertilizing', 'pruning', 'general', 'weather', 'pest', 'growth'].map((type) => (
                       <label key={type} className="flex items-center">
                         <input
                           type="checkbox"

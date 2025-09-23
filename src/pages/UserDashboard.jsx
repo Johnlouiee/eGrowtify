@@ -182,21 +182,6 @@ const UserDashboard = () => {
     }
   }
 
-  // Update avatar in header when profile photo is changed in Profile page
-  useEffect(() => {
-    const handler = (e) => {
-      try {
-        const path = (e && e.detail && e.detail.path) || localStorage.getItem('profilePhotoPath')
-        if (path) {
-          // Trigger rerender by updating a dummy state or via forceful read
-          setNotifications((n) => [...n])
-        }
-      } catch {}
-    }
-    window.addEventListener('profilePhotoUpdated', handler)
-    return () => window.removeEventListener('profilePhotoUpdated', handler)
-  }, [])
-
   const getTotalPlants = () => {
     return plants.length
   }
