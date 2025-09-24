@@ -121,15 +121,116 @@ def ai_plant_recognition():
         if not suggestions:
             return jsonify({"error": "No match found. Try a clearer photo."}), 200
 
-        # Post-process: prefer common edible crops if present among close candidates
+        # Enhanced common name mapping for better user recognition
         def extract_names(s):
             nm = s.get('plant_name') or s.get('name') or ''
             sci = (s.get('plant_details') or {}).get('scientific_name') or ''
             commons = ((s.get('plant_details') or {}).get('common_names') or []) + (s.get('common_names') or [])
             return nm.lower(), sci.lower(), [c.lower() for c in commons]
 
+        # Comprehensive mapping of scientific names to common names
+        common_name_mapping = {
+            # Vegetables
+            'daucus carota': 'Carrot',
+            'raphanus sativus': 'Radish',
+            'solanum lycopersicum': 'Tomato',
+            'cucumis sativus': 'Cucumber',
+            'capsicum annuum': 'Bell Pepper',
+            'solanum melongena': 'Eggplant',
+            'allium cepa': 'Onion',
+            'allium sativum': 'Garlic',
+            'solanum tuberosum': 'Potato',
+            'lactuca sativa': 'Lettuce',
+            'brassica oleracea': 'Cabbage',
+            'spinacia oleracea': 'Spinach',
+            'beta vulgaris': 'Beetroot',
+            'zea mays': 'Corn',
+            'phaseolus vulgaris': 'Green Bean',
+            'pisum sativum': 'Pea',
+            'cucurbita pepo': 'Zucchini',
+            'cucurbita maxima': 'Pumpkin',
+            'brassica rapa': 'Turnip',
+            'apium graveolens': 'Celery',
+            'petroselinum crispum': 'Parsley',
+            'coriandrum sativum': 'Cilantro',
+            'ocimum basilicum': 'Basil',
+            'mentha': 'Mint',
+            'thymus vulgaris': 'Thyme',
+            'rosmarinus officinalis': 'Rosemary',
+            'origanum vulgare': 'Oregano',
+            'allium schoenoprasum': 'Chives',
+            'brinjal': 'Eggplant',
+            'aubergine': 'Eggplant',
+            'wild radish': 'Carrot',
+            'wild carrot': 'Carrot',
+            
+            # Fruits
+            'citrus sinensis': 'Orange',
+            'citrus limon': 'Lemon',
+            'citrus aurantium': 'Sour Orange',
+            'malus domestica': 'Apple',
+            'pyrus': 'Pear',
+            'prunus persica': 'Peach',
+            'prunus avium': 'Cherry',
+            'fragaria': 'Strawberry',
+            'rubus': 'Raspberry',
+            'vitis vinifera': 'Grape',
+            'musa': 'Banana',
+            'persea americana': 'Avocado',
+            'mangifera indica': 'Mango',
+            'citrullus lanatus': 'Watermelon',
+            'cucumis melo': 'Cantaloupe',
+            'ananas comosus': 'Pineapple',
+            
+            # Herbs and Spices
+            'lavandula': 'Lavender',
+            'salvia officinalis': 'Sage',
+            'mentha spicata': 'Spearmint',
+            'mentha piperita': 'Peppermint',
+            'cinnamomum verum': 'Cinnamon',
+            'zingiber officinale': 'Ginger',
+            'curcuma longa': 'Turmeric',
+            'capsicum frutescens': 'Chili Pepper',
+            
+            # Flowers
+            'rosa': 'Rose',
+            'tulipa': 'Tulip',
+            'lilium': 'Lily',
+            'chrysanthemum': 'Chrysanthemum',
+            'gerbera': 'Gerbera Daisy',
+            'helianthus annuus': 'Sunflower',
+            'petunia': 'Petunia',
+            'impatiens': 'Impatiens',
+            'begonia': 'Begonia',
+            'marigold': 'Marigold',
+            'zinnia': 'Zinnia',
+            
+            # Trees
+            'quercus': 'Oak',
+            'acer': 'Maple',
+            'betula': 'Birch',
+            'pinus': 'Pine',
+            'picea': 'Spruce',
+            'abies': 'Fir',
+            'cedrus': 'Cedar',
+            'juniperus': 'Juniper',
+            'magnolia': 'Magnolia',
+            'acer palmatum': 'Japanese Maple',
+            
+            # Succulents
+            'aloe vera': 'Aloe Vera',
+            'echeveria': 'Echeveria',
+            'crassula ovata': 'Jade Plant',
+            'sedum': 'Sedum',
+            'kalanchoe': 'Kalanchoe',
+            'haworthia': 'Haworthia',
+            'agave': 'Agave',
+            'cactus': 'Cactus',
+            'succulent': 'Succulent'
+        }
+
         crop_synonyms = {
-            'carrot': {'carrot', 'daucus carota', 'wild carrot'},
+            'carrot': {'carrot', 'daucus carota', 'wild carrot', 'wild radish'},
             'tomato': {'tomato', 'solanum lycopersicum'},
             'cucumber': {'cucumber', 'cucumis sativus'},
             'pepper': {'pepper', 'capsicum annuum', 'bell pepper', 'chili'},
@@ -137,7 +238,8 @@ def ai_plant_recognition():
             'onion': {'onion', 'allium cepa'},
             'garlic': {'garlic', 'allium sativum'},
             'potato': {'potato', 'solanum tuberosum'},
-            'lettuce': {'lettuce', 'lactuca sativa'}
+            'lettuce': {'lettuce', 'lactuca sativa'},
+            'eggplant': {'eggplant', 'brinjal', 'aubergine', 'solanum melongena'}
         }
 
         def crop_match_score(s):
@@ -156,16 +258,38 @@ def ai_plant_recognition():
             except Exception:
                 return 0.0
 
+        # Function to get the best common name
+        def get_best_common_name(plant_name, scientific_name, common_names_list):
+            # First, try to find a mapping for the scientific name
+            if scientific_name and scientific_name.lower() in common_name_mapping:
+                return common_name_mapping[scientific_name.lower()]
+            
+            # Then try the plant name
+            if plant_name and plant_name.lower() in common_name_mapping:
+                return common_name_mapping[plant_name.lower()]
+            
+            # Check if any common names are in our mapping
+            for common in common_names_list:
+                if common and common.lower() in common_name_mapping:
+                    return common_name_mapping[common.lower()]
+            
+            # If no mapping found, prefer the first common name, or the plant name
+            if common_names_list:
+                return common_names_list[0]
+            return plant_name or 'Unknown'
+
         # Re-rank: boost crop matches slightly so carrots beat radish if close
         ranked = sorted(suggestions, key=lambda s: (prob(s) + 0.07 * crop_match_score(s)), reverse=True)
         top = ranked[0]
         name = top.get('plant_name') or top.get('name')
+        scientific_name = (top.get('plant_details') or {}).get('scientific_name') or ''
         probability = float(top.get('probability', 0)) * 100.0
         details = top.get('plant_details', {})
         common_names = details.get('common_names') or []
         wiki = details.get('wiki_description', {})
 
-        display_name = (common_names[0] if common_names else None) or name or 'Unknown'
+        # Get the best common name using our mapping
+        display_name = get_best_common_name(name, scientific_name, common_names)
 
         # Heuristic: detect strong orange coloration suggesting carrot and adjust when radish/beet chosen
         try:
@@ -191,9 +315,13 @@ def ai_plant_recognition():
         alternatives = []
         for s in ranked[:5]:
             n = s.get('plant_name') or s.get('name')
+            sci = (s.get('plant_details') or {}).get('scientific_name') or ''
+            commons = (s.get('plant_details') or {}).get('common_names') or []
             p = round(float(s.get('probability', 0)) * 100.0, 1)
             if n:
-                alternatives.append({'name': n, 'confidence': p})
+                # Use common name mapping for alternatives too
+                alt_display_name = get_best_common_name(n, sci, commons)
+                alternatives.append({'name': alt_display_name, 'confidence': p})
 
         # Simple heuristics from wiki description to provide dynamic care if AI is unavailable
         def infer_care_from_text(text: str):
@@ -383,8 +511,9 @@ def ai_plant_recognition():
 
         rule_enrichment = apply_rule_based_enrichment(name, display_name, wiki_text)
         result = {
-            'plant_name': display_name,
-            'scientific_name': name,
+            'plant_name': display_name,  # This now uses our common name mapping
+            'scientific_name': scientific_name,  # Keep the scientific name for reference
+            'original_name': name,  # Keep the original name from API
             'common_names': common_names,
             'confidence': round(probability, 1),
             'health_status': (rule_enrichment or {}).get('health_status', 'Unknown'),
@@ -408,7 +537,7 @@ def ai_plant_recognition():
         # Mark whether rules contributed
         result['rules_enriched'] = bool(rule_enrichment) or bool(inferred)
 
-        # Optionally enrich with AI-generated guidance if key is available
+        # Enhanced OpenAI integration for more accurate analysis
         try:
             openai_key = os.getenv('OPENAI_API_KEY')
             if openai_key:
@@ -432,49 +561,98 @@ def ai_plant_recognition():
                             result['estimated_yield'] = ai.get('estimated_yield')
                         result['ai_enriched'] = True
                         return jsonify(result)
+                
+                # Enhanced system prompt for image-based analysis
                 system_prompt = (
-                    "You are a horticulture expert. Given plant identification details, "
-                    "return concise care guidance as strict JSON with keys: "
-                    "health_status (short string), growth_stage (short string), "
-                    "care_recommendations (object with watering, sunlight, soil), "
-                    "common_issues (array of short strings), estimated_yield (short string). "
-                    "Keep it practical for home gardening."
+                    "You are an expert horticulturist and plant pathologist with 20+ years of experience. "
+                    "Analyze the provided plant image and identification data to give accurate, image-specific guidance. "
+                    "Look at the actual condition of the plant in the image - examine leaves, stems, fruits, flowers, and overall health. "
+                    "IMPORTANT: Always use common, everyday plant names that people recognize (like 'Carrot', 'Eggplant', 'Tomato') "
+                    "instead of scientific names or regional names (like 'Daucus carota', 'Brinjal', 'Solanum lycopersicum'). "
+                    "Return your analysis as strict JSON with these exact keys: "
+                    "health_status (detailed assessment based on what you see in the image - mention specific visual indicators), "
+                    "growth_stage (specific stage based on what's visible in the image - flowers, fruits, leaves, etc.), "
+                    "care_recommendations (object with watering, sunlight, soil, fertilizing, pruning based on current condition), "
+                    "common_issues (array of specific problems you can see or likely issues based on the image), "
+                    "estimated_yield (realistic expectations based on current plant condition), "
+                    "seasonal_notes (seasonal care tips), pest_diseases (common threats and prevention). "
+                    "Be specific about what you observe in the image and provide practical advice for home gardening. "
+                    "Use simple, common plant names that everyone understands."
                 )
+                
+                # Enhanced user payload with image context
                 user_payload = {
                     "plant_name": result.get('plant_name'),
                     "scientific_name": result.get('scientific_name'),
                     "common_names": result.get('common_names'),
                     "confidence": result.get('confidence'),
-                    "wiki": wiki,
-                    "info_url": result.get('info_url')
+                    "wiki_description": wiki_text,
+                    "info_url": result.get('info_url'),
+                    "current_season": "spring",  # Could be dynamic based on date
+                    "analysis_context": "Analyze the actual plant condition visible in the image"
                 }
+                
                 try:
-                    # Try SDK path (constructor can fail in some environments)
+                    # Try SDK path first with vision capabilities
                     os.environ['OPENAI_API_KEY'] = openai_key
                     from openai import OpenAI
                     client = OpenAI()
+                    
+                    # Use vision model for image analysis
                     completion = client.chat.completions.create(
-                        model=os.getenv('OPENAI_MODEL', 'gpt-4o-mini'),
+                        model="gpt-4o",  # Use vision-capable model
                         response_format={"type": "json_object"},
                         messages=[
                             {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": f"Identify guidance for: {user_payload}"}
-                        ]
+                            {
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": f"Analyze this plant image and provide detailed care guidance based on what you see: {user_payload}"
+                                    },
+                                    {
+                                        "type": "image_url",
+                                        "image_url": {
+                                            "url": f"data:image/jpeg;base64,{image_b64}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        temperature=0.3,  # Lower temperature for more consistent results
+                        max_tokens=1000
                     )
                     content = completion.choices[0].message.content
                 except Exception:
-                    # Fallback to plain HTTPS call
+                    # Fallback to plain HTTPS call with vision
                     http_headers = {
                         'Authorization': f'Bearer {openai_key}',
                         'Content-Type': 'application/json'
                     }
                     http_payload = {
-                        'model': os.getenv('OPENAI_MODEL', 'gpt-4o-mini'),
+                        'model': 'gpt-4o',  # Use vision-capable model
                         'response_format': { 'type': 'json_object' },
                         'messages': [
                             { 'role': 'system', 'content': system_prompt },
-                            { 'role': 'user', 'content': f"Identify guidance for: {user_payload}" }
-                        ]
+                            {
+                                'role': 'user',
+                                'content': [
+                                    {
+                                        'type': 'text',
+                                        'text': f'Analyze this plant image and provide detailed care guidance based on what you see: {user_payload}'
+                                    },
+                                    {
+                                        'type': 'image_url',
+                                        'image_url': {
+                                            'url': f'data:image/jpeg;base64,{image_b64}'
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        'temperature': 0.3,
+                        'max_tokens': 1000
                     }
                     # Retry with simple backoff on 429
                     backoffs = [0, 2, 5]
@@ -491,26 +669,52 @@ def ai_plant_recognition():
                         break
                     else:
                         raise Exception(last_err or 'OpenAI HTTP call failed')
+                
                 import json as _json
                 ai = _json.loads(content)
-                # Merge safely with defaults
+                
+                # Enhanced merge with more comprehensive data
                 if isinstance(ai, dict):
-                    result['health_status'] = ai.get('health_status') or result['health_status']
-                    result['growth_stage'] = ai.get('growth_stage') or result['growth_stage']
+                    # Update health status with more detailed assessment
+                    if ai.get('health_status'):
+                        result['health_status'] = ai['health_status']
+                    
+                    # Update growth stage with more specific information
+                    if ai.get('growth_stage'):
+                        result['growth_stage'] = ai['growth_stage']
+                    
+                    # Enhanced care recommendations
                     if isinstance(ai.get('care_recommendations'), dict):
+                        care_recs = ai['care_recommendations']
                         result['care_recommendations'].update({
-                            'watering': ai['care_recommendations'].get('watering') or result['care_recommendations']['watering'],
-                            'sunlight': ai['care_recommendations'].get('sunlight') or result['care_recommendations']['sunlight'],
-                            'soil': ai['care_recommendations'].get('soil') or result['care_recommendations']['soil']
+                            'watering': care_recs.get('watering') or result['care_recommendations']['watering'],
+                            'sunlight': care_recs.get('sunlight') or result['care_recommendations']['sunlight'],
+                            'soil': care_recs.get('soil') or result['care_recommendations']['soil'],
+                            'fertilizing': care_recs.get('fertilizing', 'Follow general fertilizing schedule for this plant type'),
+                            'pruning': care_recs.get('pruning', 'Prune as needed for health and shape')
                         })
+                    
+                    # Enhanced common issues with solutions
                     if isinstance(ai.get('common_issues'), list):
-                        result['common_issues'] = ai.get('common_issues')
+                        result['common_issues'] = ai['common_issues']
+                    
+                    # Enhanced yield estimation
                     if ai.get('estimated_yield'):
-                        result['estimated_yield'] = ai.get('estimated_yield')
+                        result['estimated_yield'] = ai['estimated_yield']
+                    
+                    # Add new AI-enhanced fields
+                    if ai.get('seasonal_notes'):
+                        result['seasonal_notes'] = ai['seasonal_notes']
+                    
+                    if ai.get('pest_diseases'):
+                        result['pest_diseases'] = ai['pest_diseases']
+                    
                     result['ai_enriched'] = True
-                    # Save to cache
+                    
+                    # Save to cache with enhanced data
                     if cache_key:
                         _AI_CACHE[cache_key] = { 'ts': time.time(), 'data': ai }
+                        
         except Exception as ai_err:
             # If AI enrichment fails, fall back to defaults but include server log
             try:
@@ -560,6 +764,209 @@ def ai_plant_recognition():
             })
         except Exception:
             return jsonify({"error": f"Analysis failed: {str(e)}"}), 500
+
+@views.route('/soil-analysis', methods=['POST'])
+@login_required
+def soil_analysis():
+    if current_user.is_admin():
+        return jsonify({"error": "Admins do not have access to the soil analysis feature."}), 403
+
+    try:
+        openai_key = os.getenv('OPENAI_API_KEY')
+        if not openai_key:
+            return jsonify({"error": "Missing OPENAI_API_KEY. Add it to .env and restart backend."}), 200
+
+        file = request.files.get('image')
+        if not file:
+            return jsonify({"error": "Image file is required (field name: 'image')."}), 200
+
+        # Read and base64 encode image for OpenAI Vision
+        image_bytes = file.read()
+        image_b64 = base64.b64encode(image_bytes).decode('utf-8')
+
+        # Enhanced system prompt for comprehensive soil analysis with plant recommendations
+        system_prompt = (
+            "You are an expert soil scientist, agronomist, and horticulturist with extensive experience in soil analysis and plant-soil relationships. "
+            "Analyze the provided soil image and return detailed, accurate soil assessment with specific plant recommendations. "
+            "Consider visual indicators of soil health, texture, moisture, color, structure, and potential issues. "
+            "Return your analysis as strict JSON with these exact keys: "
+            "moisture_level (detailed assessment with visual indicators), texture (specific soil type with characteristics), "
+            "ph (estimated pH range with visual indicators), organic_matter (assessment of organic content), "
+            "drainage (drainage quality assessment), recommendations (array of specific improvement suggestions), "
+            "suitable_plants (detailed object with categories: vegetables, fruits, herbs, flowers, trees - each containing specific plant names with brief explanations), "
+            "nutrient_indicators (visual signs of nutrient status), compaction_assessment (soil structure analysis), "
+            "soil_health_score (1-10 rating with explanation), seasonal_considerations (best planting times for this soil), "
+            "soil_amendments (specific materials to add for improvement), water_retention (how well soil holds water), "
+            "root_development (how well roots can grow in this soil). "
+            "Be specific, practical, and accurate for home gardening. Focus on plants that would actually thrive in the specific soil conditions visible in the image."
+        )
+
+        try:
+            # Use OpenAI Vision API for soil analysis
+            os.environ['OPENAI_API_KEY'] = openai_key
+            from openai import OpenAI
+            client = OpenAI()
+            
+            completion = client.chat.completions.create(
+                model="gpt-4o",  # Use vision-capable model
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "Analyze this soil image and provide detailed soil assessment for home gardening:"
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{image_b64}"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                temperature=0.3,
+                max_tokens=1000
+            )
+            content = completion.choices[0].message.content
+        except Exception:
+            # Fallback to plain HTTPS call
+            http_headers = {
+                'Authorization': f'Bearer {openai_key}',
+                'Content-Type': 'application/json'
+            }
+            http_payload = {
+                'model': 'gpt-4o',
+                'response_format': { 'type': 'json_object' },
+                'messages': [
+                    { 'role': 'system', 'content': system_prompt },
+                    {
+                        'role': 'user',
+                        'content': [
+                            {
+                                'type': 'text',
+                                'text': 'Analyze this soil image and provide detailed soil assessment for home gardening:'
+                            },
+                            {
+                                'type': 'image_url',
+                                'image_url': {
+                                    'url': f'data:image/jpeg;base64,{image_b64}'
+                                }
+                            }
+                        ]
+                    }
+                ],
+                'temperature': 0.3,
+                'max_tokens': 1000
+            }
+            
+            # Retry with simple backoff on 429
+            backoffs = [0, 2, 5]
+            last_err = None
+            for delay in backoffs:
+                if delay:
+                    time.sleep(delay)
+                http_resp = requests.post('https://api.openai.com/v1/chat/completions', json=http_payload, headers=http_headers, timeout=30)
+                if http_resp.status_code == 429:
+                    last_err = f"429: {http_resp.text[:200]}"
+                    continue
+                http_resp.raise_for_status()
+                content = http_resp.json()['choices'][0]['message']['content']
+                break
+            else:
+                raise Exception(last_err or 'OpenAI HTTP call failed')
+
+        import json as _json
+        ai_result = _json.loads(content)
+        
+        # Structure the response to match frontend expectations with enhanced data
+        result = {
+            'moisture_level': ai_result.get('moisture_level', 'Unable to determine from image'),
+            'texture': ai_result.get('texture', 'Unable to determine from image'),
+            'ph': ai_result.get('ph', 'Unable to determine from image'),
+            'organic_matter': ai_result.get('organic_matter', 'Unable to assess from image'),
+            'drainage': ai_result.get('drainage', 'Unable to assess from image'),
+            'recommendations': ai_result.get('recommendations', []),
+            'suitable_plants': ai_result.get('suitable_plants', {}),
+            'nutrient_indicators': ai_result.get('nutrient_indicators', 'Unable to assess from image'),
+            'compaction_assessment': ai_result.get('compaction_assessment', 'Unable to assess from image'),
+            'soil_health_score': ai_result.get('soil_health_score', 'Unable to assess from image'),
+            'seasonal_considerations': ai_result.get('seasonal_considerations', 'Unable to assess from image'),
+            'soil_amendments': ai_result.get('soil_amendments', 'Unable to assess from image'),
+            'water_retention': ai_result.get('water_retention', 'Unable to assess from image'),
+            'root_development': ai_result.get('root_development', 'Unable to assess from image'),
+            'ai_analyzed': True
+        }
+
+        return jsonify(result)
+        
+    except Exception as e:
+        # Fallback to basic heuristic analysis
+        try:
+            file = request.files.get('image')
+            if not file:
+                return jsonify({"error": f"Soil analysis failed: {str(e)}"}), 500
+            
+            from PIL import Image
+            import numpy as np
+            image = Image.open(file.stream).convert('RGB').resize((256, 256))
+            arr = np.asarray(image, dtype=np.float32)
+            
+            # Basic color analysis for soil characteristics
+            red = arr[:, :, 0]
+            green = arr[:, :, 1]
+            blue = arr[:, :, 2]
+            
+            # Calculate average colors
+            avg_red = float(np.mean(red))
+            avg_green = float(np.mean(green))
+            avg_blue = float(np.mean(blue))
+            
+            # Basic soil type estimation based on color
+            if avg_red > 120 and avg_green > 100:
+                soil_type = "Clay-rich soil (reddish-brown)"
+                ph_estimate = "Slightly acidic to neutral (6.0-7.0)"
+            elif avg_red > 100 and avg_green > 80:
+                soil_type = "Loamy soil (brown)"
+                ph_estimate = "Neutral (6.5-7.5)"
+            elif avg_red < 80 and avg_green < 80:
+                soil_type = "Sandy soil (light colored)"
+                ph_estimate = "Variable, may be alkaline (7.0-8.0)"
+            else:
+                soil_type = "Mixed soil composition"
+                ph_estimate = "Neutral range (6.5-7.5)"
+            
+            # Basic moisture estimation
+            brightness = (avg_red + avg_green + avg_blue) / 3
+            if brightness < 80:
+                moisture = "Appears moist or wet"
+            elif brightness > 150:
+                moisture = "Appears dry"
+            else:
+                moisture = "Moderate moisture level"
+            
+            return jsonify({
+                'moisture_level': moisture,
+                'texture': soil_type,
+                'ph': ph_estimate,
+                'organic_matter': 'Unable to assess from image - consider soil test',
+                'drainage': 'Unable to assess from image - observe after watering',
+                'recommendations': [
+                    'Consider professional soil testing for accurate pH and nutrient levels',
+                    'Add organic matter like compost to improve soil structure',
+                    'Test drainage by observing how quickly water is absorbed'
+                ],
+                'suitable_plants': ['Most common garden plants will grow in this soil type'],
+                'nutrient_indicators': 'Unable to assess from image - consider soil test',
+                'compaction_assessment': 'Unable to assess from image - test with finger or tool',
+                'ai_analyzed': False,
+                'fallback_analysis': True
+            })
+        except Exception:
+            return jsonify({"error": f"Soil analysis failed: {str(e)}"}), 500
 
 @views.route('/camera')
 @login_required

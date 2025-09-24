@@ -24,6 +24,11 @@ def api_ai_recognition():
     from website.views import ai_plant_recognition
     return ai_plant_recognition()
 
+@app.route('/api/soil-analysis', methods=['POST'])
+def api_soil_analysis():
+    from website.views import soil_analysis
+    return soil_analysis()
+
 @app.route('/api/seasonal-planning')
 def api_seasonal_planning():
     from website.views import seasonal_planning
