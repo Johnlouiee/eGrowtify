@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { 
   FlaskConical, Factory, LeafyGreen, Recycle, Beaker, Sprout, CheckCircle, 
   Lock, Play, Clock, Award, ArrowRight, ArrowLeft, Eye, FileText, HelpCircle,
-  Target, TrendingUp, Star, Users, Calendar, MapPin, Zap, Shield, Microscope, Video, PlayCircle, X
+  Target, TrendingUp, Star, Users, Calendar, MapPin, Zap, Shield, Microscope, Video, PlayCircle, X, 
+  Scissors, TreePine, Droplets, Sun, Wind
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -15,49 +16,51 @@ const ExpertLearningPath = () => {
   const [quizAnswers, setQuizAnswers] = useState({})
   const [moduleProgress, setModuleProgress] = useState({})
   const [showVideo, setShowVideo] = useState(false)
+  const [showQuizResults, setShowQuizResults] = useState(false)
+  const [quizScore, setQuizScore] = useState(0)
 
   const modules = [
     {
-      id: 'propagation',
-      title: 'Advanced Propagation Techniques',
-      icon: Sprout,
+      id: 'advanced-pruning',
+      title: 'Master Pruning Techniques',
+      icon: Scissors,
       color: 'green',
       estimatedTime: '35 min',
       difficulty: 'Expert',
-      description: 'Master professional propagation methods and techniques',
+      description: 'Learn professional pruning methods for trees, shrubs, and plants',
       hasVideo: true,
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', // Placeholder - replace with actual propagation video
+      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
       lessons: [
         {
-          title: 'Stem and Leaf Cuttings',
-          content: 'Professional cutting techniques for maximum success:',
+          title: 'Pruning Fundamentals',
+          content: 'Master the basics of professional pruning:',
           points: [
-            'Stem cuttings: Choose healthy, non-flowering stems',
-            'Leaf cuttings: Use entire leaves or leaf sections',
-            'Root cuttings: Harvest during dormant season',
-            'Sterile technique: Clean tools and growing medium'
+            'When to prune: Timing for different plant types',
+            'Proper cuts: Making clean, angled cuts',
+            'Tool selection: Choosing the right pruning tools',
+            'Safety first: Protecting yourself and your plants'
           ],
           type: 'lesson'
         },
         {
-          title: 'Seed Saving and Treatment',
-          content: 'Preserve and improve plant genetics:',
+          title: 'Tree Pruning Techniques',
+          content: 'Advanced methods for tree care:',
           points: [
-            'Seed collection: Timing and proper storage methods',
-            'Stratification: Cold treatment for germination',
-            'Scarification: Breaking seed dormancy',
-            'Genetic preservation: Maintaining plant diversity'
+            'Crown thinning: Removing branches for better air flow',
+            'Crown raising: Removing lower branches safely',
+            'Crown reduction: Reducing tree size properly',
+            'Deadwood removal: Cleaning up damaged branches'
           ],
           type: 'lesson'
         },
         {
-          title: 'Rooting Hormones and Media',
-          content: 'Optimize rooting success with proper techniques:',
+          title: 'Shrub and Plant Pruning',
+          content: 'Specialized pruning for different plants:',
           points: [
-            'Hormone types: IBA, NAA, and natural alternatives',
-            'Growing media: Perlite, vermiculite, and custom mixes',
-            'Environmental control: Temperature and humidity',
-            'Monitoring: Root development and transplant timing'
+            'Hedge trimming: Creating formal and informal shapes',
+            'Rose pruning: Encouraging healthy blooms',
+            'Fruit tree pruning: Maximizing fruit production',
+            'Ornamental pruning: Creating artistic shapes'
           ],
           type: 'lesson'
         }
@@ -65,64 +68,64 @@ const ExpertLearningPath = () => {
       quiz: {
         questions: [
           {
-            question: 'When should you take stem cuttings?',
-            options: ['During flowering', 'From healthy, non-flowering stems', 'In winter only', 'After fruiting'],
+            question: 'What is the best time to prune most trees?',
+            options: ['Summer', 'Winter when dormant', 'Spring when growing', 'Fall'],
             correct: 1
           },
           {
-            question: 'What is stratification?',
-            options: ['Seed storage', 'Cold treatment for germination', 'Seed cleaning', 'Plant breeding'],
+            question: 'What is crown thinning?',
+            options: ['Cutting the top off', 'Removing branches for better air flow', 'Making the tree shorter', 'Removing all leaves'],
             correct: 1
           },
           {
-            question: 'Which hormone is commonly used for rooting?',
-            options: ['Auxin', 'Gibberellin', 'Cytokinin', 'Ethylene'],
-            correct: 0
+            question: 'Why is it important to make clean cuts when pruning?',
+            options: ['It looks better', 'It helps plants heal faster', 'It saves time', 'It uses less energy'],
+            correct: 1
           }
         ]
       }
     },
     {
-      id: 'greenhouse',
-      title: 'Greenhouse & Controlled Environments',
-      icon: Factory,
-      color: 'blue',
+      id: 'tree-care',
+      title: 'Professional Tree Care',
+      icon: TreePine,
+      color: 'emerald',
       estimatedTime: '40 min',
       difficulty: 'Expert',
-      description: 'Design and manage controlled growing environments',
+      description: 'Advanced techniques for maintaining healthy trees',
       hasVideo: true,
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', // Placeholder - replace with actual greenhouse video
+      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
       lessons: [
         {
-          title: 'Environmental Control Systems',
-          content: 'Master climate control for optimal plant growth:',
+          title: 'Tree Health Assessment',
+          content: 'Learn to evaluate tree condition:',
           points: [
-            'Temperature control: Heating and cooling systems',
-            'Humidity management: Ventilation and misting',
-            'Air circulation: Fans and natural ventilation',
-            'CO2 supplementation: Enhanced growth rates'
+            'Visual inspection: Looking for signs of problems',
+            'Root health: Checking for root damage or disease',
+            'Bark examination: Identifying pest and disease issues',
+            'Growth patterns: Understanding normal vs. abnormal growth'
           ],
           type: 'lesson'
         },
         {
-          title: 'Lighting and Photoperiod',
-          content: 'Optimize light for different growth stages:',
+          title: 'Tree Support Systems',
+          content: 'When and how to support trees:',
           points: [
-            'Light spectra: Blue for vegetative, red for flowering',
-            'DLI targeting: Daily light integral calculations',
-            'Photoperiod control: Day length manipulation',
-            'LED technology: Energy-efficient growing lights'
+            'Cabling: Supporting weak branches',
+            'Bracing: Strengthening tree structure',
+            'Staking: Supporting young or damaged trees',
+            'Guying: Anchoring trees in windy areas'
           ],
           type: 'lesson'
         },
         {
-          title: 'Automation and Monitoring',
-          content: 'Implement smart systems for efficiency:',
+          title: 'Tree Preservation',
+          content: 'Protecting trees during construction:',
           points: [
-            'Irrigation automation: Drip and mist systems',
-            'Sensor networks: Real-time monitoring',
-            'Data logging: Track environmental parameters',
-            'Remote control: Mobile and web-based management'
+            'Root protection: Preventing damage during building',
+            'Soil compaction: Avoiding soil damage',
+            'Water management: Ensuring proper irrigation',
+            'Long-term care: Maintaining tree health over time'
           ],
           type: 'lesson'
         }
@@ -130,62 +133,62 @@ const ExpertLearningPath = () => {
       quiz: {
         questions: [
           {
-            question: 'What does DLI stand for?',
-            options: ['Daily Light Integral', 'Direct Light Intensity', 'Dynamic Light Index', 'Digital Light Interface'],
-            correct: 0
-          },
-          {
-            question: 'Which light spectrum promotes flowering?',
-            options: ['Blue', 'Red', 'Green', 'Yellow'],
+            question: 'What should you look for when assessing tree health?',
+            options: ['Only the leaves', 'Signs of problems in bark, roots, and growth', 'Only the height', 'Only the color'],
             correct: 1
           },
           {
-            question: 'What is the main benefit of CO2 supplementation?',
-            options: ['Reduced water use', 'Enhanced growth rates', 'Pest control', 'Disease prevention'],
+            question: 'What is tree cabling used for?',
+            options: ['Making trees grow faster', 'Supporting weak branches', 'Making trees shorter', 'Removing branches'],
+            correct: 1
+          },
+          {
+            question: 'Why is root protection important during construction?',
+            options: ['It looks better', 'It prevents tree damage and death', 'It saves money', 'It makes work easier'],
             correct: 1
           }
         ]
       }
     },
     {
-      id: 'sustainability',
-      title: 'Sustainable & Regenerative Gardening',
-      icon: Recycle,
-      color: 'emerald',
+      id: 'irrigation-systems',
+      title: 'Advanced Irrigation Systems',
+      icon: Droplets,
+      color: 'blue',
       estimatedTime: '38 min',
       difficulty: 'Expert',
-      description: 'Create self-sustaining, regenerative garden ecosystems',
+      description: 'Design and install professional irrigation systems',
       lessons: [
         {
-          title: 'Soil Food Web Management',
-          content: 'Build healthy soil ecosystems:',
+          title: 'System Design Principles',
+          content: 'Plan efficient irrigation systems:',
           points: [
-            'Composting systems: Hot and cold composting methods',
-            'Beneficial microorganisms: Bacteria, fungi, and protozoa',
-            'Soil testing: Understanding soil biology',
-            'Organic matter: Building soil structure and fertility'
+            'Water pressure: Understanding system requirements',
+            'Zone planning: Grouping plants by water needs',
+            'Coverage patterns: Ensuring even water distribution',
+            'Efficiency factors: Minimizing water waste'
           ],
           type: 'lesson'
         },
         {
-          title: 'Water Conservation Strategies',
-          content: 'Implement water-wise gardening practices:',
+          title: 'Drip Irrigation Installation',
+          content: 'Install professional drip systems:',
           points: [
-            'Mulching: Moisture retention and weed suppression',
-            'Rainwater harvesting: Collection and storage systems',
-            'Drip irrigation: Efficient water delivery',
-            'Xeriscaping: Drought-tolerant plant selection'
+            'Main line installation: Running water to zones',
+            'Emitter placement: Positioning for optimal coverage',
+            'Filter systems: Keeping water clean',
+            'Timer programming: Automating water delivery'
           ],
           type: 'lesson'
         },
         {
-          title: 'Polycultures and Biodiversity',
-          content: 'Create resilient, diverse garden ecosystems:',
+          title: 'System Maintenance',
+          content: 'Keep irrigation systems working properly:',
           points: [
-            'Polyculture design: Multiple species integration',
-            'Habitat creation: Supporting beneficial wildlife',
-            'Pest management: Natural predator attraction',
-            'Succession planning: Long-term ecosystem development'
+            'Regular inspections: Checking for problems',
+            'Cleaning filters: Maintaining water flow',
+            'Winterizing: Protecting systems from cold',
+            'Repair techniques: Fixing common problems'
           ],
           type: 'lesson'
         }
@@ -193,62 +196,62 @@ const ExpertLearningPath = () => {
       quiz: {
         questions: [
           {
-            question: 'What is the main benefit of polycultures?',
-            options: ['Higher yields', 'Increased biodiversity and resilience', 'Lower costs', 'Easier management'],
+            question: 'What is the main benefit of drip irrigation?',
+            options: ['It uses more water', 'It delivers water directly to plant roots efficiently', 'It waters faster', 'It costs less'],
             correct: 1
           },
           {
-            question: 'Which is most effective for water conservation?',
-            options: ['Daily watering', 'Mulching', 'Fertilizing', 'Pruning'],
+            question: 'Why is zone planning important in irrigation?',
+            options: ['It looks better', 'It groups plants by water needs', 'It saves time', 'It uses less equipment'],
             correct: 1
           },
           {
-            question: 'What does the soil food web include?',
-            options: ['Only plants', 'Bacteria, fungi, and protozoa', 'Only insects', 'Only earthworms'],
+            question: 'What should you do to winterize irrigation systems?',
+            options: ['Leave them running', 'Drain water to prevent freezing damage', 'Cover with blankets', 'Add more water'],
             correct: 1
           }
         ]
       }
     },
     {
-      id: 'breeding',
-      title: 'Plant Breeding & Genetics',
-      icon: Beaker,
-      color: 'purple',
-      estimatedTime: '45 min',
+      id: 'greenhouse-management',
+      title: 'Greenhouse Operations',
+      icon: Sun,
+      color: 'orange',
+      estimatedTime: '42 min',
       difficulty: 'Expert',
-      description: 'Master the art and science of plant breeding',
+      description: 'Master greenhouse climate control and plant management',
       lessons: [
         {
-          title: 'Pollination Control',
-          content: 'Control plant reproduction for desired traits:',
+          title: 'Climate Control Systems',
+          content: 'Manage temperature, humidity, and ventilation:',
           points: [
-            'Hand pollination: Precise control over crosses',
-            'Isolation techniques: Preventing unwanted pollination',
-            'Timing: Optimal pollination windows',
-            'Record keeping: Tracking parentage and traits'
+            'Heating systems: Maintaining optimal temperatures',
+            'Cooling methods: Ventilation and shade systems',
+            'Humidity control: Managing moisture levels',
+            'Air circulation: Ensuring proper air movement'
           ],
           type: 'lesson'
         },
         {
-          title: 'Trait Selection and Inheritance',
-          content: 'Understand genetic principles in plant breeding:',
+          title: 'Lighting Management',
+          content: 'Optimize light for plant growth:',
           points: [
-            'Mendelian genetics: Dominant and recessive traits',
-            'Phenotype vs genotype: Observable vs genetic traits',
-            'Selection criteria: Choosing plants for breeding',
-            'Line maintenance: Preserving desirable characteristics'
+            'Natural light: Maximizing sunlight exposure',
+            'Supplemental lighting: Adding artificial light',
+            'Light duration: Controlling day length',
+            'Light quality: Using different light spectrums'
           ],
           type: 'lesson'
         },
         {
-          title: 'Legal and Ethical Considerations',
-          content: 'Navigate the legal aspects of plant breeding:',
+          title: 'Plant Management',
+          content: 'Advanced greenhouse plant care:',
           points: [
-            'Plant patents: Intellectual property protection',
-            'Open source seeds: Community breeding programs',
-            'Genetic diversity: Preserving heirloom varieties',
-            'Documentation: Proper record keeping and labeling'
+            'Spacing strategies: Optimizing plant density',
+            'Pest control: Managing pests in controlled environments',
+            'Disease prevention: Keeping plants healthy',
+            'Harvest timing: Maximizing production'
           ],
           type: 'lesson'
         }
@@ -256,18 +259,81 @@ const ExpertLearningPath = () => {
       quiz: {
         questions: [
           {
-            question: 'What is the purpose of isolation in plant breeding?',
-            options: ['Save space', 'Prevent unwanted pollination', 'Reduce costs', 'Increase yield'],
+            question: 'What is the main purpose of greenhouse ventilation?',
+            options: ['To make it cooler', 'To control temperature, humidity, and air circulation', 'To save energy', 'To look better'],
             correct: 1
           },
           {
-            question: 'What is the difference between phenotype and genotype?',
-            options: ['No difference', 'Phenotype is observable, genotype is genetic', 'Genotype is observable, phenotype is genetic', 'They are the same thing'],
+            question: 'Why might you need supplemental lighting in a greenhouse?',
+            options: ['To save money', 'To provide extra light when natural light is insufficient', 'To make it warmer', 'To reduce humidity'],
             correct: 1
           },
           {
-            question: 'Why is genetic diversity important?',
-            options: ['Higher yields', 'Preserving heirloom varieties', 'Lower costs', 'Easier breeding'],
+            question: 'What is important for pest control in greenhouses?',
+            options: ['Using only chemicals', 'Prevention and early detection', 'Ignoring small problems', 'Removing all plants'],
+            correct: 1
+          }
+        ]
+      }
+    },
+    {
+      id: 'wind-protection',
+      title: 'Wind Protection Strategies',
+      icon: Wind,
+      color: 'gray',
+      estimatedTime: '30 min',
+      difficulty: 'Expert',
+      description: 'Create effective windbreaks and protect plants from wind damage',
+      lessons: [
+        {
+          title: 'Understanding Wind Effects',
+          content: 'Learn how wind affects plants:',
+          points: [
+            'Physical damage: Breaking branches and stems',
+            'Moisture loss: Increasing water evaporation',
+            'Temperature effects: Creating wind chill',
+            'Soil erosion: Removing topsoil and nutrients'
+          ],
+          type: 'lesson'
+        },
+        {
+          title: 'Windbreak Design',
+          content: 'Plan effective wind protection:',
+          points: [
+            'Height and density: Creating proper barriers',
+            'Distance calculations: Positioning windbreaks correctly',
+            'Plant selection: Choosing wind-resistant species',
+            'Multiple rows: Building layered protection'
+          ],
+          type: 'lesson'
+        },
+        {
+          title: 'Maintenance and Care',
+          content: 'Keep windbreaks working effectively:',
+          points: [
+            'Regular pruning: Maintaining proper density',
+            'Replacement planting: Filling gaps in barriers',
+            'Health monitoring: Keeping plants strong',
+            'Seasonal adjustments: Adapting to changing needs'
+          ],
+          type: 'lesson'
+        }
+      ],
+      quiz: {
+        questions: [
+          {
+            question: 'How does wind affect plants?',
+            options: ['It only helps them grow', 'It can cause physical damage and moisture loss', 'It makes them stronger', 'It has no effect'],
+            correct: 1
+          },
+          {
+            question: 'What is important in windbreak design?',
+            options: ['Only the height', 'Height, density, and proper positioning', 'Only the type of plants', 'Only the color'],
+            correct: 1
+          },
+          {
+            question: 'Why is regular maintenance important for windbreaks?',
+            options: ['It looks better', 'It keeps the protection working effectively', 'It saves money', 'It uses less water'],
             correct: 1
           }
         ]
@@ -276,6 +342,9 @@ const ExpertLearningPath = () => {
   ]
 
   useEffect(() => {
+    // Expert plan is now independent - no prerequisites required
+    // Users can access expert content directly
+
     // Load progress from localStorage
     const savedProgress = localStorage.getItem('expertProgress')
     if (savedProgress) {
@@ -330,27 +399,25 @@ const ExpertLearningPath = () => {
 
     const score = (correctAnswers / currentModule.quiz.questions.length) * 100
 
-    if (score >= 70) {
-      const newCompletedModules = [...completedModules, currentModule.id]
-      const newModuleProgress = {
-        ...moduleProgress,
-        [currentModule.id]: {
-          completed: true,
-          score: score,
-          completedAt: new Date().toISOString()
-        }
+    // Always mark module as completed and show results
+    const newCompletedModules = [...completedModules, currentModule.id]
+    const newModuleProgress = {
+      ...moduleProgress,
+      [currentModule.id]: {
+        completed: true,
+        score: score,
+        completedAt: new Date().toISOString()
       }
-      
-      setCompletedModules(newCompletedModules)
-      setModuleProgress(newModuleProgress)
-      saveProgress(newCompletedModules, newModuleProgress)
-      
-      toast.success(`Congratulations! You completed ${currentModule.title} with ${Math.round(score)}% score!`)
-      setCurrentModule(null)
-      setShowQuiz(false)
-    } else {
-      toast.error(`You scored ${Math.round(score)}%. You need 70% to pass. Try again!`)
     }
+    
+    setCompletedModules(newCompletedModules)
+    setModuleProgress(newModuleProgress)
+    saveProgress(newCompletedModules, newModuleProgress)
+    
+    setQuizScore(score)
+    setShowQuizResults(true)
+    
+    toast.success(`Quiz completed! You scored ${Math.round(score)}%. Check your answers below.`)
   }
 
   const getModuleStatus = (moduleId) => {
@@ -370,9 +437,43 @@ const ExpertLearningPath = () => {
       green: 'bg-green-100 text-green-700 border-green-200',
       blue: 'bg-blue-100 text-blue-700 border-blue-200',
       emerald: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-      purple: 'bg-purple-100 text-purple-700 border-purple-200'
+      purple: 'bg-purple-100 text-purple-700 border-purple-200',
+      cyan: 'bg-cyan-100 text-cyan-700 border-cyan-200',
+      indigo: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+      orange: 'bg-orange-100 text-orange-700 border-orange-200'
     }
     return colorMap[color] || 'bg-gray-100 text-gray-700 border-gray-200'
+  }
+
+  const getQuestionHint = (moduleId, questionIndex) => {
+    const hints = {
+      'advanced-pruning': [
+        'Most trees are best pruned during winter when they are dormant and not actively growing.',
+        'Crown thinning involves removing some branches to improve air flow and light penetration.',
+        'Clean cuts help plants heal faster and reduce the risk of disease entering the wound.'
+      ],
+      'tree-care': [
+        'Tree health assessment should look at bark, roots, and growth patterns, not just leaves.',
+        'Tree cabling is used to support weak branches that might break under stress.',
+        'Root protection during construction prevents tree damage and potential death.'
+      ],
+      'irrigation-systems': [
+        'Drip irrigation delivers water directly to plant roots, making it very efficient.',
+        'Zone planning groups plants with similar water needs together for better efficiency.',
+        'Winterizing irrigation systems involves draining water to prevent freezing damage.'
+      ],
+      'greenhouse-management': [
+        'Greenhouse ventilation controls temperature, humidity, and air circulation for optimal growing.',
+        'Supplemental lighting provides extra light when natural sunlight is insufficient.',
+        'Pest control in greenhouses focuses on prevention and early detection rather than just treatment.'
+      ],
+      'wind-protection': [
+        'Wind can cause physical damage to plants and increase moisture loss through evaporation.',
+        'Effective windbreak design considers height, density, and proper positioning.',
+        'Regular maintenance keeps windbreaks working effectively to protect other plants.'
+      ]
+    }
+    return hints[moduleId]?.[questionIndex] || 'Think about what you learned in the lesson above.'
   }
 
   if (currentModule) {
@@ -447,15 +548,21 @@ const ExpertLearningPath = () => {
                 <button
                   onClick={previousLesson}
                   disabled={currentLesson === 0}
-                  className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Previous
                 </button>
                 
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-500">
+                    {currentLesson + 1} of {currentModule.lessons.length}
+                  </span>
+                </div>
+                
                 <button
                   onClick={nextLesson}
-                  className="flex items-center px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                  className="flex items-center px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                 >
                   {currentLesson === currentModule.lessons.length - 1 ? 'Take Quiz' : 'Next Lesson'}
                   <ArrowRight className="h-4 w-4 ml-2" />
@@ -466,7 +573,25 @@ const ExpertLearningPath = () => {
             /* Quiz */
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Quiz: {currentModule.title}</h2>
-              <p className="text-gray-600 mb-8">Answer all questions to complete this module. You need 70% to pass.</p>
+              
+              {/* Quiz Guide */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
+                <div className="flex items-start gap-3">
+                  <HelpCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-blue-900 mb-2">Quiz Tips for Expert Gardeners</h3>
+                    <ul className="text-sm text-blue-800 space-y-1">
+                      <li>• You're now at the expert level - apply your advanced knowledge</li>
+                      <li>• Think about the science and techniques behind each concept</li>
+                      <li>• Consider how these advanced methods improve plant health and yields</li>
+                      <li>• There's no passing rate - just do your best and learn!</li>
+                      <li>• Trust your gardening experience and the lessons you've learned</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
+              <p className="text-gray-600 mb-8">Answer all questions to complete this module. You'll see the correct answers after submitting!</p>
               
               <div className="space-y-8">
                 {currentModule.quiz.questions.map((question, questionIndex) => (
@@ -474,9 +599,20 @@ const ExpertLearningPath = () => {
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">
                       {questionIndex + 1}. {question.question}
                     </h3>
+                    
+                    {/* Question Hint */}
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                      <div className="flex items-start gap-2">
+                        <Eye className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        <p className="text-sm text-green-800">
+                          <strong>Hint:</strong> {getQuestionHint(currentModule.id, questionIndex)}
+                        </p>
+                      </div>
+                    </div>
+                    
                     <div className="space-y-3">
                       {question.options.map((option, optionIndex) => (
-                        <label key={optionIndex} className="flex items-center cursor-pointer">
+                        <label key={optionIndex} className="flex items-center cursor-pointer p-3 rounded-lg hover:bg-gray-50 transition-colors">
                           <input
                             type="radio"
                             name={`question-${questionIndex}`}
@@ -502,6 +638,124 @@ const ExpertLearningPath = () => {
                   Submit Quiz
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Quiz Results Review */}
+          {showQuizResults && (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 mt-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Quiz Results: {currentModule.title}</h2>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+                <div className="text-center">
+                  <h3 className="text-xl font-semibold text-blue-900 mb-2">Your Score: {Math.round(quizScore)}%</h3>
+                  <p className="text-blue-800">Great job completing this module! Here are the correct answers:</p>
+                </div>
+              </div>
+              
+              <div className="space-y-8">
+                {currentModule.quiz.questions.map((question, questionIndex) => {
+                  const userAnswer = quizAnswers[questionIndex]
+                  const correctAnswer = question.correct
+                  const isCorrect = userAnswer === correctAnswer
+                  
+                  return (
+                    <div key={questionIndex} className="border-b border-gray-200 pb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        {questionIndex + 1}. {question.question}
+                      </h3>
+                      
+                      <div className="space-y-3">
+                        {question.options.map((option, optionIndex) => {
+                          let optionClass = "p-3 rounded-lg border-2 "
+                          let textClass = "text-gray-700"
+                          
+                          if (optionIndex === correctAnswer) {
+                            optionClass += "border-green-500 bg-green-50"
+                            textClass = "text-green-800 font-semibold"
+                          } else if (optionIndex === userAnswer && !isCorrect) {
+                            optionClass += "border-red-500 bg-red-50"
+                            textClass = "text-red-800"
+                          } else {
+                            optionClass += "border-gray-200 bg-gray-50"
+                            textClass = "text-gray-600"
+                          }
+                          
+                          return (
+                            <div key={optionIndex} className={optionClass}>
+                              <div className="flex items-center">
+                                {optionIndex === correctAnswer && (
+                                  <CheckCircle className="h-5 w-5 text-green-600 mr-3 flex-shrink-0" />
+                                )}
+                                {optionIndex === userAnswer && !isCorrect && (
+                                  <X className="h-5 w-5 text-red-600 mr-3 flex-shrink-0" />
+                                )}
+                                <span className={textClass}>{option}</span>
+                                {optionIndex === correctAnswer && (
+                                  <span className="ml-auto text-green-600 font-semibold">Correct Answer</span>
+                                )}
+                                {optionIndex === userAnswer && !isCorrect && (
+                                  <span className="ml-auto text-red-600 font-semibold">Your Answer</span>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              
+              <div className="flex justify-center mt-8">
+                <button
+                  onClick={() => {
+                    setCurrentModule(null)
+                    setShowQuiz(false)
+                    setShowQuizResults(false)
+                    setQuizAnswers({})
+                  }}
+                  className="px-8 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                >
+                  Back to Modules
+                </button>
+              </div>
+              
+              {/* Show completion message if this was the last module */}
+              {completedModules.length + 1 === modules.length && (
+                <div className="mt-8 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-6">
+                  <div className="flex items-center justify-center mb-4">
+                    <Award className="h-12 w-12 text-purple-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-purple-900 text-center mb-2">
+                    Master Gardener Achieved! 🏆
+                  </h3>
+                  <p className="text-purple-700 text-center mb-4">
+                    Congratulations! You've completed the Expert Gardener Path and achieved Master Gardener status!
+                  </p>
+                  <div className="flex justify-center space-x-4">
+                    <Link
+                      to="/dashboard"
+                      className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center"
+                    >
+                      <Star className="h-4 w-4 mr-2" />
+                      View Dashboard
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setCurrentModule(null)
+                        setShowQuiz(false)
+                        setShowQuizResults(false)
+                        setQuizAnswers({})
+                      }}
+                      className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center"
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Back to Modules
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -561,9 +815,9 @@ const ExpertLearningPath = () => {
                     ? 'border-gray-200 opacity-60 cursor-not-allowed' 
                     : isAvailable 
                     ? 'border-gray-200 hover:border-primary-300 hover:shadow-lg cursor-pointer' 
-                    : 'border-purple-200 bg-purple-50'
+                    : 'border-purple-200 bg-purple-50 hover:border-purple-300 hover:shadow-lg cursor-pointer'
                 }`}
-                onClick={() => isAvailable && startModule(module)}
+                onClick={() => (isAvailable || isCompleted) && startModule(module)}
               >
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
@@ -607,6 +861,39 @@ const ExpertLearningPath = () => {
                       </div>
                     )}
                   </div>
+                  
+                  {/* Review Button for Completed Modules */}
+                  {isCompleted && (
+                    <div className="mt-4">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          startModule(module)
+                        }}
+                        className="w-full px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium"
+                      >
+                        Review Module
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Next Module Button */}
+                  {isCompleted && index < modules.length - 1 && (
+                    <div className="mt-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const nextModule = modules[index + 1]
+                          if (getModuleStatus(nextModule.id) !== 'locked') {
+                            startModule(nextModule)
+                          }
+                        }}
+                        className="w-full px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
+                      >
+                        Next: {modules[index + 1].title}
+                      </button>
+                    </div>
+                  )}
                   
                   {isLocked && (
                     <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">

@@ -8,6 +8,65 @@ import toast from 'react-hot-toast'
 const Garden = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
+  // Static data for demonstration
+  const staticGardens = [
+    {
+      id: 'static-1',
+      name: 'My Backyard Garden',
+      garden_type: 'vegetable',
+      location_city: 'Manila',
+      location_country: 'Philippines'
+    },
+    {
+      id: 'static-2',
+      name: 'Herb Collection',
+      garden_type: 'herb',
+      location_city: 'Quezon City',
+      location_country: 'Philippines'
+    }
+  ]
+
+  const staticPlants = [
+    {
+      plant: {
+        name: 'Tomato Plant',
+        type: 'vegetable',
+        environment: 'outdoor',
+        watering_frequency: 3,
+        fertilizing_frequency: 14,
+        pruning_frequency: 7,
+        care_guide: 'Water regularly, provide support for vines, and ensure good drainage.'
+      },
+      garden: {
+        id: 'static-1',
+        name: 'My Backyard Garden'
+      },
+      tracking: {
+        id: 'static-plant-1',
+        planting_date: '2024-01-15'
+      }
+    },
+    {
+      plant: {
+        name: 'Basil',
+        type: 'herb',
+        environment: 'indoor',
+        watering_frequency: 2,
+        fertilizing_frequency: 30,
+        pruning_frequency: 14,
+        care_guide: 'Keep soil moist but not waterlogged. Pinch flowers to encourage leaf growth.'
+      },
+      garden: {
+        id: 'static-2',
+        name: 'Herb Collection'
+      },
+      tracking: {
+        id: 'static-plant-2',
+        planting_date: '2024-02-01'
+      }
+    }
+  ]
+
   const [gardens, setGardens] = useState([])
   const [plants, setPlants] = useState([])
   const [plantSearch, setPlantSearch] = useState('')
@@ -51,7 +110,9 @@ const Garden = () => {
   const fetchGardens = async () => {
     try {
       const response = await axios.get('/garden')
-      setGardens(response.data.gardens || [])
+      const apiGardens = response.data.gardens || []
+      // Combine static gardens with API gardens
+      setGardens([...staticGardens, ...apiGardens])
     } catch (error) {
       if (error?.response?.status === 401) {
         toast.error('Please sign in to manage your garden')
@@ -59,13 +120,17 @@ const Garden = () => {
         return
       }
       console.error('Error fetching gardens:', error)
+      // If API fails, still show static gardens
+      setGardens(staticGardens)
     }
   }
 
   const fetchPlants = async () => {
     try {
       const response = await axios.get('/garden')
-      setPlants(response.data.plants || [])
+      const apiPlants = response.data.plants || []
+      // Combine static plants with API plants
+      setPlants([...staticPlants, ...apiPlants])
       setLoading(false)
     } catch (error) {
       if (error?.response?.status === 401) {
@@ -74,6 +139,8 @@ const Garden = () => {
         return
       }
       console.error('Error fetching plants:', error)
+      // If API fails, still show static plants
+      setPlants(staticPlants)
       setLoading(false)
     }
   }
@@ -151,6 +218,12 @@ const Garden = () => {
   }
 
   const deleteGarden = async (gardenId) => {
+    // Prevent deletion of static gardens
+    if (gardenId.toString().startsWith('static-')) {
+      toast.error('Cannot delete demo gardens')
+      return
+    }
+    
     if (window.confirm('Are you sure you want to delete this garden?')) {
       try {
         await axios.post(`/garden/delete/${gardenId}`)
@@ -163,6 +236,12 @@ const Garden = () => {
   }
 
   const deletePlant = async (trackingId) => {
+    // Prevent deletion of static plants
+    if (trackingId.toString().startsWith('static-')) {
+      toast.error('Cannot delete demo plants')
+      return
+    }
+    
     if (window.confirm('Are you sure you want to delete this plant?')) {
       try {
         await axios.post(`/plant/delete/${trackingId}`)
@@ -175,6 +254,12 @@ const Garden = () => {
   }
 
   const editGarden = (garden) => {
+    // Prevent editing of static gardens
+    if (garden.id.toString().startsWith('static-')) {
+      toast.error('Cannot edit demo gardens')
+      return
+    }
+    
     setEditingGarden(garden)
     setGardenForm({
       name: garden.name,
@@ -186,6 +271,12 @@ const Garden = () => {
   }
 
   const editPlant = (plantData) => {
+    // Prevent editing of static plants
+    if (plantData.tracking.id.toString().startsWith('static-')) {
+      toast.error('Cannot edit demo plants')
+      return
+    }
+    
     setEditingPlant(plantData)
     setPlantForm({
       type: plantData.plant.type,
