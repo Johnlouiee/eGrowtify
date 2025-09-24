@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import WeatherCard from '../components/WeatherCard'
 
 const UserDashboard = () => {
   const { user, isPremium } = useAuth()
@@ -377,29 +378,10 @@ const UserDashboard = () => {
 
           {/* Right column */}
           <div className="space-y-6">
-            {/* Weather & Seasonal Info */}
-            <div className="card">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Today's Garden</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Temperature</span>
-                  <span className="font-semibold text-gray-900">72°F</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Humidity</span>
-                  <span className="font-semibold text-gray-900">65%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Season</span>
-                  <span className="font-semibold text-gray-900 capitalize">Spring</span>
-                </div>
-                <div className="pt-2 border-t">
-                  <p className="text-xs text-gray-500">Perfect weather for outdoor planting</p>
-                </div>
-              </div>
-            </div>
-              </div>
-            </div>
+            {/* Weather Card */}
+            <WeatherCard />
+          </div>
+        </div>
             
         {/* Plant Tracking and Seasonal Tips */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">

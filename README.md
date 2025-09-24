@@ -27,6 +27,15 @@ A modern web application for smart garden management with AI-powered insights an
 - **Weather Integration**: Growing season information and frost dates
 - **Indoor/Outdoor Planning**: Separate recommendations for different environments
 
+### 🌤️ **Weather Integration**
+- **Real-Time Weather Data**: Current conditions for any city worldwide
+- **Smart Planting Advice**: Intelligent recommendations based on weather conditions
+- **City Search**: Input your location for personalized weather data
+- **Default Location**: Cebu, Philippines as the default city
+- **Weather Icons**: Visual representation of current conditions
+- **Planting Conditions**: Temperature, humidity, wind, and visibility data
+- **Fallback Support**: Mock data when API is unavailable
+
 ### 🤖 **AI Planting Tool**
 - **Plant Recognition**: Upload photos for instant plant identification
 - **Health Assessment**: AI-powered plant health analysis
@@ -211,7 +220,16 @@ MYSQL_HOST=localhost
 MYSQL_USER=root
 MYSQL_PASSWORD=
 MYSQL_DB=egrowtify_db
+OPENWEATHER_API_KEY=your_openweather_api_key_here
 ```
+
+### API Keys Setup
+
+- **OpenWeatherMap API**: Get your free API key from [OpenWeatherMap](https://openweathermap.org/api) for weather data
+- **Plant.id API**: Optional, for AI plant recognition features
+- **OpenAI API**: Optional, for enhanced AI analysis features
+
+See `WEATHER_SETUP.md` for detailed weather API setup instructions.
 
 ## 📱 Available Scripts
 
