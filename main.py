@@ -44,6 +44,11 @@ def api_resend_verification():
     from website.auth import resend_verification
     return resend_verification()
 
+@app.route('/api/weather')
+def api_weather():
+    from website.views import get_weather
+    return get_weather()
+
 if __name__ == '__main__':
     print("🚀 Starting Flask Backend...")
     print("📍 Backend will run on: http://127.0.0.1:5000")

@@ -1611,3 +1611,74 @@ def user_feedbacks():
     ]
     
     return jsonify({"feedbacks": feedbacks})
+
+@views.route('/api/weather')
+@login_required
+def get_weather():
+    """Get weather data for a specific city using OpenWeatherMap API"""
+    try:
+        city = request.args.get('city', 'Cebu')
+        api_key = os.getenv('OPENWEATHER_API_KEY')
+        
+        if not api_key:
+            # Return mock data if API key is not available
+            return jsonify({
+                "temperature": 28,
+                "humidity": 75,
+                "description": "Partly cloudy",
+                "windSpeed": 12,
+                "visibility": 10,
+                "city": city,
+                "mock": True
+            })
+        
+        # Make request to OpenWeatherMap API
+        url = f"http://api.openweathermap.org/data/2.5/weather"
+        params = {
+            'q': city,
+            'appid': api_key,
+            'units': 'metric'
+        }
+        
+        response = requests.get(url, params=params, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            return jsonify({
+                "temperature": round(data['main']['temp']),
+                "humidity": data['main']['humidity'],
+                "description": data['weather'][0]['description'],
+                "windSpeed": round(data['wind']['speed'] * 3.6),  # Convert m/s to km/h
+                "visibility": round(data.get('visibility', 10000) / 1000),  # Convert m to km
+                "city": data['name'],
+                "country": data['sys']['country'],
+                "mock": False,
+                "success": True
+            })
+        elif response.status_code == 404:
+            # City not found
+            return jsonify({
+                "error": "City not found. Please check the spelling and try again.",
+                "success": False,
+                "city": city
+            }), 404
+        else:
+            # Other API errors
+            return jsonify({
+                "error": f"Weather service temporarily unavailable (Error {response.status_code})",
+                "success": False,
+                "city": city
+            }), response.status_code
+            
+    except Exception as e:
+        # Return mock data if any error occurs
+        return jsonify({
+            "temperature": 28,
+            "humidity": 75,
+            "description": "Partly cloudy",
+            "windSpeed": 12,
+            "visibility": 10,
+            "city": city,
+            "mock": True,
+            "error": str(e)
+        })
