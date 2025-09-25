@@ -62,13 +62,14 @@ const UserDashboard = () => {
       color: 'bg-purple-500',
       progress: learningProgress.expert || 0,
       modules: [
-        'Advanced Propagation',
-        'Greenhouse Management',
-        'Sustainable Gardening',
-        'Plant Breeding Basics'
+        'Master Pruning Techniques',
+        'Professional Tree Care',
+        'Advanced Irrigation Systems',
+        'Greenhouse Operations',
+        'Wind Protection Strategies'
       ],
-      isAccessible: isPremium || (learningProgress.intermediate >= 100), // Accessible if premium OR intermediate completed
-      isLocked: !isPremium && (learningProgress.intermediate < 100)
+      isAccessible: true, // Expert plan is now independent - always accessible
+      isLocked: false
     }
   ]
 
@@ -105,6 +106,43 @@ const UserDashboard = () => {
 
   useEffect(() => {
     fetchDashboardData()
+  }, [])
+
+  // Listen for localStorage changes to update learning progress
+  useEffect(() => {
+    const updateLearningProgress = () => {
+      const beginnerProgress = localStorage.getItem('beginnerProgress')
+      const intermediateProgress = localStorage.getItem('intermediateProgress')
+      const expertProgress = localStorage.getItem('expertProgress')
+      
+      const progress = {
+        beginner: beginnerProgress ? (JSON.parse(beginnerProgress).completedModules?.length || 0) * 10 : 0,
+        intermediate: intermediateProgress ? (JSON.parse(intermediateProgress).completedModules?.length || 0) * 20 : 0,
+        expert: expertProgress ? (JSON.parse(expertProgress).completedModules?.length || 0) * 20 : 0
+      }
+      
+      setLearningProgress(progress)
+    }
+
+    // Update progress when component mounts or when localStorage changes
+    updateLearningProgress()
+    
+    // Listen for storage events (when localStorage changes in other tabs)
+    window.addEventListener('storage', updateLearningProgress)
+    
+    // Also update when the page becomes visible (user comes back from learning path)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        updateLearningProgress()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      window.removeEventListener('storage', updateLearningProgress)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [])
 
   const handleLearningPathClick = (path) => {
@@ -145,9 +183,18 @@ const UserDashboard = () => {
       setPlants(gardenResponse.data.plants || [])
       setGardens(gardenResponse.data.gardens || [])
       
-      // Fetch learning progress
-      const progressResponse = await axios.get('/api/learning-progress')
-      setLearningProgress(progressResponse.data || {})
+      // Calculate learning progress from localStorage
+      const beginnerProgress = localStorage.getItem('beginnerProgress')
+      const intermediateProgress = localStorage.getItem('intermediateProgress')
+      const expertProgress = localStorage.getItem('expertProgress')
+      
+      const progress = {
+        beginner: beginnerProgress ? (JSON.parse(beginnerProgress).completedModules?.length || 0) * 10 : 0,
+        intermediate: intermediateProgress ? (JSON.parse(intermediateProgress).completedModules?.length || 0) * 20 : 0,
+        expert: expertProgress ? (JSON.parse(expertProgress).completedModules?.length || 0) * 20 : 0
+      }
+      
+      setLearningProgress(progress)
       
       // Fetch seasonal tips
       const tipsResponse = await axios.get('/api/seasonal-tips')
@@ -166,6 +213,19 @@ const UserDashboard = () => {
         { id: 2, title: 'Watering Schedule', description: 'Adjust watering frequency for warmer weather', icon: Droplets },
         { id: 3, title: 'Pest Prevention', description: 'Natural ways to keep pests away', icon: AlertCircle }
       ])
+      
+      // Calculate learning progress from localStorage even if API fails
+      const beginnerProgress = localStorage.getItem('beginnerProgress')
+      const intermediateProgress = localStorage.getItem('intermediateProgress')
+      const expertProgress = localStorage.getItem('expertProgress')
+      
+      const progress = {
+        beginner: beginnerProgress ? (JSON.parse(beginnerProgress).completedModules?.length || 0) * 10 : 0,
+        intermediate: intermediateProgress ? (JSON.parse(intermediateProgress).completedModules?.length || 0) * 20 : 0,
+        expert: expertProgress ? (JSON.parse(expertProgress).completedModules?.length || 0) * 20 : 0
+      }
+      
+      setLearningProgress(progress)
     } finally {
       setLoading(false)
     }

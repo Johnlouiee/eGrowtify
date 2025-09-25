@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Calendar, MapPin, Sun, Cloud, Leaf, Droplets, Thermometer, Clock, Wind, Eye, AlertTriangle, CheckCircle, Info } from 'lucide-react'
+import { Calendar, MapPin, Sun, Cloud, Leaf, Droplets, Thermometer, Clock, Wind, Eye, AlertTriangle, CheckCircle, Info, RefreshCw } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
@@ -92,7 +92,45 @@ const SeasonalPlanning = () => {
 
   const fetchWeatherData = async (lat, lng) => {
     try {
-      // Mock weather data - in production, use a real weather API like OpenWeatherMap
+      // Get location name for weather API
+      const locationName = await getLocationName(lat, lng)
+      
+      // Fetch real weather data from our API
+      const response = await axios.get(`/api/weather?city=${encodeURIComponent(locationName.split(',')[0])}`)
+      
+      if (response.data.success !== false) {
+        const weatherData = response.data
+        
+        // Convert temperature from Celsius to Fahrenheit for display
+        const tempF = Math.round((weatherData.temperature * 9/5) + 32)
+        
+        const processedWeatherData = {
+          temperature: tempF,
+          humidity: weatherData.humidity,
+          windSpeed: Math.round(weatherData.windSpeed * 0.621371), // Convert km/h to mph
+          conditions: weatherData.description,
+          forecast: [
+            { day: 'Today', high: tempF, low: tempF - 10, condition: weatherData.description },
+            { day: 'Tomorrow', high: tempF + 2, low: tempF - 8, condition: 'Partly Cloudy' },
+            { day: 'Day 3', high: tempF - 2, low: tempF - 12, condition: 'Cloudy' }
+          ],
+          lastFrost: getFrostDate(lat, 'last'),
+          firstFrost: getFrostDate(lat, 'first'),
+          growingSeason: getGrowingSeason(lat)
+        }
+
+        setWeatherData(processedWeatherData)
+        setForecastData(processedWeatherData.forecast)
+        
+        // Generate weather-based suggestions
+        generateWeatherSuggestions(processedWeatherData)
+      } else {
+        // Fallback to mock data if API fails
+        throw new Error('Weather API failed')
+      }
+    } catch (error) {
+      console.error('Error fetching weather data:', error)
+      // Fallback weather data
       const mockWeatherData = {
         temperature: Math.floor(Math.random() * 30) + 50, // 50-80°F
         humidity: Math.floor(Math.random() * 40) + 40, // 40-80%
@@ -113,27 +151,24 @@ const SeasonalPlanning = () => {
       
       // Generate weather-based suggestions
       generateWeatherSuggestions(mockWeatherData)
-    } catch (error) {
-      console.error('Error fetching weather data:', error)
-      // Fallback weather data
-      setWeatherData({
-        temperature: '72°F',
-        humidity: '65%',
-        windSpeed: '8 mph',
-        conditions: 'Partly Cloudy',
-        forecast: [],
-        lastFrost: 'April 15',
-        firstFrost: 'October 30',
-        growingSeason: '195 days'
-      })
     }
   }
 
   const generateWeatherSuggestions = (weather) => {
     const suggestions = []
+    const currentMonth = new Date().getMonth()
+    const currentSeason = getSeasonFromMonth(currentMonth)
     
     // Temperature-based suggestions
-    if (weather.temperature > 75) {
+    if (weather.temperature > 85) {
+      suggestions.push({
+        type: 'warning',
+        icon: AlertTriangle,
+        title: 'Extreme Heat Alert',
+        message: 'Very high temperatures detected. Plants may experience heat stress.',
+        action: 'Water deeply in early morning, provide shade cloth, and avoid fertilizing during heat waves.'
+      })
+    } else if (weather.temperature > 75) {
       suggestions.push({
         type: 'warning',
         icon: AlertTriangle,
@@ -141,7 +176,15 @@ const SeasonalPlanning = () => {
         message: 'Temperatures are high. Water plants early morning or evening to prevent evaporation.',
         action: 'Increase watering frequency and provide shade for sensitive plants.'
       })
-    } else if (weather.temperature < 50) {
+    } else if (weather.temperature < 45) {
+      suggestions.push({
+        type: 'warning',
+        icon: AlertTriangle,
+        title: 'Cold Weather Alert',
+        message: 'Temperatures are below optimal for most warm-season crops.',
+        action: 'Protect tender plants with row covers or bring containers indoors.'
+      })
+    } else if (weather.temperature < 60) {
       suggestions.push({
         type: 'info',
         icon: Info,
@@ -152,13 +195,29 @@ const SeasonalPlanning = () => {
     }
 
     // Humidity-based suggestions
-    if (weather.humidity > 70) {
+    if (weather.humidity > 80) {
+      suggestions.push({
+        type: 'warning',
+        icon: Cloud,
+        title: 'Very High Humidity',
+        message: 'Extremely high humidity creates ideal conditions for fungal diseases.',
+        action: 'Improve air circulation, avoid overhead watering, and consider fungicide treatment.'
+      })
+    } else if (weather.humidity > 70) {
       suggestions.push({
         type: 'warning',
         icon: Cloud,
         title: 'High Humidity',
         message: 'High humidity can promote fungal diseases.',
         action: 'Ensure good air circulation and avoid overhead watering.'
+      })
+    } else if (weather.humidity < 30) {
+      suggestions.push({
+        type: 'warning',
+        icon: Droplets,
+        title: 'Very Low Humidity',
+        message: 'Extremely low humidity will cause rapid water loss from plants.',
+        action: 'Water more frequently, use mulch, and consider misting for humidity-loving plants.'
       })
     } else if (weather.humidity < 40) {
       suggestions.push({
@@ -171,7 +230,15 @@ const SeasonalPlanning = () => {
     }
 
     // Wind-based suggestions
-    if (weather.windSpeed > 15) {
+    if (weather.windSpeed > 25) {
+      suggestions.push({
+        type: 'warning',
+        icon: Wind,
+        title: 'Strong Winds',
+        message: 'Very strong winds can cause significant plant damage.',
+        action: 'Secure all plants, use windbreaks, and avoid planting or transplanting today.'
+      })
+    } else if (weather.windSpeed > 15) {
       suggestions.push({
         type: 'warning',
         icon: Wind,
@@ -181,15 +248,76 @@ const SeasonalPlanning = () => {
       })
     }
 
-    // Seasonal planting suggestions
-    const currentMonth = new Date().getMonth()
-    if (currentMonth >= 2 && currentMonth <= 4) {
+    // Weather condition-based suggestions
+    if (weather.conditions.toLowerCase().includes('rain')) {
+      suggestions.push({
+        type: 'info',
+        icon: Droplets,
+        title: 'Rainy Conditions',
+        message: 'Rain provides natural watering but may cause soil compaction.',
+        action: 'Avoid working in wet soil. Check for standing water and improve drainage if needed.'
+      })
+    } else if (weather.conditions.toLowerCase().includes('storm')) {
+      suggestions.push({
+        type: 'warning',
+        icon: AlertTriangle,
+        title: 'Storm Conditions',
+        message: 'Severe weather may damage plants and garden structures.',
+        action: 'Secure loose items, protect tender plants, and check for damage after the storm.'
+      })
+    }
+
+    // Seasonal planting suggestions based on current season and weather
+    if (currentSeason === 'spring' && weather.temperature >= 50 && weather.temperature <= 75) {
       suggestions.push({
         type: 'success',
         icon: CheckCircle,
-        title: 'Spring Planting Season',
-        message: 'Perfect time for starting seeds and planting cool-season crops.',
+        title: 'Perfect Spring Planting Weather',
+        message: 'Ideal conditions for spring planting and seed starting.',
         action: 'Start tomatoes, peppers, and herbs indoors. Plant peas, lettuce, and spinach outdoors.'
+      })
+    } else if (currentSeason === 'summer' && weather.temperature > 80) {
+      suggestions.push({
+        type: 'info',
+        icon: Sun,
+        title: 'Summer Heat Management',
+        message: 'Hot summer weather requires special care for plants.',
+        action: 'Water deeply in early morning, mulch heavily, and provide afternoon shade.'
+      })
+    } else if (currentSeason === 'fall' && weather.temperature >= 45 && weather.temperature <= 70) {
+      suggestions.push({
+        type: 'success',
+        icon: CheckCircle,
+        title: 'Fall Planting Season',
+        message: 'Excellent conditions for fall crops and bulb planting.',
+        action: 'Plant garlic, onions, and cool-season vegetables. Plant spring bulbs.'
+      })
+    } else if (currentSeason === 'winter' && weather.temperature < 50) {
+      suggestions.push({
+        type: 'info',
+        icon: Thermometer,
+        title: 'Winter Garden Care',
+        message: 'Cold weather requires winter protection strategies.',
+        action: 'Mulch around perennials, protect tender plants, and plan for next season.'
+      })
+    }
+
+    // Location-specific suggestions based on growing season
+    if (weather.growingSeason === '365 days') {
+      suggestions.push({
+        type: 'success',
+        icon: CheckCircle,
+        title: 'Year-Round Growing',
+        message: 'Your location allows for year-round gardening.',
+        action: 'Take advantage of continuous growing seasons with succession planting.'
+      })
+    } else if (weather.growingSeason === '120 days') {
+      suggestions.push({
+        type: 'info',
+        icon: Clock,
+        title: 'Short Growing Season',
+        message: 'Limited growing season requires careful planning.',
+        action: 'Start seeds indoors early, use season extenders, and choose quick-maturing varieties.'
       })
     }
 
@@ -201,6 +329,41 @@ const SeasonalPlanning = () => {
     if (month >= 5 && month <= 7) return 'summer'
     if (month >= 8 && month <= 10) return 'fall'
     return 'winter'
+  }
+
+  const getFrostDate = (latitude, type) => {
+    // Simplified frost date calculation based on latitude
+    // In a real application, this would use more sophisticated climate data
+    const lat = Math.abs(latitude)
+    
+    if (lat < 25) {
+      // Tropical/subtropical - rarely freezes
+      return type === 'last' ? 'January 1' : 'December 31'
+    } else if (lat < 35) {
+      // Warm temperate
+      return type === 'last' ? 'March 15' : 'November 15'
+    } else if (lat < 45) {
+      // Cool temperate
+      return type === 'last' ? 'April 15' : 'October 30'
+    } else {
+      // Cold temperate
+      return type === 'last' ? 'May 15' : 'September 30'
+    }
+  }
+
+  const getGrowingSeason = (latitude) => {
+    // Calculate growing season length based on latitude
+    const lat = Math.abs(latitude)
+    
+    if (lat < 25) {
+      return '365 days' // Year-round growing
+    } else if (lat < 35) {
+      return '280 days' // Long growing season
+    } else if (lat < 45) {
+      return '195 days' // Moderate growing season
+    } else {
+      return '120 days' // Short growing season
+    }
   }
 
   const fetchSeasonalData = async (season) => {
@@ -763,9 +926,18 @@ const SeasonalPlanning = () => {
             {/* Weather Info */}
             {weatherData && (
               <div className="card">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Current Weather
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Current Weather
+                  </h3>
+                  <button
+                    onClick={() => userCoordinates && fetchWeatherData(userCoordinates.lat, userCoordinates.lng)}
+                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    title="Refresh weather data"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </button>
+                </div>
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Temperature:</span>
@@ -781,7 +953,7 @@ const SeasonalPlanning = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Conditions:</span>
-                    <span className="font-medium">{weatherData.conditions}</span>
+                    <span className="font-medium capitalize">{weatherData.conditions}</span>
                   </div>
                   <div className="pt-2 border-t">
                     <div className="space-y-2">
