@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { CheckCircle, XCircle, Mail, RefreshCw } from 'lucide-react'
 import axios from 'axios'
-import toast from 'react-hot-toast'
+import toast, { Toaster } from 'react-hot-toast'
 
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams()
@@ -10,60 +10,53 @@ const VerifyEmail = () => {
   const [message, setMessage] = useState('')
   const [email, setEmail] = useState('')
   const [resending, setResending] = useState(false)
+  const verificationCalled = useRef(false)
   
   const token = searchParams.get('token')
 
+  // Clear any existing toasts when component mounts
   useEffect(() => {
-    if (token) {
+    toast.dismiss()
+  }, [])
+
+  useEffect(() => {
+    if (token && !verificationCalled.current) {
+      verificationCalled.current = true
       verifyEmail(token)
-    } else {
-      setVerificationStatus('error')
-      setMessage('No verification token provided.')
+    } else if (!token) {
+      // No token means user came from registration - show success message
+      setVerificationStatus('success')
+      setMessage('Registration successful! Please check your email for a verification link.')
     }
   }, [token])
 
   const verifyEmail = async (verificationToken) => {
     try {
-      // Primary: POST body
-      const { data } = await axios.post('/api/verify-email', { token: verificationToken })
-      if (data?.success) {
+      console.log('Starting email verification with token:', verificationToken)
+      
+      // Use GET request for email verification
+      const response = await axios.get('/api/verify-email', { params: { token: verificationToken } })
+      
+      console.log('Verification response:', response.data)
+      
+      if (response.data?.success) {
         setVerificationStatus('success')
-        setMessage(data.message)
+        setMessage(response.data.message)
         toast.success('Email verified successfully!')
-        return
+        console.log('Verification successful')
+      } else {
+        setVerificationStatus('error')
+        setMessage(response.data?.message || 'Failed to verify email')
+        toast.error(response.data?.message || 'Failed to verify email')
+        console.log('Verification failed:', response.data?.message)
       }
-      // Fallback: GET with query param (some proxies prefer GET)
-      const resp = await axios.get('/api/verify-email', { params: { token: verificationToken } })
-      if (resp.data?.success) {
-        setVerificationStatus('success')
-        setMessage(resp.data.message)
-        toast.success('Email verified successfully!')
-        return
-      }
-      const msg = data?.message || resp.data?.message || 'Failed to verify email'
-      setVerificationStatus('error')
-      setMessage(msg)
-      toast.error(msg)
+      
     } catch (error) {
-      try {
-        // Last attempt with GET if POST failed due to CORS/body parsing
-        const resp = await axios.get('/api/verify-email', { params: { token: verificationToken } })
-        if (resp.data?.success) {
-          setVerificationStatus('success')
-          setMessage(resp.data.message)
-          toast.success('Email verified successfully!')
-          return
-        }
-        const msg = resp.data?.message || 'Failed to verify email'
-        setVerificationStatus('error')
-        setMessage(msg)
-        toast.error(msg)
-      } catch (e2) {
-        setVerificationStatus('error')
-        const errorMessage = e2.response?.data?.message || error.response?.data?.message || 'Failed to verify email'
-        setMessage(errorMessage)
-        toast.error(errorMessage)
-      }
+      console.log('Verification error:', error)
+      setVerificationStatus('error')
+      const errorMessage = error.response?.data?.message || 'Failed to verify email'
+      setMessage(errorMessage)
+      toast.error(errorMessage)
     }
   }
 
@@ -119,15 +112,29 @@ const VerifyEmail = () => {
             <div className="text-center">
               <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Email Verified Successfully!
+                {token ? 'Email Verified Successfully!' : 'Registration Successful!'}
               </h3>
               <p className="text-gray-600 mb-6">{message}</p>
-              <Link
-                to="/login"
-                className="btn-primary w-full py-3 text-base font-medium"
-              >
-                Continue to Login
-              </Link>
+              {token ? (
+                <Link
+                  to="/login"
+                  className="btn-primary w-full py-3 text-base font-medium"
+                >
+                  Continue to Login
+                </Link>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-500">
+                    We've sent a verification link to your email address. Please check your inbox and click the link to verify your account.
+                  </p>
+                  <Link
+                    to="/login"
+                    className="btn-primary w-full py-3 text-base font-medium"
+                  >
+                    Go to Login
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 

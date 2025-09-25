@@ -17,7 +17,7 @@ class User(UserMixin, db.Model):
     contact = db.Column(db.String(20), nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default='user')  # 'user' or 'admin'
-    is_active = db.Column(db.Boolean, default=True)
+    is_active = db.Column(db.Boolean, default=False)
     subscribed = db.Column(db.Boolean, default=False)  # Add subscribed property
     email_notifications = db.Column(db.Boolean, default=True)  # Add email_notifications property
     learning_level = db.Column(db.String(20), default='beginner')  # Add learning_level property
