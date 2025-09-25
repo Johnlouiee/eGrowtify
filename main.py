@@ -34,7 +34,7 @@ def api_seasonal_planning():
     from website.views import seasonal_planning
     return seasonal_planning()
 
-@app.route('/api/verify-email', methods=['POST'])
+@app.route('/api/verify-email', methods=['GET', 'POST'])
 def api_verify_email():
     from website.auth import verify_email
     return verify_email()

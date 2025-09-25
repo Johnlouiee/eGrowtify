@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -95,12 +96,6 @@ const Register = () => {
     try {
       const result = await register(formData)
       if (result.success) {
-        const directUrl = result.dev_verification_url
-        if (directUrl) {
-          // In dev, we may expose a direct verification link: use it
-          window.location.href = directUrl
-          return
-        }
         if (result.email_verification_sent) {
           toast.success('Account created! Please check your email to verify your account.')
           navigate('/verify-email', { 
