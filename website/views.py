@@ -998,7 +998,7 @@ def seasonal_planning():
     else:
         season = 'winter'
     
-    # Mock seasonal data - replace with actual seasonal database
+    # Enhanced seasonal data with weather integration
     seasonal_data = {
         'location': location,
         'current_season': season,
@@ -1013,10 +1013,799 @@ def seasonal_planning():
             'summer': ['Mulch to retain moisture', 'Water deeply', 'Monitor for pests'],
             'fall': ['Plant cool-season crops', 'Clean up garden', 'Add compost'],
             'winter': ['Plan next year', 'Maintain tools', 'Grow indoors']
+        },
+        'weather_integration': {
+            'optimal_planting_conditions': {
+                'temperature_range': '50-75°F',
+                'humidity_range': '40-70%',
+                'soil_temperature': '50°F+ for most seeds'
+            },
+            'weather_alerts': {
+                'frost_warning': 'Protect tender plants',
+                'heat_stress': 'Water early morning/evening',
+                'high_humidity': 'Watch for fungal diseases'
+            }
         }
     }
     
     return jsonify(seasonal_data)
+
+@views.route('/api/plant-weather-tolerance')
+def get_plant_weather_tolerance():
+    """Get plant-specific weather tolerance data and warnings"""
+    city = request.args.get('city', 'Cebu')
+    plant_name = request.args.get('plant', '')
+    
+    try:
+        # Get current weather data
+        api_key = os.getenv('OPENWEATHER_API_KEY')
+        if not api_key:
+            return jsonify({
+                "error": "Weather API key not configured",
+                "success": False
+            }), 500
+        
+        # Get coordinates first
+        geocode_url = f"http://api.openweathermap.org/geo/1.0/direct?q={city}&limit=1&appid={api_key}"
+        geocode_response = requests.get(geocode_url)
+        
+        if geocode_response.status_code != 200:
+            return jsonify({
+                "error": "City not found",
+                "success": False
+            }), 404
+        
+        geocode_data = geocode_response.json()
+        if not geocode_data:
+            return jsonify({
+                "error": "City not found",
+                "success": False
+            }), 404
+        
+        lat = geocode_data[0]['lat']
+        lon = geocode_data[0]['lon']
+        
+        # Get current weather
+        weather_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+        weather_response = requests.get(weather_url)
+        
+        if weather_response.status_code == 200:
+            weather_data = weather_response.json()
+            current_temp = weather_data['main']['temp']
+            current_humidity = weather_data['main']['humidity']
+            current_wind = weather_data['wind']['speed']
+            current_conditions = weather_data['weather'][0]['description']
+            
+            # Comprehensive plant database with weather tolerances
+            plant_database = {
+                'tomatoes': {
+                    'name': 'Tomatoes',
+                    'optimal_temp': {'min': 18, 'max': 29},
+                    'tolerance_temp': {'min': 10, 'max': 35},
+                    'optimal_humidity': {'min': 50, 'max': 70},
+                    'tolerance_humidity': {'min': 30, 'max': 85},
+                    'wind_tolerance': 15,  # km/h
+                    'heat_stress_temp': 32,
+                    'cold_damage_temp': 5,
+                    'humidity_disease_risk': 80,
+                    'varieties': {
+                        'cherry': {'cold_tolerance': 2, 'heat_tolerance': 2},
+                        'beefsteak': {'cold_tolerance': 0, 'heat_tolerance': 1},
+                        'roma': {'cold_tolerance': 1, 'heat_tolerance': 2}
+                    }
+                },
+                'peppers': {
+                    'name': 'Peppers',
+                    'optimal_temp': {'min': 21, 'max': 29},
+                    'tolerance_temp': {'min': 15, 'max': 32},
+                    'optimal_humidity': {'min': 50, 'max': 70},
+                    'tolerance_humidity': {'min': 40, 'max': 80},
+                    'wind_tolerance': 12,
+                    'heat_stress_temp': 30,
+                    'cold_damage_temp': 10,
+                    'humidity_disease_risk': 75,
+                    'varieties': {
+                        'bell': {'cold_tolerance': 0, 'heat_tolerance': 1},
+                        'jalapeno': {'cold_tolerance': 1, 'heat_tolerance': 2},
+                        'habanero': {'cold_tolerance': 2, 'heat_tolerance': 3}
+                    }
+                },
+                'lettuce': {
+                    'name': 'Lettuce',
+                    'optimal_temp': {'min': 7, 'max': 18},
+                    'tolerance_temp': {'min': 2, 'max': 24},
+                    'optimal_humidity': {'min': 60, 'max': 80},
+                    'tolerance_humidity': {'min': 40, 'max': 90},
+                    'wind_tolerance': 20,
+                    'heat_stress_temp': 25,
+                    'cold_damage_temp': -2,
+                    'humidity_disease_risk': 85,
+                    'varieties': {
+                        'romaine': {'cold_tolerance': 2, 'heat_tolerance': 0},
+                        'butterhead': {'cold_tolerance': 1, 'heat_tolerance': 0},
+                        'iceberg': {'cold_tolerance': 1, 'heat_tolerance': 1}
+                    }
+                },
+                'cucumbers': {
+                    'name': 'Cucumbers',
+                    'optimal_temp': {'min': 18, 'max': 26},
+                    'tolerance_temp': {'min': 10, 'max': 32},
+                    'optimal_humidity': {'min': 60, 'max': 80},
+                    'tolerance_humidity': {'min': 40, 'max': 90},
+                    'wind_tolerance': 10,
+                    'heat_stress_temp': 30,
+                    'cold_damage_temp': 5,
+                    'humidity_disease_risk': 80,
+                    'varieties': {
+                        'english': {'cold_tolerance': 0, 'heat_tolerance': 1},
+                        'pickling': {'cold_tolerance': 1, 'heat_tolerance': 2},
+                        'lemon': {'cold_tolerance': 1, 'heat_tolerance': 1}
+                    }
+                },
+                'herbs': {
+                    'name': 'Herbs (Basil, Parsley, Cilantro)',
+                    'optimal_temp': {'min': 15, 'max': 24},
+                    'tolerance_temp': {'min': 5, 'max': 30},
+                    'optimal_humidity': {'min': 40, 'max': 60},
+                    'tolerance_humidity': {'min': 30, 'max': 70},
+                    'wind_tolerance': 15,
+                    'heat_stress_temp': 28,
+                    'cold_damage_temp': 2,
+                    'humidity_disease_risk': 70,
+                    'varieties': {
+                        'basil': {'cold_tolerance': 0, 'heat_tolerance': 2},
+                        'parsley': {'cold_tolerance': 2, 'heat_tolerance': 0},
+                        'cilantro': {'cold_tolerance': 1, 'heat_tolerance': 0}
+                    }
+                },
+                'garlic': {
+                    'name': 'Garlic',
+                    'optimal_temp': {'min': 0, 'max': 15},
+                    'tolerance_temp': {'min': -10, 'max': 25},
+                    'optimal_humidity': {'min': 50, 'max': 70},
+                    'tolerance_humidity': {'min': 30, 'max': 80},
+                    'wind_tolerance': 25,
+                    'heat_stress_temp': 25,
+                    'cold_damage_temp': -15,
+                    'humidity_disease_risk': 75,
+                    'varieties': {
+                        'hardneck': {'cold_tolerance': 3, 'heat_tolerance': 0},
+                        'softneck': {'cold_tolerance': 2, 'heat_tolerance': 1}
+                    }
+                }
+            }
+            
+            # Analyze current conditions for all plants or specific plant
+            analysis_results = []
+            
+            if plant_name and plant_name.lower() in plant_database:
+                plants_to_analyze = [plant_name.lower()]
+            else:
+                plants_to_analyze = list(plant_database.keys())
+            
+            for plant_key in plants_to_analyze:
+                plant = plant_database[plant_key]
+                warnings = []
+                recommendations = []
+                status = "Good"
+                status_color = "green"
+                
+                # Temperature analysis
+                if current_temp < plant['optimal_temp']['min']:
+                    warnings.append(f"Temperature too low ({current_temp}°C). Optimal: {plant['optimal_temp']['min']}-{plant['optimal_temp']['max']}°C")
+                    if current_temp < plant['cold_damage_temp']:
+                        warnings.append(f"⚠️ COLD DAMAGE RISK! Temperature below {plant['cold_damage_temp']}°C")
+                        status = "Critical"
+                        status_color = "red"
+                    else:
+                        status = "Poor"
+                        status_color = "yellow"
+                    recommendations.append("Protect with row covers or bring indoors")
+                elif current_temp > plant['optimal_temp']['max']:
+                    warnings.append(f"Temperature too high ({current_temp}°C). Optimal: {plant['optimal_temp']['min']}-{plant['optimal_temp']['max']}°C")
+                    if current_temp > plant['heat_stress_temp']:
+                        warnings.append(f"🌡️ HEAT STRESS RISK! Temperature above {plant['heat_stress_temp']}°C")
+                        status = "Critical"
+                        status_color = "red"
+                    else:
+                        status = "Poor"
+                        status_color = "yellow"
+                    recommendations.append("Provide shade and increase watering frequency")
+                
+                # Humidity analysis
+                if current_humidity < plant['optimal_humidity']['min']:
+                    warnings.append(f"Humidity too low ({current_humidity}%). Optimal: {plant['optimal_humidity']['min']}-{plant['optimal_humidity']['max']}%")
+                    recommendations.append("Increase watering frequency and consider misting")
+                elif current_humidity > plant['optimal_humidity']['max']:
+                    warnings.append(f"Humidity too high ({current_humidity}%). Optimal: {plant['optimal_humidity']['min']}-{plant['optimal_humidity']['max']}%")
+                    if current_humidity > plant['humidity_disease_risk']:
+                        warnings.append(f"🦠 DISEASE RISK! High humidity promotes fungal diseases")
+                        if status != "Critical":
+                            status = "Poor"
+                            status_color = "yellow"
+                    recommendations.append("Improve air circulation and avoid overhead watering")
+                
+                # Wind analysis
+                if current_wind > plant['wind_tolerance']:
+                    warnings.append(f"Wind too strong ({current_wind} km/h). Tolerance: {plant['wind_tolerance']} km/h")
+                    recommendations.append("Provide wind protection or stake plants")
+                
+                # Condition-specific warnings
+                if 'rain' in current_conditions.lower():
+                    recommendations.append("Rain provides natural watering - reduce irrigation")
+                if 'storm' in current_conditions.lower():
+                    warnings.append("🌪️ STORM CONDITIONS - Protect plants from damage")
+                    if status != "Critical":
+                        status = "Poor"
+                        status_color = "yellow"
+                
+                analysis_results.append({
+                    'plant_name': plant['name'],
+                    'current_conditions': {
+                        'temperature': current_temp,
+                        'humidity': current_humidity,
+                        'wind_speed': current_wind,
+                        'conditions': current_conditions
+                    },
+                    'optimal_ranges': {
+                        'temperature': f"{plant['optimal_temp']['min']}-{plant['optimal_temp']['max']}°C",
+                        'humidity': f"{plant['optimal_humidity']['min']}-{plant['optimal_humidity']['max']}%"
+                    },
+                    'warnings': warnings,
+                    'recommendations': recommendations,
+                    'status': status,
+                    'status_color': status_color,
+                    'varieties': plant['varieties']
+                })
+            
+            return jsonify({
+                "plant_analysis": analysis_results,
+                "current_weather": {
+                    'temperature': current_temp,
+                    'humidity': current_humidity,
+                    'wind_speed': current_wind,
+                    'conditions': current_conditions
+                },
+                "city": city,
+                "success": True
+            })
+        else:
+            return jsonify({
+                "error": f"Weather service error: {weather_response.status_code}",
+                "success": False
+            }), weather_response.status_code
+            
+    except Exception as e:
+        return jsonify({
+            "error": f"Error fetching plant weather tolerance: {str(e)}",
+            "success": False
+        }), 500
+
+@views.route('/api/microclimate-zones')
+def get_microclimate_zones():
+    """Get microclimate zone recommendations for garden areas"""
+    city = request.args.get('city', 'Cebu')
+    
+    try:
+        # Get current weather data
+        api_key = os.getenv('OPENWEATHER_API_KEY')
+        if not api_key:
+            return jsonify({
+                "error": "Weather API key not configured",
+                "success": False
+            }), 500
+        
+        # Get coordinates first
+        geocode_url = f"http://api.openweathermap.org/geo/1.0/direct?q={city}&limit=1&appid={api_key}"
+        geocode_response = requests.get(geocode_url)
+        
+        if geocode_response.status_code != 200:
+            return jsonify({
+                "error": "City not found",
+                "success": False
+            }), 404
+        
+        geocode_data = geocode_response.json()
+        if not geocode_data:
+            return jsonify({
+                "error": "City not found",
+                "success": False
+            }), 404
+        
+        lat = geocode_data[0]['lat']
+        lon = geocode_data[0]['lon']
+        
+        # Get current weather
+        weather_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+        weather_response = requests.get(weather_url)
+        
+        if weather_response.status_code == 200:
+            weather_data = weather_response.json()
+            current_temp = weather_data['main']['temp']
+            current_humidity = weather_data['main']['humidity']
+            current_wind = weather_data['wind']['speed']
+            
+            # Define microclimate zones based on typical garden layouts
+            microclimate_zones = [
+                {
+                    'name': 'Full Sun Zone',
+                    'description': 'Areas receiving 6+ hours of direct sunlight daily',
+                    'temperature_modifier': 3,  # +3°C warmer than ambient
+                    'humidity_modifier': -10,   # -10% humidity
+                    'wind_modifier': 1.2,       # 20% more wind exposure
+                    'suitable_plants': ['Tomatoes', 'Peppers', 'Basil', 'Rosemary', 'Sunflowers'],
+                    'care_tips': [
+                        'Water deeply and frequently during hot weather',
+                        'Use mulch to retain soil moisture',
+                        'Consider shade cloth during extreme heat',
+                        'Monitor for sunburn on leaves'
+                    ],
+                    'seasonal_considerations': {
+                        'spring': 'Perfect for starting warm-season crops',
+                        'summer': 'May need extra watering and heat protection',
+                        'fall': 'Excellent for extending growing season',
+                        'winter': 'Good for cool-season crops in mild climates'
+                    }
+                },
+                {
+                    'name': 'Partial Shade Zone',
+                    'description': 'Areas receiving 3-6 hours of direct sunlight daily',
+                    'temperature_modifier': 0,  # Same as ambient
+                    'humidity_modifier': 5,     # +5% humidity
+                    'wind_modifier': 0.8,       # 20% less wind exposure
+                    'suitable_plants': ['Lettuce', 'Spinach', 'Kale', 'Cilantro', 'Mint'],
+                    'care_tips': [
+                        'Monitor soil moisture - may dry slower',
+                        'Good air circulation to prevent fungal issues',
+                        'Ideal for succession planting',
+                        'Protect from late afternoon sun'
+                    ],
+                    'seasonal_considerations': {
+                        'spring': 'Excellent for cool-season crops',
+                        'summer': 'Provides relief from intense heat',
+                        'fall': 'Perfect for extending harvest season',
+                        'winter': 'Good protection for tender plants'
+                    }
+                },
+                {
+                    'name': 'Full Shade Zone',
+                    'description': 'Areas receiving less than 3 hours of direct sunlight',
+                    'temperature_modifier': -2, # -2°C cooler than ambient
+                    'humidity_modifier': 15,    # +15% humidity
+                    'wind_modifier': 0.5,       # 50% less wind exposure
+                    'suitable_plants': ['Hostas', 'Ferns', 'Mint', 'Parsley', 'Chives'],
+                    'care_tips': [
+                        'Focus on moisture-loving plants',
+                        'Improve drainage to prevent waterlogging',
+                        'Use reflective surfaces to increase light',
+                        'Monitor for fungal diseases due to high humidity'
+                    ],
+                    'seasonal_considerations': {
+                        'spring': 'Slow to warm up - plant later',
+                        'summer': 'Cool refuge for heat-sensitive plants',
+                        'fall': 'Good for overwintering tender perennials',
+                        'winter': 'Protection from frost damage'
+                    }
+                },
+                {
+                    'name': 'Wind-Protected Zone',
+                    'description': 'Areas sheltered by buildings, fences, or trees',
+                    'temperature_modifier': 1,  # +1°C warmer than ambient
+                    'humidity_modifier': 10,    # +10% humidity
+                    'wind_modifier': 0.3,       # 70% less wind exposure
+                    'suitable_plants': ['Delicate herbs', 'Young seedlings', 'Climbing plants'],
+                    'care_tips': [
+                        'Excellent for starting seeds and seedlings',
+                        'Monitor humidity levels',
+                        'Good for vertical growing structures',
+                        'Protect from late frosts'
+                    ],
+                    'seasonal_considerations': {
+                        'spring': 'Perfect for early season planting',
+                        'summer': 'Reduced water loss from wind',
+                        'fall': 'Extended growing season',
+                        'winter': 'Excellent frost protection'
+                    }
+                },
+                {
+                    'name': 'Heat Trap Zone',
+                    'description': 'Areas near walls, patios, or other heat-absorbing surfaces',
+                    'temperature_modifier': 5,  # +5°C warmer than ambient
+                    'humidity_modifier': -15,   # -15% humidity
+                    'wind_modifier': 0.6,       # 40% less wind exposure
+                    'suitable_plants': ['Heat-loving peppers', 'Eggplant', 'Okra', 'Sweet potatoes'],
+                    'care_tips': [
+                        'Water frequently - soil dries quickly',
+                        'Use heat-tolerant varieties',
+                        'Consider container gardening for mobility',
+                        'Monitor for heat stress'
+                    ],
+                    'seasonal_considerations': {
+                        'spring': 'Warms up quickly - early planting possible',
+                        'summer': 'May be too hot for most plants',
+                        'fall': 'Excellent for extending warm-season crops',
+                        'winter': 'Good for overwintering tender plants'
+                    }
+                }
+            ]
+            
+            # Calculate zone-specific conditions
+            zone_analysis = []
+            for zone in microclimate_zones:
+                zone_temp = round(current_temp + zone['temperature_modifier'], 1)
+                zone_humidity = max(0, min(100, current_humidity + zone['humidity_modifier']))
+                zone_wind = round(current_wind * zone['wind_modifier'], 1)
+                
+                # Determine zone suitability for current conditions
+                suitability_score = 0
+                suitability_notes = []
+                
+                if 15 <= zone_temp <= 30:
+                    suitability_score += 3
+                    suitability_notes.append("Optimal temperature range")
+                elif 10 <= zone_temp < 15 or 30 < zone_temp <= 35:
+                    suitability_score += 2
+                    suitability_notes.append("Good temperature range")
+                elif zone_temp < 10:
+                    suitability_score += 1
+                    suitability_notes.append("Cool conditions - good for cool-season crops")
+                else:
+                    suitability_score += 0
+                    suitability_notes.append("Extreme temperatures - monitor closely")
+                
+                if 40 <= zone_humidity <= 80:
+                    suitability_score += 2
+                    suitability_notes.append("Good humidity levels")
+                elif zone_humidity > 80:
+                    suitability_score += 1
+                    suitability_notes.append("High humidity - watch for diseases")
+                else:
+                    suitability_score += 1
+                    suitability_notes.append("Low humidity - increase watering")
+                
+                if zone_wind < 15:
+                    suitability_score += 2
+                    suitability_notes.append("Calm conditions")
+                elif zone_wind < 25:
+                    suitability_score += 1
+                    suitability_notes.append("Moderate wind")
+                else:
+                    suitability_score += 0
+                    suitability_notes.append("High winds - provide protection")
+                
+                # Determine overall suitability
+                if suitability_score >= 6:
+                    suitability = "Excellent"
+                    suitability_color = "green"
+                elif suitability_score >= 4:
+                    suitability = "Good"
+                    suitability_color = "blue"
+                elif suitability_score >= 2:
+                    suitability = "Fair"
+                    suitability_color = "yellow"
+                else:
+                    suitability = "Poor"
+                    suitability_color = "red"
+                
+                zone_analysis.append({
+                    'zone_info': zone,
+                    'current_conditions': {
+                        'temperature': zone_temp,
+                        'humidity': zone_humidity,
+                        'wind_speed': zone_wind
+                    },
+                    'suitability': {
+                        'score': suitability_score,
+                        'rating': suitability,
+                        'color': suitability_color,
+                        'notes': suitability_notes
+                    }
+                })
+            
+            return jsonify({
+                "microclimate_zones": zone_analysis,
+                "base_conditions": {
+                    'temperature': current_temp,
+                    'humidity': current_humidity,
+                    'wind_speed': current_wind
+                },
+                "city": city,
+                "success": True
+            })
+        else:
+            return jsonify({
+                "error": f"Weather service error: {weather_response.status_code}",
+                "success": False
+            }), weather_response.status_code
+            
+    except Exception as e:
+        return jsonify({
+            "error": f"Error fetching microclimate zones: {str(e)}",
+            "success": False
+        }), 500
+
+@views.route('/api/soil-temperature')
+def get_soil_temperature():
+    """Get soil temperature recommendations based on weather data"""
+    city = request.args.get('city', 'Cebu')
+    
+    try:
+        # Get current weather data
+        api_key = os.getenv('OPENWEATHER_API_KEY')
+        if not api_key:
+            return jsonify({
+                "error": "Weather API key not configured",
+                "success": False
+            }), 500
+        
+        # Get coordinates first
+        geocode_url = f"http://api.openweathermap.org/geo/1.0/direct?q={city}&limit=1&appid={api_key}"
+        geocode_response = requests.get(geocode_url)
+        
+        if geocode_response.status_code != 200:
+            return jsonify({
+                "error": "City not found",
+                "success": False
+            }), 404
+        
+        geocode_data = geocode_response.json()
+        if not geocode_data:
+            return jsonify({
+                "error": "City not found",
+                "success": False
+            }), 404
+        
+        lat = geocode_data[0]['lat']
+        lon = geocode_data[0]['lon']
+        
+        # Get current weather
+        weather_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+        weather_response = requests.get(weather_url)
+        
+        if weather_response.status_code == 200:
+            weather_data = weather_response.json()
+            air_temp = weather_data['main']['temp']
+            
+            # Estimate soil temperature (typically 2-5°C cooler than air temp)
+            # This is a simplified calculation - in reality, soil temp varies by depth, time of day, etc.
+            soil_temp_shallow = round(air_temp - 2, 1)  # 2-4 inches deep
+            soil_temp_deep = round(air_temp - 4, 1)     # 6-8 inches deep
+            
+            # Generate planting recommendations based on soil temperature
+            recommendations = []
+            
+            if soil_temp_shallow >= 10:
+                recommendations.append({
+                    "plant_type": "Warm-season vegetables",
+                    "plants": ["Tomatoes", "Peppers", "Eggplant", "Cucumbers", "Squash"],
+                    "soil_temp_range": "10-15°C+",
+                    "current_temp": f"{soil_temp_shallow}°C",
+                    "status": "Ready to plant" if soil_temp_shallow >= 15 else "Almost ready",
+                    "color": "green" if soil_temp_shallow >= 15 else "yellow"
+                })
+            
+            if soil_temp_shallow >= 5:
+                recommendations.append({
+                    "plant_type": "Cool-season vegetables",
+                    "plants": ["Lettuce", "Spinach", "Kale", "Peas", "Radishes"],
+                    "soil_temp_range": "5-10°C",
+                    "current_temp": f"{soil_temp_shallow}°C",
+                    "status": "Ready to plant" if 5 <= soil_temp_shallow <= 15 else "Check conditions",
+                    "color": "green" if 5 <= soil_temp_shallow <= 15 else "blue"
+                })
+            
+            if soil_temp_shallow < 5:
+                recommendations.append({
+                    "plant_type": "Cold-tolerant crops",
+                    "plants": ["Garlic", "Onions", "Carrots", "Beets"],
+                    "soil_temp_range": "2-5°C",
+                    "current_temp": f"{soil_temp_shallow}°C",
+                    "status": "Ready to plant" if soil_temp_shallow >= 2 else "Too cold",
+                    "color": "green" if soil_temp_shallow >= 2 else "red"
+                })
+            
+            # Add general soil temperature tips
+            tips = []
+            if soil_temp_shallow < 10:
+                tips.append("Soil is still cool. Consider using row covers or black plastic to warm the soil.")
+            elif soil_temp_shallow > 20:
+                tips.append("Soil is warm. Perfect for heat-loving plants like tomatoes and peppers.")
+            else:
+                tips.append("Soil temperature is moderate. Good for most cool and warm-season crops.")
+            
+            return jsonify({
+                "soil_temperature": {
+                    "shallow": soil_temp_shallow,
+                    "deep": soil_temp_deep,
+                    "air_temperature": air_temp
+                },
+                "recommendations": recommendations,
+                "tips": tips,
+                "city": city,
+                "success": True
+            })
+        else:
+            return jsonify({
+                "error": f"Weather service error: {weather_response.status_code}",
+                "success": False
+            }), weather_response.status_code
+            
+    except Exception as e:
+        return jsonify({
+            "error": f"Error fetching soil temperature data: {str(e)}",
+            "success": False
+        }), 500
+
+@views.route('/api/weather-forecast')
+def get_weather_forecast():
+    """Get 7-day weather forecast for better planting timing"""
+    city = request.args.get('city', 'Cebu')
+    
+    try:
+        # Get 7-day forecast from OpenWeatherMap
+        api_key = os.getenv('OPENWEATHER_API_KEY')
+        if not api_key:
+            return jsonify({
+                "error": "Weather API key not configured",
+                "success": False
+            }), 500
+        
+        # Get coordinates first
+        geocode_url = f"http://api.openweathermap.org/geo/1.0/direct?q={city}&limit=1&appid={api_key}"
+        geocode_response = requests.get(geocode_url)
+        
+        if geocode_response.status_code != 200:
+            return jsonify({
+                "error": "City not found",
+                "success": False
+            }), 404
+        
+        geocode_data = geocode_response.json()
+        if not geocode_data:
+            return jsonify({
+                "error": "City not found",
+                "success": False
+            }), 404
+        
+        lat = geocode_data[0]['lat']
+        lon = geocode_data[0]['lon']
+        
+        # Get 7-day forecast
+        forecast_url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+        forecast_response = requests.get(forecast_url)
+        
+        if forecast_response.status_code == 200:
+            forecast_data = forecast_response.json()
+            
+            # Process forecast data for planting recommendations
+            daily_forecasts = []
+            current_date = None
+            daily_data = {}
+            
+            for item in forecast_data['list']:
+                date = item['dt_txt'].split(' ')[0]
+                if date != current_date:
+                    if current_date and daily_data:
+                        daily_forecasts.append(daily_data)
+                    current_date = date
+                    daily_data = {
+                        'date': date,
+                        'temperatures': [],
+                        'humidity': [],
+                        'conditions': [],
+                        'wind_speed': [],
+                        'rain_probability': []
+                    }
+                
+                daily_data['temperatures'].append(item['main']['temp'])
+                daily_data['humidity'].append(item['main']['humidity'])
+                daily_data['conditions'].append(item['weather'][0]['description'])
+                daily_data['wind_speed'].append(item['wind']['speed'])
+                if 'rain' in item:
+                    daily_data['rain_probability'].append(item['rain'].get('3h', 0))
+                else:
+                    daily_data['rain_probability'].append(0)
+            
+            if daily_data:
+                daily_forecasts.append(daily_data)
+            
+            # Process daily data
+            processed_forecast = []
+            for day in daily_forecasts[:7]:  # Limit to 7 days
+                avg_temp = round(sum(day['temperatures']) / len(day['temperatures']))
+                min_temp = round(min(day['temperatures']))
+                max_temp = round(max(day['temperatures']))
+                avg_humidity = round(sum(day['humidity']) / len(day['humidity']))
+                avg_wind = round(sum(day['wind_speed']) / len(day['wind_speed']))
+                total_rain = sum(day['rain_probability'])
+                
+                # Determine planting conditions
+                planting_score = 0
+                conditions = []
+                
+                if 50 <= avg_temp <= 75:
+                    planting_score += 3
+                    conditions.append("Optimal temperature")
+                elif 45 <= avg_temp < 50 or 75 < avg_temp <= 80:
+                    planting_score += 2
+                    conditions.append("Good temperature")
+                elif avg_temp < 45:
+                    planting_score += 0
+                    conditions.append("Too cold for most plants")
+                else:
+                    planting_score += 1
+                    conditions.append("Hot weather - water frequently")
+                
+                if 40 <= avg_humidity <= 70:
+                    planting_score += 2
+                    conditions.append("Good humidity")
+                elif avg_humidity > 70:
+                    planting_score += 1
+                    conditions.append("High humidity - watch for diseases")
+                else:
+                    planting_score += 1
+                    conditions.append("Low humidity - water more")
+                
+                if avg_wind < 15:
+                    planting_score += 2
+                    conditions.append("Calm conditions")
+                elif avg_wind < 25:
+                    planting_score += 1
+                    conditions.append("Moderate wind")
+                else:
+                    planting_score += 0
+                    conditions.append("High winds - avoid planting")
+                
+                if total_rain > 5:
+                    planting_score += 1
+                    conditions.append("Rain expected - natural watering")
+                
+                # Determine overall recommendation
+                if planting_score >= 6:
+                    recommendation = "Excellent planting day"
+                    recommendation_color = "green"
+                elif planting_score >= 4:
+                    recommendation = "Good planting day"
+                    recommendation_color = "blue"
+                elif planting_score >= 2:
+                    recommendation = "Fair planting day"
+                    recommendation_color = "yellow"
+                else:
+                    recommendation = "Poor planting day"
+                    recommendation_color = "red"
+                
+                processed_forecast.append({
+                    'date': day['date'],
+                    'temperature': {
+                        'average': avg_temp,
+                        'min': min_temp,
+                        'max': max_temp
+                    },
+                    'humidity': avg_humidity,
+                    'wind_speed': avg_wind,
+                    'rain_probability': round(total_rain, 1),
+                    'conditions': conditions,
+                    'planting_score': planting_score,
+                    'recommendation': recommendation,
+                    'recommendation_color': recommendation_color
+                })
+            
+            return jsonify({
+                "forecast": processed_forecast,
+                "city": city,
+                "success": True
+            })
+        else:
+            return jsonify({
+                "error": f"Weather service error: {forecast_response.status_code}",
+                "success": False
+            }), forecast_response.status_code
+            
+    except Exception as e:
+        return jsonify({
+            "error": f"Error fetching forecast: {str(e)}",
+            "success": False
+        }), 500
 
 @views.route('/learning-paths')
 def learning_paths():

@@ -39,6 +39,21 @@ def api_verify_email():
     from website.auth import verify_email
     return verify_email()
 
+@app.route('/api/weather-forecast')
+def api_weather_forecast():
+    from website.views import get_weather_forecast
+    return get_weather_forecast()
+
+@app.route('/api/soil-temperature')
+def api_soil_temperature():
+    from website.views import get_soil_temperature
+    return get_soil_temperature()
+
+@app.route('/api/plant-weather-tolerance')
+def api_plant_weather_tolerance():
+    from website.views import get_plant_weather_tolerance
+    return get_plant_weather_tolerance()
+
 @app.route('/api/resend-verification', methods=['POST'])
 def api_resend_verification():
     from website.auth import resend_verification
