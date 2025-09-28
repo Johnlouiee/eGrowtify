@@ -6,8 +6,11 @@ import {
   Target, TrendingUp, Star, Users, Calendar, MapPin, Zap, Shield, Recycle, Video, PlayCircle, X, LeafyGreen
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import ImageDisplay from '../components/ImageDisplay'
+import { useAuth } from '../contexts/AuthContext'
 
 const IntermediateLearningPath = () => {
+  const { user } = useAuth()
   const [currentModule, setCurrentModule] = useState(null)
   const [completedModules, setCompletedModules] = useState([])
   const [currentLesson, setCurrentLesson] = useState(0)
@@ -18,26 +21,48 @@ const IntermediateLearningPath = () => {
   const [showQuizResults, setShowQuizResults] = useState(false)
   const [quizScore, setQuizScore] = useState(0)
 
+  // Create user-specific localStorage keys
+  const getStorageKey = (key) => {
+    if (!user) return key // Fallback for non-authenticated users
+    return `${key}_user_${user.id}`
+  }
+
   const modules = [
     {
       id: 'nutrition',
-      title: 'Plant Nutrition & Fertilizing',
+      title: 'Plant Nutrition & Fertilizing - Feeding Your Garden',
       icon: Beaker,
       color: 'blue',
-      estimatedTime: '25 min',
+      estimatedTime: '35 min',
       difficulty: 'Intermediate',
-      description: 'Learn about plant nutrients and smart fertilizing techniques',
+      description: 'Master the science of plant nutrition and develop smart fertilizing strategies for optimal plant health',
       lessons: [
         {
-          title: 'Understanding Plant Nutrients',
-          content: 'Plants need different nutrients to grow healthy:',
+          title: 'Understanding Plant Nutrients - The Building Blocks of Growth',
+          content: 'Plants are like athletes - they need the right nutrients in the right amounts to perform at their best. Understanding plant nutrition is key to growing healthy, productive plants:',
           points: [
-            'Nitrogen (N): Makes leaves green and helps plants grow tall',
-            'Phosphorus (P): Helps roots grow strong and flowers bloom',
-            'Potassium (K): Makes plants strong against diseases',
-            'Other nutrients: Calcium, magnesium, and trace elements'
+            '🌿 NITROGEN (N) - The Growth Engine: Essential for leaf and stem growth, makes leaves green and lush. Deficiency signs: Yellow leaves, stunted growth. Excess signs: Dark green leaves, weak stems. Best for: Leafy vegetables, lawns, foliage plants.',
+            '🌸 PHOSPHORUS (P) - The Root & Flower Power: Critical for root development, flowering, and fruiting. Deficiency signs: Purple leaves, poor flowering, weak roots. Excess signs: Can block other nutrients. Best for: Flowering plants, root vegetables, young plants.',
+            '💪 POTASSIUM (K) - The Disease Fighter: Strengthens plants against diseases, improves fruit quality, helps with water regulation. Deficiency signs: Brown leaf edges, weak stems, poor fruit quality. Best for: Fruit trees, tomatoes, peppers.',
+            '🔬 SECONDARY NUTRIENTS: Calcium (strong cell walls), Magnesium (chlorophyll production), Sulfur (protein synthesis). These are needed in smaller amounts but are still essential for plant health.',
+            '⚡ MICRONUTRIENTS: Iron, zinc, copper, manganese, boron, molybdenum. Needed in tiny amounts but crucial for specific plant functions. Deficiency can cause specific symptoms like yellowing between leaf veins.',
+            '📊 NUTRIENT BALANCE: The key is balance - too much of one nutrient can block others. Use balanced fertilizers (like 10-10-10) unless you have specific needs. Test your soil to know what your plants actually need.'
           ],
-          type: 'lesson'
+          type: 'lesson',
+          images: [
+            {
+              src: '/images/learning/intermediate/nutrient-deficiency-chart.jpg',
+              alt: 'Plant nutrient deficiency symptoms chart',
+              description: 'Visual chart showing different nutrient deficiency symptoms in plants with leaf color changes and growth patterns',
+              type: 'analysis'
+            },
+            {
+              src: '/images/learning/intermediate/npk-fertilizer-labels.jpg',
+              alt: 'NPK fertilizer labels explanation',
+              description: 'Examples of fertilizer labels showing NPK ratios and what each number means for plant nutrition',
+              type: 'analysis'
+            }
+          ]
         },
         {
           title: 'Types of Plant Food',
@@ -276,6 +301,75 @@ const IntermediateLearningPath = () => {
       }
     },
     {
+      id: 'advanced-soil',
+      title: 'Advanced Soil-Plant Relationships',
+      icon: LeafyGreen,
+      color: 'emerald',
+      estimatedTime: '30 min',
+      difficulty: 'Intermediate',
+      description: 'Master soil chemistry and plant nutrition relationships',
+      lessons: [
+        {
+          title: 'Soil pH and Plant Health',
+          content: 'Understanding how soil acidity affects plant growth:',
+          points: [
+            'Acidic soil (pH 4.5-6.5): Perfect for blueberries, azaleas, and rhododendrons',
+            'Neutral soil (pH 6.5-7.5): Ideal for most vegetables and garden plants',
+            'Alkaline soil (pH 7.5-8.5): Good for lavender, clematis, and some herbs',
+            'Testing pH: Use test strips or send samples to extension services'
+          ],
+          type: 'lesson'
+        },
+        {
+          title: 'Nutrient Availability and Soil Type',
+          content: 'How different soil types affect nutrient availability:',
+          points: [
+            'Clay soil: Holds nutrients well but may lock them up',
+            'Sandy soil: Nutrients wash away quickly, need frequent feeding',
+            'Loamy soil: Balanced nutrient retention and availability',
+            'Organic matter: Improves nutrient availability in all soil types'
+          ],
+          type: 'lesson'
+        },
+        {
+          title: 'Plant-Specific Soil Requirements',
+          content: 'Advanced understanding of plant soil preferences:',
+          points: [
+            'Root depth: Deep-rooted plants need well-drained soil',
+            'Water needs: Match soil drainage to plant water requirements',
+            'Nutrient demands: Heavy feeders need rich, fertile soil',
+            'Seasonal changes: Adjust soil conditions for different growth phases'
+          ],
+          type: 'lesson'
+        }
+      ],
+      quiz: {
+        questions: [
+          {
+            question: 'This soil test shows a pH of 5.2. Which plant would thrive best?',
+            image: '/images/soil-ph-test.jpg',
+            options: ['Tomatoes', 'Blueberries', 'Lavender', 'Lettuce'],
+            correct: 1,
+            explanation: 'A pH of 5.2 is acidic, which is perfect for blueberries. They require acidic soil (pH 4.5-6.0) to absorb nutrients properly and produce healthy fruit.'
+          },
+          {
+            question: 'This plant is showing nutrient deficiency symptoms. What soil improvement would help most?',
+            image: '/images/plant-nutrient-deficiency.jpg',
+            options: ['Add more sand', 'Add compost and organic matter', 'Increase watering', 'Add lime'],
+            correct: 1,
+            explanation: 'Nutrient deficiency often indicates poor soil fertility. Adding compost and organic matter improves nutrient availability and soil structure for better plant health.'
+          },
+          {
+            question: 'This soil sample feels gritty and drains very quickly. What type of soil is this?',
+            image: '/images/soil-sandy-texture.jpg',
+            options: ['Clay soil', 'Sandy soil', 'Loamy soil', 'Peaty soil'],
+            correct: 1,
+            explanation: 'Sandy soil feels gritty and drains quickly. It\'s great for drought-tolerant plants but needs frequent watering and fertilizing for most garden plants.'
+          }
+        ]
+      }
+    },
+    {
       id: 'compost',
       title: 'Composting & Soil Health',
       icon: Recycle,
@@ -341,44 +435,103 @@ const IntermediateLearningPath = () => {
   ]
 
   useEffect(() => {
-    // Check if beginner path is completed
-    const beginnerProgress = localStorage.getItem('beginnerProgress')
-    if (beginnerProgress) {
-      const progress = JSON.parse(beginnerProgress)
-      const beginnerModules = [
-        'intro', 'light', 'soil', 'water', 'climate', 'starter', 'problems', 'tools', 'seeds', 'harvest'
-      ]
-      const isBeginnerCompleted = beginnerModules.every(moduleId => 
-        progress.completedModules && progress.completedModules.includes(moduleId)
-      )
-      
-      if (!isBeginnerCompleted) {
-        toast.error('Please complete the Beginner Learning Path first!')
-        // Redirect to beginner path
-        window.location.href = '/learning/beginner'
-        return
-      }
-    } else {
-      toast.error('Please complete the Beginner Learning Path first!')
-      window.location.href = '/learning/beginner'
-      return
-    }
+    // FORCE CLEAR all old progress data first (aggressive migration)
+    clearOldProgressData()
+    
+    // FORCE RESET - Always start with empty progress for now
+    console.log('🔄 FORCE RESETTING ALL PROGRESS - Starting fresh for all users')
+    setCompletedModules([])
+    setModuleProgress({})
+    
+    // Clear any remaining progress data
+    const storageKey = getStorageKey('intermediateProgress')
+    localStorage.removeItem(storageKey)
+    
+    // Also clear any other possible keys
+    const allPossibleKeys = [
+      'beginnerProgress',
+      'intermediateProgress',
+      'expertProgress',
+      'learningProgress',
+      'userProgress'
+    ]
+    
+    allPossibleKeys.forEach(key => {
+      localStorage.removeItem(key)
+      localStorage.removeItem(`${key}_user_${user?.id}`)
+    })
+    
+    console.log('✅ ALL PROGRESS RESET - Every user now starts with 0%')
+    
+    // For now, allow access to intermediate path (remove beginner requirement temporarily)
+    // toast.error('Please complete the Beginner Learning Path first!')
+    // window.location.href = '/learning/beginner'
+  }, [user]) // Re-run when user changes
 
-    // Load progress from localStorage
-    const savedProgress = localStorage.getItem('intermediateProgress')
-    if (savedProgress) {
-      const progress = JSON.parse(savedProgress)
-      setCompletedModules(progress.completedModules || [])
-      setModuleProgress(progress.moduleProgress || {})
+  const clearOldProgressData = () => {
+    console.log('🧹 FORCE CLEARING ALL LEARNING PATH DATA...')
+    
+    // Clear all possible localStorage keys that might contain progress data
+    const oldKeys = [
+      'beginnerProgress',
+      'intermediateProgress', 
+      'expertProgress',
+      'learningProgress',
+      'userProgress',
+      'moduleProgress',
+      'completedModules',
+      'quizAnswers',
+      'currentLesson',
+      'showQuiz',
+      'showQuizResults',
+      'quizScore'
+    ]
+    
+    // Clear known keys
+    oldKeys.forEach(key => {
+      localStorage.removeItem(key)
+      console.log(`✅ Cleared: ${key}`)
+    })
+    
+    // FORCE CLEAR ALL learning path related keys (more aggressive approach)
+    const keysToRemove = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && (
+        key.includes('beginnerProgress') || 
+        key.includes('intermediateProgress') || 
+        key.includes('expertProgress') ||
+        key.includes('learningProgress') ||
+        key.includes('userProgress') ||
+        key.includes('moduleProgress') ||
+        key.includes('completedModules') ||
+        key.includes('quiz') ||
+        key.includes('lesson') ||
+        key.includes('_user_')
+      )) {
+        keysToRemove.push(key)
+      }
     }
-  }, [])
+    
+    // Remove all identified keys
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key)
+      console.log(`✅ FORCE CLEARED: ${key}`)
+    })
+    
+    console.log(`🎉 FORCE CLEARED ${keysToRemove.length} learning path keys`)
+  }
 
   const saveProgress = (newCompletedModules, newModuleProgress) => {
     const progress = {
+      version: '2.0', // Version to identify new format
       completedModules: newCompletedModules,
-      moduleProgress: newModuleProgress
+      moduleProgress: newModuleProgress,
+      userId: user?.id, // Store user ID for verification
+      lastUpdated: new Date().toISOString()
     }
-    localStorage.setItem('intermediateProgress', JSON.stringify(progress))
+    const storageKey = getStorageKey('intermediateProgress')
+    localStorage.setItem(storageKey, JSON.stringify(progress))
   }
 
   const startModule = (module) => {
@@ -483,6 +636,11 @@ const IntermediateLearningPath = () => {
         'Microclimates are small areas with different growing conditions.',
         'Marigolds are known to help repel pests from tomatoes.',
         'Vertical gardening helps you grow more in less space.'
+      ],
+      'advanced-soil': [
+        'Acidic soil (pH 5.2) is perfect for acid-loving plants like blueberries.',
+        'Nutrient deficiency symptoms often indicate poor soil fertility that can be improved with organic matter.',
+        'Sandy soil feels gritty and drains quickly, which is great for drought-tolerant plants.'
       ],
       'compost': [
         'Compost is organic matter that has broken down naturally.',
@@ -617,6 +775,28 @@ const IntermediateLearningPath = () => {
                       {questionIndex + 1}. {question.question}
                     </h3>
                     
+                    {/* Question Image */}
+                    {question.image && (
+                      <div className="mb-6">
+                        <div className="bg-gray-100 rounded-lg p-4 border-2 border-dashed border-gray-300">
+                          <div className="text-center">
+                            <div className="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
+                              <div className="text-center">
+                                <div className="text-4xl mb-2">🧪</div>
+                                <p className="text-gray-600 text-sm">Soil/Plant Analysis</p>
+                                <p className="text-gray-500 text-xs">(Image would be displayed here)</p>
+                              </div>
+                            </div>
+                            <p className="text-sm text-gray-600 italic">
+                              {question.image.includes('ph') ? 'Soil pH test result' : 
+                               question.image.includes('deficiency') ? 'Plant nutrient deficiency symptoms' : 
+                               'Soil texture analysis'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Question Hint */}
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
                       <div className="flex items-start gap-2">
@@ -682,6 +862,28 @@ const IntermediateLearningPath = () => {
                         {questionIndex + 1}. {question.question}
                       </h3>
                       
+                      {/* Question Image in Results */}
+                      {question.image && (
+                        <div className="mb-6">
+                          <div className="bg-gray-100 rounded-lg p-4 border-2 border-dashed border-gray-300">
+                            <div className="text-center">
+                              <div className="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
+                                <div className="text-center">
+                                  <div className="text-4xl mb-2">🧪</div>
+                                  <p className="text-gray-600 text-sm">Soil/Plant Analysis</p>
+                                  <p className="text-gray-500 text-xs">(Image would be displayed here)</p>
+                                </div>
+                              </div>
+                              <p className="text-sm text-gray-600 italic">
+                                {question.image.includes('ph') ? 'Soil pH test result' : 
+                                 question.image.includes('deficiency') ? 'Plant nutrient deficiency symptoms' : 
+                                 'Soil texture analysis'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
                       <div className="space-y-3">
                         {question.options.map((option, optionIndex) => {
                           let optionClass = "p-3 rounded-lg border-2 "
@@ -719,6 +921,19 @@ const IntermediateLearningPath = () => {
                           )
                         })}
                       </div>
+                      
+                      {/* Explanation for picture-based questions */}
+                      {question.explanation && (
+                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <HelpCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <h4 className="font-semibold text-blue-900 mb-1">Explanation:</h4>
+                              <p className="text-sm text-blue-800">{question.explanation}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )
                 })}

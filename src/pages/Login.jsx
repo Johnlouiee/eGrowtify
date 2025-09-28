@@ -13,15 +13,20 @@ const Login = () => {
   const [loading, setLoading] = useState(false)
   const [emailVerificationError, setEmailVerificationError] = useState(null)
   
-  const { login, user } = useAuth()
+  const { login, user, isAdmin } = useAuth()
   const navigate = useNavigate()
 
   // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
-      navigate('/dashboard')
+      // Redirect admin users to admin dashboard, regular users to user dashboard
+      if (isAdmin) {
+        navigate('/admin')
+      } else {
+        navigate('/dashboard')
+      }
     }
-  }, [user, navigate])
+  }, [user, isAdmin, navigate])
 
   const handleChange = (e) => {
     setFormData({
@@ -40,15 +45,10 @@ const Login = () => {
       console.log('Login result:', result) // Debug log
       
       if (result.success) {
-        console.log('Login successful, navigating to dashboard') // Debug log
+        console.log('Login successful, checking user role for redirect') // Debug log
         toast.success('Welcome back!')
-        // Try multiple navigation methods
-        try {
-          navigate('/dashboard')
-        } catch (navError) {
-          console.log('Navigation error, trying alternative:', navError)
-          window.location.href = '/dashboard'
-        }
+        // The useEffect will handle the redirect based on user role
+        // No need to manually navigate here as the useEffect will trigger
       } else {
         console.log('Login failed:', result.message)
         

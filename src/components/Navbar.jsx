@@ -59,27 +59,47 @@ const Navbar = () => {
             {user ? (
               <>
                 {user.role === 'admin' ? (
-                  <Link to="/admin/dashboard" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                    Admin Dashboard
-                  </Link>
+                  <>
+                    <Link to="/admin" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                      Admin Dashboard
+                    </Link>
+                    <Link to="/admin/users" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                      Manage Users
+                    </Link>
+                    <Link to="/admin/notifications" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1">
+                      <Bell className="h-4 w-4" />
+                      Manage Notifications
+                    </Link>
+                    <Link to="/admin/subscription" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                      Manage Subscription
+                    </Link>
+                    <Link to="/admin/seasonal-content" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                      Manage Seasonal Content
+                    </Link>
+                    <Link to="/admin/learning-paths" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                      Manage Learning Paths
+                    </Link>
+                  </>
                 ) : (
-                  <Link to="/dashboard" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                    Dashboard
-                  </Link>
+                  <>
+                    <Link to="/dashboard" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                      Dashboard
+                    </Link>
+                    <Link to="/garden" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                      My Plants
+                    </Link>
+                    <Link to="/ai-recognition" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                      AI Recognition
+                    </Link>
+                    <Link to="/smart-alerts" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1">
+                      <Bell className="h-4 w-4" />
+                      Alerts
+                    </Link>
+                    <Link to="/seasonal-planning" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                      Seasonal Planning
+                    </Link>
+                  </>
                 )}
-                <Link to="/garden" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                  My Plants
-                </Link>
-                <Link to="/ai-recognition" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                  AI Recognition
-                </Link>
-                <Link to="/smart-alerts" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1">
-                  <Bell className="h-4 w-4" />
-                  Alerts
-                </Link>
-                <Link to="/seasonal-planning" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                  Seasonal Planning
-                </Link>
                 
                 {/* User Menu Dropdown */}
                 <div className="relative" ref={userMenuRef}>

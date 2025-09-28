@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import PrivateRoute from './components/PrivateRoute'
 import AdminRoute from './components/AdminRoute'
+import UserRoute from './components/UserRoute'
 
 // Pages
 import Home from './pages/Home'
@@ -24,6 +25,13 @@ import BeginnerLearningPath from './pages/BeginnerLearningPath'
 import IntermediateLearningPath from './pages/IntermediateLearningPath'
 import ExpertLearningPath from './pages/ExpertLearningPath'
 
+// Admin Pages
+import UserManagement from './pages/admin/UserManagement'
+import ManageNotifications from './pages/admin/ManageNotifications'
+import ManageSubscription from './pages/admin/ManageSubscription'
+import ManageSeasonalContent from './pages/admin/ManageSeasonalContent'
+import ManageLearningPaths from './pages/admin/ManageLearningPaths'
+
 // Components
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
@@ -44,66 +52,66 @@ function App() {
               <Route path="/features" element={<Features />} />
               <Route path="/about" element={<About />} />
               <Route path="/learning/beginner" element={
-                <PrivateRoute>
+                <UserRoute>
                   <BeginnerLearningPath />
-                </PrivateRoute>
+                </UserRoute>
               } />
               <Route path="/learning/intermediate" element={
-                <PrivateRoute>
+                <UserRoute>
                   <IntermediateLearningPath />
-                </PrivateRoute>
+                </UserRoute>
               } />
               <Route path="/learning/expert" element={
-                <PrivateRoute>
+                <UserRoute>
                   <ExpertLearningPath />
-                </PrivateRoute>
+                </UserRoute>
               } />
               
               {/* Protected User Routes */}
               <Route path="/user/dashboard" element={
-                <PrivateRoute>
+                <UserRoute>
                   <UserDashboard />
-                </PrivateRoute>
+                </UserRoute>
               } />
               <Route path="/dashboard" element={
-                <PrivateRoute>
+                <UserRoute>
                   <UserDashboard />
-                </PrivateRoute>
+                </UserRoute>
               } />
               <Route path="/garden" element={
-                <PrivateRoute>
+                <UserRoute>
                   <Garden />
-                </PrivateRoute>
+                </UserRoute>
               } />
               <Route path="/profile" element={
-                <PrivateRoute>
+                <UserRoute>
                   <Profile />
-                </PrivateRoute>
+                </UserRoute>
               } />
               <Route path="/feedback" element={
-                <PrivateRoute>
+                <UserRoute>
                   <Feedback />
-                </PrivateRoute>
+                </UserRoute>
               } />
               <Route path="/subscription" element={
-                <PrivateRoute>
+                <UserRoute>
                   <Subscription />
-                </PrivateRoute>
+                </UserRoute>
               } />
               <Route path="/ai-recognition" element={
-                <PrivateRoute>
+                <UserRoute>
                   <AIPlantRecognition />
-                </PrivateRoute>
+                </UserRoute>
               } />
               <Route path="/smart-alerts" element={
-                <PrivateRoute>
+                <UserRoute>
                   <SmartAlerts />
-                </PrivateRoute>
+                </UserRoute>
               } />
               <Route path="/seasonal-planning" element={
-                <PrivateRoute>
+                <UserRoute>
                   <SeasonalPlanning />
-                </PrivateRoute>
+                </UserRoute>
               } />
               
               {/* Protected Admin Routes */}
@@ -115,6 +123,31 @@ function App() {
               <Route path="/admin" element={
                 <AdminRoute>
                   <AdminDashboard />
+                </AdminRoute>
+              } />
+              <Route path="/admin/users" element={
+                <AdminRoute>
+                  <UserManagement />
+                </AdminRoute>
+              } />
+              <Route path="/admin/notifications" element={
+                <AdminRoute>
+                  <ManageNotifications />
+                </AdminRoute>
+              } />
+              <Route path="/admin/subscription" element={
+                <AdminRoute>
+                  <ManageSubscription />
+                </AdminRoute>
+              } />
+              <Route path="/admin/seasonal-content" element={
+                <AdminRoute>
+                  <ManageSeasonalContent />
+                </AdminRoute>
+              } />
+              <Route path="/admin/learning-paths" element={
+                <AdminRoute>
+                  <ManageLearningPaths />
                 </AdminRoute>
               } />
             </Routes>

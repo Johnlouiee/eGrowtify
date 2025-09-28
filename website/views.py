@@ -21,8 +21,11 @@ views = Blueprint('views', __name__)
 @views.route('/')
 def home():
     from flask_login import current_user
-    if current_user.is_authenticated and not isinstance(current_user, Admin):
-        return redirect(url_for('views.user_dashboard'))
+    if current_user.is_authenticated:
+        if current_user.is_admin():
+            return redirect(url_for('views.admin_dashboard'))
+        else:
+            return redirect(url_for('views.user_dashboard'))
     return jsonify({"message": "Welcome to eGrowtify API"})
 
 @views.route('/test_db')
@@ -39,8 +42,8 @@ def test_db():
 @views.route('/user/dashboard')
 @login_required
 def user_dashboard():
-    if isinstance(current_user, Admin):
-        return jsonify({"error": "Admins should use the admin dashboard."}), 403
+    if current_user.is_admin():
+        return jsonify({"error": "Admin users should use the admin dashboard."}), 403
     
     return jsonify({"message": "User dashboard", "user_id": current_user.id})
 
@@ -2471,3 +2474,458 @@ def get_weather():
             "mock": True,
             "error": str(e)
         })
+
+# Additional Admin API endpoints for the new admin panel
+@views.route('/api/admin/stats')
+@login_required
+def admin_api_stats():
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        # Get basic statistics
+        total_users = User.query.count()
+        active_users = User.query.filter_by(is_active=True).count()
+        
+        # Mock data for now - in a real app, you'd query actual feedback and system health
+        total_feedback = 0  # Would query feedback table
+        system_health = "Good"
+        
+        return jsonify({
+            "totalUsers": total_users,
+            "activeUsers": active_users,
+            "subscribedUsers": User.query.filter_by(subscribed=True).count()
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/users')
+@login_required
+def admin_api_users():
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        users = User.query.all()
+        users_data = []
+        for user in users:
+            users_data.append({
+                "id": user.id,
+                "email": user.email,
+                "firstname": user.firstname,
+                "lastname": user.lastname,
+                "full_name": user.full_name,
+                "contact": user.contact,
+                "role": user.role,
+                "is_active": user.is_active,
+                "email_verified": user.email_verified,
+                "subscribed": user.subscribed,
+                "learning_level": user.learning_level,
+                "created_at": user.created_at.isoformat() if user.created_at else None,
+                "updated_at": user.updated_at.isoformat() if user.updated_at else None
+            })
+        return jsonify(users_data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
+@login_required
+def admin_api_delete_user(user_id):
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        user = User.query.get_or_404(user_id)
+        if user.role == 'admin' and user.id != current_user.id:
+            return jsonify({"error": "Cannot delete other admin users"}), 403
+        
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({"message": "User deleted successfully"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/users/<int:user_id>/status', methods=['PATCH'])
+@login_required
+def admin_api_toggle_user_status(user_id):
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        user = User.query.get_or_404(user_id)
+        if user.role == 'admin' and user.id != current_user.id:
+            return jsonify({"error": "Cannot modify other admin users"}), 403
+        
+        data = request.get_json()
+        user.is_active = data.get('is_active', not user.is_active)
+        db.session.commit()
+        return jsonify({"message": "User status updated successfully"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/learning-paths')
+@login_required
+def admin_api_learning_paths():
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    # Real learning paths data based on actual learning path files
+    learning_paths = [
+                    {
+                        "id": 1,
+                        "title": "Beginner Gardener",
+                        "description": "Perfect for those just starting their gardening journey. Learn plant basics, soil compatibility, and essential gardening skills.",
+                        "modules_count": 11,  # Based on actual modules in BeginnerLearningPath.jsx
+                        "difficulty": "Beginner",
+                        "duration": "4 weeks",
+                        "is_active": True,
+                        "created_at": "2024-01-15T10:00:00Z"
+                    },
+        {
+            "id": 2,
+            "title": "Intermediate Gardener", 
+            "description": "For gardeners ready to take their skills to the next level. Advanced plant care, nutrition, and soil science.",
+            "modules_count": 2,  # Based on actual modules in IntermediateLearningPath.jsx
+            "difficulty": "Intermediate",
+            "duration": "6 weeks",
+            "is_active": True,
+            "created_at": "2024-01-20T14:30:00Z"
+        },
+        {
+            "id": 3,
+            "title": "Expert Gardener",
+            "description": "Advanced techniques for experienced gardeners. Professional pruning, soil analysis, and master-level skills.",
+            "modules_count": 2,  # Based on actual modules in ExpertLearningPath.jsx
+            "difficulty": "Expert",
+            "duration": "8 weeks",
+            "is_active": True,
+            "created_at": "2024-01-25T09:15:00Z"
+        }
+    ]
+    return jsonify(learning_paths)
+
+@views.route('/api/admin/ai-data')
+@login_required
+def admin_api_ai_data():
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    # Mock data for AI recognition data
+    ai_data = [
+        {
+            "id": 1,
+            "name": "Plant Recognition Model",
+            "description": "AI model for identifying plant species",
+            "type": "Plant Recognition",
+            "accuracy": 94.5,
+            "updated_at": datetime.now().isoformat()
+        },
+        {
+            "id": 2,
+            "name": "Disease Detection Model",
+            "description": "AI model for detecting plant diseases",
+            "type": "Disease Detection", 
+            "accuracy": 89.2,
+            "updated_at": datetime.now().isoformat()
+        }
+    ]
+    return jsonify(ai_data)
+
+@views.route('/api/admin/notifications')
+@login_required
+def admin_api_notifications():
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    # Mock data for system notifications
+    notifications = [
+        {
+            "id": 1,
+            "title": "System Maintenance",
+            "message": "Scheduled maintenance will occur tonight at 2 AM",
+            "type": "System",
+            "priority": "Medium",
+            "is_active": True
+        },
+        {
+            "id": 2,
+            "title": "New Feature Release",
+            "message": "AI Plant Recognition has been updated with new species",
+            "type": "Feature",
+            "priority": "Low",
+            "is_active": True
+        }
+    ]
+    return jsonify(notifications)
+
+@views.route('/api/admin/seasonal-content')
+@login_required
+def admin_api_seasonal_content():
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    # Mock data for seasonal content
+    seasonal_content = [
+        {
+            "id": 1,
+            "season": "Spring",
+            "description": "Spring planting guide and tips",
+            "month": "March",
+            "region": "Northern Hemisphere",
+            "updated_at": datetime.now().isoformat()
+        },
+        {
+            "id": 2,
+            "season": "Summer",
+            "description": "Summer garden maintenance",
+            "month": "June",
+            "region": "Northern Hemisphere", 
+            "updated_at": datetime.now().isoformat()
+        }
+    ]
+    return jsonify(seasonal_content)
+
+@views.route('/api/admin/feedback')
+@login_required
+def admin_api_feedback():
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    # Mock data for feedback - in a real app, you'd have a Feedback model
+    feedback = [
+        {
+            "id": 1,
+            "user_name": "John Doe",
+            "user_email": "john@example.com",
+            "message": "Great app! The AI recognition feature is very helpful.",
+            "rating": 5,
+            "status": "new",
+            "created_at": datetime.now().isoformat()
+        },
+        {
+            "id": 2,
+            "user_name": "Jane Smith",
+            "user_email": "jane@example.com", 
+            "message": "Could you add more plant species to the recognition?",
+            "rating": 4,
+            "status": "read",
+            "created_at": datetime.now().isoformat()
+        }
+    ]
+    return jsonify(feedback)
+
+@views.route('/api/admin/reports')
+@login_required
+def admin_api_reports():
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    # Mock data for reports
+    reports = []
+    return jsonify(reports)
+
+@views.route('/api/admin/reports/generate', methods=['POST'])
+@login_required
+def admin_api_generate_report():
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        data = request.get_json()
+        report_type = data.get('type')
+        date_range = data.get('dateRange', '30d')
+        
+        # Mock report generation
+        report = {
+            "id": 1,
+            "name": f"{report_type.replace('-', ' ').title()} Report",
+            "description": f"Generated report for {report_type} covering {date_range}",
+            "type": report_type,
+            "size": "2.3 MB",
+            "created_at": datetime.now().isoformat()
+        }
+        
+        return jsonify({"message": "Report generated successfully", "report": report})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/rollback/<content_type>/<int:content_id>', methods=['POST'])
+@login_required
+def admin_api_rollback_content(content_type, content_id):
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        # Mock rollback functionality
+        return jsonify({"message": f"Content {content_type} with ID {content_id} rolled back successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Additional admin endpoints for new pages
+@views.route('/api/admin/subscription/stats')
+@login_required
+def admin_api_subscription_stats():
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        total_subscribers = User.query.filter_by(subscribed=True).count()
+        active_subscriptions = User.query.filter_by(subscribed=True, is_active=True).count()
+        monthly_revenue = total_subscribers * 9.99  # Mock calculation
+        total_users = User.query.count()
+        subscription_rate = (total_subscribers / total_users * 100) if total_users > 0 else 0
+        
+        return jsonify({
+            "totalSubscribers": total_subscribers,
+            "activeSubscriptions": active_subscriptions,
+            "monthlyRevenue": round(monthly_revenue, 2),
+            "subscriptionRate": round(subscription_rate, 1)
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/subscription/subscribers')
+@login_required
+def admin_api_subscription_subscribers():
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        users = User.query.all()
+        subscribers_data = []
+        for user in users:
+            subscribers_data.append({
+                "id": user.id,
+                "email": user.email,
+                "firstname": user.firstname,
+                "lastname": user.lastname,
+                "full_name": user.full_name,
+                "subscribed": user.subscribed,
+                "is_active": user.is_active,
+                "created_at": user.created_at.isoformat() if user.created_at else None
+            })
+        return jsonify(subscribers_data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/subscription/<int:user_id>/toggle', methods=['PATCH'])
+@login_required
+def admin_api_toggle_subscription(user_id):
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        user = User.query.get_or_404(user_id)
+        data = request.get_json()
+        user.subscribed = data.get('subscribed', not user.subscribed)
+        db.session.commit()
+        return jsonify({"message": "Subscription status updated successfully"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+# Learning Path Management API endpoints
+# Note: Learning paths are fixed (Beginner, Intermediate, Expert) - no creation/deletion
+
+@views.route('/api/admin/learning-paths/<int:path_id>', methods=['PUT'])
+@login_required
+def admin_api_update_learning_path(path_id):
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['title', 'description', 'difficulty', 'duration', 'modules_count']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+        
+        # In a real app, you would:
+        # 1. Update the LearningPath record in the database
+        # 2. Update the corresponding learning path file (BeginnerLearningPath.jsx, etc.)
+        # 3. Sync the changes with the user interface
+        # 4. Clear any cached data
+        
+        # For now, return success with the updated learning path data
+        learning_path = {
+            "id": path_id,
+            "title": data.get('title'),
+            "description": data.get('description'),
+            "difficulty": data.get('difficulty'),
+            "duration": data.get('duration'),
+            "modules_count": data.get('modules_count'),
+            "is_active": data.get('is_active', True),
+            "video": data.get('video'),
+            "updated_at": datetime.now().isoformat()
+        }
+        
+        # TODO: In a real implementation, you would:
+        # - Update database record
+        # - Update the corresponding learning path file
+        # - Clear user progress cache if needed
+        # - Notify users of content updates
+        
+        return jsonify({
+            "message": "Learning path updated successfully", 
+            "learning_path": learning_path,
+            "note": "In production, this would update the actual learning path files and database"
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Learning paths cannot be deleted - they are fixed (Beginner, Intermediate, Expert)
+
+@views.route('/api/admin/learning-paths/<int:path_id>/status', methods=['PATCH'])
+@login_required
+def admin_api_toggle_learning_path_status(path_id):
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        data = request.get_json()
+        
+        # In a real app, you would:
+        # 1. Update the LearningPath status in the database
+        # 2. Update the corresponding learning path file
+        # 3. Notify users if the path becomes inactive
+        # 4. Handle user progress if path is deactivated
+        
+        return jsonify({
+            "message": "Learning path status updated successfully",
+            "note": "In production, this would update the database and notify affected users"
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/upload', methods=['POST'])
+@login_required
+def admin_api_upload_file():
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "No file provided"}), 400
+        
+        file = request.files['file']
+        file_type = request.form.get('type', 'unknown')
+        
+        if file.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+        
+        # Mock file upload - in a real app, you'd save the file and return the URL
+        import uuid
+        filename = f"{uuid.uuid4()}_{file.filename}"
+        file_url = f"/uploads/{file_type}/{filename}"
+        
+        return jsonify({
+            "message": "File uploaded successfully",
+            "fileUrl": file_url,
+            "filename": filename
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

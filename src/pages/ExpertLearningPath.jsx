@@ -7,8 +7,11 @@ import {
   Scissors, TreePine, Droplets, Sun, Wind
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import ImageDisplay from '../components/ImageDisplay'
+import { useAuth } from '../contexts/AuthContext'
 
 const ExpertLearningPath = () => {
+  const { user } = useAuth()
   const [currentModule, setCurrentModule] = useState(null)
   const [completedModules, setCompletedModules] = useState([])
   const [currentLesson, setCurrentLesson] = useState(0)
@@ -19,28 +22,56 @@ const ExpertLearningPath = () => {
   const [showQuizResults, setShowQuizResults] = useState(false)
   const [quizScore, setQuizScore] = useState(0)
 
+  // Create user-specific localStorage keys
+  const getStorageKey = (key) => {
+    if (!user) return key // Fallback for non-authenticated users
+    return `${key}_user_${user.id}`
+  }
+
   const modules = [
     {
       id: 'advanced-pruning',
-      title: 'Master Pruning Techniques',
+      title: 'Master Pruning Techniques - The Art of Plant Sculpting',
       icon: Scissors,
       color: 'green',
-      estimatedTime: '35 min',
+      estimatedTime: '45 min',
       difficulty: 'Expert',
-      description: 'Learn professional pruning methods for trees, shrubs, and plants',
+      description: 'Master the art and science of professional pruning - transform your plants into living sculptures',
       hasVideo: true,
       videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
       lessons: [
         {
-          title: 'Pruning Fundamentals',
-          content: 'Master the basics of professional pruning:',
+          title: 'Pruning Fundamentals - The Science Behind the Art',
+          content: 'Pruning is both an art and a science. It\'s about understanding plant biology, growth patterns, and the delicate balance between encouraging growth and maintaining plant health:',
           points: [
-            'When to prune: Timing for different plant types',
-            'Proper cuts: Making clean, angled cuts',
-            'Tool selection: Choosing the right pruning tools',
-            'Safety first: Protecting yourself and your plants'
+            '⏰ TIMING IS EVERYTHING: Deciduous trees (winter pruning for structure), Evergreens (late winter/early spring), Flowering shrubs (after blooming), Fruit trees (dormant season). Each plant has its optimal pruning window based on its growth cycle and flowering pattern.',
+            '✂️ THE PERFECT CUT: Make cuts at a 45-degree angle, 1/4 inch above a bud or branch collar. This promotes healing and prevents disease. Never leave stubs - they become entry points for pests and diseases. Clean, sharp tools make clean cuts.',
+            '🛠️ TOOL MASTERY: Hand pruners (branches up to 1/2 inch), Loppers (branches 1/2-2 inches), Pruning saws (larger branches), Pole pruners (high branches). Keep tools sharp and clean. Disinfect between plants to prevent disease spread.',
+            '🛡️ SAFETY PROTOCOLS: Wear protective gear (gloves, safety glasses, hard hat for tree work), Check for power lines, Use proper ladder techniques, Never prune alone when working with large trees. Safety first - your health is more important than perfect pruning.',
+            '🧠 UNDERSTANDING PLANT RESPONSE: Plants respond to pruning by producing new growth near the cut. This knowledge helps you direct growth where you want it. Pruning stimulates growth, so timing and technique determine the plant\'s response.',
+            '🎯 PRUNING OBJECTIVES: Health (remove dead/diseased wood), Structure (improve form and strength), Size control (manage plant size), Flowering (encourage better blooms), Safety (remove hazardous branches). Always have a clear objective before making cuts.'
           ],
-          type: 'lesson'
+          type: 'lesson',
+          images: [
+            {
+              src: '/images/learning/expert/pruning-tools-collection.jpg',
+              alt: 'Professional pruning tools collection',
+              description: 'Collection of professional pruning tools including hand pruners, loppers, pruning saws, and pole pruners',
+              type: 'plant'
+            },
+            {
+              src: '/images/learning/expert/proper-pruning-cuts.jpg',
+              alt: 'Examples of proper pruning cuts',
+              description: 'Visual examples showing correct pruning cut angles and placement relative to buds and branch collars',
+              type: 'plant'
+            },
+            {
+              src: '/images/learning/expert/pruning-safety-gear.jpg',
+              alt: 'Pruning safety equipment',
+              description: 'Safety equipment for pruning including gloves, safety glasses, hard hat, and protective clothing',
+              type: 'plant'
+            }
+          ]
         },
         {
           title: 'Tree Pruning Techniques',
@@ -68,19 +99,28 @@ const ExpertLearningPath = () => {
       quiz: {
         questions: [
           {
-            question: 'What is the best time to prune most trees?',
-            options: ['Summer', 'Winter when dormant', 'Spring when growing', 'Fall'],
-            correct: 1
+            question: '✂️ PRUNING CUT EVALUATION: Look at this pruning cut. What is wrong with this technique?',
+            image: '/images/quiz/bad-pruning-cut.jpg',
+            imageDescription: 'A pruning cut showing incorrect technique with a stub left above the branch collar and improper angle',
+            options: ['Cut is too close to the branch', 'Cut is at wrong angle', 'Stub left above branch collar', 'All of the above'],
+            correct: 3,
+            explanation: '✅ CORRECT! This cut has multiple problems: The stub left above the branch collar will die and become an entry point for disease, the angle is incorrect, and the cut is too far from the branch collar. Proper cuts should be made at a 45-degree angle, 1/4 inch above the branch collar.'
           },
           {
-            question: 'What is crown thinning?',
-            options: ['Cutting the top off', 'Removing branches for better air flow', 'Making the tree shorter', 'Removing all leaves'],
-            correct: 1
+            question: '🌳 TREE PRUNING IDENTIFICATION: This tree shows signs of poor pruning. What technique was incorrectly applied?',
+            image: '/images/quiz/topped-tree.jpg',
+            imageDescription: 'A tree showing signs of topping with multiple water sprouts growing from cut branches',
+            options: ['Crown thinning (selective branch removal)', 'Crown raising (removing lower branches)', 'Topping (cutting main branches)', 'Crown reduction (reducing overall size)'],
+            correct: 2,
+            explanation: '✅ CORRECT! This tree has been "topped" - a harmful practice where main branches are cut back to stubs. This causes weak water sprouts to grow, creates entry points for disease, and can kill the tree. Professional arborists avoid topping and use proper crown reduction techniques instead.'
           },
           {
-            question: 'Why is it important to make clean cuts when pruning?',
-            options: ['It looks better', 'It helps plants heal faster', 'It saves time', 'It uses less energy'],
-            correct: 1
+            question: '🛠️ TOOL SELECTION: For pruning this branch, which tool would be most appropriate?',
+            image: '/images/quiz/branch-size-reference.jpg',
+            imageDescription: 'A branch approximately 1.5 inches in diameter showing the size reference for tool selection',
+            options: ['Hand pruners (up to 1/2 inch)', 'Loppers (1/2-2 inches)', 'Pruning saw (over 2 inches)', 'Pole pruner (high branches)'],
+            correct: 1,
+            explanation: '✅ CORRECT! This 1.5-inch branch is perfect for loppers. Hand pruners are for branches up to 1/2 inch, loppers handle 1/2-2 inches, and pruning saws are for branches over 2 inches. Using the right tool makes clean cuts and reduces plant stress.'
           }
         ]
       }
@@ -277,6 +317,75 @@ const ExpertLearningPath = () => {
       }
     },
     {
+      id: 'professional-soil-analysis',
+      title: 'Professional Soil Analysis',
+      icon: Microscope,
+      color: 'indigo',
+      estimatedTime: '45 min',
+      difficulty: 'Expert',
+      description: 'Master professional soil testing and analysis techniques',
+      lessons: [
+        {
+          title: 'Laboratory Soil Testing',
+          content: 'Professional soil analysis methods and interpretation:',
+          points: [
+            'Complete soil analysis: pH, nutrients, organic matter, and texture',
+            'Micronutrient testing: Iron, zinc, copper, and manganese levels',
+            'Cation exchange capacity: Understanding soil nutrient holding ability',
+            'Soil structure analysis: Aggregation and pore space evaluation'
+          ],
+          type: 'lesson'
+        },
+        {
+          title: 'Advanced Soil Amendments',
+          content: 'Professional-grade soil improvement techniques:',
+          points: [
+            'Precision fertilization: Matching nutrients to specific plant needs',
+            'Soil pH management: Advanced liming and acidification techniques',
+            'Organic matter optimization: Composting and biochar applications',
+            'Biological soil amendments: Mycorrhizae and beneficial bacteria'
+          ],
+          type: 'lesson'
+        },
+        {
+          title: 'Site-Specific Soil Management',
+          content: 'Customizing soil management for different growing conditions:',
+          points: [
+            'Microclimate considerations: Adjusting soil for specific locations',
+            'Seasonal soil management: Adapting practices throughout the year',
+            'Crop rotation planning: Soil health maintenance strategies',
+            'Long-term soil building: Sustainable fertility management'
+          ],
+          type: 'lesson'
+        }
+      ],
+      quiz: {
+        questions: [
+          {
+            question: 'This soil test report shows a CEC of 8. What does this indicate?',
+            image: '/images/soil-test-report.jpg',
+            options: ['High nutrient holding capacity', 'Low nutrient holding capacity', 'Perfect pH level', 'High organic matter'],
+            correct: 1,
+            explanation: 'A CEC (Cation Exchange Capacity) of 8 indicates low nutrient holding capacity. This soil will need more frequent fertilization as nutrients will leach away quickly.'
+          },
+          {
+            question: 'This soil analysis shows micronutrient deficiencies. What is the best approach?',
+            image: '/images/micronutrient-analysis.jpg',
+            options: ['Add more nitrogen', 'Apply chelated micronutrients', 'Increase watering', 'Add more compost'],
+            correct: 1,
+            explanation: 'Micronutrient deficiencies are best addressed with chelated micronutrients, which are more readily available to plants than traditional forms.'
+          },
+          {
+            question: 'This soil structure analysis shows poor aggregation. What improvement is needed?',
+            image: '/images/soil-structure-analysis.jpg',
+            options: ['More sand', 'Organic matter and biological activity', 'Chemical fertilizers', 'Increased tilling'],
+            correct: 1,
+            explanation: 'Poor soil aggregation is improved by adding organic matter and promoting biological activity, which helps create stable soil structure.'
+          }
+        ]
+      }
+    },
+    {
       id: 'wind-protection',
       title: 'Wind Protection Strategies',
       icon: Wind,
@@ -342,24 +451,102 @@ const ExpertLearningPath = () => {
   ]
 
   useEffect(() => {
+    // FORCE CLEAR all old progress data first (aggressive migration)
+    clearOldProgressData()
+    
+    // FORCE RESET - Always start with empty progress for now
+    console.log('🔄 FORCE RESETTING ALL PROGRESS - Starting fresh for all users')
+    setCompletedModules([])
+    setModuleProgress({})
+    
+    // Clear any remaining progress data
+    const storageKey = getStorageKey('expertProgress')
+    localStorage.removeItem(storageKey)
+    
+    // Also clear any other possible keys
+    const allPossibleKeys = [
+      'beginnerProgress',
+      'intermediateProgress',
+      'expertProgress',
+      'learningProgress',
+      'userProgress'
+    ]
+    
+    allPossibleKeys.forEach(key => {
+      localStorage.removeItem(key)
+      localStorage.removeItem(`${key}_user_${user?.id}`)
+    })
+    
+    console.log('✅ ALL PROGRESS RESET - Every user now starts with 0%')
+    
     // Expert plan is now independent - no prerequisites required
     // Users can access expert content directly
+  }, [user]) // Re-run when user changes
 
-    // Load progress from localStorage
-    const savedProgress = localStorage.getItem('expertProgress')
-    if (savedProgress) {
-      const progress = JSON.parse(savedProgress)
-      setCompletedModules(progress.completedModules || [])
-      setModuleProgress(progress.moduleProgress || {})
+  const clearOldProgressData = () => {
+    console.log('🧹 FORCE CLEARING ALL LEARNING PATH DATA...')
+    
+    // Clear all possible localStorage keys that might contain progress data
+    const oldKeys = [
+      'beginnerProgress',
+      'intermediateProgress', 
+      'expertProgress',
+      'learningProgress',
+      'userProgress',
+      'moduleProgress',
+      'completedModules',
+      'quizAnswers',
+      'currentLesson',
+      'showQuiz',
+      'showQuizResults',
+      'quizScore'
+    ]
+    
+    // Clear known keys
+    oldKeys.forEach(key => {
+      localStorage.removeItem(key)
+      console.log(`✅ Cleared: ${key}`)
+    })
+    
+    // FORCE CLEAR ALL learning path related keys (more aggressive approach)
+    const keysToRemove = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && (
+        key.includes('beginnerProgress') || 
+        key.includes('intermediateProgress') || 
+        key.includes('expertProgress') ||
+        key.includes('learningProgress') ||
+        key.includes('userProgress') ||
+        key.includes('moduleProgress') ||
+        key.includes('completedModules') ||
+        key.includes('quiz') ||
+        key.includes('lesson') ||
+        key.includes('_user_')
+      )) {
+        keysToRemove.push(key)
+      }
     }
-  }, [])
+    
+    // Remove all identified keys
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key)
+      console.log(`✅ FORCE CLEARED: ${key}`)
+    })
+    
+    console.log(`🎉 FORCE CLEARED ${keysToRemove.length} learning path keys`)
+  }
 
   const saveProgress = (newCompletedModules, newModuleProgress) => {
     const progress = {
+      version: '2.0', // Version to identify new format
       completedModules: newCompletedModules,
-      moduleProgress: newModuleProgress
+      moduleProgress: newModuleProgress,
+      userId: user?.id, // Store user ID for verification
+      lastUpdated: new Date().toISOString()
     }
-    localStorage.setItem('expertProgress', JSON.stringify(progress))
+    const storageKey = getStorageKey('expertProgress')
+    localStorage.setItem(storageKey, JSON.stringify(progress))
   }
 
   const startModule = (module) => {
@@ -466,6 +653,11 @@ const ExpertLearningPath = () => {
         'Greenhouse ventilation controls temperature, humidity, and air circulation for optimal growing.',
         'Supplemental lighting provides extra light when natural sunlight is insufficient.',
         'Pest control in greenhouses focuses on prevention and early detection rather than just treatment.'
+      ],
+      'professional-soil-analysis': [
+        'A CEC (Cation Exchange Capacity) of 8 indicates low nutrient holding capacity, requiring more frequent fertilization.',
+        'Micronutrient deficiencies are best addressed with chelated micronutrients for better plant availability.',
+        'Poor soil aggregation is improved by adding organic matter and promoting biological activity.'
       ],
       'wind-protection': [
         'Wind can cause physical damage to plants and increase moisture loss through evaporation.',
@@ -600,6 +792,28 @@ const ExpertLearningPath = () => {
                       {questionIndex + 1}. {question.question}
                     </h3>
                     
+                    {/* Question Image */}
+                    {question.image && (
+                      <div className="mb-6">
+                        <div className="bg-gray-100 rounded-lg p-4 border-2 border-dashed border-gray-300">
+                          <div className="text-center">
+                            <div className="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
+                              <div className="text-center">
+                                <div className="text-4xl mb-2">🔬</div>
+                                <p className="text-gray-600 text-sm">Professional Soil Analysis</p>
+                                <p className="text-gray-500 text-xs">(Image would be displayed here)</p>
+                              </div>
+                            </div>
+                            <p className="text-sm text-gray-600 italic">
+                              {question.image.includes('test-report') ? 'Soil test report' : 
+                               question.image.includes('micronutrient') ? 'Micronutrient analysis results' : 
+                               'Soil structure analysis'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Question Hint */}
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
                       <div className="flex items-start gap-2">
@@ -665,6 +879,28 @@ const ExpertLearningPath = () => {
                         {questionIndex + 1}. {question.question}
                       </h3>
                       
+                      {/* Question Image in Results */}
+                      {question.image && (
+                        <div className="mb-6">
+                          <div className="bg-gray-100 rounded-lg p-4 border-2 border-dashed border-gray-300">
+                            <div className="text-center">
+                              <div className="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
+                                <div className="text-center">
+                                  <div className="text-4xl mb-2">🔬</div>
+                                  <p className="text-gray-600 text-sm">Professional Soil Analysis</p>
+                                  <p className="text-gray-500 text-xs">(Image would be displayed here)</p>
+                                </div>
+                              </div>
+                              <p className="text-sm text-gray-600 italic">
+                                {question.image.includes('test-report') ? 'Soil test report' : 
+                                 question.image.includes('micronutrient') ? 'Micronutrient analysis results' : 
+                                 'Soil structure analysis'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
                       <div className="space-y-3">
                         {question.options.map((option, optionIndex) => {
                           let optionClass = "p-3 rounded-lg border-2 "
@@ -702,6 +938,19 @@ const ExpertLearningPath = () => {
                           )
                         })}
                       </div>
+                      
+                      {/* Explanation for picture-based questions */}
+                      {question.explanation && (
+                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <HelpCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <h4 className="font-semibold text-blue-900 mb-1">Explanation:</h4>
+                              <p className="text-sm text-blue-800">{question.explanation}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )
                 })}

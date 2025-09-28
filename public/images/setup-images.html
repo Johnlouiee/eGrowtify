@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Learning Path Images</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c5530;
+            text-align: center;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .step h2 {
+            color: #2c5530;
+            margin-top: 0;
+        }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .image-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #e0e0e0;
+            text-align: center;
+        }
+        .image-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 5px;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 12px;
+        }
+        .image-item h3 {
+            margin: 10px 0 5px 0;
+            font-size: 14px;
+            color: #2c5530;
+        }
+        .image-item p {
+            margin: 0;
+            font-size: 11px;
+            color: #666;
+        }
+        .download-links {
+            margin-top: 10px;
+        }
+        .download-links a {
+            display: inline-block;
+            margin: 2px 5px 2px 0;
+            padding: 4px 8px;
+            background: #e8f5e8;
+            color: #2c5530;
+            text-decoration: none;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        .download-links a:hover {
+            background: #d4edda;
+        }
+        .instructions {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .instructions h2 {
+            color: #2c5530;
+            margin-top: 0;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 5px 0;
+        }
+        .file-structure {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 15px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌱 Learning Path Images Setup</h1>
+        
+        <div class="instructions">
+            <h2>📋 Quick Setup Instructions</h2>
+            <ol>
+                <li><strong>Download Images:</strong> Use the links below to find and download images from free stock photo sites</li>
+                <li><strong>Save with Correct Names:</strong> Use the exact filenames shown (case-sensitive)</li>
+                <li><strong>Place in Correct Folders:</strong> Put images in the right directories as shown below</li>
+                <li><strong>Test the Learning Paths:</strong> Refresh the learning path pages to see the images</li>
+            </ol>
+            <p><strong>Free Image Sources:</strong> <a href="https://unsplash.com" target="_blank">Unsplash</a>, <a href="https://pexels.com" target="_blank">Pexels</a>, <a href="https://pixabay.com" target="_blank">Pixabay</a></p>
+        </div>
+
+        <div class="step">
+            <h2>📁 Directory Structure</h2>
+            <div class="file-structure">
+public/images/
+├── learning/
+│   ├── beginner/
+│   │   ├── annual-plants.jpg
+│   │   ├── perennial-plants.jpg
+│   │   ├── beginner-herbs.jpg
+│   │   ├── beginner-vegetables.jpg
+│   │   ├── beginner-houseplants.jpg
+│   │   ├── full-sun-plants.jpg
+│   │   ├── partial-sun-plants.jpg
+│   │   ├── shade-plants.jpg
+│   │   ├── potting-mix-vs-garden-soil.jpg
+│   │   └── soil-components.jpg
+│   ├── intermediate/
+│   │   ├── nutrient-deficiency-chart.jpg
+│   │   └── npk-fertilizer-labels.jpg
+│   └── expert/
+│       ├── pruning-tools-collection.jpg
+│       ├── proper-pruning-cuts.jpg
+│       └── pruning-safety-gear.jpg
+└── quiz/
+    ├── quiz-annual-plant.jpg
+    ├── quiz-snake-plant.jpg
+    ├── bad-pruning-cut.jpg
+    ├── topped-tree.jpg
+    └── branch-size-reference.jpg
+            </div>
+        </div>
+
+        <div class="step">
+            <h2>🌺 Beginner Learning Path Images</h2>
+            <div class="image-grid">
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>annual-plants.jpg</h3>
+                    <p>Colorful annual flowers</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/annual-flowers" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/marigolds/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>perennial-plants.jpg</h3>
+                    <p>Mature perennial plants</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/perennial-garden" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/roses/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>beginner-herbs.jpg</h3>
+                    <p>Easy-to-grow herbs</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/herb-garden" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/basil/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>beginner-vegetables.jpg</h3>
+                    <p>Simple vegetables</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/vegetable-garden" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/lettuce/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>beginner-houseplants.jpg</h3>
+                    <p>Low-maintenance houseplants</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/houseplants" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/snake-plant/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>full-sun-plants.jpg</h3>
+                    <p>Plants in full sunlight</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/full-sun-plants" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/sunflowers/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>partial-sun-plants.jpg</h3>
+                    <p>Plants in partial shade</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/partial-shade-plants" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/ferns/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>shade-plants.jpg</h3>
+                    <p>Plants in full shade</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/shade-plants" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/begonias/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>potting-mix-vs-garden-soil.jpg</h3>
+                    <p>Soil comparison</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/potting-soil" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/garden-soil/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>soil-components.jpg</h3>
+                    <p>Soil components breakdown</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/soil-components" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/clay-soil/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="step">
+            <h2>🧪 Quiz Images</h2>
+            <div class="image-grid">
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>quiz-annual-plant.jpg</h3>
+                    <p>Bright annual flower for quiz</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/bright-annual-flower" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/colorful-flower/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>quiz-snake-plant.jpg</h3>
+                    <p>Snake plant for identification</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/snake-plant" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/sansevieria/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>bad-pruning-cut.jpg</h3>
+                    <p>Incorrect pruning example</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/bad-pruning" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/tree-damage/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>topped-tree.jpg</h3>
+                    <p>Tree showing topping damage</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/topped-tree" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/tree-pruning/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>branch-size-reference.jpg</h3>
+                    <p>Branch for tool selection quiz</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/tree-branch" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/branch/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="step">
+            <h2>🔬 Intermediate & Expert Images</h2>
+            <div class="image-grid">
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>nutrient-deficiency-chart.jpg</h3>
+                    <p>Plant nutrition chart</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/plant-nutrition" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/fertilizer/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>npk-fertilizer-labels.jpg</h3>
+                    <p>Fertilizer labels</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/fertilizer-labels" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/plant-food/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>pruning-tools-collection.jpg</h3>
+                    <p>Professional pruning tools</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/pruning-tools" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/garden-tools/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>proper-pruning-cuts.jpg</h3>
+                    <p>Correct pruning techniques</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/tree-pruning" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/pruning-tree/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+                <div class="image-item">
+                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 5px;">Image Preview</div>
+                    <h3>pruning-safety-gear.jpg</h3>
+                    <p>Pruning safety equipment</p>
+                    <div class="download-links">
+                        <a href="https://unsplash.com/s/photos/safety-equipment" target="_blank">Unsplash</a>
+                        <a href="https://pexels.com/search/safety-gear/" target="_blank">Pexels</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="step">
+            <h2>✅ Testing Your Setup</h2>
+            <div class="status warning">
+                <strong>⚠️ After adding images:</strong>
+                <ol>
+                    <li>Refresh your learning path pages</li>
+                    <li>Check that images load properly in lessons</li>
+                    <li>Test quiz questions to see if images appear</li>
+                    <li>Verify images match the content descriptions</li>
+                </ol>
+            </div>
+            <p><strong>If images don't appear:</strong> Check the browser console for 404 errors and verify file paths match exactly.</p>
+        </div>
+    </div>
+</body>
+</html>

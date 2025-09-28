@@ -6,8 +6,11 @@ import {
   Target, TrendingUp, Star, Users, Calendar, MapPin, Zap, Video, PlayCircle, X
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import ImageDisplay from '../components/ImageDisplay'
+import { useAuth } from '../contexts/AuthContext'
 
 const BeginnerLearningPath = () => {
+  const { user } = useAuth()
   const [currentModule, setCurrentModule] = useState(null)
   const [completedModules, setCompletedModules] = useState([])
   const [currentLesson, setCurrentLesson] = useState(0)
@@ -18,154 +21,296 @@ const BeginnerLearningPath = () => {
   const [showQuizResults, setShowQuizResults] = useState(false)
   const [quizScore, setQuizScore] = useState(0)
 
+  // Create user-specific localStorage keys
+  const getStorageKey = (key) => {
+    if (!user) return key // Fallback for non-authenticated users
+    return `${key}_user_${user.id}`
+  }
+
   const modules = [
-    {
-      id: 'intro',
-      title: 'Introduction to Planting',
-      icon: BookOpen,
-      color: 'green',
-      estimatedTime: '15 min',
-      difficulty: 'Beginner',
-      description: 'Learn the fundamentals of plant types and choosing your first plants',
-      lessons: [
+     {
+       id: 'intro',
+       title: 'Introduction to Planting',
+       icon: BookOpen,
+       color: 'green',
+       estimatedTime: '25 min',
+       difficulty: 'Beginner',
+       description: 'Master the fundamentals of plant types, life cycles, and choosing your first plants with confidence',
+       lessons: [
+         {
+           title: 'Understanding Plant Types & Life Cycles',
+           content: 'Plants are categorized into three main types based on their life cycle. Understanding these differences is crucial for planning your garden and knowing what to expect from each plant:',
+           points: [
+             '🌱 ANNUALS: Complete their entire life cycle in one growing season. They grow, flower, produce seeds, and die all within a year. Examples: Marigolds, lettuce, petunias, zinnias. Perfect for beginners because you get quick results and can start fresh each year.',
+             '🌿 PERENNIALS: Live for multiple years, often coming back stronger each season. They may die back in winter but regrow from their roots. Examples: Roses, hostas, lavender, mint, daylilies. Great investment plants that provide long-term garden structure.',
+             '🌾 BIENNIALS: Take exactly two years to complete their cycle. First year: grow leaves and roots. Second year: flower, produce seeds, then die. Examples: Carrots, parsley, foxgloves, hollyhocks. Require patience but offer unique growing experiences.',
+             '💡 PLANNING TIP: Mix all three types in your garden! Annuals for quick color, perennials for structure, and biennials for variety. This creates a dynamic, ever-changing garden that stays interesting year-round.'
+           ],
+           type: 'lesson',
+          images: [
+            {
+              src: '/images/learning/beginner/annual-plants.jpg',
+              alt: 'Annual plants examples',
+              description: 'Colorful annual plants like marigolds and petunias showing their vibrant, single-season growth',
+              type: 'plant'
+            },
+            {
+              src: '/images/learning/beginner/perennial-plants.jpg',
+              alt: 'Perennial plants examples',
+              description: 'Mature perennial plants like roses and hostas showing their multi-year growth and established root systems',
+              type: 'plant'
+            }
+          ]
+         },
         {
-          title: 'Understanding Plant Types',
-          content: 'Plants are categorized into three main types based on their life cycle:',
+          title: 'Choosing Beginner-Friendly Plants - The Success Formula',
+          content: 'Selecting the right plants for your first garden is like choosing the right training wheels for learning to ride a bike. These plants are forgiving, rewarding, and will build your confidence:',
           points: [
-            'Annuals: Complete their life cycle in one growing season (marigolds, lettuce)',
-            'Perennials: Live for multiple years (roses, hostas, many herbs)',
-            'Biennials: Take two years to complete their cycle (carrots, parsley)'
+            '🌿 HERBS - The Perfect Starting Point: Basil (loves warmth, grows fast, great for cooking), Mint (vigorous grower, hard to kill, spreads easily), Parsley (biennial, great for garnishes), Chives (perennial, comes back every year, mild onion flavor). Herbs are forgiving because they\'re meant to be harvested regularly.',
+            '🥬 VEGETABLES - Quick Rewards: Lettuce (fast-growing, can harvest multiple times, cool-season crop), Spinach (nutrient-dense, grows in cool weather), Radishes (ready in 3-4 weeks, great for kids), Cherry tomatoes (more forgiving than large tomatoes, continuous harvest). Start with leafy greens - they\'re the easiest!',
+            '🌸 FLOWERS - Instant Gratification: Marigolds (pest-repellent, bright colors, easy from seed), Calendula (edible flowers, self-seeding), Sunflowers (dramatic height, attracts birds, easy to grow). Flowers provide immediate visual rewards and attract beneficial insects.',
+            '🏠 HOUSEPLANTS - Year-Round Gardening: Pothos (trailing vine, tolerates neglect, purifies air), Snake Plant (nearly indestructible, low water needs), Spider Plant (produces baby plants, great for sharing). Perfect for learning plant care basics indoors.',
+            '💡 SUCCESS TIP: Start with just 3-5 plants maximum. Master their care routine before adding more. It\'s better to have a few thriving plants than many struggling ones!'
           ],
-          type: 'lesson'
+          type: 'lesson',
+          images: [
+            {
+              src: '/images/learning/beginner/beginner-herbs.jpg',
+              alt: 'Beginner-friendly herbs',
+              description: 'A collection of easy-to-grow herbs including basil, mint, parsley, and chives in small pots',
+              type: 'plant'
+            },
+            {
+              src: '/images/learning/beginner/beginner-vegetables.jpg',
+              alt: 'Beginner-friendly vegetables',
+              description: 'Fast-growing vegetables like lettuce, spinach, and radishes showing their quick development',
+              type: 'plant'
+            },
+            {
+               src: '/images/learning/beginner/beginner-houseplants.jpg',
+               alt: 'Beginner-friendly houseplants',
+               description: 'Low-maintenance houseplants like pothos, snake plant, and spider plant in indoor settings',
+               type: 'plant'
+             }
+           ]
+         },
+        {
+          title: 'Starting Small Strategy - Building Your Gardening Foundation',
+          content: 'The key to gardening success is building confidence through small wins. Think of it like learning to cook - you don\'t start with a five-course meal! Here\'s your step-by-step approach:',
+          points: [
+            '🎯 THE 3-5 PLANT RULE: Begin with maximum 3-5 plants. This allows you to give each plant individual attention and learn their specific needs. More plants = more complexity = higher chance of failure. Quality over quantity!',
+            '📅 DAILY CARE ROUTINE: Establish a simple routine: Check plants daily (2-3 minutes), water when needed, observe growth changes. Consistency is more important than perfection. Plants thrive on routine, just like pets.',
+            '💧 MASTER THE BASICS FIRST: Focus on watering and light requirements before anything else. These are the two most critical factors for plant survival. Get these right, and 80% of your problems disappear.',
+            '📈 GRADUAL SCALING: Once you\'ve kept 3-5 plants alive for 2-3 months, add 2-3 more. This gradual approach builds confidence and prevents overwhelm. Each success makes you more confident for the next challenge.',
+            '🔍 OBSERVATION SKILLS: Learn to "read" your plants. Yellow leaves, drooping, new growth - these are your plants\' way of communicating. The more you observe, the better gardener you become.',
+            '💡 CONFIDENCE BUILDING: Celebrate small wins! First new leaf, first flower, first harvest. These moments build the confidence you need to tackle more challenging plants later.'
+          ],
+          type: 'lesson',
+          images: [
+            {
+              src: '/images/small-garden-setup.jpg',
+              alt: 'Small beginner garden setup',
+              description: 'A small, manageable garden setup with 3-5 plants in containers, showing the ideal starting point for beginners',
+              type: 'plant'
+            },
+            {
+              src: '/images/daily-care-routine.jpg',
+              alt: 'Daily plant care routine',
+              description: 'Someone checking plants daily, showing the simple routine of observation and basic care',
+              type: 'plant'
+            }
+          ]
+        }
+      ],
+      quiz: {
+        questions: [
+        {
+            question: '🔍 PLANT IDENTIFICATION: Look at this plant. It has bright, colorful flowers and appears to be growing vigorously in a single season. What type of plant is this?',
+            image: '/images/quiz/quiz-annual-plant.jpg',
+            imageDescription: 'A vibrant annual plant with bright flowers showing typical single-season growth characteristics',
+            options: ['Annual (lives one season)', 'Perennial (lives many years)', 'Biennial (lives two years)', 'Houseplant'],
+            correct: 0,
+            explanation: '✅ CORRECT! This is an annual plant. Key identifying features: Bright, showy flowers typical of annuals, single-season growth pattern, and the vibrant appearance that annuals are known for. Annuals put all their energy into one spectacular growing season!'
+        },
+          {
+            question: '🌱 BEGINNER PLANT SELECTION: This plant is known for being nearly indestructible and perfect for beginners. What is it?',
+            image: '/images/quiz/quiz-snake-plant.jpg',
+            imageDescription: 'A snake plant (Sansevieria) showing its characteristic upright, sword-like leaves and low-maintenance appearance',
+            options: ['Orchid (needs special care)', 'Snake Plant (very forgiving)', 'Fiddle Leaf Fig (finicky)', 'Succulent (needs lots of sun)'],
+            correct: 1,
+            explanation: '✅ CORRECT! This is a Snake Plant (Sansevieria). Perfect for beginners because: It tolerates low light, needs minimal watering, is nearly impossible to kill, and purifies indoor air. It\'s often called "indestructible" for good reason!'
+          },
+          {
+            question: '📊 GARDEN PLANNING: How many plants should a beginner start with for the best success rate?',
+            options: ['10-15 plants', '3-5 plants', '20+ plants', 'Just one plant'],
+            correct: 1,
+            explanation: '✅ CORRECT! 3-5 plants is the ideal starting number. This allows you to: Give each plant individual attention, learn their specific needs, build confidence through manageable care, and avoid overwhelm. Quality over quantity when learning!'
+          }
+        ]
+      }
+    },
+     {
+       id: 'light',
+       title: 'Light Basics - The Foundation of Plant Health',
+       icon: Sun,
+       color: 'yellow',
+       estimatedTime: '30 min',
+       difficulty: 'Beginner',
+       description: 'Master the art of providing proper light for your plants - the most critical factor for plant success',
+       hasVideo: true,
+       videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', // Placeholder - replace with actual gardening video
+       lessons: [
+         {
+           title: 'Understanding Light Requirements - The Plant Energy System',
+           content: 'Light is to plants what food is to humans - it\'s their primary energy source. Understanding light requirements is crucial because it directly affects plant growth, flowering, and overall health:',
+           points: [
+             '☀️ FULL SUN (6-8+ hours direct sunlight): Most vegetables, sunflowers, roses, lavender. These plants evolved in open areas and need maximum light for photosynthesis. Signs of enough light: Strong growth, good flowering, vibrant colors.',
+             '🌤️ PARTIAL SUN (3-6 hours direct sun): Many herbs, some flowers, certain vegetables. These plants prefer morning sun (gentler) over afternoon sun (harsher). Perfect for east-facing windows or filtered light areas.',
+             '🌥️ PARTIAL SHADE (2-4 hours direct sun): Hostas, ferns, some flowers, cool-season crops. These plants evolved under tree canopies and prefer filtered or dappled light. Too much direct sun can burn their leaves.',
+             '🌑 FULL SHADE (Less than 2 hours direct sun): Many houseplants, some ferns, certain groundcovers. These plants have adapted to low-light conditions but still need bright, indirect light to thrive.',
+             '💡 LIGHT QUALITY MATTERS: Morning light is gentler and preferred by most plants. Afternoon light is harsher and can cause leaf burn. North-facing windows provide consistent, gentle light perfect for many houseplants.',
+             '🔍 READING YOUR PLANTS: Leggy growth = not enough light. Yellow leaves = too much light. Healthy, compact growth = just right. Your plants will tell you if they\'re getting the right amount of light!'
+           ],
+           type: 'lesson',
+           images: [
+             {
+               src: '/images/learning/beginner/full-sun-plants.jpg',
+               alt: 'Full sun plants',
+               description: 'Plants thriving in full sun conditions showing strong growth and vibrant colors',
+               type: 'plant'
+             },
+             {
+               src: '/images/learning/beginner/partial-sun-plants.jpg',
+               alt: 'Partial sun plants',
+               description: 'Plants growing well in partial sun conditions with filtered light',
+               type: 'plant'
+             },
+             {
+               src: '/images/learning/beginner/shade-plants.jpg',
+               alt: 'Shade-loving plants',
+               description: 'Plants thriving in shady conditions showing their adaptation to low light',
+               type: 'plant'
+             }
+           ]
+         },
+        {
+          title: 'Indoor Light Management - Maximizing Your Home\'s Light',
+          content: 'Indoor gardening requires understanding how light behaves in your home. Here\'s how to create the perfect light environment for your plants:',
+          points: [
+            '🏠 WINDOW ORIENTATION MASTERY: South-facing windows = brightest light (full sun plants), East-facing windows = gentle morning light (perfect for most houseplants), West-facing windows = intense afternoon light (good for sun-loving plants), North-facing windows = consistent, gentle light (ideal for low-light plants).',
+            '🔄 ROTATION STRATEGY: Rotate plants 90° weekly to prevent uneven growth. Plants naturally lean toward light sources, so rotation ensures balanced, symmetrical growth. This is especially important for houseplants that stay in one spot.',
+            '💡 GROW LIGHT SOLUTIONS: When natural light is insufficient, LED grow lights are your best friend. They\'re energy-efficient, don\'t produce heat, and provide the full spectrum plants need. Use timers for 12-16 hours daily.',
+            '🧽 LIGHT OPTIMIZATION: Clean windows regularly (dirty windows block 20-30% of light), use light-colored walls to reflect light, remove heavy curtains during the day, place mirrors strategically to bounce light around.',
+            '📏 DISTANCE MATTERS: Place plants within 2-3 feet of windows for maximum light. Light intensity decreases dramatically with distance - a plant 6 feet from a window gets only 25% of the light it would get at 2 feet.',
+            '🌡️ SEASONAL ADJUSTMENTS: Move plants closer to windows in winter when light is weaker, pull them back in summer when light is intense, consider grow lights for dark winter months.'
+          ],
+          type: 'lesson',
+          images: [
+            {
+              src: '/images/window-orientation.jpg',
+              alt: 'Window orientation for plants',
+              description: 'Diagram showing different window orientations and the types of plants suitable for each',
+              type: 'plant'
+            },
+            {
+              src: '/images/grow-lights-setup.jpg',
+              alt: 'Grow lights setup',
+              description: 'Indoor plants under LED grow lights showing proper setup and positioning',
+              type: 'plant'
+            }
+          ]
         },
         {
-          title: 'Choosing Beginner-Friendly Plants',
-          content: 'Start with these forgiving plants that are perfect for beginners:',
+          title: 'Low-Light Plant Champions - Thriving in Dim Conditions',
+          content: 'Not every home has bright, sunny windows. These plants are champions at thriving in low-light conditions and will bring life to your darker spaces:',
           points: [
-            'Herbs: Basil, mint, parsley, chives',
-            'Vegetables: Lettuce, spinach, radishes, cherry tomatoes',
-            'Flowers: Marigolds, calendula, sunflowers',
-            'Houseplants: Pothos, snake plant, spider plant'
+            '🌿 POTHOS (Epipremnum aureum): The ultimate low-light champion. Tolerates almost any light condition, grows quickly, purifies air, and is nearly impossible to kill. Perfect for beginners and dark corners.',
+            '🐍 SNAKE PLANT (Sansevieria): The indestructible plant. Thrives in low light, needs minimal water, grows vertically to save space, and removes toxins from air. Can survive weeks without water.',
+            '💎 ZZ PLANT (Zamioculcas zamiifolia): The drought-tolerant beauty. Glossy, dark green leaves, extremely low maintenance, tolerates neglect, and adds modern elegance to any space.',
+            '🕊️ PEACE LILY (Spathiphyllum): The flowering low-light plant. Beautiful white flowers, indicates when it needs water (droops), purifies air, and adds elegance to any room.',
+            '🌱 CHINESE EVERGREEN (Aglaonema): Colorful low-light option. Variegated leaves in various colors, very forgiving, slow-growing (less maintenance), and perfect for adding color to dark spaces.',
+            '💡 LOW-LIGHT SUCCESS TIPS: Even low-light plants need some light - they won\'t grow in complete darkness. Water less frequently in low light (plants grow slower), dust leaves regularly to maximize light absorption, consider grow lights if plants show signs of light stress.'
           ],
-          type: 'lesson'
-        },
-        {
-          title: 'Starting Small Strategy',
-          content: 'The key to success is starting small and building confidence:',
-          points: [
-            'Begin with 3-5 plants maximum',
-            'Learn the daily care routine first',
-            'Master watering and light requirements',
-            'Scale up gradually as you gain experience'
-          ],
-          type: 'lesson'
+          type: 'lesson',
+          images: [
+            {
+              src: '/images/low-light-plants-collection.jpg',
+              alt: 'Collection of low-light plants',
+              description: 'A collection of low-light tolerant plants including pothos, snake plant, ZZ plant, and peace lily',
+              type: 'plant'
+            },
+            {
+              src: '/images/dark-corner-garden.jpg',
+              alt: 'Plants in dark corner',
+              description: 'Low-light plants thriving in a dimly lit corner of a room, showing their adaptability',
+              type: 'plant'
+            }
+          ]
         }
       ],
       quiz: {
         questions: [
           {
-            question: 'What type of plant completes its life cycle in one season?',
-            options: ['Annual', 'Perennial', 'Biennial', 'All of the above'],
-            correct: 0
+            question: '☀️ LIGHT REQUIREMENT IDENTIFICATION: This plant is growing tall and leggy, with leaves spaced far apart. What does this indicate about its light situation?',
+            image: '/images/leggy-plant.jpg',
+            imageDescription: 'A plant showing leggy growth with long stems and widely spaced leaves, indicating insufficient light',
+            options: ['Too much light (needs less)', 'Not enough light (needs more)', 'Perfect light conditions', 'Too much water'],
+            correct: 1,
+            explanation: '✅ CORRECT! This plant is showing classic signs of insufficient light. Leggy growth with widely spaced leaves means the plant is stretching toward the light source. Move it closer to a window or add grow lights to fix this problem!'
           },
           {
-            question: 'Which is NOT a good beginner plant?',
-            options: ['Basil', 'Orchid', 'Lettuce', 'Marigold'],
-            correct: 1
+            question: '🏠 WINDOW ORIENTATION: Which window direction provides the gentlest, most consistent light for most houseplants?',
+            options: ['North (consistent, gentle light)', 'South (brightest light)', 'West (intense afternoon light)', 'East (morning light)'],
+            correct: 0,
+            explanation: '✅ CORRECT! North-facing windows provide the most consistent, gentle light throughout the day. This is perfect for most houseplants that prefer bright, indirect light without the intensity of direct sun.'
           },
           {
-            question: 'How many plants should a beginner start with?',
-            options: ['10-15', '3-5', '20+', 'Just one'],
-            correct: 1
+            question: '🌿 LOW-LIGHT PLANT IDENTIFICATION: This plant has upright, sword-like leaves and is known for being nearly indestructible in low light. What is it?',
+            image: '/images/snake-plant-identification.jpg',
+            imageDescription: 'A snake plant showing its characteristic upright, sword-like leaves and low-maintenance appearance',
+            options: ['Pothos (trailing vine)', 'Snake Plant (upright, indestructible)', 'Peace Lily (flowering plant)', 'ZZ Plant (glossy leaves)'],
+            correct: 1,
+            explanation: '✅ CORRECT! This is a Snake Plant (Sansevieria). Its upright, sword-like leaves are unmistakable. It\'s perfect for low-light conditions and is often called "indestructible" because it tolerates neglect and minimal care.'
           }
         ]
       }
     },
-    {
-      id: 'light',
-      title: 'Light Basics',
-      icon: Sun,
-      color: 'yellow',
-      estimatedTime: '20 min',
-      difficulty: 'Beginner',
-      description: 'Master the art of providing proper light for your plants',
-      hasVideo: true,
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', // Placeholder - replace with actual gardening video
-      lessons: [
-        {
-          title: 'Understanding Light Requirements',
-          content: 'Different plants have different light needs:',
-          points: [
-            'Full sun: 6-8 hours of direct sunlight (most vegetables)',
-            'Partial sun: 3-6 hours of direct sun (many herbs)',
-            'Partial shade: 2-4 hours of direct sun (some flowers)',
-            'Full shade: Less than 2 hours of direct sun (hostas, ferns)'
-          ],
-          type: 'lesson'
-        },
-        {
-          title: 'Indoor Light Management',
-          content: 'Maximize light for indoor plants:',
-          points: [
-            'Place plants near south or east-facing windows',
-            'Rotate plants weekly for even growth',
-            'Use grow lights if natural light is insufficient',
-            'Clean windows regularly to maximize light transmission'
-          ],
-          type: 'lesson'
-        },
-        {
-          title: 'Low-Light Plant Options',
-          content: 'Perfect plants for darker spaces:',
-          points: [
-            'Pothos: Tolerates low light, easy to care for',
-            'Snake Plant: Very forgiving, needs minimal water',
-            'ZZ Plant: Thrives in low light, drought tolerant',
-            'Peace Lily: Beautiful flowers, low light tolerant'
-          ],
-          type: 'lesson'
-        }
-      ],
-      quiz: {
-        questions: [
-          {
-            question: 'How many hours of direct sun do most vegetables need?',
-            options: ['2-4 hours', '6-8 hours', '10+ hours', 'No direct sun'],
-            correct: 1
-          },
-          {
-            question: 'Which window direction provides the best light for indoor plants?',
-            options: ['North', 'South', 'West', 'All are equal'],
-            correct: 1
-          },
-          {
-            question: 'Which plant is best for low-light conditions?',
-            options: ['Tomato', 'Snake Plant', 'Sunflower', 'Rose'],
-            correct: 1
-          }
-        ]
-      }
-    },
-    {
-      id: 'soil',
-      title: 'Soil & Containers',
-      icon: Leaf,
-      color: 'brown',
-      estimatedTime: '18 min',
-      difficulty: 'Beginner',
-      description: 'Learn about proper soil and container selection',
-      lessons: [
-        {
-          title: 'Choosing the Right Soil',
-          content: 'Soil is the foundation of plant health:',
-          points: [
-            'Use quality potting mix for containers',
-            'Avoid heavy garden soil in pots',
-            'Look for well-draining, nutrient-rich mixes',
-            'Consider organic options for edible plants'
-          ],
-          type: 'lesson'
-        },
+     {
+       id: 'soil',
+       title: 'Soil & Containers - The Foundation of Plant Success',
+       icon: Leaf,
+       color: 'brown',
+       estimatedTime: '25 min',
+       difficulty: 'Beginner',
+       description: 'Master the art of soil selection and container choice - the foundation that determines plant health and growth',
+       lessons: [
+         {
+           title: 'Choosing the Right Soil - The Plant\'s Home',
+           content: 'Soil is more than just dirt - it\'s your plant\'s home, providing nutrients, water, air, and support. Choosing the right soil is like choosing the right house for your family:',
+           points: [
+             '🏠 POTTING MIX vs GARDEN SOIL: Potting mix is specially formulated for containers - lightweight, well-draining, and sterile. Garden soil is too heavy and dense for pots, leading to poor drainage and root rot. Always use potting mix for container plants.',
+             '💧 DRAINAGE IS CRITICAL: Good soil should drain water quickly while retaining some moisture. Look for mixes with perlite, vermiculite, or sand. Poor drainage = waterlogged roots = plant death. Your plant\'s roots need air as much as water!',
+             '🌱 NUTRIENT CONTENT: Quality potting mixes contain slow-release fertilizers that feed plants for 3-6 months. Look for mixes labeled "with fertilizer" or "enriched." For edible plants, choose organic options to avoid chemical fertilizers.',
+             '🔬 SOIL COMPONENTS: Peat moss (retains moisture), Perlite (improves drainage), Vermiculite (holds water and nutrients), Compost (adds nutrients and beneficial microbes). The best mixes contain a balance of these components.',
+             '📊 pH LEVELS: Most plants prefer slightly acidic soil (pH 6.0-7.0). Some plants like blueberries need very acidic soil (pH 4.5-5.5). Test your soil pH if plants show nutrient deficiency symptoms.',
+             '💡 SOIL SELECTION TIP: When in doubt, choose a premium potting mix. It costs more upfront but saves money in the long run by preventing plant problems and ensuring healthy growth.'
+           ],
+           type: 'lesson',
+           images: [
+             {
+               src: '/images/learning/beginner/potting-mix-vs-garden-soil.jpg',
+               alt: 'Potting mix vs garden soil comparison',
+               description: 'Side-by-side comparison showing the difference between lightweight potting mix and heavy garden soil',
+               type: 'soil'
+             },
+             {
+               src: '/images/learning/beginner/soil-components.jpg',
+               alt: 'Soil components breakdown',
+               description: 'Visual breakdown of soil components including peat moss, perlite, vermiculite, and compost',
+               type: 'soil'
+             }
+           ]
+         },
         {
           title: 'Container Selection',
           content: 'The right container makes all the difference:',
@@ -590,6 +735,169 @@ const BeginnerLearningPath = () => {
       }
     },
     {
+      id: 'plant-soil',
+      title: 'Plant-Soil Compatibility',
+      icon: Leaf,
+      color: 'emerald',
+      estimatedTime: '35 min',
+      difficulty: 'Beginner',
+      description: 'Master visual soil identification and learn which plants thrive in different soil types',
+      lessons: [
+        {
+          title: 'Understanding Soil Types - Visual Identification Guide',
+          content: 'Learn to identify different soil types by sight and touch. This is crucial for choosing the right plants!',
+          points: [
+            '🔍 CLAY SOIL: Dark brown/red color, sticky when wet, forms hard clumps when dry. Feels smooth and dense. Holds water for days after rain. Perfect for: Hostas, daylilies, astilbe, and moisture-loving plants.',
+            '🔍 SANDY SOIL: Light brown/tan color, feels gritty and loose. Water drains through quickly (within minutes). Individual grains are visible. Perfect for: Lavender, rosemary, succulents, and drought-resistant plants.',
+            '🔍 LOAMY SOIL: Dark brown color, feels crumbly and soft. Holds water but drains well. Has a mix of textures. Perfect for: Most vegetables, roses, and general garden plants.',
+            '🔍 PEATY SOIL: Very dark brown/black color, feels spongy and light. Rich in organic matter, acidic pH. Perfect for: Azaleas, blueberries, rhododendrons, and acid-loving plants.'
+          ],
+          type: 'lesson',
+          images: [
+            {
+              src: '/images/soil-clay.jpg',
+              alt: 'Clay soil sample',
+              description: 'Clay soil showing dark brown color, smooth texture, and ability to form solid clumps',
+              type: 'soil'
+            },
+            {
+              src: '/images/soil-sandy.jpg', 
+              alt: 'Sandy soil sample',
+              description: 'Sandy soil showing light brown color, gritty texture, and visible individual grains',
+              type: 'soil'
+            },
+            {
+              src: '/images/soil-loamy.jpg',
+              alt: 'Loamy soil sample', 
+              description: 'Loamy soil showing balanced texture with mix of fine and coarse particles',
+              type: 'soil'
+            },
+            {
+              src: '/images/soil-peaty.jpg',
+              alt: 'Peaty soil sample',
+              description: 'Peaty soil showing very dark color and spongy texture rich in organic matter',
+              type: 'soil'
+            }
+          ]
+        },
+        {
+          title: 'Plant-Soil Matching - Why It Matters',
+          content: 'Understanding plant-soil compatibility prevents common gardening problems and helps plants thrive naturally:',
+          points: [
+            '🌱 CLAY SOIL PLANTS: Hostas (large leaves love moisture), Daylilies (tough roots handle heavy soil), Astilbe (feathery flowers need constant moisture), Japanese Iris (loves wet feet). These plants have adapted to slow-draining conditions.',
+            '🌱 SANDY SOIL PLANTS: Lavender (silver leaves reflect sun, deep roots find water), Rosemary (Mediterranean native, drought-adapted), Succulents (store water in leaves), Cacti (spines reduce water loss). These plants evolved for quick drainage.',
+            '🌱 LOAMY SOIL PLANTS: Tomatoes (need steady moisture and nutrients), Roses (require good drainage but consistent water), Lettuce (quick-growing, needs balanced conditions), Carrots (need loose soil for straight roots). Most garden favorites prefer this balance.',
+            '🌱 PEATY SOIL PLANTS: Azaleas (shallow roots need acidic conditions), Blueberries (require pH 4.5-5.5 for iron absorption), Rhododendrons (large leaves need acidic soil), Camellias (evergreen beauty in acidic conditions). These plants evolved in forest floors.'
+          ],
+          type: 'lesson',
+          images: [
+            {
+              src: '/images/clay-soil-plants.jpg',
+              alt: 'Plants thriving in clay soil',
+              description: 'Hostas, daylilies, and astilbe thriving in clay soil conditions',
+              type: 'plant'
+            },
+            {
+              src: '/images/sandy-soil-plants.jpg',
+              alt: 'Plants thriving in sandy soil', 
+              description: 'Lavender, rosemary, and succulents thriving in well-drained sandy soil',
+              type: 'plant'
+            },
+            {
+              src: '/images/loamy-soil-plants.jpg',
+              alt: 'Plants thriving in loamy soil',
+              description: 'Tomatoes, roses, and vegetables thriving in balanced loamy soil',
+              type: 'plant'
+            },
+            {
+              src: '/images/peaty-soil-plants.jpg',
+              alt: 'Plants thriving in peaty soil',
+              description: 'Azaleas, blueberries, and rhododendrons thriving in acidic peaty soil',
+              type: 'plant'
+            }
+          ]
+        },
+        {
+          title: 'Visual Identification Guide - What to Look For',
+          content: 'Master the art of identifying soil types by sight. This skill will help you choose the right plants instantly!',
+          points: [
+            '👀 CLAY SOIL VISUAL CLUES: Dark brown or reddish color, smooth surface when wet, cracks when dry, feels heavy and dense, water pools on surface, forms hard clumps that don\'t break apart easily.',
+            '👀 SANDY SOIL VISUAL CLUES: Light brown or tan color, individual grains visible, loose and crumbly texture, water disappears quickly, feels gritty between fingers, doesn\'t hold shape when squeezed.',
+            '👀 LOAMY SOIL VISUAL CLUES: Dark brown color, crumbly texture, mix of fine and coarse particles, water drains at moderate rate, feels soft and workable, holds shape briefly when squeezed.',
+            '👀 PEATY SOIL VISUAL CLUES: Very dark brown or black color, spongy texture, light weight, high organic matter visible, water drains slowly, feels like compressed leaves or moss.'
+          ],
+          type: 'lesson'
+        },
+        {
+          title: 'Simple Soil Tests You Can Do at Home',
+          content: 'Learn these easy tests to identify your soil type and improve plant compatibility:',
+          points: [
+            '🧪 THE SQUEEZE TEST: Take a handful of moist soil. Clay = forms a ball that stays together, Sandy = crumbles apart, Loamy = forms a ball but breaks when poked, Peaty = feels spongy and light.',
+            '💧 THE DRAINAGE TEST: Dig a 12-inch hole, fill with water. Clay = water stays for hours, Sandy = drains in minutes, Loamy = drains in 1-2 hours, Peaty = drains slowly but holds moisture.',
+            '📊 THE JAR TEST: Put soil in a jar with water, shake, let settle. Clay = fine particles at bottom, Sandy = large particles settle first, Loamy = layers of different sizes, Peaty = dark organic matter floats.',
+            '🔧 IMPROVEMENT TIPS: Add compost to all soils, sand to clay for drainage, organic matter to sand for water retention, lime to acidic soil, sulfur to alkaline soil. Start small and test results!'
+          ],
+          type: 'lesson',
+          images: [
+            {
+              src: '/images/soil-squeeze-test.jpg',
+              alt: 'Soil squeeze test demonstration',
+              description: 'Demonstration of the squeeze test showing how different soil types behave when compressed',
+              type: 'test'
+            },
+            {
+              src: '/images/soil-drainage-test.jpg',
+              alt: 'Soil drainage test in progress',
+              description: 'Drainage test showing how quickly water moves through different soil types',
+              type: 'test'
+            },
+            {
+              src: '/images/soil-jar-test.jpg',
+              alt: 'Soil jar test results',
+              description: 'Jar test showing how soil particles separate and settle in water',
+              type: 'test'
+            }
+          ]
+        }
+      ],
+      quiz: {
+        questions: [
+          {
+            question: '🔍 VISUAL IDENTIFICATION: Look at this soil sample. Notice the dark brown color, smooth texture, and how it forms a solid clump. Which type of soil is this?',
+            image: '/images/soil-clay.jpg',
+            imageDescription: 'Dark brown soil sample that appears smooth and dense, forming a solid clump when compressed',
+            options: ['Clay soil', 'Sandy soil', 'Loamy soil', 'Peaty soil'],
+            correct: 0,
+            explanation: '✅ CORRECT! This is clay soil. Key identifying features: Dark brown/red color, smooth texture, forms solid clumps when compressed, feels dense and heavy. Clay soil holds water for days and is perfect for moisture-loving plants like hostas, daylilies, and astilbe. The smooth texture and clumping behavior are the main visual clues!'
+          },
+          {
+            question: '🌱 PLANT-SOIL MATCHING: This soil sample is light brown, feels gritty, and water drains through it quickly. Which plant would thrive best in this soil type?',
+            image: '/images/soil-sandy.jpg',
+            imageDescription: 'Light brown/tan soil sample with visible individual grains, appearing loose and gritty',
+            options: ['Hostas (need constant moisture)', 'Lavender (drought-tolerant)', 'Azaleas (need acidic soil)', 'Astilbe (love wet conditions)'],
+            correct: 1,
+            explanation: '✅ CORRECT! Lavender is the perfect match for sandy soil. Sandy soil characteristics: Light brown color, gritty texture, drains water quickly (within minutes). Lavender evolved in Mediterranean climates with well-drained, dry conditions. Its silver leaves reflect sunlight and deep roots find water deep underground. This is a perfect example of plant-soil adaptation!'
+          },
+          {
+            question: '🚨 PROBLEM DIAGNOSIS: This plant has yellow leaves and appears stressed. The soil around it is heavy and waterlogged. What soil improvement would help most?',
+            image: '/images/plant-yellow-leaves.jpg',
+            imageDescription: 'Plant with yellowing leaves sitting in heavy, waterlogged soil that appears dark and dense',
+            options: ['Add more clay soil', 'Add more sand only', 'Loamy soil with compost', 'Keep the same soil'],
+            correct: 2,
+            explanation: '✅ CORRECT! Loamy soil with compost is the best solution. Yellow leaves + waterlogged soil = poor drainage and nutrient deficiency. Loamy soil provides: Good drainage (prevents waterlogging), balanced texture (not too heavy, not too light), and compost adds nutrients and improves structure. This combination gives plants the perfect growing conditions!'
+          },
+          {
+            question: '🧪 SOIL TEST INTERPRETATION: You did the squeeze test on this soil - it formed a ball but broke apart when you poked it. What type of soil is this?',
+            image: '/images/soil-loamy.jpg',
+            imageDescription: 'Dark brown soil sample that appears crumbly and soft, with a mix of fine and coarse particles',
+            options: ['Clay soil (stays in ball)', 'Sandy soil (crumbles apart)', 'Loamy soil (ball breaks when poked)', 'Peaty soil (spongy)'],
+            correct: 2,
+            explanation: '✅ CORRECT! This is loamy soil - the "goldilocks" of soils! The squeeze test result (forms ball but breaks when poked) is the key identifier. Loamy soil has: Perfect balance of sand, silt, and clay, good drainage but holds moisture, crumbly texture, ideal for most garden plants. This is why most vegetables, roses, and general garden plants love loamy soil!'
+          }
+        ]
+      }
+    },
+    {
       id: 'harvest',
       title: 'Harvesting Your Plants',
       icon: Award,
@@ -655,21 +963,113 @@ const BeginnerLearningPath = () => {
   ]
 
   useEffect(() => {
-    // Load progress from localStorage
-    const savedProgress = localStorage.getItem('beginnerProgress')
-    if (savedProgress) {
-      const progress = JSON.parse(savedProgress)
-      setCompletedModules(progress.completedModules || [])
-      setModuleProgress(progress.moduleProgress || {})
+    // FORCE CLEAR all old progress data first (aggressive migration)
+    clearOldProgressData()
+    
+    // FORCE RESET - Always start with empty progress for now
+    console.log('🔄 FORCE RESETTING ALL PROGRESS - Starting fresh for all users')
+    setCompletedModules([])
+    setModuleProgress({})
+    
+    // Clear any remaining progress data
+    const storageKey = getStorageKey('beginnerProgress')
+    localStorage.removeItem(storageKey)
+    
+    // Also clear any other possible keys
+    const allPossibleKeys = [
+      'beginnerProgress',
+      'intermediateProgress',
+      'expertProgress',
+      'learningProgress',
+      'userProgress'
+    ]
+    
+    allPossibleKeys.forEach(key => {
+      localStorage.removeItem(key)
+      localStorage.removeItem(`${key}_user_${user?.id}`)
+    })
+    
+    console.log('✅ ALL PROGRESS RESET - Every user now starts with 0%')
+  }, [user]) // Re-run when user changes
+
+  const clearOldProgressData = () => {
+    console.log('🧹 FORCE CLEARING ALL LEARNING PATH DATA...')
+    
+    // Clear all possible localStorage keys that might contain progress data
+    const oldKeys = [
+      'beginnerProgress',
+      'intermediateProgress', 
+      'expertProgress',
+      'learningProgress',
+      'userProgress',
+      'moduleProgress',
+      'completedModules',
+      'quizAnswers',
+      'currentLesson',
+      'showQuiz',
+      'showQuizResults',
+      'quizScore'
+    ]
+    
+    // Clear known keys
+    oldKeys.forEach(key => {
+      localStorage.removeItem(key)
+      console.log(`✅ Cleared: ${key}`)
+    })
+    
+    // FORCE CLEAR ALL learning path related keys (more aggressive approach)
+    const keysToRemove = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && (
+        key.includes('beginnerProgress') || 
+        key.includes('intermediateProgress') || 
+        key.includes('expertProgress') ||
+        key.includes('learningProgress') ||
+        key.includes('userProgress') ||
+        key.includes('moduleProgress') ||
+        key.includes('completedModules') ||
+        key.includes('quiz') ||
+        key.includes('lesson') ||
+        key.includes('_user_')
+      )) {
+        keysToRemove.push(key)
+      }
     }
-  }, [])
+    
+    // Remove all identified keys
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key)
+      console.log(`✅ FORCE CLEARED: ${key}`)
+    })
+    
+    console.log(`🎉 FORCE CLEARED ${keysToRemove.length} learning path keys`)
+  }
 
   const saveProgress = (newCompletedModules, newModuleProgress) => {
     const progress = {
+      version: '2.0', // Version to identify new format
       completedModules: newCompletedModules,
-      moduleProgress: newModuleProgress
+      moduleProgress: newModuleProgress,
+      userId: user?.id, // Store user ID for verification
+      lastUpdated: new Date().toISOString()
     }
-    localStorage.setItem('beginnerProgress', JSON.stringify(progress))
+    const storageKey = getStorageKey('beginnerProgress')
+    localStorage.setItem(storageKey, JSON.stringify(progress))
+  }
+
+  const resetProgress = () => {
+    setCompletedModules([])
+    setModuleProgress({})
+    const storageKey = getStorageKey('beginnerProgress')
+    localStorage.removeItem(storageKey)
+    toast.success('Progress reset successfully!')
+  }
+
+  const isNewUser = () => {
+    const storageKey = getStorageKey('beginnerProgress')
+    const savedProgress = localStorage.getItem(storageKey)
+    return !savedProgress || completedModules.length === 0
   }
 
   const startModule = (module) => {
@@ -805,6 +1205,12 @@ const BeginnerLearningPath = () => {
         'Small seedlings need gentle watering to avoid damage.',
         'Crowded seedlings compete for space and nutrients.'
       ],
+      'plant-soil': [
+        'Look for dark brown color and smooth texture - clay soil forms solid clumps and holds water well.',
+        'Light brown, gritty texture with visible grains indicates sandy soil - perfect for drought-tolerant plants.',
+        'Yellow leaves + waterlogged soil = poor drainage. Loamy soil with compost provides the best solution.',
+        'The squeeze test is key: clay stays in ball, sandy crumbles apart, loamy breaks when poked.'
+      ],
       'harvest': [
         'Morning is when plants are freshest and full of water.',
         'Taking too much at once can stress the plant.',
@@ -873,6 +1279,25 @@ const BeginnerLearningPath = () => {
               </div>
               <p className="text-lg text-gray-700 mb-6">{lesson.content}</p>
               
+              {/* Lesson Images */}
+              {lesson.images && lesson.images.length > 0 && (
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">📸 Visual Learning Examples</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {lesson.images.map((image, index) => (
+                      <ImageDisplay
+                        key={index}
+                        src={image.src}
+                        alt={image.alt}
+                        description={image.description}
+                        type={image.type}
+                        className="h-auto"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               <div className="space-y-4">
                 {lesson.points.map((point, index) => (
                   <div key={index} className="flex items-start gap-3">
@@ -937,6 +1362,19 @@ const BeginnerLearningPath = () => {
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">
                       {questionIndex + 1}. {question.question}
                     </h3>
+                    
+                    {/* Question Image */}
+                    {question.image && (
+                      <div className="mb-6">
+                        <ImageDisplay
+                          src={question.image}
+                          alt={question.imageDescription || 'Quiz question image'}
+                          description={question.imageDescription}
+                          type="soil"
+                          showDescription={true}
+                        />
+                      </div>
+                    )}
                     
                     {/* Question Hint */}
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
@@ -1003,6 +1441,19 @@ const BeginnerLearningPath = () => {
                         {questionIndex + 1}. {question.question}
                       </h3>
                       
+                      {/* Question Image in Results */}
+                      {question.image && (
+                        <div className="mb-6">
+                          <ImageDisplay
+                            src={question.image}
+                            alt={question.imageDescription || 'Quiz question image'}
+                            description={question.imageDescription}
+                            type="soil"
+                            showDescription={true}
+                          />
+                        </div>
+                      )}
+                      
                       <div className="space-y-3">
                         {question.options.map((option, optionIndex) => {
                           let optionClass = "p-3 rounded-lg border-2 "
@@ -1040,6 +1491,19 @@ const BeginnerLearningPath = () => {
                           )
                         })}
                       </div>
+                      
+                      {/* Explanation for picture-based questions */}
+                      {question.explanation && (
+                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <HelpCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <h4 className="font-semibold text-blue-900 mb-1">Explanation:</h4>
+                              <p className="text-sm text-blue-800">{question.explanation}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
@@ -1066,17 +1530,38 @@ const BeginnerLearningPath = () => {
                     <Award className="h-12 w-12 text-green-600" />
                   </div>
                   <h3 className="text-xl font-bold text-green-900 text-center mb-2">
-                    Congratulations! 🎉
+                    🎉 Path Complete! 🎉
                   </h3>
                   <p className="text-green-700 text-center mb-4">
-                    You've completed the Beginner Gardener Path! You're now ready to move on to the Intermediate level.
+                    Congratulations! You've successfully completed the Beginner Gardener Path! You're now ready to advance to the Intermediate level.
                   </p>
-                  <div className="flex justify-center space-x-4">
+                  
+                  {/* Quick Stats */}
+                  <div className="bg-white rounded-lg p-4 mb-4 border border-green-200">
+                    <div className="flex justify-center space-x-6 text-center">
+                      <div>
+                        <div className="text-lg font-bold text-green-700">{modules.length}</div>
+                        <div className="text-xs text-green-600">Modules</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-green-700">
+                          {Math.round(quizScore)}%
+                        </div>
+                        <div className="text-xs text-green-600">Final Score</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-green-700">Beginner</div>
+                        <div className="text-xs text-green-600">Level</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row justify-center gap-3">
                     <Link
                       to="/learning/intermediate"
-                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
+                      className="px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 flex items-center justify-center font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                     >
-                      <TrendingUp className="h-4 w-4 mr-2" />
+                      <TrendingUp className="h-5 w-5 mr-2" />
                       Start Intermediate Path
                     </Link>
                     <button
@@ -1086,12 +1571,16 @@ const BeginnerLearningPath = () => {
                         setShowQuizResults(false)
                         setQuizAnswers({})
                       }}
-                      className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center"
+                      className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center justify-center transition-colors"
                     >
-                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      <ArrowLeft className="h-5 w-5 mr-2" />
                       Back to Modules
                     </button>
                   </div>
+                  
+                  <p className="text-xs text-green-600 text-center mt-3">
+                    🌟 You've mastered the fundamentals! The Intermediate path awaits with advanced techniques and professional methods.
+                  </p>
                 </div>
               )}
             </div>
@@ -1120,20 +1609,118 @@ const BeginnerLearningPath = () => {
           <p className="text-xl text-gray-600">Master the fundamentals of plant care with our structured learning modules</p>
         </div>
 
+        {/* Welcome Message for New Users */}
+        {isNewUser() && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-8">
+            <div className="flex items-start gap-4">
+              <div className="bg-blue-100 rounded-full p-3">
+                <Star className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                  Welcome to Your Gardening Journey! 🌱
+                </h3>
+                <p className="text-blue-800 mb-4">
+                  You're starting fresh with the Beginner Gardener Path. Each user has their own personalized learning progress, so you can take your time and learn at your own pace.
+                </p>
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <h4 className="font-semibold text-blue-900 mb-2">What to expect:</h4>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• <strong>11 comprehensive modules</strong> covering all the basics</li>
+                    <li>• <strong>Interactive lessons</strong> with visual examples and detailed explanations</li>
+                    <li>• <strong>Image-based quizzes</strong> to test your knowledge</li>
+                    <li>• <strong>Your own progress tracking</strong> - no sharing with other users</li>
+                    <li>• <strong>Unlock Intermediate path</strong> after completing all modules</li>
+                  </ul>
+                </div>
+                <p className="text-sm text-blue-600 mt-3">
+                  💡 <strong>Tip:</strong> Start with the first module and work your way through. Each module builds on the previous one!
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Progress Reset Notification */}
+        {!isNewUser() && completedModules.length === 0 && (
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-6 mb-8">
+            <div className="flex items-start gap-4">
+              <div className="bg-amber-100 rounded-full p-3">
+                <AlertCircle className="h-6 w-6 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-amber-900 mb-2">
+                  Progress Reset Complete! 🔄
+                </h3>
+                <p className="text-amber-800 mb-4">
+                  Your learning progress has been reset to ensure a fresh start for all users. This ensures that each user has their own personalized learning journey without any interference from previous data.
+                </p>
+                <div className="bg-white rounded-lg p-4 border border-amber-200">
+                  <h4 className="font-semibold text-amber-900 mb-2">What this means:</h4>
+                  <ul className="text-sm text-amber-800 space-y-1">
+                    <li>• <strong>Fresh start:</strong> All modules are now available to begin</li>
+                    <li>• <strong>Personal progress:</strong> Your progress is now completely separate from other users</li>
+                    <li>• <strong>Clean slate:</strong> No old data or conflicts to worry about</li>
+                    <li>• <strong>Better experience:</strong> Improved learning path system with user-specific tracking</li>
+                  </ul>
+                </div>
+                <p className="text-sm text-amber-600 mt-3">
+                  🎯 <strong>Ready to start:</strong> Begin with the first module below and track your progress as you learn!
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Progress Overview */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Your Progress</h2>
-            <div className="text-sm text-gray-500">
-              {Math.min(100, Math.round((completedModules.length / modules.length) * 100))}% Complete
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-500">
+                {Math.min(100, Math.round((completedModules.length / modules.length) * 100))}% Complete
+              </div>
+              {!isNewUser() && (
+                <button
+                  onClick={resetProgress}
+                  className="text-xs text-red-600 hover:text-red-700 font-medium px-2 py-1 rounded border border-red-200 hover:border-red-300 transition-colors"
+                  title="Reset your progress and start over"
+                >
+                  Reset Progress
+                </button>
+              )}
             </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
+          <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
             <div 
               className="bg-green-600 h-3 rounded-full transition-all duration-300"
               style={{ width: `${Math.min(100, (completedModules.length / modules.length) * 100)}%` }}
             ></div>
           </div>
+          
+          {/* Next Level Unlock Progress */}
+          {completedModules.length < modules.length && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center">
+                  <TrendingUp className="h-5 w-5 text-blue-600 mr-2" />
+                  <span className="text-sm font-semibold text-blue-900">Intermediate Path Unlock</span>
+                </div>
+                <span className="text-sm text-blue-700">
+                  {modules.length - completedModules.length} module{modules.length - completedModules.length !== 1 ? 's' : ''} remaining
+                </span>
+              </div>
+              <div className="w-full bg-blue-200 rounded-full h-2">
+                <div 
+                  className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(completedModules.length / modules.length) * 100}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-blue-600 mt-2">
+                Complete all {modules.length} modules to unlock the Intermediate Gardener Path with advanced techniques!
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Modules Grid */}
@@ -1258,17 +1845,82 @@ const BeginnerLearningPath = () => {
             <p className="text-green-700 text-center mb-6 text-lg">
               You've completed the Beginner Gardener Path! You're now ready to move on to the Intermediate level.
             </p>
+            
+            {/* Achievement Stats */}
+            <div className="bg-white rounded-lg p-6 mb-6 border border-green-200">
+              <h4 className="text-lg font-semibold text-green-900 mb-4 text-center">Your Achievement Summary</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div className="bg-green-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-green-700">{modules.length}</div>
+                  <div className="text-sm text-green-600">Modules Completed</div>
+                </div>
+                <div className="bg-green-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-green-700">
+                    {Math.round(Object.values(moduleProgress).reduce((sum, progress) => sum + (progress.score || 0), 0) / modules.length)}%
+                  </div>
+                  <div className="text-sm text-green-600">Average Score</div>
+                </div>
+                <div className="bg-green-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-green-700">Beginner</div>
+                  <div className="text-sm text-green-600">Level Mastered</div>
+                </div>
+              </div>
+            </div>
+
             <div className="flex flex-col items-center space-y-4">
               <Link
                 to="/learning/intermediate"
                 className="px-8 py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl hover:from-green-700 hover:to-blue-700 flex items-center text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
               >
                 <TrendingUp className="h-6 w-6 mr-3" />
-                Proceed to Intermediate Path
+                Start Intermediate Path
               </Link>
-              <p className="text-sm text-green-600 font-medium">
-                Ready to level up your gardening skills? 🌿
+              <p className="text-sm text-green-600 font-medium text-center">
+                Ready to level up your gardening skills? 🌿<br/>
+                The Intermediate path will teach you advanced techniques and professional methods!
               </p>
+              
+              {/* Intermediate Path Preview */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                <h5 className="font-semibold text-blue-900 mb-2 text-center">What's Next in Intermediate Path?</h5>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-blue-800">
+                  <div className="flex items-center">
+                    <span className="mr-2">🌱</span>
+                    <span>Advanced Plant Nutrition</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="mr-2">🔬</span>
+                    <span>Professional Soil Analysis</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="mr-2">🌿</span>
+                    <span>Pest & Disease Management</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="mr-2">🏗️</span>
+                    <span>Garden Design & Planning</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Additional Options */}
+              <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                <button
+                  onClick={() => {
+                    // Scroll to top of modules
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium"
+                >
+                  Review All Modules
+                </button>
+                <Link
+                  to="/dashboard"
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium text-center"
+                >
+                  Back to Dashboard
+                </Link>
+              </div>
             </div>
           </div>
         )}
@@ -1314,5 +1966,6 @@ const BeginnerLearningPath = () => {
 }
 
 export default BeginnerLearningPath
+
 
 

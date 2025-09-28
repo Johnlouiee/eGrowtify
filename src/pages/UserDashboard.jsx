@@ -104,24 +104,91 @@ const UserDashboard = () => {
     }
   ]
 
+  // Create user-specific localStorage keys
+  const getStorageKey = (key) => {
+    if (!user) return key // Fallback for non-authenticated users
+    return `${key}_user_${user.id}`
+  }
+
+  const clearOldProgressData = () => {
+    console.log('🧹 DASHBOARD: FORCE CLEARING ALL LEARNING PATH DATA...')
+    
+    // Clear all possible localStorage keys that might contain progress data
+    const oldKeys = [
+      'beginnerProgress',
+      'intermediateProgress', 
+      'expertProgress',
+      'learningProgress',
+      'userProgress',
+      'moduleProgress',
+      'completedModules',
+      'quizAnswers',
+      'currentLesson',
+      'showQuiz',
+      'showQuizResults',
+      'quizScore'
+    ]
+    
+    // Clear known keys
+    oldKeys.forEach(key => {
+      localStorage.removeItem(key)
+      console.log(`✅ Dashboard cleared: ${key}`)
+    })
+    
+    // FORCE CLEAR ALL learning path related keys (more aggressive approach)
+    const keysToRemove = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && (
+        key.includes('beginnerProgress') || 
+        key.includes('intermediateProgress') || 
+        key.includes('expertProgress') ||
+        key.includes('learningProgress') ||
+        key.includes('userProgress') ||
+        key.includes('moduleProgress') ||
+        key.includes('completedModules') ||
+        key.includes('quiz') ||
+        key.includes('lesson') ||
+        key.includes('_user_')
+      )) {
+        keysToRemove.push(key)
+      }
+    }
+    
+    // Remove all identified keys
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key)
+      console.log(`✅ Dashboard FORCE CLEARED: ${key}`)
+    })
+    
+    console.log(`🎉 Dashboard FORCE CLEARED ${keysToRemove.length} learning path keys`)
+  }
+
   useEffect(() => {
+    // FORCE CLEAR all old progress data first (aggressive migration)
+    clearOldProgressData()
+    
+    // FORCE RESET - Always start with 0% progress for now
+    console.log('🔄 DASHBOARD: FORCE RESETTING ALL PROGRESS - Starting fresh for all users')
+    setLearningProgress({
+      beginner: 0,
+      intermediate: 0,
+      expert: 0
+    })
+    
     fetchDashboardData()
-  }, [])
+  }, [user]) // Re-run when user changes
 
   // Listen for localStorage changes to update learning progress
   useEffect(() => {
     const updateLearningProgress = () => {
-      const beginnerProgress = localStorage.getItem('beginnerProgress')
-      const intermediateProgress = localStorage.getItem('intermediateProgress')
-      const expertProgress = localStorage.getItem('expertProgress')
-      
-      const progress = {
-        beginner: beginnerProgress ? (JSON.parse(beginnerProgress).completedModules?.length || 0) * 10 : 0,
-        intermediate: intermediateProgress ? (JSON.parse(intermediateProgress).completedModules?.length || 0) * 20 : 0,
-        expert: expertProgress ? (JSON.parse(expertProgress).completedModules?.length || 0) * 20 : 0
-      }
-      
-      setLearningProgress(progress)
+      // FORCE RESET - Always show 0% progress
+      console.log('🔄 DASHBOARD: Resetting progress display to 0%')
+      setLearningProgress({
+        beginner: 0,
+        intermediate: 0,
+        expert: 0
+      })
     }
 
     // Update progress when component mounts or when localStorage changes
@@ -143,7 +210,7 @@ const UserDashboard = () => {
       window.removeEventListener('storage', updateLearningProgress)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [])
+  }, [user]) // Re-run when user changes
 
   const handleLearningPathClick = (path) => {
     if (!path.isAccessible) {
@@ -183,15 +250,12 @@ const UserDashboard = () => {
       setPlants(gardenResponse.data.plants || [])
       setGardens(gardenResponse.data.gardens || [])
       
-      // Calculate learning progress from localStorage
-      const beginnerProgress = localStorage.getItem('beginnerProgress')
-      const intermediateProgress = localStorage.getItem('intermediateProgress')
-      const expertProgress = localStorage.getItem('expertProgress')
-      
+      // FORCE RESET - Always show 0% progress
+      console.log('🔄 DASHBOARD fetchDashboardData: Resetting progress to 0%')
       const progress = {
-        beginner: beginnerProgress ? (JSON.parse(beginnerProgress).completedModules?.length || 0) * 10 : 0,
-        intermediate: intermediateProgress ? (JSON.parse(intermediateProgress).completedModules?.length || 0) * 20 : 0,
-        expert: expertProgress ? (JSON.parse(expertProgress).completedModules?.length || 0) * 20 : 0
+        beginner: 0,
+        intermediate: 0,
+        expert: 0
       }
       
       setLearningProgress(progress)
@@ -316,7 +380,20 @@ const UserDashboard = () => {
             <div className="card">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Learning Paths</h2>
-                <span className="text-sm text-gray-500">Choose your journey</span>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-gray-500">Choose your journey</span>
+                  <button
+                    onClick={() => {
+                      clearOldProgressData()
+                      setLearningProgress({ beginner: 0, intermediate: 0, expert: 0 })
+                      toast.success('All learning progress reset to 0%!')
+                    }}
+                    className="text-xs text-red-600 hover:text-red-700 font-medium px-3 py-1 rounded border border-red-200 hover:border-red-300 transition-colors"
+                    title="Reset all learning progress to 0%"
+                  >
+                    Reset All Progress
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {learningPaths.map((path) => {

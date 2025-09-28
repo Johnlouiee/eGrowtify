@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Sample Images for eGrowtify</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .image-container {
+            display: inline-block;
+            margin: 10px;
+            text-align: center;
+        }
+        .soil-sample {
+            width: 300px;
+            height: 200px;
+            border-radius: 10px;
+            border: 3px solid #8B4513;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .clay-soil { background: linear-gradient(45deg, #8B4513, #A0522D); }
+        .sandy-soil { background: linear-gradient(45deg, #F4A460, #DEB887); }
+        .loamy-soil { background: linear-gradient(45deg, #8B4513, #D2691E); }
+        .peaty-soil { background: linear-gradient(45deg, #2F4F2F, #556B2F); }
+        
+        .plant-sample {
+            width: 300px;
+            height: 200px;
+            border-radius: 10px;
+            border: 3px solid #228B22;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .healthy-plants { background: linear-gradient(45deg, #228B22, #32CD32); }
+        .unhealthy-plants { background: linear-gradient(45deg, #8B4513, #CD853F); }
+        
+        .test-sample {
+            width: 300px;
+            height: 200px;
+            border-radius: 10px;
+            border: 3px solid #4169E1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .ph-test { background: linear-gradient(45deg, #4169E1, #6495ED); }
+        .drainage-test { background: linear-gradient(45deg, #1E90FF, #87CEEB); }
+        .jar-test { background: linear-gradient(45deg, #4682B4, #B0C4DE); }
+        
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        <h1>eGrowtify Learning Path - Sample Images</h1>
+        <p>This page demonstrates the visual learning materials that would be used in the eGrowtify learning path. In a real implementation, these would be actual photographs of soil samples, plants, and testing procedures.</p>
+        <p><strong>Instructions:</strong> Right-click on any image below and "Save image as..." to use in your learning path, or use these as references for creating actual photographs.</p>
+    </div>
+
+    <h2>Soil Type Samples</h2>
+    <div class="image-container">
+        <div class="soil-sample clay-soil">Clay Soil<br>Dark, Heavy, Sticky</div>
+        <p>soil-clay.jpg</p>
+    </div>
+    <div class="image-container">
+        <div class="soil-sample sandy-soil">Sandy Soil<br>Light, Gritty, Loose</div>
+        <p>soil-sandy.jpg</p>
+    </div>
+    <div class="image-container">
+        <div class="soil-sample loamy-soil">Loamy Soil<br>Balanced, Crumbly</div>
+        <p>soil-loamy.jpg</p>
+    </div>
+    <div class="image-container">
+        <div class="soil-sample peaty-soil">Peaty Soil<br>Dark, Spongy, Organic</div>
+        <p>soil-peaty.jpg</p>
+    </div>
+
+    <h2>Plant Examples</h2>
+    <div class="image-container">
+        <div class="plant-sample healthy-plants">Healthy Plants<br>Thriving in Right Soil</div>
+        <p>plant-healthy.jpg</p>
+    </div>
+    <div class="image-container">
+        <div class="plant-sample unhealthy-plants">Unhealthy Plants<br>Yellow Leaves, Poor Growth</div>
+        <p>plant-yellow-leaves.jpg</p>
+    </div>
+
+    <h2>Soil Testing Procedures</h2>
+    <div class="image-container">
+        <div class="test-sample ph-test">pH Test<br>Acidic Soil (pH 5.2)</div>
+        <p>soil-ph-test.jpg</p>
+    </div>
+    <div class="image-container">
+        <div class="test-sample drainage-test">Drainage Test<br>Water Movement</div>
+        <p>soil-drainage-test.jpg</p>
+    </div>
+    <div class="image-container">
+        <div class="test-sample jar-test">Jar Test<br>Particle Separation</div>
+        <p>soil-jar-test.jpg</p>
+    </div>
+
+    <div class="instructions">
+        <h3>How to Use These Images:</h3>
+        <ol>
+            <li>Save the images you want to use</li>
+            <li>Place them in the <code>public/images/</code> directory</li>
+            <li>The eGrowtify learning path will automatically display them</li>
+            <li>For best results, use actual photographs of soil samples and plants</li>
+        </ol>
+    </div>
+</body>
+</html>
