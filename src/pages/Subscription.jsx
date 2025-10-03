@@ -10,7 +10,7 @@ const Subscription = () => {
   const [showCheckout, setShowCheckout] = useState(false)
   const [showSubscriptionDetails, setShowSubscriptionDetails] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState('card')
+  const [paymentMethod, setPaymentMethod] = useState('gcash')
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -18,7 +18,7 @@ const Subscription = () => {
   const [billingHistory, setBillingHistory] = useState([])
   const [loading, setLoading] = useState(false)
 
-  const priceDisplay = useMemo(() => ({ amount: '9.99', currency: 'USD', plan: 'Premium Monthly' }), [])
+  const priceDisplay = useMemo(() => ({ amount: '150', currency: 'PHP', plan: 'Premium Plan' }), [])
 
   useEffect(() => {
     if (isPremium) {
@@ -31,22 +31,23 @@ const Subscription = () => {
       setLoading(true)
       // Mock subscription details - replace with actual API call
       const mockSubscriptionDetails = {
-        plan: 'Premium Monthly',
+        plan: 'Premium Plan',
         status: 'active',
         startDate: '2024-01-15',
         nextBillingDate: '2024-02-15',
-        amount: 9.99,
-        currency: 'USD',
-        paymentMethod: '**** **** **** 4242',
+        amount: 150.00,
+        currency: 'PHP',
+        paymentMethod: 'GCash - 09XX XXX XXXX',
         autoRenew: true,
         features: {
-          unlimitedAnalyses: true,
+          gridPlanner6x6: true,
+          aiAnalyses20: true,
+          plantAnalyses10: true,
+          soilAnalyses10: true,
           advancedPlantId: true,
           detailedSoilAnalysis: true,
           personalizedRecommendations: true,
-          prioritySupport: true,
-          progressReports: true,
-          gardeningNotifications: true
+          prioritySupport: true
         }
       }
 
@@ -54,25 +55,25 @@ const Subscription = () => {
         {
           id: 1,
           date: '2024-01-15',
-          amount: 9.99,
+          amount: 150.00,
           status: 'paid',
-          description: 'Premium Monthly Subscription',
+          description: 'Premium Plan Subscription - GCash',
           invoiceUrl: '#'
         },
         {
           id: 2,
           date: '2023-12-15',
-          amount: 9.99,
+          amount: 25.00,
           status: 'paid',
-          description: 'Premium Monthly Subscription',
+          description: 'Additional AI Analysis - Pepper Plant',
           invoiceUrl: '#'
         },
         {
           id: 3,
           date: '2023-11-15',
-          amount: 9.99,
+          amount: 20.00,
           status: 'paid',
-          description: 'Premium Monthly Subscription',
+          description: 'Grid Planner Upgrade - 4x4 to 6x6',
           invoiceUrl: '#'
         }
       ]
@@ -140,27 +141,38 @@ const Subscription = () => {
 
   const freeFeatures = {
     plants: [
-      "Plant name identification",
-      "Basic light reference",
-      "General watering guidelines"
+      "2 free plant analyses per month",
+      "Basic plant identification",
+      "General care guidelines"
     ],
     soil: [
-      "Current moisture level (e.g., 'Your soil is too dry')",
-      "Basic texture indication (e.g., 'Appears to be sandy loam')",
-      "Simple tips (e.g., 'If dry, water it')"
+      "2 free soil analyses per month",
+      "Basic moisture level detection",
+      "Simple texture indication"
+    ],
+    grid: [
+      "3x3 grid planner",
+      "Basic garden layout"
     ]
   }
 
   const premiumFeatures = {
     plants: [
-      "Common pest identification and treatment",
+      "10 free plant analyses per month",
+      "Advanced pest identification and treatment",
       "Ideal placement recommendations",
       "Detailed improvement suggestions with step-by-step guides"
     ],
     soil: [
+      "10 free soil analyses per month",
       "Detailed texture breakdown (e.g., 'Soil is 70% sand, 20% silt, 10% clay')",
-      "Recommended plants with scientific names (e.g., 'Snake Plant (Sansevieria trifasciata)')",
-      "Specific fertilizer recommendations (e.g., 'Wait 2 weeks before fertilizing')"
+      "Recommended plants with scientific names",
+      "Specific fertilizer recommendations"
+    ],
+    grid: [
+      "6x6 grid planner",
+      "Advanced garden layout options",
+      "Multiple garden management"
     ]
   }
 
@@ -355,13 +367,17 @@ const Subscription = () => {
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Leaf className="h-8 w-8 text-gray-600" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Free Plan</h3>
-              <div className="text-4xl font-bold text-gray-900 mb-4">$0<span className="text-lg text-gray-500">/month</span></div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Basic Plan</h3>
+              <div className="text-4xl font-bold text-gray-900 mb-4">₱0<span className="text-lg text-gray-500">/month</span></div>
               <p className="text-gray-600 mb-6">Perfect for getting started with basic plant care</p>
               <ul className="text-left space-y-3 mb-8">
                 <li className="flex items-center space-x-3">
                   <Check className="h-5 w-5 text-green-500" />
-                  <span className="text-sm text-gray-700">10 free image analyses per month</span>
+                  <span className="text-sm text-gray-700">4 free AI analyses per month (2 plants + 2 soil)</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <Check className="h-5 w-5 text-green-500" />
+                  <span className="text-sm text-gray-700">3x3 grid planner</span>
                 </li>
                 <li className="flex items-center space-x-3">
                   <Check className="h-5 w-5 text-green-500" />
@@ -370,10 +386,6 @@ const Subscription = () => {
                 <li className="flex items-center space-x-3">
                   <Check className="h-5 w-5 text-green-500" />
                   <span className="text-sm text-gray-700">Simple soil moisture check</span>
-                </li>
-                <li className="flex items-center space-x-3">
-                  <Check className="h-5 w-5 text-green-500" />
-                  <span className="text-sm text-gray-700">Basic care guidelines</span>
                 </li>
               </ul>
               <button className="btn-secondary w-full">
@@ -394,12 +406,16 @@ const Subscription = () => {
                 <Crown className="h-8 w-8 text-primary-600" />
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-2">Premium Plan</h3>
-              <div className="text-4xl font-bold text-gray-900 mb-4">$9.99<span className="text-lg text-gray-500">/month</span></div>
-              <p className="text-gray-600 mb-6">Unlimited access to all advanced features</p>
+              <div className="text-4xl font-bold text-gray-900 mb-4">₱150<span className="text-lg text-gray-500">/month</span></div>
+              <p className="text-gray-600 mb-6">Unlock advanced features with 20 AI analyses</p>
               <ul className="text-left space-y-3 mb-8">
                 <li className="flex items-center space-x-3">
                   <Check className="h-5 w-5 text-green-500" />
-                  <span className="text-sm text-gray-700">Unlimited image analyses</span>
+                  <span className="text-sm text-gray-700">20 free AI analyses per month (10 plants + 10 soil)</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <Check className="h-5 w-5 text-green-500" />
+                  <span className="text-sm text-gray-700">6x6 grid planner</span>
                 </li>
                 <li className="flex items-center space-x-3">
                   <Check className="h-5 w-5 text-green-500" />
@@ -412,10 +428,6 @@ const Subscription = () => {
                 <li className="flex items-center space-x-3">
                   <Check className="h-5 w-5 text-green-500" />
                   <span className="text-sm text-gray-700">Personalized plant recommendations</span>
-                </li>
-                <li className="flex items-center space-x-3">
-                  <Check className="h-5 w-5 text-green-500" />
-                  <span className="text-sm text-gray-700">Specific fertilizer recommendations</span>
                 </li>
                 <li className="flex items-center space-x-3">
                   <Check className="h-5 w-5 text-green-500" />
@@ -648,34 +660,35 @@ const Subscription = () => {
             <div className="relative bg-white w-full max-w-xl mx-4 rounded-2xl shadow-xl border border-gray-200">
               <div className="p-6 border-b">
                 <h3 className="text-xl font-bold text-gray-900">Upgrade to {priceDisplay.plan}</h3>
-                <p className="text-sm text-gray-600 mt-1">${priceDisplay.amount} per month, cancel anytime</p>
+                <p className="text-sm text-gray-600 mt-1">₱{priceDisplay.amount} per month, cancel anytime</p>
               </div>
               <div className="p-6 space-y-6">
                 {/* Payment Method Selector */}
                 <div>
                   <div className="text-sm font-medium text-gray-900 mb-3">Select payment method</div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <button onClick={() => setPaymentMethod('card')} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${paymentMethod === 'card' ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 bg-white'}`}>
-                      <CreditCard className="h-4 w-4" />
-                      <span>Card</span>
-                    </button>
-                    <button onClick={() => setPaymentMethod('gcash')} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${paymentMethod === 'gcash' ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 bg-white'}`}>
+                    <button onClick={() => setPaymentMethod('gcash')} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm relative ${paymentMethod === 'gcash' ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 bg-white'}`}>
                       <Wallet className="h-4 w-4" />
                       <span>GCash</span>
+                      <div className="absolute -top-1 -right-1 bg-green-500 text-white text-xs px-1 rounded-full">Recommended</div>
                     </button>
                     <button onClick={() => setPaymentMethod('paymaya')} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${paymentMethod === 'paymaya' ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 bg-white'}`}>
                       <Smartphone className="h-4 w-4" />
                       <span>PayMaya</span>
                     </button>
-                    <button onClick={() => setPaymentMethod('other')} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${paymentMethod === 'other' ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 bg-white'}`}>
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span>Others</span>
+                    <button onClick={() => setPaymentMethod('credit')} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${paymentMethod === 'credit' ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 bg-white'}`}>
+                      <CreditCard className="h-4 w-4" />
+                      <span>Credit Card</span>
+                    </button>
+                    <button onClick={() => setPaymentMethod('debit')} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${paymentMethod === 'debit' ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 bg-white'}`}>
+                      <CreditCard className="h-4 w-4" />
+                      <span>Debit Card</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Dynamic Payment Fields */}
-                {paymentMethod === 'card' && (
+                {(paymentMethod === 'credit' || paymentMethod === 'debit') && (
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Cardholder Name</label>
@@ -697,6 +710,16 @@ const Subscription = () => {
                         </div>
                       </div>
                     </div>
+                    {paymentMethod === 'credit' && (
+                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-sm text-yellow-700">Processing fee: ₱5.00 (Total: ₱155.00)</p>
+                      </div>
+                    )}
+                    {paymentMethod === 'debit' && (
+                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-sm text-yellow-700">Processing fee: ₱3.00 (Total: ₱153.00)</p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -758,7 +781,7 @@ const Subscription = () => {
                     setIsProcessing(false)
                   }
                 }} className={`btn-primary ${isProcessing ? 'opacity-70 cursor-not-allowed' : ''}`}>
-                  {isProcessing ? 'Processing…' : `Pay $${priceDisplay.amount}`}
+                  {isProcessing ? 'Processing…' : `Pay ₱${priceDisplay.amount}`}
                 </button>
               </div>
             </div>
@@ -771,7 +794,7 @@ const Subscription = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">What happens to my free analyses?</h3>
-              <p className="text-sm text-gray-600">You get 10 free image analyses per month. Once you use them up, you'll need to wait until next month or upgrade to premium for unlimited access.</p>
+              <p className="text-sm text-gray-600">Basic plan users get 4 free AI analyses per month (2 plants + 2 soil). Premium users get 20 free analyses (10 plants + 10 soil). Additional analyses cost ₱25 each.</p>
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">Can I cancel anytime?</h3>
