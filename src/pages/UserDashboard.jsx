@@ -68,8 +68,8 @@ const UserDashboard = () => {
         'Greenhouse Operations',
         'Wind Protection Strategies'
       ],
-      isAccessible: true, // Expert plan is now independent - always accessible
-      isLocked: false
+      isAccessible: isPremium || (learningProgress.intermediate >= 100), // Accessible if premium OR intermediate completed
+      isLocked: !isPremium && (learningProgress.intermediate < 100)
     }
   ]
 
