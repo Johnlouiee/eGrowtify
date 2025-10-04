@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import weatherService from '../services/weatherService'
 
 const WeatherCard = () => {
   const [weather, setWeather] = useState(null)
@@ -26,34 +27,30 @@ const WeatherCard = () => {
   const [city, setCity] = useState('Cebu')
   const [searchCity, setSearchCity] = useState('')
   const [plantingAdvice, setPlantingAdvice] = useState('')
+  const [lastFetchTime, setLastFetchTime] = useState(0)
 
   useEffect(() => {
-    fetchWeather(city)
+    // Only fetch weather if not already loaded
+    if (!weather) {
+      fetchWeather(city)
+    }
   }, [])
 
   const fetchWeather = async (cityName) => {
     try {
       setLoading(true)
-      const response = await axios.get(`/api/weather?city=${encodeURIComponent(cityName)}`)
+      const weatherData = await weatherService.getWeather(cityName)
       
-      // Check if the response indicates success
-      if (response.data.success === false) {
-        toast.error(response.data.error || 'City not found. Please check the spelling and try again.')
-        return
-      }
-      
-      setWeather(response.data)
+      setWeather(weatherData)
       setCity(cityName)
-      generatePlantingAdvice(response.data)
+      generatePlantingAdvice(weatherData)
       toast.success(`Weather data loaded for ${cityName}`)
     } catch (error) {
       console.error('Error fetching weather:', error)
       
       // Handle different types of errors
-      if (error.response?.status === 404) {
+      if (error.message.includes('City not found')) {
         toast.error('City not found. Please check the spelling and try again.')
-      } else if (error.response?.data?.error) {
-        toast.error(error.response.data.error)
       } else {
         toast.error('Failed to fetch weather data. Please try again.')
       }

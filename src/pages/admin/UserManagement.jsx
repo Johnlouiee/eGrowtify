@@ -60,6 +60,19 @@ const UserManagement = () => {
     }
   }
 
+  const handleToggleSubscription = async (userId, currentSubscription) => {
+    try {
+      await axios.patch(`/api/admin/users/${userId}/subscription`, {
+        subscribed: !currentSubscription
+      })
+      toast.success(`User subscription ${!currentSubscription ? 'activated' : 'deactivated'} successfully`)
+      fetchUsers() // Refresh the list
+    } catch (error) {
+      console.error('Error updating subscription:', error)
+      toast.error('Failed to update subscription')
+    }
+  }
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -166,6 +179,9 @@ const UserManagement = () => {
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Subscription
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -229,6 +245,22 @@ const UserManagement = () => {
                         )}
                       </span>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        user.subscribed 
+                          ? 'bg-yellow-100 text-yellow-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {user.subscribed ? (
+                          <>
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Premium
+                          </>
+                        ) : (
+                          'Basic'
+                        )}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center">
                         <Calendar className="h-3 w-3 mr-1" />
@@ -264,6 +296,18 @@ const UserManagement = () => {
                         >
                           {user.is_active ? 'Deactivate' : 'Activate'}
                         </button>
+                        {user.role !== 'admin' && (
+                          <button
+                            onClick={() => handleToggleSubscription(user.id, user.subscribed)}
+                            className={`flex items-center ${
+                              user.subscribed 
+                                ? 'text-red-600 hover:text-red-900' 
+                                : 'text-yellow-600 hover:text-yellow-900'
+                            }`}
+                          >
+                            {user.subscribed ? 'Remove Premium' : 'Add Premium'}
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDeleteUser(user.id)}
                           className="text-red-600 hover:text-red-900 flex items-center"

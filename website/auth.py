@@ -46,9 +46,12 @@ def login():
                         "full_name": user.full_name,
                         "role": user.role,
                         "is_active": user.is_active,
-                        "email_verified": user.email_verified
+                        "email_verified": user.email_verified,
+                        "subscribed": getattr(user, 'subscribed', False),
+                        "subscription_plan": getattr(user, 'subscription_plan', 'basic')
                     },
-                    "is_admin": user.is_admin()
+                    "is_admin": user.is_admin(),
+                    "is_premium": getattr(user, 'subscribed', False) or getattr(user, 'subscription_plan', 'basic') == 'premium'
                 })
         else:
             return jsonify({"success": False, "message": "Invalid credentials."}), 401
@@ -157,18 +160,47 @@ def register():
 # Frontend-friendly aliases under /auth/*
 @auth.route('/auth/status', methods=['GET'])
 def auth_status():
+    # Simple caching for auth status to prevent spam
+    import time
+    current_time = time.time()
+    
+    # Check if we have cached auth status for this user
     if current_user.is_authenticated:
+        user_id = current_user.id
+        cache_key = f"auth_status_{user_id}"
+        
+        # Check cache (5 second TTL for auth status)
+        if hasattr(auth_status, '_cache') and cache_key in auth_status._cache:
+            cached_data, cache_time = auth_status._cache[cache_key]
+            if current_time - cache_time < 5:  # 5 seconds cache
+                print(f"🔐 Auth status cache hit for user {user_id}")
+                return jsonify(cached_data)
+        
+        # Initialize cache if not exists
+        if not hasattr(auth_status, '_cache'):
+            auth_status._cache = {}
+        
+        # Create fresh auth status data
         user = current_user
-        return jsonify({
+        auth_data = {
             "authenticated": True,
             "user": {
                 "id": user.id,
                 "email": user.email,
                 "full_name": user.full_name,
-                "role": user.role
+                "role": user.role,
+                "subscribed": getattr(user, 'subscribed', False),
+                "subscription_plan": getattr(user, 'subscription_plan', 'basic')
             },
-            "is_admin": user.is_admin()
-        })
+            "is_admin": user.is_admin(),
+            "is_premium": getattr(user, 'subscribed', False) or getattr(user, 'subscription_plan', 'basic') == 'premium'
+        }
+        
+        # Cache the result
+        auth_status._cache[cache_key] = (auth_data, current_time)
+        print(f"🔐 Auth status cached for user {user_id}")
+        return jsonify(auth_data)
+    
     return jsonify({"authenticated": False})
 
 @auth.route('/auth/login', methods=['GET', 'POST'])

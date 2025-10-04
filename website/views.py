@@ -16,6 +16,11 @@ from PIL import Image
 _AI_CACHE = {}
 _AI_CACHE_TTL_SECONDS = 60 * 60  # 1 hour
 
+# Weather cache to prevent API spam
+_WEATHER_CACHE = {}
+_WEATHER_CACHE_TTL_SECONDS = 10 * 60  # 10 minutes
+_WEATHER_PENDING_REQUESTS = {}  # Track pending requests to prevent duplicates
+
 views = Blueprint('views', __name__)
 
 @views.route('/')
@@ -2407,14 +2412,43 @@ def user_feedbacks():
 @views.route('/api/weather')
 @login_required
 def get_weather():
+    # Simple rate limiting - prevent too many requests
+    import threading
+    if not hasattr(get_weather, '_last_request_time'):
+        get_weather._last_request_time = 0
+    
+    current_time = time.time()
+    if current_time - get_weather._last_request_time < 2:  # 2 seconds minimum between requests
+        print(f"🌤️ Weather API rate limited - too soon since last request")
+        return jsonify({
+            "error": "Rate limited - please wait before making another request",
+            "success": False
+        }), 429
+    
+    get_weather._last_request_time = current_time
+    
     """Get weather data for a specific city using OpenWeatherMap API"""
     try:
         city = request.args.get('city', 'Cebu')
+        current_time = time.time()
+        
+        # Check cache first
+        cache_key = f"weather_{city.lower()}"
+        if cache_key in _WEATHER_CACHE:
+            cached_data, cache_time = _WEATHER_CACHE[cache_key]
+            if current_time - cache_time < _WEATHER_CACHE_TTL_SECONDS:
+                print(f"🌤️ Weather cache hit for {city} (cached {int(current_time - cache_time)}s ago)")
+                return jsonify(cached_data)
+            else:
+                # Cache expired, remove it
+                del _WEATHER_CACHE[cache_key]
+        
+        
         api_key = os.getenv('OPENWEATHER_API_KEY')
         
         if not api_key:
             # Return mock data if API key is not available
-            return jsonify({
+            mock_data = {
                 "temperature": 28,
                 "humidity": 75,
                 "description": "Partly cloudy",
@@ -2422,7 +2456,10 @@ def get_weather():
                 "visibility": 10,
                 "city": city,
                 "mock": True
-            })
+            }
+            # Cache mock data too
+            _WEATHER_CACHE[cache_key] = (mock_data, current_time)
+            return jsonify(mock_data)
         
         # Make request to OpenWeatherMap API
         url = f"http://api.openweathermap.org/data/2.5/weather"
@@ -2436,7 +2473,7 @@ def get_weather():
         
         if response.status_code == 200:
             data = response.json()
-            return jsonify({
+            weather_data = {
                 "temperature": round(data['main']['temp']),
                 "humidity": data['main']['humidity'],
                 "description": data['weather'][0]['description'],
@@ -2446,7 +2483,11 @@ def get_weather():
                 "country": data['sys']['country'],
                 "mock": False,
                 "success": True
-            })
+            }
+            # Cache the successful response
+            _WEATHER_CACHE[cache_key] = (weather_data, current_time)
+            print(f"🌤️ Weather data cached for {city}")
+            return jsonify(weather_data)
         elif response.status_code == 404:
             # City not found
             return jsonify({
@@ -2464,7 +2505,7 @@ def get_weather():
             
     except Exception as e:
         # Return mock data if any error occurs
-        return jsonify({
+        mock_data = {
             "temperature": 28,
             "humidity": 75,
             "description": "Partly cloudy",
@@ -2473,7 +2514,10 @@ def get_weather():
             "city": city,
             "mock": True,
             "error": str(e)
-        })
+        }
+        # Cache mock data too
+        _WEATHER_CACHE[cache_key] = (mock_data, current_time)
+        return jsonify(mock_data)
 
 # Additional Admin API endpoints for the new admin panel
 @views.route('/api/admin/stats')
@@ -2561,6 +2605,32 @@ def admin_api_toggle_user_status(user_id):
         user.is_active = data.get('is_active', not user.is_active)
         db.session.commit()
         return jsonify({"message": "User status updated successfully"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/users/<int:user_id>/subscription', methods=['PATCH'])
+@login_required
+def admin_api_toggle_user_subscription(user_id):
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        user = User.query.get_or_404(user_id)
+        if user.role == 'admin':
+            return jsonify({"error": "Cannot modify admin user subscriptions"}), 403
+        
+        data = request.get_json()
+        user.subscribed = data.get('subscribed', not user.subscribed)
+        
+        # Update subscription plan based on subscription status
+        if user.subscribed:
+            user.subscription_plan = 'premium'
+        else:
+            user.subscription_plan = 'basic'
+            
+        db.session.commit()
+        return jsonify({"message": "User subscription updated successfully"})
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
@@ -2929,3 +2999,103 @@ def admin_api_upload_file():
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/create-user', methods=['POST'])
+@login_required
+def admin_create_user():
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        firstname = data.get('firstname')
+        lastname = data.get('lastname')
+        contact = data.get('contact')
+        password = data.get('password')
+        
+        # Validation
+        if not email or not firstname or not lastname or not contact or not password:
+            return jsonify({"success": False, "message": "All fields are required"}), 400
+        
+        if len(password) < 7:
+            return jsonify({"success": False, "message": "Password must be at least 7 characters"}), 400
+        
+        if User.query.filter_by(email=email).first():
+            return jsonify({"success": False, "message": "Email already exists"}), 400
+        
+        # Create new user
+        new_user = User(
+            email=email,
+            firstname=firstname,
+            lastname=lastname,
+            contact=contact,
+            is_active=True,  # Admin-created users are immediately active
+            email_verified=True  # Admin-created users are pre-verified
+        )
+        new_user.set_password(password)
+        
+        db.session.add(new_user)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "User created successfully",
+            "user_id": new_user.id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": f"Error creating user: {str(e)}"}), 500
+
+@views.route('/api/admin/create-admin', methods=['POST'])
+@login_required
+def admin_create_admin():
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        email = data.get('email')
+        full_name = data.get('full_name')
+        password = data.get('password')
+        is_super_admin = data.get('is_super_admin', False)
+        
+        # Validation
+        if not username or not email or not full_name or not password:
+            return jsonify({"success": False, "message": "All fields are required"}), 400
+        
+        if len(username) < 3:
+            return jsonify({"success": False, "message": "Username must be at least 3 characters"}), 400
+        
+        if len(password) < 7:
+            return jsonify({"success": False, "message": "Password must be at least 7 characters"}), 400
+        
+        if Admin.query.filter_by(username=username).first():
+            return jsonify({"success": False, "message": "Username already exists"}), 400
+        
+        if Admin.query.filter_by(email=email).first():
+            return jsonify({"success": False, "message": "Email already exists"}), 400
+        
+        # Create new admin
+        new_admin = Admin(
+            username=username,
+            email=email,
+            full_name=full_name,
+            is_super_admin=is_super_admin
+        )
+        new_admin.set_password(password)
+        
+        db.session.add(new_admin)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Admin created successfully",
+            "admin_id": new_admin.id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": f"Error creating admin: {str(e)}"}), 500

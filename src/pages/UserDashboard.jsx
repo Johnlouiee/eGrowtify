@@ -12,7 +12,8 @@ import toast from 'react-hot-toast'
 import WeatherCard from '../components/WeatherCard'
 
 const UserDashboard = () => {
-  const { user, isPremium } = useAuth()
+  const { user, isPremium, refreshAuthStatus } = useAuth()
+  const [lastAuthRefresh, setLastAuthRefresh] = useState(0)
   const [notifications, setNotifications] = useState([])
   const [plants, setPlants] = useState([])
   const [gardens, setGardens] = useState([])
@@ -177,6 +178,13 @@ const UserDashboard = () => {
     })
     
     fetchDashboardData()
+    
+    // Only refresh auth status if not done recently
+    const now = Date.now()
+    if (now - lastAuthRefresh > 5000) { // 5 seconds minimum between refreshes
+      refreshAuthStatus() // Refresh subscription status
+      setLastAuthRefresh(now)
+    }
   }, [user]) // Re-run when user changes
 
   // Listen for localStorage changes to update learning progress

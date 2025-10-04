@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import authService from '../services/authService'
 
 const AuthContext = createContext()
 
@@ -17,6 +18,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [isPremium, setIsPremium] = useState(false)
+  const [lastAuthCheck, setLastAuthCheck] = useState(0)
 
   // Configure axios defaults
   axios.defaults.baseURL = '/api'
@@ -28,16 +30,37 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await axios.get('/auth/status')
-      if (response.data.authenticated) {
-        setUser(response.data.user)
-        setIsAdmin(response.data.is_admin)
-        setIsPremium(response.data.is_premium || false)
+      const response = await authService.getAuthStatus()
+      if (response.authenticated) {
+        setUser(response.user)
+        setIsAdmin(response.is_admin)
+        setIsPremium(response.is_premium || false)
       }
     } catch (error) {
       console.log('Not authenticated')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const refreshAuthStatus = async () => {
+    // Debounce auth status checks - prevent spam
+    const now = Date.now()
+    if (now - lastAuthCheck < 3000) { // 3 seconds minimum between checks
+      console.log('Auth status check debounced - too soon since last check')
+      return
+    }
+    
+    try {
+      setLastAuthCheck(now)
+      const response = await authService.getAuthStatus()
+      if (response.authenticated) {
+        setUser(response.user)
+        setIsAdmin(response.is_admin)
+        setIsPremium(response.is_premium || false)
+      }
+    } catch (error) {
+      console.log('Error refreshing auth status:', error)
     }
   }
 
@@ -90,6 +113,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null)
       setIsAdmin(false)
       setIsPremium(false)
+      authService.clearCache() // Clear auth cache on logout
       toast.success('Logged out successfully')
     } catch (error) {
       console.error('Logout error:', error)
@@ -136,7 +160,8 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateProfile,
-    checkAuthStatus
+    checkAuthStatus,
+    refreshAuthStatus
   }
 
   return (

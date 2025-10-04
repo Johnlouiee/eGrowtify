@@ -27,6 +27,7 @@ import ExpertLearningPath from './pages/ExpertLearningPath'
 
 // Admin Pages
 import UserManagement from './pages/admin/UserManagement'
+import CreateUser from './pages/admin/CreateUser'
 import ManageNotifications from './pages/admin/ManageNotifications'
 import ManageSubscription from './pages/admin/ManageSubscription'
 import ManageSeasonalContent from './pages/admin/ManageSeasonalContent'
@@ -128,6 +129,11 @@ function App() {
               <Route path="/admin/users" element={
                 <AdminRoute>
                   <UserManagement />
+                </AdminRoute>
+              } />
+              <Route path="/admin/users/create" element={
+                <AdminRoute>
+                  <CreateUser />
                 </AdminRoute>
               } />
               <Route path="/admin/notifications" element={

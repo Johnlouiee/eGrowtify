@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Calendar, MapPin, Sun, Cloud, Leaf, Droplets, Thermometer, Clock, Wind, Eye, AlertTriangle, CheckCircle, Info, RefreshCw } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import weatherService from '../services/weatherService'
 
 const SeasonalPlanning = () => {
   const [currentSeason, setCurrentSeason] = useState('')
@@ -34,6 +35,7 @@ const SeasonalPlanning = () => {
   const [searchCity, setSearchCity] = useState('')
   const [currentCity, setCurrentCity] = useState('Cebu')
   const [weatherLoading, setWeatherLoading] = useState(false)
+  const [lastWeatherFetch, setLastWeatherFetch] = useState(0)
 
   // Philippines Plant Database - Common plants organized by categories
   const philippinesPlantDatabase = {
@@ -618,14 +620,10 @@ const SeasonalPlanning = () => {
     console.log('Fetching weather for city:', city)
     setWeatherLoading(true)
     try {
-      const apiUrl = `/api/weather?city=${encodeURIComponent(city)}`
-      console.log('API URL:', apiUrl)
-      const response = await axios.get(apiUrl)
-      console.log('Weather API response:', response.data)
-      console.log('Response status:', response.status)
+      const weatherData = await weatherService.getWeather(city)
+      console.log('Weather API response:', weatherData)
       
-      if (response.data.success !== false) {
-        const weatherData = response.data
+      if (weatherData.success !== false) {
         console.log('Raw weather data:', weatherData)
         console.log('Is mock data:', weatherData.mock)
         console.log('API success:', weatherData.success)
@@ -825,10 +823,9 @@ const SeasonalPlanning = () => {
       const locationName = await getLocationName(lat, lng)
       
       // Fetch real weather data from our API
-      const response = await axios.get(`/api/weather?city=${encodeURIComponent(locationName.split(',')[0])}`)
+      const weatherData = await weatherService.getWeather(locationName.split(',')[0])
       
-      if (response.data.success !== false) {
-        const weatherData = response.data
+      if (weatherData.success !== false) {
         
         // Parse temperature from string like "72°F" to number
         const tempValue = typeof weatherData.temperature === 'string' 
