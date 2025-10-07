@@ -114,46 +114,79 @@ const Navbar = () => {
                   
                   {isUserMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border">
-                      <Link
-                        to="/seasonal-planning"
-                        className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <Calendar className="h-4 w-4" />
-                        <span>Planning</span>
-                      </Link>
-                      <Link
-                        to="/subscription"
-                        className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <Star className="h-4 w-4" />
-                        <span>Subscription</span>
-                      </Link>
-                      <Link
-                        to="/about"
-                        className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <Info className="h-4 w-4" />
-                        <span>About</span>
-                      </Link>
-                      <Link
-                        to="/profile"
-                        className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <User className="h-4 w-4" />
-                        <span>Profile</span>
-                      </Link>
-                      <Link
-                        to="/feedback"
-                        className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <Heart className="h-4 w-4" />
-                        <span>Feedback</span>
-                      </Link>
+                      {user.role === 'admin' ? (
+                        // Admin Profile Menu
+                        <>
+                          <Link
+                            to="/admin/profile"
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <User className="h-4 w-4" />
+                            <span>Admin Profile</span>
+                          </Link>
+                          <Link
+                            to="/about"
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <Info className="h-4 w-4" />
+                            <span>About</span>
+                          </Link>
+                          <Link
+                            to="/admin/subscription"
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <Star className="h-4 w-4" />
+                            <span>Managing Subscription</span>
+                          </Link>
+                        </>
+                      ) : (
+                        // Regular User Profile Menu
+                        <>
+                          <Link
+                            to="/seasonal-planning"
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <Calendar className="h-4 w-4" />
+                            <span>Planning</span>
+                          </Link>
+                          <Link
+                            to="/subscription"
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <Star className="h-4 w-4" />
+                            <span>Subscription</span>
+                          </Link>
+                          <Link
+                            to="/about"
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <Info className="h-4 w-4" />
+                            <span>About</span>
+                          </Link>
+                          <Link
+                            to="/profile"
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <User className="h-4 w-4" />
+                            <span>Profile</span>
+                          </Link>
+                          <Link
+                            to="/feedback"
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <Heart className="h-4 w-4" />
+                            <span>Feedback</span>
+                          </Link>
+                        </>
+                      )}
                       <hr className="my-1" />
                       <button
                         onClick={() => {
