@@ -38,8 +38,25 @@ const ManageLearningPaths = () => {
   const fetchLearningPaths = async () => {
     try {
       setLoading(true)
-      const response = await axios.get('/api/admin/learning-paths')
-      setLearningPaths(response.data)
+      // Get the actual learning path data that users see
+      const allModules = getLearningPathModules()
+      
+      // Create learning path objects for admin management
+      const learningPathsData = Object.keys(allModules).map(difficulty => ({
+        id: difficulty.toLowerCase(),
+        title: `${difficulty} Learning Path`,
+        description: `Comprehensive ${difficulty.toLowerCase()} level modules focused on plants and soil`,
+        difficulty: difficulty,
+        estimatedTime: `${allModules[difficulty].reduce((total, module) => {
+          const time = parseInt(module.estimatedTime) || 30
+          return total + time
+        }, 0)} min`,
+        modules_count: allModules[difficulty].length,
+        is_active: true,
+        modules: allModules[difficulty]
+      }))
+      
+      setLearningPaths(learningPathsData)
     } catch (error) {
       console.error('Error fetching learning paths:', error)
       toast.error('Failed to load learning paths')
@@ -51,11 +68,15 @@ const ManageLearningPaths = () => {
 
   const handleTogglePathStatus = async (pathId, currentStatus) => {
     try {
-      await axios.patch(`/api/admin/learning-paths/${pathId}/status`, {
-        is_active: !currentStatus
-      })
+      // Update the local state instead of making API calls
+      setLearningPaths(prevPaths => 
+        prevPaths.map(path => 
+          path.id === pathId 
+            ? { ...path, is_active: !currentStatus }
+            : path
+        )
+      )
       toast.success(`Learning path ${!currentStatus ? 'activated' : 'deactivated'} successfully`)
-      fetchLearningPaths() // Refresh the list
     } catch (error) {
       console.error('Error updating learning path status:', error)
       toast.error('Failed to update learning path status')
@@ -101,12 +122,25 @@ const ManageLearningPaths = () => {
   const handleEditPath = async (e) => {
     e.preventDefault()
     try {
-      await axios.put(`/api/admin/learning-paths/${editingPath.id}`, formData)
+      // Update the local state instead of making API calls
+      setLearningPaths(prevPaths => 
+        prevPaths.map(path => 
+          path.id === editingPath.id 
+            ? { 
+                ...path, 
+                title: formData.title,
+                description: formData.description,
+                difficulty: formData.difficulty,
+                modules_count: formData.modules_count,
+                is_active: formData.is_active
+              }
+            : path
+        )
+      )
       toast.success('Learning path updated successfully')
       setShowEditModal(false)
       setEditingPath(null)
       resetForm()
-      fetchLearningPaths()
     } catch (error) {
       console.error('Error updating learning path:', error)
       toast.error('Failed to update learning path')
@@ -192,8 +226,8 @@ const ManageLearningPaths = () => {
               <div className="flex items-center">
                 <BookOpen className="h-8 w-8 text-green-600 mr-3" />
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Manage Learning Path Modules</h1>
-                  <p className="text-sm text-gray-600">Edit modules, lessons, and quizzes within the 3 learning paths</p>
+                  <h1 className="text-2xl font-bold text-gray-900">Manage User Learning Paths</h1>
+                  <p className="text-sm text-gray-600">Edit modules, lessons, and quizzes for the 3 learning paths users see in their dashboard</p>
                 </div>
               </div>
             </div>
@@ -368,21 +402,26 @@ const ManageLearningPaths = () => {
                           {selectedPath.difficulty} Level
                         </span>
                         <span className="ml-3 text-sm text-gray-500">
-                          {getModuleData(selectedPath.difficulty).length} modules
+                          {selectedPath.modules.length} modules
                         </span>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {getModuleData(selectedPath.difficulty).map((module) => (
+                        {selectedPath.modules.map((module) => (
                           <div key={module.id} className="border border-gray-200 rounded-lg p-4">
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
                                 <h6 className="font-medium text-gray-900">{module.title}</h6>
                                 <p className="text-sm text-gray-600 mt-1">{module.description}</p>
                                 
+                                <div className="mt-2 flex items-center text-xs text-gray-500">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  {module.estimatedTime}
+                                </div>
+                                
                                 {/* Lessons */}
                                 <div className="mt-3">
-                                  <h7 className="text-sm font-medium text-gray-700">Lessons:</h7>
+                                  <h7 className="text-sm font-medium text-gray-700">Lessons ({module.lessons.length}):</h7>
                                   <ul className="mt-1 space-y-1">
                                     {module.lessons.map((lesson) => (
                                       <li key={lesson.id} className="text-sm text-gray-600 flex items-center">
@@ -420,6 +459,14 @@ const ManageLearningPaths = () => {
                   </div>
                   
                   <div className="flex space-x-3">
+                    <Link
+                      to={`/learning/${selectedPath.difficulty.toLowerCase()}`}
+                      target="_blank"
+                      className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 text-center flex items-center justify-center"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View User Experience
+                    </Link>
                     <button 
                       onClick={() => openEditModal(selectedPath)}
                       className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700"

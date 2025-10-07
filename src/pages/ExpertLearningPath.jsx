@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { 
-  FlaskConical, Factory, LeafyGreen, Recycle, Beaker, Sprout, CheckCircle, 
+  BookOpen, Droplets, Sun, Leaf, Sprout, Thermometer, AlertCircle, CheckCircle, 
   Lock, Play, Clock, Award, ArrowRight, ArrowLeft, Eye, FileText, HelpCircle,
-  Target, TrendingUp, Star, Users, Calendar, MapPin, Zap, Shield, Microscope, Video, PlayCircle, X, 
-  Scissors, TreePine, Droplets, Sun, Wind
+  Target, TrendingUp, Star, Users, Calendar, MapPin, Zap, Video, PlayCircle, X
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ImageDisplay from '../components/ImageDisplay'
 import { useAuth } from '../contexts/AuthContext'
+import { getModuleData } from '../utils/learningPathData'
 
 const ExpertLearningPath = () => {
   const { user } = useAuth()
@@ -28,441 +28,42 @@ const ExpertLearningPath = () => {
     return `${key}_user_${user.id}`
   }
 
-  const modules = [
-    {
-      id: 'advanced-pruning',
-      title: 'Master Pruning Techniques - The Art of Plant Sculpting',
-      icon: Scissors,
-      color: 'green',
-      estimatedTime: '45 min',
-      difficulty: 'Expert',
-      description: 'Master the art and science of professional pruning - transform your plants into living sculptures',
-      hasVideo: true,
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-      lessons: [
-        {
-          title: 'Pruning Fundamentals - The Science Behind the Art',
-          content: 'Pruning is both an art and a science. It\'s about understanding plant biology, growth patterns, and the delicate balance between encouraging growth and maintaining plant health:',
-          points: [
-            '⏰ TIMING IS EVERYTHING: Deciduous trees (winter pruning for structure), Evergreens (late winter/early spring), Flowering shrubs (after blooming), Fruit trees (dormant season). Each plant has its optimal pruning window based on its growth cycle and flowering pattern.',
-            '✂️ THE PERFECT CUT: Make cuts at a 45-degree angle, 1/4 inch above a bud or branch collar. This promotes healing and prevents disease. Never leave stubs - they become entry points for pests and diseases. Clean, sharp tools make clean cuts.',
-            '🛠️ TOOL MASTERY: Hand pruners (branches up to 1/2 inch), Loppers (branches 1/2-2 inches), Pruning saws (larger branches), Pole pruners (high branches). Keep tools sharp and clean. Disinfect between plants to prevent disease spread.',
-            '🛡️ SAFETY PROTOCOLS: Wear protective gear (gloves, safety glasses, hard hat for tree work), Check for power lines, Use proper ladder techniques, Never prune alone when working with large trees. Safety first - your health is more important than perfect pruning.',
-            '🧠 UNDERSTANDING PLANT RESPONSE: Plants respond to pruning by producing new growth near the cut. This knowledge helps you direct growth where you want it. Pruning stimulates growth, so timing and technique determine the plant\'s response.',
-            '🎯 PRUNING OBJECTIVES: Health (remove dead/diseased wood), Structure (improve form and strength), Size control (manage plant size), Flowering (encourage better blooms), Safety (remove hazardous branches). Always have a clear objective before making cuts.'
-          ],
-          type: 'lesson',
-          images: [
-            {
-              src: '/images/learning/expert/pruning-tools-collection.jpg',
-              alt: 'Professional pruning tools collection',
-              description: 'Collection of professional pruning tools including hand pruners, loppers, pruning saws, and pole pruners',
-              type: 'plant'
-            },
-            {
-              src: '/images/learning/expert/proper-pruning-cuts.jpg',
-              alt: 'Examples of proper pruning cuts',
-              description: 'Visual examples showing correct pruning cut angles and placement relative to buds and branch collars',
-              type: 'plant'
-            },
-            {
-              src: '/images/learning/expert/pruning-safety-gear.jpg',
-              alt: 'Pruning safety equipment',
-              description: 'Safety equipment for pruning including gloves, safety glasses, hard hat, and protective clothing',
-              type: 'plant'
-            }
-          ]
-        },
-        {
-          title: 'Tree Pruning Techniques',
-          content: 'Advanced methods for tree care:',
-          points: [
-            'Crown thinning: Removing branches for better air flow',
-            'Crown raising: Removing lower branches safely',
-            'Crown reduction: Reducing tree size properly',
-            'Deadwood removal: Cleaning up damaged branches'
-          ],
-          type: 'lesson'
-        },
-        {
-          title: 'Shrub and Plant Pruning',
-          content: 'Specialized pruning for different plants:',
-          points: [
-            'Hedge trimming: Creating formal and informal shapes',
-            'Rose pruning: Encouraging healthy blooms',
-            'Fruit tree pruning: Maximizing fruit production',
-            'Ornamental pruning: Creating artistic shapes'
-          ],
-          type: 'lesson'
-        }
-      ],
-      quiz: {
-        questions: [
-          {
-            question: '✂️ PRUNING CUT EVALUATION: Look at this pruning cut. What is wrong with this technique?',
-            image: '/images/quiz/bad-pruning-cut.jpg',
-            imageDescription: 'A pruning cut showing incorrect technique with a stub left above the branch collar and improper angle',
-            options: ['Cut is too close to the branch', 'Cut is at wrong angle', 'Stub left above branch collar', 'All of the above'],
-            correct: 3,
-            explanation: '✅ CORRECT! This cut has multiple problems: The stub left above the branch collar will die and become an entry point for disease, the angle is incorrect, and the cut is too far from the branch collar. Proper cuts should be made at a 45-degree angle, 1/4 inch above the branch collar.'
-          },
-          {
-            question: '🌳 TREE PRUNING IDENTIFICATION: This tree shows signs of poor pruning. What technique was incorrectly applied?',
-            image: '/images/quiz/topped-tree.jpg',
-            imageDescription: 'A tree showing signs of topping with multiple water sprouts growing from cut branches',
-            options: ['Crown thinning (selective branch removal)', 'Crown raising (removing lower branches)', 'Topping (cutting main branches)', 'Crown reduction (reducing overall size)'],
-            correct: 2,
-            explanation: '✅ CORRECT! This tree has been "topped" - a harmful practice where main branches are cut back to stubs. This causes weak water sprouts to grow, creates entry points for disease, and can kill the tree. Professional arborists avoid topping and use proper crown reduction techniques instead.'
-          },
-          {
-            question: '🛠️ TOOL SELECTION: For pruning this branch, which tool would be most appropriate?',
-            image: '/images/quiz/branch-size-reference.jpg',
-            imageDescription: 'A branch approximately 1.5 inches in diameter showing the size reference for tool selection',
-            options: ['Hand pruners (up to 1/2 inch)', 'Loppers (1/2-2 inches)', 'Pruning saw (over 2 inches)', 'Pole pruner (high branches)'],
-            correct: 1,
-            explanation: '✅ CORRECT! This 1.5-inch branch is perfect for loppers. Hand pruners are for branches up to 1/2 inch, loppers handle 1/2-2 inches, and pruning saws are for branches over 2 inches. Using the right tool makes clean cuts and reduces plant stress.'
-          }
-        ]
-      }
-    },
-    {
-      id: 'tree-care',
-      title: 'Professional Tree Care',
-      icon: TreePine,
-      color: 'emerald',
-      estimatedTime: '40 min',
-      difficulty: 'Expert',
-      description: 'Advanced techniques for maintaining healthy trees',
-      hasVideo: true,
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-      lessons: [
-        {
-          title: 'Tree Health Assessment',
-          content: 'Learn to evaluate tree condition:',
-          points: [
-            'Visual inspection: Looking for signs of problems',
-            'Root health: Checking for root damage or disease',
-            'Bark examination: Identifying pest and disease issues',
-            'Growth patterns: Understanding normal vs. abnormal growth'
-          ],
-          type: 'lesson'
-        },
-        {
-          title: 'Tree Support Systems',
-          content: 'When and how to support trees:',
-          points: [
-            'Cabling: Supporting weak branches',
-            'Bracing: Strengthening tree structure',
-            'Staking: Supporting young or damaged trees',
-            'Guying: Anchoring trees in windy areas'
-          ],
-          type: 'lesson'
-        },
-        {
-          title: 'Tree Preservation',
-          content: 'Protecting trees during construction:',
-          points: [
-            'Root protection: Preventing damage during building',
-            'Soil compaction: Avoiding soil damage',
-            'Water management: Ensuring proper irrigation',
-            'Long-term care: Maintaining tree health over time'
-          ],
-          type: 'lesson'
-        }
-      ],
-      quiz: {
-        questions: [
-          {
-            question: 'What should you look for when assessing tree health?',
-            options: ['Only the leaves', 'Signs of problems in bark, roots, and growth', 'Only the height', 'Only the color'],
-            correct: 1
-          },
-          {
-            question: 'What is tree cabling used for?',
-            options: ['Making trees grow faster', 'Supporting weak branches', 'Making trees shorter', 'Removing branches'],
-            correct: 1
-          },
-          {
-            question: 'Why is root protection important during construction?',
-            options: ['It looks better', 'It prevents tree damage and death', 'It saves money', 'It makes work easier'],
-            correct: 1
-          }
-        ]
-      }
-    },
-    {
-      id: 'irrigation-systems',
-      title: 'Advanced Irrigation Systems',
-      icon: Droplets,
-      color: 'blue',
-      estimatedTime: '38 min',
-      difficulty: 'Expert',
-      description: 'Design and install professional irrigation systems',
-      lessons: [
-        {
-          title: 'System Design Principles',
-          content: 'Plan efficient irrigation systems:',
-          points: [
-            'Water pressure: Understanding system requirements',
-            'Zone planning: Grouping plants by water needs',
-            'Coverage patterns: Ensuring even water distribution',
-            'Efficiency factors: Minimizing water waste'
-          ],
-          type: 'lesson'
-        },
-        {
-          title: 'Drip Irrigation Installation',
-          content: 'Install professional drip systems:',
-          points: [
-            'Main line installation: Running water to zones',
-            'Emitter placement: Positioning for optimal coverage',
-            'Filter systems: Keeping water clean',
-            'Timer programming: Automating water delivery'
-          ],
-          type: 'lesson'
-        },
-        {
-          title: 'System Maintenance',
-          content: 'Keep irrigation systems working properly:',
-          points: [
-            'Regular inspections: Checking for problems',
-            'Cleaning filters: Maintaining water flow',
-            'Winterizing: Protecting systems from cold',
-            'Repair techniques: Fixing common problems'
-          ],
-          type: 'lesson'
-        }
-      ],
-      quiz: {
-        questions: [
-          {
-            question: 'What is the main benefit of drip irrigation?',
-            options: ['It uses more water', 'It delivers water directly to plant roots efficiently', 'It waters faster', 'It costs less'],
-            correct: 1
-          },
-          {
-            question: 'Why is zone planning important in irrigation?',
-            options: ['It looks better', 'It groups plants by water needs', 'It saves time', 'It uses less equipment'],
-            correct: 1
-          },
-          {
-            question: 'What should you do to winterize irrigation systems?',
-            options: ['Leave them running', 'Drain water to prevent freezing damage', 'Cover with blankets', 'Add more water'],
-            correct: 1
-          }
-        ]
-      }
-    },
-    {
-      id: 'greenhouse-management',
-      title: 'Greenhouse Operations',
-      icon: Sun,
-      color: 'orange',
-      estimatedTime: '42 min',
-      difficulty: 'Expert',
-      description: 'Master greenhouse climate control and plant management',
-      lessons: [
-        {
-          title: 'Climate Control Systems',
-          content: 'Manage temperature, humidity, and ventilation:',
-          points: [
-            'Heating systems: Maintaining optimal temperatures',
-            'Cooling methods: Ventilation and shade systems',
-            'Humidity control: Managing moisture levels',
-            'Air circulation: Ensuring proper air movement'
-          ],
-          type: 'lesson'
-        },
-        {
-          title: 'Lighting Management',
-          content: 'Optimize light for plant growth:',
-          points: [
-            'Natural light: Maximizing sunlight exposure',
-            'Supplemental lighting: Adding artificial light',
-            'Light duration: Controlling day length',
-            'Light quality: Using different light spectrums'
-          ],
-          type: 'lesson'
-        },
-        {
-          title: 'Plant Management',
-          content: 'Advanced greenhouse plant care:',
-          points: [
-            'Spacing strategies: Optimizing plant density',
-            'Pest control: Managing pests in controlled environments',
-            'Disease prevention: Keeping plants healthy',
-            'Harvest timing: Maximizing production'
-          ],
-          type: 'lesson'
-        }
-      ],
-      quiz: {
-        questions: [
-          {
-            question: 'What is the main purpose of greenhouse ventilation?',
-            options: ['To make it cooler', 'To control temperature, humidity, and air circulation', 'To save energy', 'To look better'],
-            correct: 1
-          },
-          {
-            question: 'Why might you need supplemental lighting in a greenhouse?',
-            options: ['To save money', 'To provide extra light when natural light is insufficient', 'To make it warmer', 'To reduce humidity'],
-            correct: 1
-          },
-          {
-            question: 'What is important for pest control in greenhouses?',
-            options: ['Using only chemicals', 'Prevention and early detection', 'Ignoring small problems', 'Removing all plants'],
-            correct: 1
-          }
-        ]
-      }
-    },
-    {
-      id: 'professional-soil-analysis',
-      title: 'Professional Soil Analysis',
-      icon: Microscope,
-      color: 'indigo',
-      estimatedTime: '45 min',
-      difficulty: 'Expert',
-      description: 'Master professional soil testing and analysis techniques',
-      lessons: [
-        {
-          title: 'Laboratory Soil Testing',
-          content: 'Professional soil analysis methods and interpretation:',
-          points: [
-            'Complete soil analysis: pH, nutrients, organic matter, and texture',
-            'Micronutrient testing: Iron, zinc, copper, and manganese levels',
-            'Cation exchange capacity: Understanding soil nutrient holding ability',
-            'Soil structure analysis: Aggregation and pore space evaluation'
-          ],
-          type: 'lesson'
-        },
-        {
-          title: 'Advanced Soil Amendments',
-          content: 'Professional-grade soil improvement techniques:',
-          points: [
-            'Precision fertilization: Matching nutrients to specific plant needs',
-            'Soil pH management: Advanced liming and acidification techniques',
-            'Organic matter optimization: Composting and biochar applications',
-            'Biological soil amendments: Mycorrhizae and beneficial bacteria'
-          ],
-          type: 'lesson'
-        },
-        {
-          title: 'Site-Specific Soil Management',
-          content: 'Customizing soil management for different growing conditions:',
-          points: [
-            'Microclimate considerations: Adjusting soil for specific locations',
-            'Seasonal soil management: Adapting practices throughout the year',
-            'Crop rotation planning: Soil health maintenance strategies',
-            'Long-term soil building: Sustainable fertility management'
-          ],
-          type: 'lesson'
-        }
-      ],
-      quiz: {
-        questions: [
-          {
-            question: 'This soil test report shows a CEC of 8. What does this indicate?',
-            image: '/images/soil-test-report.jpg',
-            options: ['High nutrient holding capacity', 'Low nutrient holding capacity', 'Perfect pH level', 'High organic matter'],
-            correct: 1,
-            explanation: 'A CEC (Cation Exchange Capacity) of 8 indicates low nutrient holding capacity. This soil will need more frequent fertilization as nutrients will leach away quickly.'
-          },
-          {
-            question: 'This soil analysis shows micronutrient deficiencies. What is the best approach?',
-            image: '/images/micronutrient-analysis.jpg',
-            options: ['Add more nitrogen', 'Apply chelated micronutrients', 'Increase watering', 'Add more compost'],
-            correct: 1,
-            explanation: 'Micronutrient deficiencies are best addressed with chelated micronutrients, which are more readily available to plants than traditional forms.'
-          },
-          {
-            question: 'This soil structure analysis shows poor aggregation. What improvement is needed?',
-            image: '/images/soil-structure-analysis.jpg',
-            options: ['More sand', 'Organic matter and biological activity', 'Chemical fertilizers', 'Increased tilling'],
-            correct: 1,
-            explanation: 'Poor soil aggregation is improved by adding organic matter and promoting biological activity, which helps create stable soil structure.'
-          }
-        ]
-      }
-    },
-    {
-      id: 'wind-protection',
-      title: 'Wind Protection Strategies',
-      icon: Wind,
-      color: 'gray',
-      estimatedTime: '30 min',
-      difficulty: 'Expert',
-      description: 'Create effective windbreaks and protect plants from wind damage',
-      lessons: [
-        {
-          title: 'Understanding Wind Effects',
-          content: 'Learn how wind affects plants:',
-          points: [
-            'Physical damage: Breaking branches and stems',
-            'Moisture loss: Increasing water evaporation',
-            'Temperature effects: Creating wind chill',
-            'Soil erosion: Removing topsoil and nutrients'
-          ],
-          type: 'lesson'
-        },
-        {
-          title: 'Windbreak Design',
-          content: 'Plan effective wind protection:',
-          points: [
-            'Height and density: Creating proper barriers',
-            'Distance calculations: Positioning windbreaks correctly',
-            'Plant selection: Choosing wind-resistant species',
-            'Multiple rows: Building layered protection'
-          ],
-          type: 'lesson'
-        },
-        {
-          title: 'Maintenance and Care',
-          content: 'Keep windbreaks working effectively:',
-          points: [
-            'Regular pruning: Maintaining proper density',
-            'Replacement planting: Filling gaps in barriers',
-            'Health monitoring: Keeping plants strong',
-            'Seasonal adjustments: Adapting to changing needs'
-          ],
-          type: 'lesson'
-        }
-      ],
-      quiz: {
-        questions: [
-          {
-            question: 'How does wind affect plants?',
-            options: ['It only helps them grow', 'It can cause physical damage and moisture loss', 'It makes them stronger', 'It has no effect'],
-            correct: 1
-          },
-          {
-            question: 'What is important in windbreak design?',
-            options: ['Only the height', 'Height, density, and proper positioning', 'Only the type of plants', 'Only the color'],
-            correct: 1
-          },
-          {
-            question: 'Why is regular maintenance important for windbreaks?',
-            options: ['It looks better', 'It keeps the protection working effectively', 'It saves money', 'It uses less water'],
-            correct: 1
-          }
-        ]
-      }
-    }
-  ]
+  // Get modules from centralized data source
+  const modules = getModuleData('Expert').map(module => ({
+    ...module,
+    icon: Award,
+    color: 'purple'
+  }))
+
+  // Clear old progress data function
+  const clearOldProgressData = () => {
+    const allPossibleKeys = [
+      'beginnerProgress',
+      'intermediateProgress', 
+      'expertProgress',
+      'learningProgress',
+      'userProgress'
+    ]
+
+    allPossibleKeys.forEach(key => {
+      localStorage.removeItem(key)
+      localStorage.removeItem(`${key}_user_${user?.id}`)
+    })
+  }
 
   useEffect(() => {
     // FORCE CLEAR all old progress data first (aggressive migration)
     clearOldProgressData()
-    
+
     // FORCE RESET - Always start with empty progress for now
     console.log('🔄 FORCE RESETTING ALL PROGRESS - Starting fresh for all users')
     setCompletedModules([])
     setModuleProgress({})
-    
+
     // Clear any remaining progress data
     const storageKey = getStorageKey('expertProgress')
     localStorage.removeItem(storageKey)
-    
+
     // Also clear any other possible keys
     const allPossibleKeys = [
       'beginnerProgress',
@@ -471,93 +72,26 @@ const ExpertLearningPath = () => {
       'learningProgress',
       'userProgress'
     ]
-    
+
     allPossibleKeys.forEach(key => {
       localStorage.removeItem(key)
       localStorage.removeItem(`${key}_user_${user?.id}`)
     })
-    
+
     console.log('✅ ALL PROGRESS RESET - Every user now starts with 0%')
-    
-    // Expert plan is now independent - no prerequisites required
-    // Users can access expert content directly
   }, [user]) // Re-run when user changes
-
-  const clearOldProgressData = () => {
-    console.log('🧹 FORCE CLEARING ALL LEARNING PATH DATA...')
-    
-    // Clear all possible localStorage keys that might contain progress data
-    const oldKeys = [
-      'beginnerProgress',
-      'intermediateProgress', 
-      'expertProgress',
-      'learningProgress',
-      'userProgress',
-      'moduleProgress',
-      'completedModules',
-      'quizAnswers',
-      'currentLesson',
-      'showQuiz',
-      'showQuizResults',
-      'quizScore'
-    ]
-    
-    // Clear known keys
-    oldKeys.forEach(key => {
-      localStorage.removeItem(key)
-      console.log(`✅ Cleared: ${key}`)
-    })
-    
-    // FORCE CLEAR ALL learning path related keys (more aggressive approach)
-    const keysToRemove = []
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      if (key && (
-        key.includes('beginnerProgress') || 
-        key.includes('intermediateProgress') || 
-        key.includes('expertProgress') ||
-        key.includes('learningProgress') ||
-        key.includes('userProgress') ||
-        key.includes('moduleProgress') ||
-        key.includes('completedModules') ||
-        key.includes('quiz') ||
-        key.includes('lesson') ||
-        key.includes('_user_')
-      )) {
-        keysToRemove.push(key)
-      }
-    }
-    
-    // Remove all identified keys
-    keysToRemove.forEach(key => {
-      localStorage.removeItem(key)
-      console.log(`✅ FORCE CLEARED: ${key}`)
-    })
-    
-    console.log(`🎉 FORCE CLEARED ${keysToRemove.length} learning path keys`)
-  }
-
-  const saveProgress = (newCompletedModules, newModuleProgress) => {
-    const progress = {
-      version: '2.0', // Version to identify new format
-      completedModules: newCompletedModules,
-      moduleProgress: newModuleProgress,
-      userId: user?.id, // Store user ID for verification
-      lastUpdated: new Date().toISOString()
-    }
-    const storageKey = getStorageKey('expertProgress')
-    localStorage.setItem(storageKey, JSON.stringify(progress))
-  }
 
   const startModule = (module) => {
     setCurrentModule(module)
     setCurrentLesson(0)
     setShowQuiz(false)
     setQuizAnswers({})
+    setShowQuizResults(false)
+    setQuizScore(0)
   }
 
   const nextLesson = () => {
-    if (currentModule && currentLesson < currentModule.lessons.length - 1) {
+    if (currentLesson < currentModule.lessons.length - 1) {
       setCurrentLesson(currentLesson + 1)
     } else {
       setShowQuiz(true)
@@ -570,441 +104,271 @@ const ExpertLearningPath = () => {
     }
   }
 
-  const handleQuizAnswer = (questionIndex, answerIndex) => {
+  const handleQuizAnswer = (questionId, answerIndex) => {
     setQuizAnswers(prev => ({
       ...prev,
-      [questionIndex]: answerIndex
+      [questionId]: answerIndex
     }))
   }
 
   const submitQuiz = () => {
-    if (!currentModule) return
-
-    const correctAnswers = currentModule.quiz.questions.reduce((count, question, index) => {
-      return count + (quizAnswers[index] === question.correct ? 1 : 0)
-    }, 0)
-
-    const score = (correctAnswers / currentModule.quiz.questions.length) * 100
-
-    // Always mark module as completed and show results
-    const newCompletedModules = [...completedModules, currentModule.id]
-    const newModuleProgress = {
-      ...moduleProgress,
-      [currentModule.id]: {
-        completed: true,
-        score: score,
-        completedAt: new Date().toISOString()
+    let score = 0
+    currentModule.quiz.questions.forEach(question => {
+      if (quizAnswers[question.id] === question.correct) {
+        score++
       }
-    }
-    
-    setCompletedModules(newCompletedModules)
-    setModuleProgress(newModuleProgress)
-    saveProgress(newCompletedModules, newModuleProgress)
+    })
     
     setQuizScore(score)
     setShowQuizResults(true)
     
-    toast.success(`Quiz completed! You scored ${Math.round(score)}%. Check your answers below.`)
+    // Mark module as completed
+    if (!completedModules.includes(currentModule.id)) {
+      setCompletedModules(prev => [...prev, currentModule.id])
+    }
+    
+    toast.success(`Quiz completed! Score: ${score}/${currentModule.quiz.questions.length}`)
   }
 
-  const getModuleStatus = (moduleId) => {
-    if (completedModules.includes(moduleId)) {
-      return 'completed'
-    }
+  const resetQuiz = () => {
+    setQuizAnswers({})
+    setShowQuizResults(false)
+    setQuizScore(0)
+  }
+
+  const getProgressPercentage = () => {
+    if (!currentModule) return 0
+    const totalLessons = currentModule.lessons.length + 1 // +1 for quiz
+    const currentProgress = showQuiz ? currentModule.lessons.length : currentLesson
+    return Math.round((currentProgress / totalLessons) * 100)
+  }
+
+  const getModuleProgress = (moduleId) => {
+    return moduleProgress[moduleId] || 0
+  }
+
+  const isModuleCompleted = (moduleId) => {
+    return completedModules.includes(moduleId)
+  }
+
+  const isModuleLocked = (moduleId) => {
     const moduleIndex = modules.findIndex(m => m.id === moduleId)
+    if (moduleIndex === 0) return false // First module is always unlocked
     const previousModule = modules[moduleIndex - 1]
-    if (moduleIndex === 0 || (previousModule && completedModules.includes(previousModule.id))) {
-      return 'available'
-    }
-    return 'locked'
-  }
-
-  const getColorClasses = (color) => {
-    const colorMap = {
-      green: 'bg-green-100 text-green-700 border-green-200',
-      blue: 'bg-blue-100 text-blue-700 border-blue-200',
-      emerald: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-      purple: 'bg-purple-100 text-purple-700 border-purple-200',
-      cyan: 'bg-cyan-100 text-cyan-700 border-cyan-200',
-      indigo: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-      orange: 'bg-orange-100 text-orange-700 border-orange-200'
-    }
-    return colorMap[color] || 'bg-gray-100 text-gray-700 border-gray-200'
-  }
-
-  const getQuestionHint = (moduleId, questionIndex) => {
-    const hints = {
-      'advanced-pruning': [
-        'Most trees are best pruned during winter when they are dormant and not actively growing.',
-        'Crown thinning involves removing some branches to improve air flow and light penetration.',
-        'Clean cuts help plants heal faster and reduce the risk of disease entering the wound.'
-      ],
-      'tree-care': [
-        'Tree health assessment should look at bark, roots, and growth patterns, not just leaves.',
-        'Tree cabling is used to support weak branches that might break under stress.',
-        'Root protection during construction prevents tree damage and potential death.'
-      ],
-      'irrigation-systems': [
-        'Drip irrigation delivers water directly to plant roots, making it very efficient.',
-        'Zone planning groups plants with similar water needs together for better efficiency.',
-        'Winterizing irrigation systems involves draining water to prevent freezing damage.'
-      ],
-      'greenhouse-management': [
-        'Greenhouse ventilation controls temperature, humidity, and air circulation for optimal growing.',
-        'Supplemental lighting provides extra light when natural sunlight is insufficient.',
-        'Pest control in greenhouses focuses on prevention and early detection rather than just treatment.'
-      ],
-      'professional-soil-analysis': [
-        'A CEC (Cation Exchange Capacity) of 8 indicates low nutrient holding capacity, requiring more frequent fertilization.',
-        'Micronutrient deficiencies are best addressed with chelated micronutrients for better plant availability.',
-        'Poor soil aggregation is improved by adding organic matter and promoting biological activity.'
-      ],
-      'wind-protection': [
-        'Wind can cause physical damage to plants and increase moisture loss through evaporation.',
-        'Effective windbreak design considers height, density, and proper positioning.',
-        'Regular maintenance keeps windbreaks working effectively to protect other plants.'
-      ]
-    }
-    return hints[moduleId]?.[questionIndex] || 'Think about what you learned in the lesson above.'
+    return !isModuleCompleted(previousModule.id)
   }
 
   if (currentModule) {
-    const lesson = currentModule.lessons[currentLesson]
-    
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Module Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <button
-                onClick={() => setCurrentModule(null)}
-                className="flex items-center text-gray-600 hover:text-gray-900"
-              >
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                Back to Modules
-              </button>
-              <div className="text-sm text-gray-500">
-                Lesson {currentLesson + 1} of {currentModule.lessons.length}
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-              <div className="flex items-center gap-4 mb-4">
-                <div className={`p-3 rounded-xl ${getColorClasses(currentModule.color)}`}>
-                  <currentModule.icon className="h-6 w-6" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{currentModule.title}</h1>
-                  <p className="text-gray-600">{currentModule.description}</p>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-6">
+              <div className="flex items-center">
+                <Link 
+                  to="/learning/expert" 
+                  className="flex items-center text-gray-600 hover:text-gray-900 mr-6"
+                >
+                  <ArrowLeft className="h-5 w-5 mr-2" />
+                  Back to Modules
+                </Link>
+                <div className="flex items-center">
+                  <Award className="h-8 w-8 text-purple-600 mr-3" />
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">{currentModule.title}</h1>
+                    <p className="text-sm text-gray-600">{currentModule.description}</p>
+                  </div>
                 </div>
               </div>
-              
-              {/* Progress Bar */}
-              <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-                <div 
-                  className="bg-primary-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${((currentLesson + 1) / currentModule.lessons.length) * 100}%` }}
-                ></div>
+              <div className="text-sm text-gray-600">
+                {getProgressPercentage()}% Complete
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Lesson Content */}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {!showQuiz ? (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">{lesson.title}</h2>
-                {currentModule.hasVideo && (
-                  <button
-                    onClick={() => setShowVideo(true)}
-                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    <PlayCircle className="h-4 w-4 mr-2" />
-                    Watch Video
-                  </button>
-                )}
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+              {/* Progress Bar */}
+              <div className="bg-gray-200 h-2">
+                <div 
+                  className="bg-purple-600 h-2 transition-all duration-300"
+                  style={{ width: `${getProgressPercentage()}%` }}
+                ></div>
               </div>
-              <p className="text-lg text-gray-700 mb-6">{lesson.content}</p>
-              
-              <div className="space-y-4">
-                {lesson.points.map((point, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 flex-shrink-0"></div>
-                    <p className="text-gray-700">{point}</p>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="flex justify-between items-center mt-8">
-                <button
-                  onClick={previousLesson}
-                  disabled={currentLesson === 0}
-                  className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Previous
-                </button>
-                
-                <div className="flex items-center space-x-2">
+
+              {/* Lesson Content */}
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Lesson {currentLesson + 1}: {currentModule.lessons[currentLesson].title}
+                  </h2>
                   <span className="text-sm text-gray-500">
                     {currentLesson + 1} of {currentModule.lessons.length}
                   </span>
                 </div>
-                
-                <button
-                  onClick={nextLesson}
-                  className="flex items-center px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                >
-                  {currentLesson === currentModule.lessons.length - 1 ? 'Take Quiz' : 'Next Lesson'}
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </button>
+
+                <div className="prose max-w-none">
+                  <p className="text-gray-700 mb-6 text-lg leading-relaxed">
+                    {currentModule.lessons[currentLesson].content}
+                  </p>
+
+                  {/* Points */}
+                  <div className="space-y-4">
+                    {currentModule.lessons[currentLesson].points.map((point, index) => (
+                      <div key={index} className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
+                        <div className="flex-shrink-0 w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
+                          <span className="text-purple-600 text-sm font-medium">{index + 1}</span>
+                        </div>
+                        <p className="text-gray-700 leading-relaxed">{point}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Navigation */}
+                <div className="flex justify-between items-center mt-8 pt-6 border-t">
+                  <button
+                    onClick={previousLesson}
+                    disabled={currentLesson === 0}
+                    className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Previous
+                  </button>
+                  
+                  <button
+                    onClick={nextLesson}
+                    className="flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    {currentLesson === currentModule.lessons.length - 1 ? 'Start Quiz' : 'Next Lesson'}
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
-            /* Quiz */
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Quiz: {currentModule.title}</h2>
-              
-              {/* Quiz Guide */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
-                <div className="flex items-start gap-3">
-                  <HelpCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h3 className="font-semibold text-blue-900 mb-2">Quiz Tips for Expert Gardeners</h3>
-                    <ul className="text-sm text-blue-800 space-y-1">
-                      <li>• You're now at the expert level - apply your advanced knowledge</li>
-                      <li>• Think about the science and techniques behind each concept</li>
-                      <li>• Consider how these advanced methods improve plant health and yields</li>
-                      <li>• There's no passing rate - just do your best and learn!</li>
-                      <li>• Trust your gardening experience and the lessons you've learned</li>
-                    </ul>
-                  </div>
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+              <div className="p-8">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Quiz: {currentModule.quiz.title}</h2>
+                  <p className="text-gray-600">Test your knowledge of this module</p>
                 </div>
-              </div>
-              
-              <p className="text-gray-600 mb-8">Answer all questions to complete this module. You'll see the correct answers after submitting!</p>
-              
-              <div className="space-y-8">
-                {currentModule.quiz.questions.map((question, questionIndex) => (
-                  <div key={questionIndex} className="border-b border-gray-200 pb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      {questionIndex + 1}. {question.question}
-                    </h3>
-                    
-                    {/* Question Image */}
-                    {question.image && (
-                      <div className="mb-6">
-                        <div className="bg-gray-100 rounded-lg p-4 border-2 border-dashed border-gray-300">
-                          <div className="text-center">
-                            <div className="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
-                              <div className="text-center">
-                                <div className="text-4xl mb-2">🔬</div>
-                                <p className="text-gray-600 text-sm">Professional Soil Analysis</p>
-                                <p className="text-gray-500 text-xs">(Image would be displayed here)</p>
-                              </div>
-                            </div>
-                            <p className="text-sm text-gray-600 italic">
-                              {question.image.includes('test-report') ? 'Soil test report' : 
-                               question.image.includes('micronutrient') ? 'Micronutrient analysis results' : 
-                               'Soil structure analysis'}
-                            </p>
+
+                {!showQuizResults ? (
+                  <div className="space-y-6">
+                    {currentModule.quiz.questions.map((question, index) => (
+                      <div key={question.id} className="border border-gray-200 rounded-lg p-6">
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">
+                          {index + 1}. {question.question}
+                        </h3>
+                        
+                        {question.image && (
+                          <div className="mb-4">
+                            <img 
+                              src={question.image} 
+                              alt={question.imageDescription || 'Quiz image'}
+                              className="w-full max-w-md mx-auto rounded-lg shadow-sm"
+                            />
                           </div>
+                        )}
+
+                        <div className="space-y-3">
+                          {question.options.map((option, optionIndex) => (
+                            <label key={optionIndex} className="flex items-center space-x-3 cursor-pointer">
+                              <input
+                                type="radio"
+                                name={`question-${question.id}`}
+                                value={optionIndex}
+                                checked={quizAnswers[question.id] === optionIndex}
+                                onChange={() => handleQuizAnswer(question.id, optionIndex)}
+                                className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300"
+                              />
+                              <span className="text-gray-700">{option}</span>
+                            </label>
+                          ))}
                         </div>
                       </div>
-                    )}
-                    
-                    {/* Question Hint */}
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-                      <div className="flex items-start gap-2">
-                        <Eye className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                        <p className="text-sm text-green-800">
-                          <strong>Hint:</strong> {getQuestionHint(currentModule.id, questionIndex)}
-                        </p>
-                      </div>
+                    ))}
+
+                    <div className="text-center">
+                      <button
+                        onClick={submitQuiz}
+                        disabled={Object.keys(quizAnswers).length !== currentModule.quiz.questions.length}
+                        className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Submit Quiz
+                      </button>
                     </div>
-                    
-                    <div className="space-y-3">
-                      {question.options.map((option, optionIndex) => (
-                        <label key={optionIndex} className="flex items-center cursor-pointer p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                          <input
-                            type="radio"
-                            name={`question-${questionIndex}`}
-                            value={optionIndex}
-                            checked={quizAnswers[questionIndex] === optionIndex}
-                            onChange={() => handleQuizAnswer(questionIndex, optionIndex)}
-                            className="mr-3 text-primary-600 focus:ring-primary-500"
-                          />
-                          <span className="text-gray-700">{option}</span>
-                        </label>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <div className="mb-6">
+                      <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle className="h-10 w-10 text-purple-600" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2">Quiz Complete!</h3>
+                      <p className="text-lg text-gray-600">
+                        You scored {quizScore} out of {currentModule.quiz.questions.length}
+                      </p>
+                    </div>
+
+                    <div className="space-y-4 mb-8">
+                      {currentModule.quiz.questions.map((question, index) => (
+                        <div key={question.id} className="border border-gray-200 rounded-lg p-4">
+                          <h4 className="font-medium text-gray-900 mb-2">
+                            {index + 1}. {question.question}
+                          </h4>
+                          <div className="space-y-2">
+                            {question.options.map((option, optionIndex) => (
+                              <div key={optionIndex} className="flex items-center space-x-3">
+                                <div className={`w-4 h-4 rounded-full ${
+                                  optionIndex === question.correct 
+                                    ? 'bg-green-500' 
+                                    : quizAnswers[question.id] === optionIndex 
+                                      ? 'bg-red-500' 
+                                      : 'bg-gray-300'
+                                }`}></div>
+                                <span className={`${
+                                  optionIndex === question.correct 
+                                    ? 'text-green-700 font-medium' 
+                                    : quizAnswers[question.id] === optionIndex 
+                                      ? 'text-red-700' 
+                                      : 'text-gray-600'
+                                }`}>
+                                  {option}
+                                  {optionIndex === question.correct && ' (Correct)'}
+                                  {quizAnswers[question.id] === optionIndex && optionIndex !== question.correct && ' (Your Answer)'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="mt-3 text-sm text-gray-600 bg-gray-50 p-3 rounded">
+                            {question.explanation}
+                          </p>
+                        </div>
                       ))}
                     </div>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="flex justify-center mt-8">
-                <button
-                  onClick={submitQuiz}
-                  disabled={Object.keys(quizAnswers).length !== currentModule.quiz.questions.length}
-                  className="px-8 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Submit Quiz
-                </button>
-              </div>
-            </div>
-          )}
 
-          {/* Quiz Results Review */}
-          {showQuizResults && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 mt-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Quiz Results: {currentModule.title}</h2>
-              
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold text-blue-900 mb-2">Your Score: {Math.round(quizScore)}%</h3>
-                  <p className="text-blue-800">Great job completing this module! Here are the correct answers:</p>
-                </div>
-              </div>
-              
-              <div className="space-y-8">
-                {currentModule.quiz.questions.map((question, questionIndex) => {
-                  const userAnswer = quizAnswers[questionIndex]
-                  const correctAnswer = question.correct
-                  const isCorrect = userAnswer === correctAnswer
-                  
-                  return (
-                    <div key={questionIndex} className="border-b border-gray-200 pb-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        {questionIndex + 1}. {question.question}
-                      </h3>
-                      
-                      {/* Question Image in Results */}
-                      {question.image && (
-                        <div className="mb-6">
-                          <div className="bg-gray-100 rounded-lg p-4 border-2 border-dashed border-gray-300">
-                            <div className="text-center">
-                              <div className="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
-                                <div className="text-center">
-                                  <div className="text-4xl mb-2">🔬</div>
-                                  <p className="text-gray-600 text-sm">Professional Soil Analysis</p>
-                                  <p className="text-gray-500 text-xs">(Image would be displayed here)</p>
-                                </div>
-                              </div>
-                              <p className="text-sm text-gray-600 italic">
-                                {question.image.includes('test-report') ? 'Soil test report' : 
-                                 question.image.includes('micronutrient') ? 'Micronutrient analysis results' : 
-                                 'Soil structure analysis'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className="space-y-3">
-                        {question.options.map((option, optionIndex) => {
-                          let optionClass = "p-3 rounded-lg border-2 "
-                          let textClass = "text-gray-700"
-                          
-                          if (optionIndex === correctAnswer) {
-                            optionClass += "border-green-500 bg-green-50"
-                            textClass = "text-green-800 font-semibold"
-                          } else if (optionIndex === userAnswer && !isCorrect) {
-                            optionClass += "border-red-500 bg-red-50"
-                            textClass = "text-red-800"
-                          } else {
-                            optionClass += "border-gray-200 bg-gray-50"
-                            textClass = "text-gray-600"
-                          }
-                          
-                          return (
-                            <div key={optionIndex} className={optionClass}>
-                              <div className="flex items-center">
-                                {optionIndex === correctAnswer && (
-                                  <CheckCircle className="h-5 w-5 text-green-600 mr-3 flex-shrink-0" />
-                                )}
-                                {optionIndex === userAnswer && !isCorrect && (
-                                  <X className="h-5 w-5 text-red-600 mr-3 flex-shrink-0" />
-                                )}
-                                <span className={textClass}>{option}</span>
-                                {optionIndex === correctAnswer && (
-                                  <span className="ml-auto text-green-600 font-semibold">Correct Answer</span>
-                                )}
-                                {optionIndex === userAnswer && !isCorrect && (
-                                  <span className="ml-auto text-red-600 font-semibold">Your Answer</span>
-                                )}
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                      
-                      {/* Explanation for picture-based questions */}
-                      {question.explanation && (
-                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <div className="flex items-start gap-2">
-                            <HelpCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                            <div>
-                              <h4 className="font-semibold text-blue-900 mb-1">Explanation:</h4>
-                              <p className="text-sm text-blue-800">{question.explanation}</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                    <div className="flex justify-center space-x-4">
+                      <button
+                        onClick={resetQuiz}
+                        className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                      >
+                        Retake Quiz
+                      </button>
+                      <Link
+                        to="/learning/expert"
+                        className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                      >
+                        Back to Modules
+                      </Link>
                     </div>
-                  )
-                })}
-              </div>
-              
-              <div className="flex justify-center mt-8">
-                <button
-                  onClick={() => {
-                    setCurrentModule(null)
-                    setShowQuiz(false)
-                    setShowQuizResults(false)
-                    setQuizAnswers({})
-                  }}
-                  className="px-8 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-                >
-                  Back to Modules
-                </button>
-              </div>
-              
-              {/* Show completion message if this was the last module */}
-              {completedModules.length + 1 === modules.length && (
-                <div className="mt-8 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-6">
-                  <div className="flex items-center justify-center mb-4">
-                    <Award className="h-12 w-12 text-purple-600" />
                   </div>
-                  <h3 className="text-xl font-bold text-purple-900 text-center mb-2">
-                    Master Gardener Achieved! 🏆
-                  </h3>
-                  <p className="text-purple-700 text-center mb-4">
-                    Congratulations! You've completed the Expert Gardener Path and achieved Master Gardener status!
-                  </p>
-                  <div className="flex justify-center space-x-4">
-                    <Link
-                      to="/dashboard"
-                      className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center"
-                    >
-                      <Star className="h-4 w-4 mr-2" />
-                      View Dashboard
-                    </Link>
-                    <button
-                      onClick={() => {
-                        setCurrentModule(null)
-                        setShowQuiz(false)
-                        setShowQuizResults(false)
-                        setQuizAnswers({})
-                      }}
-                      className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center"
-                    >
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      Back to Modules
-                    </button>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -1013,214 +377,124 @@ const ExpertLearningPath = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <Link to="/dashboard" className="flex items-center text-primary-600 hover:text-primary-700 font-medium">
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              Back to Dashboard
-            </Link>
-            <div className="text-sm text-gray-500">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div className="flex items-center">
+              <Link 
+                to="/dashboard" 
+                className="flex items-center text-gray-600 hover:text-gray-900 mr-6"
+              >
+                <ArrowLeft className="h-5 w-5 mr-2" />
+                Back to Dashboard
+              </Link>
+              <div className="flex items-center">
+                <Award className="h-8 w-8 text-purple-600 mr-3" />
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Expert Learning Path</h1>
+                  <p className="text-sm text-gray-600">Master professional plant and soil management</p>
+                </div>
+              </div>
+            </div>
+            <div className="text-sm text-gray-600">
               {completedModules.length} of {modules.length} modules completed
             </div>
           </div>
-          
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Expert Gardener Path</h1>
-          <p className="text-xl text-gray-600">Master advanced techniques and systems for professional-level gardening</p>
         </div>
+      </div>
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Progress Overview */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Your Progress</h2>
-            <div className="text-sm text-gray-500">
-              {Math.round((completedModules.length / modules.length) * 100)}% Complete
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Progress</h2>
+          <div className="flex items-center space-x-4">
+            <div className="flex-1">
+              <div className="bg-gray-200 rounded-full h-3">
+                <div 
+                  className="bg-purple-600 h-3 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.round((completedModules.length / modules.length) * 100)}%` }}
+                ></div>
+              </div>
             </div>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div 
-              className="bg-purple-600 h-3 rounded-full transition-all duration-300"
-              style={{ width: `${(completedModules.length / modules.length) * 100}%` }}
-            ></div>
+            <span className="text-sm font-medium text-gray-600">
+              {Math.round((completedModules.length / modules.length) * 100)}%
+            </span>
           </div>
         </div>
 
         {/* Modules Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {modules.map((module, index) => {
-            const Icon = module.icon
-            const status = getModuleStatus(module.id)
-            const isCompleted = status === 'completed'
-            const isLocked = status === 'locked'
-            const isAvailable = status === 'available'
-            
+            const isCompleted = isModuleCompleted(module.id)
+            const isLocked = isModuleLocked(module.id)
+            const IconComponent = module.icon || Award
+
             return (
               <div 
                 key={module.id} 
-                className={`bg-white rounded-xl border shadow-sm transition-all duration-300 ${
+                className={`relative bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 ${
                   isLocked 
-                    ? 'border-gray-200 opacity-60 cursor-not-allowed' 
-                    : isAvailable 
-                    ? 'border-gray-200 hover:border-primary-300 hover:shadow-lg cursor-pointer' 
-                    : 'border-purple-200 bg-purple-50 hover:border-purple-300 hover:shadow-lg cursor-pointer'
+                    ? 'opacity-60 cursor-not-allowed' 
+                    : 'hover:shadow-xl cursor-pointer'
                 }`}
-                onClick={() => (isAvailable || isCompleted) && startModule(module)}
+                onClick={() => !isLocked && startModule(module)}
               >
+                {/* Lock overlay */}
+                {isLocked && (
+                  <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center z-10">
+                    <div className="bg-white rounded-full p-3 shadow-lg">
+                      <Lock className="h-6 w-6 text-gray-600" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Completion badge */}
+                {isCompleted && (
+                  <div className="absolute top-3 right-3 z-20">
+                    <div className="bg-purple-500 text-white rounded-full p-1">
+                      <CheckCircle className="h-5 w-5" />
+                    </div>
+                  </div>
+                )}
+
                 <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`p-3 rounded-xl ${getColorClasses(module.color)}`}>
-                      <Icon className="h-6 w-6" />
+                  <div className="flex items-center mb-4">
+                    <div className={`p-3 rounded-lg bg-${module.color}-100 mr-4`}>
+                      <IconComponent className={`h-6 w-6 text-${module.color}-600`} />
                     </div>
-                    <div className="flex items-center space-x-2">
-                      {isCompleted && <CheckCircle className="h-5 w-5 text-green-600" />}
-                      {isLocked && <Lock className="h-5 w-5 text-gray-400" />}
-                      {isAvailable && <Play className="h-5 w-5 text-primary-600" />}
-                    </div>
-                  </div>
-                  
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{module.title}</h3>
-                  <p className="text-sm text-gray-600 mb-4">{module.description}</p>
-                  
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-1" />
-                      {module.estimatedTime}
-                    </div>
-                    <div className="flex items-center">
-                      <Target className="h-4 w-4 mr-1" />
-                      {module.difficulty}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{module.title}</h3>
+                      <p className="text-sm text-gray-500">{module.estimatedTime}</p>
                     </div>
                   </div>
-                  
+
+                  <p className="text-gray-600 mb-4 text-sm">{module.description}</p>
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center text-sm text-gray-500">
-                      <span>{module.lessons.length} lessons</span>
-                      {module.hasVideo && (
-                        <div className="flex items-center ml-2 text-red-600">
-                          <Video className="h-3 w-3 mr-1" />
-                          <span className="text-xs">Video</span>
-                        </div>
-                      )}
+                      <BookOpen className="h-4 w-4 mr-1" />
+                      {module.lessons.length} lessons
                     </div>
-                    {isCompleted && (
-                      <div className="text-sm text-green-600 font-medium">
-                        Score: {Math.round(moduleProgress[module.id]?.score || 0)}%
-                      </div>
+                    
+                    {isLocked ? (
+                      <span className="text-sm text-gray-500">Complete previous module</span>
+                    ) : (
+                      <button className="flex items-center text-purple-600 hover:text-purple-700 text-sm font-medium">
+                        {isCompleted ? 'Review' : 'Start'}
+                        <ArrowRight className="h-4 w-4 ml-1" />
+                      </button>
                     )}
                   </div>
-                  
-                  {/* Review Button for Completed Modules */}
-                  {isCompleted && (
-                    <div className="mt-4">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          startModule(module)
-                        }}
-                        className="w-full px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium"
-                      >
-                        Review Module
-                      </button>
-                    </div>
-                  )}
-                  
-                  {/* Next Module Button */}
-                  {isCompleted && index < modules.length - 1 && (
-                    <div className="mt-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          const nextModule = modules[index + 1]
-                          if (getModuleStatus(nextModule.id) !== 'locked') {
-                            startModule(nextModule)
-                          }
-                        }}
-                        className="w-full px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
-                      >
-                        Next: {modules[index + 1].title}
-                      </button>
-                    </div>
-                  )}
-                  
-                  {isLocked && (
-                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <p className="text-xs text-yellow-800">
-                        Complete the previous module to unlock this one
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             )
           })}
         </div>
-
-        {/* Completion Message */}
-        {completedModules.length === modules.length && (
-          <div className="mt-8 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-6">
-            <div className="flex items-center justify-center mb-4">
-              <Award className="h-12 w-12 text-purple-600" />
-            </div>
-            <h3 className="text-xl font-bold text-purple-900 text-center mb-2">
-              Master Gardener Achieved! 🏆
-            </h3>
-            <p className="text-purple-700 text-center mb-4">
-              Congratulations! You've completed the Expert Gardener Path and achieved Master Gardener status!
-            </p>
-            <div className="flex justify-center space-x-4">
-              <Link
-                to="/dashboard"
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center"
-              >
-                <Star className="h-4 w-4 mr-2" />
-                View Dashboard
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {/* Video Modal */}
-        {showVideo && currentModule && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-xl font-semibold">Video: {currentModule.title}</h3>
-                  <button
-                    onClick={() => setShowVideo(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
-                </div>
-              </div>
-              
-              <div className="p-6">
-                <div className="aspect-video w-full">
-                  <iframe
-                    src={currentModule.videoUrl}
-                    title={`${currentModule.title} Video`}
-                    className="w-full h-full rounded-lg"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                </div>
-                <div className="mt-4">
-                  <p className="text-gray-600">
-                    Watch this video to see practical demonstrations of the concepts covered in this module.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )
 }
 
 export default ExpertLearningPath
-
-

@@ -10,6 +10,7 @@ import {
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import WeatherCard from '../components/WeatherCard'
+import { getLearningPathModules } from '../utils/learningPathData'
 
 const UserDashboard = () => {
   const { user, isPremium, refreshAuthStatus } = useAuth()
@@ -21,7 +22,10 @@ const UserDashboard = () => {
   const [seasonalTips, setSeasonalTips] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Learning paths data with access control
+  // Get learning paths data from centralized source
+  const allModules = getLearningPathModules()
+  
+  // Learning paths data with access control - using centralized data
   const learningPaths = [
     {
       id: 'beginner',
@@ -30,12 +34,7 @@ const UserDashboard = () => {
       icon: Play,
       color: 'bg-green-500',
       progress: learningProgress.beginner || 0,
-      modules: [
-        'Understanding Soil Types',
-        'Basic Plant Care',
-        'Watering Fundamentals',
-        'Common Plant Problems'
-      ],
+      modules: allModules.Beginner.map(module => module.title),
       isAccessible: true, // Always accessible
       isLocked: false
     },
@@ -46,12 +45,7 @@ const UserDashboard = () => {
       icon: TrendingUp,
       color: 'bg-blue-500',
       progress: learningProgress.intermediate || 0,
-      modules: [
-        'Advanced Plant Nutrition',
-        'Pest and Disease Management',
-        'Seasonal Planning',
-        'Garden Design Principles'
-      ],
+      modules: allModules.Intermediate.map(module => module.title),
       isAccessible: isPremium || (learningProgress.beginner >= 100), // Accessible if premium OR beginner completed
       isLocked: !isPremium && (learningProgress.beginner < 100)
     },
@@ -62,13 +56,7 @@ const UserDashboard = () => {
       icon: Award,
       color: 'bg-purple-500',
       progress: learningProgress.expert || 0,
-      modules: [
-        'Master Pruning Techniques',
-        'Professional Tree Care',
-        'Advanced Irrigation Systems',
-        'Greenhouse Operations',
-        'Wind Protection Strategies'
-      ],
+      modules: allModules.Expert.map(module => module.title),
       isAccessible: isPremium || (learningProgress.intermediate >= 100), // Accessible if premium OR intermediate completed
       isLocked: !isPremium && (learningProgress.intermediate < 100)
     }
