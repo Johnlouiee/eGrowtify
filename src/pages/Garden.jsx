@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { Plus, Edit, Trash2, Leaf, MapPin, Calendar, Droplets, Sun, Scissors } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import GridPlanner from '../components/GridPlanner'
 
 const Garden = () => {
   const { user } = useAuth()
@@ -75,6 +76,7 @@ const Garden = () => {
   const [editingGarden, setEditingGarden] = useState(null)
   const [editingPlant, setEditingPlant] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [selectedGarden, setSelectedGarden] = useState(null)
 
   const [gardenForm, setGardenForm] = useState({
     name: '',
@@ -112,7 +114,16 @@ const Garden = () => {
       const response = await axios.get('/garden')
       const apiGardens = response.data.gardens || []
       // Combine static gardens with API gardens
-      setGardens([...staticGardens, ...apiGardens])
+      const allGardens = [...staticGardens, ...apiGardens]
+      setGardens(allGardens)
+      
+      // Update selected garden if it exists in the new data
+      if (selectedGarden) {
+        const updatedGarden = allGardens.find(g => g.id === selectedGarden.id)
+        if (updatedGarden) {
+          setSelectedGarden(updatedGarden)
+        }
+      }
     } catch (error) {
       if (error?.response?.status === 401) {
         toast.error('Please sign in to manage your garden')
@@ -332,58 +343,88 @@ const Garden = () => {
           </div>
         </div>
 
-        {/* Gardens Section */}
-        <div className="mb-12">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">My Gardens</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {gardens.map((garden) => (
-              <div key={garden.id} className="card">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-semibold text-gray-900">{garden.name}</h3>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => editGarden(garden)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => deleteGarden(garden.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+        {/* Main Content with Grid Planner */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Side - Gardens and Plants */}
+          <div className="lg:col-span-2 space-y-8">
+
+            {/* Gardens Section */}
+            <div className="mb-12">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">My Gardens</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {gardens.map((garden) => (
+                  <div 
+                    key={garden.id} 
+                    className={`card cursor-pointer transition-all ${
+                      selectedGarden?.id === garden.id 
+                        ? 'ring-2 ring-green-500 bg-green-50' 
+                        : 'hover:shadow-md'
+                    }`}
+                    onClick={() => setSelectedGarden(garden)}
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-xl font-semibold text-gray-900">{garden.name}</h3>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            editGarden(garden)
+                          }}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            deleteGarden(garden.id)
+                          }}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-2 text-sm text-gray-600">
+                      <div className="flex items-center space-x-2">
+                        <Leaf className="h-4 w-4" />
+                        <span>{garden.garden_type}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <MapPin className="h-4 w-4" />
+                        <span>{garden.location_city}, {garden.location_country}</span>
+                      </div>
+                      {garden.grid_size && (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 bg-green-200 rounded"></div>
+                          <span>Grid: {garden.grid_size} ({garden.total_grid_spaces || 9} spaces)</span>
+                        </div>
+                      )}
+                    </div>
+                    {selectedGarden?.id === garden.id && (
+                      <div className="mt-3 p-2 bg-green-100 rounded-lg">
+                        <div className="text-sm text-green-800 font-medium">Selected for Grid Planning</div>
+                      </div>
+                    )}
                   </div>
-                </div>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex items-center space-x-2">
-                    <Leaf className="h-4 w-4" />
-                    <span>{garden.garden_type}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="h-4 w-4" />
-                    <span>{garden.location_city}, {garden.location_country}</span>
-                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Plants Section */}
+            <div className="mb-12">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-semibold text-gray-900">My Plants</h2>
+                <div className="w-full max-w-xs">
+                  <input
+                    type="text"
+                    value={plantSearch}
+                    onChange={(e) => setPlantSearch(e.target.value)}
+                    placeholder="Search plants, gardens, or environment..."
+                    className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400"
+                  />
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Plants Section */}
-        <div className="mb-12">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold text-gray-900">My Plants</h2>
-            <div className="w-full max-w-xs">
-              <input
-                type="text"
-                value={plantSearch}
-                onChange={(e) => setPlantSearch(e.target.value)}
-                placeholder="Search plants, gardens, or environment..."
-                className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400"
-              />
-            </div>
-          </div>
 
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
             <div className="bg-gradient-to-r from-green-50 to-blue-50 px-6 py-3 border-b border-gray-200">
@@ -469,6 +510,18 @@ const Garden = () => {
                 <li className="px-6 py-12 text-center text-gray-500">No plants yet. Add your first plant to get started.</li>
               )}
             </ul>
+          </div>
+            </div>
+          </div>
+
+          {/* Right Side - Grid Planner */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-8">
+              <GridPlanner 
+                selectedGarden={selectedGarden} 
+                onGardenUpdate={fetchGardens}
+              />
+            </div>
           </div>
         </div>
 
