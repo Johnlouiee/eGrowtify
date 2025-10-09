@@ -16,14 +16,24 @@ const Garden = () => {
       name: 'My Backyard Garden',
       garden_type: 'vegetable',
       location_city: 'Manila',
-      location_country: 'Philippines'
+      location_country: 'Philippines',
+      grid_size: '6x6',
+      base_grid_spaces: 36,
+      additional_spaces_purchased: 0,
+      total_grid_spaces: 36,
+      used_grid_spaces: 0
     },
     {
       id: 'static-2',
       name: 'Herb Collection',
       garden_type: 'herb',
       location_city: 'Quezon City',
-      location_country: 'Philippines'
+      location_country: 'Philippines',
+      grid_size: '6x6',
+      base_grid_spaces: 36,
+      additional_spaces_purchased: 0,
+      total_grid_spaces: 36,
+      used_grid_spaces: 0
     }
   ]
 

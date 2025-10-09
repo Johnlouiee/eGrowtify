@@ -76,6 +76,23 @@ const GridPlanner = ({ selectedGarden, onGardenUpdate }) => {
         })
       }
     }
+    
+    // Add some sample plants for demo purposes
+    if (selectedGarden.id === 'static-2' && gridSize === '6x6') {
+      // Add a few sample plants to the Herb Collection
+      spaces[0].plant_id = 2 // Basil
+      spaces[0].planting_date = '2024-02-01'
+      spaces[0].notes = 'Basil - Row 1, Col 1'
+      
+      spaces[7].plant_id = 5 // Mint
+      spaces[7].planting_date = '2024-02-15'
+      spaces[7].notes = 'Mint - Row 2, Col 3'
+      
+      spaces[12].plant_id = 2 // Another Basil
+      spaces[12].planting_date = '2024-03-01'
+      spaces[12].notes = 'Basil - Row 3, Col 1'
+    }
+    
     setGridSpaces(spaces)
   }
 
@@ -208,10 +225,10 @@ const GridPlanner = ({ selectedGarden, onGardenUpdate }) => {
       {/* Grid */}
       <div className="p-4">
         <div 
-          className="grid gap-1 mx-auto"
+          className="grid gap-1 mx-auto overflow-auto max-h-96"
           style={{ 
             gridTemplateColumns: `repeat(${cols}, 1fr)`,
-            maxWidth: '400px'
+            maxWidth: cols > 3 ? '500px' : '300px'
           }}
         >
           {gridSpaces.map((space) => {
@@ -223,6 +240,7 @@ const GridPlanner = ({ selectedGarden, onGardenUpdate }) => {
                 key={space.id}
                 className={`
                   aspect-square border-2 rounded-lg flex items-center justify-center cursor-pointer transition-all
+                  ${cols > 3 ? 'h-12 w-12' : 'h-16 w-16'}
                   ${isOccupied 
                     ? 'border-green-300 bg-green-50 hover:bg-green-100' 
                     : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
@@ -233,18 +251,18 @@ const GridPlanner = ({ selectedGarden, onGardenUpdate }) => {
               >
                 {isOccupied ? (
                   <div className="text-center">
-                    <Leaf className="h-6 w-6 text-green-600 mx-auto mb-1" />
-                    <div className="text-xs font-medium text-green-800 truncate px-1">
+                    <Leaf className={`${cols > 3 ? 'h-4 w-4' : 'h-6 w-6'} text-green-600 mx-auto mb-1`} />
+                    <div className={`${cols > 3 ? 'text-[10px]' : 'text-xs'} font-medium text-green-800 truncate px-1`}>
                       {plant?.name || 'Plant'}
                     </div>
-                    <div className="text-xs text-green-600">
+                    <div className={`${cols > 3 ? 'text-[8px]' : 'text-xs'} text-green-600`}>
                       {space.grid_position}
                     </div>
                   </div>
                 ) : (
                   <div className="text-center text-gray-400">
-                    <Plus className="h-4 w-4 mx-auto mb-1" />
-                    <div className="text-xs">{space.grid_position}</div>
+                    <Plus className={`${cols > 3 ? 'h-3 w-3' : 'h-4 w-4'} mx-auto mb-1`} />
+                    <div className={`${cols > 3 ? 'text-[8px]' : 'text-xs'}`}>{space.grid_position}</div>
                   </div>
                 )}
               </div>
