@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { 
   Bell, Plus, Edit, Trash2, Search, Filter,
-  ArrowLeft, Eye, AlertCircle, CheckCircle, XCircle
+  ArrowLeft, Eye, AlertCircle, CheckCircle, XCircle,
+  Send, Clock, Users, Zap, Settings, RefreshCw,
+  TrendingUp, BarChart3, Target, Star, Shield,
+  MessageSquare, Mail, Smartphone, Globe, Lock,
+  Unlock, Play, Pause, Volume2, VolumeX
 } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
@@ -12,8 +16,18 @@ const ManageNotifications = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState('all')
+  const [filterPriority, setFilterPriority] = useState('all')
+  const [filterStatus, setFilterStatus] = useState('all')
   const [selectedNotification, setSelectedNotification] = useState(null)
   const [showNotificationDetails, setShowNotificationDetails] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [viewMode, setViewMode] = useState('cards') // cards, table, list
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    high: 0,
+    sent: 0
+  })
 
   useEffect(() => {
     fetchNotifications()
@@ -23,7 +37,17 @@ const ManageNotifications = () => {
     try {
       setLoading(true)
       const response = await axios.get('/api/admin/notifications')
-      setNotifications(response.data)
+      const notificationData = response.data || []
+      setNotifications(notificationData)
+      
+      // Calculate stats
+      const calculatedStats = {
+        total: notificationData.length,
+        active: notificationData.filter(n => n.is_active).length,
+        high: notificationData.filter(n => n.priority === 'High').length,
+        sent: notificationData.filter(n => n.status === 'sent').length
+      }
+      setStats(calculatedStats)
     } catch (error) {
       console.error('Error fetching notifications:', error)
       toast.error('Failed to load notifications')
@@ -61,10 +85,14 @@ const ManageNotifications = () => {
   }
 
   const filteredNotifications = notifications.filter(notification => {
-    const matchesSearch = notification.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         notification.message.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = notification.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         notification.message?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesType = filterType === 'all' || notification.type === filterType
-    return matchesSearch && matchesType
+    const matchesPriority = filterPriority === 'all' || notification.priority === filterPriority
+    const matchesStatus = filterStatus === 'all' || 
+                         (filterStatus === 'active' && notification.is_active) ||
+                         (filterStatus === 'inactive' && !notification.is_active)
+    return matchesSearch && matchesType && matchesPriority && matchesStatus
   })
 
   const getPriorityColor = (priority) => {
@@ -88,58 +116,167 @@ const ManageNotifications = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100">
+      {/* Modern Header */}
+      <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-4">
               <Link 
                 to="/admin" 
-                className="flex items-center text-gray-600 hover:text-gray-900 mr-6"
+                className="flex items-center px-3 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all duration-200"
               >
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                Back to Admin Dashboard
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                <span className="text-sm font-medium">Back to Dashboard</span>
               </Link>
-              <div className="flex items-center">
-                <Bell className="h-8 w-8 text-blue-600 mr-3" />
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur-sm opacity-75"></div>
+                  <div className="relative p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl">
+                    <Bell className="h-6 w-6 text-white" />
+                  </div>
+                </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Manage Notifications</h1>
-                  <p className="text-sm text-gray-600">Control system notifications and announcements</p>
+                  <h1 className="text-2xl font-bold text-slate-900">Notification Center</h1>
+                  <p className="text-sm text-slate-600">Manage system notifications and announcements</p>
                 </div>
               </div>
             </div>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={fetchNotifications}
+                className="flex items-center px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all duration-200"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                <span className="text-sm font-medium">Refresh</span>
+              </button>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
               <Plus className="h-4 w-4 mr-2" />
-              Add Notification
+                <span className="text-sm font-medium">Create Notification</span>
             </button>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filters and Search */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
+        {/* Modern Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-blue-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+                  <Bell className="h-6 w-6 text-white" />
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+                  <p className="text-xs text-slate-500">Total</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-700 mb-1">Total Notifications</p>
+                <p className="text-xs text-blue-600 flex items-center">
+                  <Bell className="h-3 w-3 mr-1" />
+                  All notifications
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-green-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
+                  <CheckCircle className="h-6 w-6 text-white" />
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-slate-900">{stats.active}</p>
+                  <p className="text-xs text-slate-500">Active</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-700 mb-1">Active Notifications</p>
+                <p className="text-xs text-green-600 flex items-center">
+                  <Play className="h-3 w-3 mr-1" />
+                  Currently active
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-red-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-red-500/10">
+            <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-rose-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg">
+                  <AlertCircle className="h-6 w-6 text-white" />
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-slate-900">{stats.high}</p>
+                  <p className="text-xs text-slate-500">High</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-700 mb-1">High Priority</p>
+                <p className="text-xs text-red-600 flex items-center">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  Urgent notifications
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-blue-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+                  <Send className="h-6 w-6 text-white" />
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-slate-900">{stats.sent}</p>
+                  <p className="text-xs text-slate-500">Sent</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-700 mb-1">Sent Notifications</p>
+                <p className="text-xs text-blue-600 flex items-center">
+                  <Send className="h-3 w-3 mr-1" />
+                  Delivered to users
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Modern Filters and Controls */}
+        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-6 mb-8 hover:shadow-lg transition-all duration-300">
+          <div className="flex flex-col lg:flex-row gap-6">
             <div className="flex-1">
               <div className="relative">
-                <Search className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Search className="h-5 w-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   placeholder="Search notifications..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/50 backdrop-blur-sm transition-all duration-200"
                 />
               </div>
             </div>
+            
             <div className="flex items-center gap-4">
-              <div className="flex items-center">
-                <Filter className="h-5 w-5 text-gray-400 mr-2" />
+              <div className="flex items-center space-x-2">
+                <Filter className="h-5 w-5 text-slate-500" />
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/50 backdrop-blur-sm transition-all duration-200"
                 >
                   <option value="all">All Types</option>
                   <option value="System">System</option>
@@ -147,50 +284,188 @@ const ManageNotifications = () => {
                   <option value="Maintenance">Maintenance</option>
                 </select>
               </div>
+              
+              <div className="flex items-center space-x-2">
+                <select
+                  value={filterPriority}
+                  onChange={(e) => setFilterPriority(e.target.value)}
+                  className="border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/50 backdrop-blur-sm transition-all duration-200"
+                >
+                  <option value="all">All Priorities</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/50 backdrop-blur-sm transition-all duration-200"
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between mt-6 pt-6 border-t border-slate-200/60">
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2 bg-slate-100 rounded-xl p-1">
+                <button
+                  onClick={() => setViewMode('cards')}
+                  className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'cards' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  title="Card View"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  title="Table View"
+                >
+                  <Settings className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  title="List View"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Notifications Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">
+        {/* Modern Notifications Display */}
+        {viewMode === 'cards' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredNotifications.map((notification) => (
+              <div key={notification.id} className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-blue-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-2 rounded-xl ${notification.is_active ? 'bg-green-100' : 'bg-red-100'}`}>
+                        {notification.is_active ? (
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <XCircle className="h-5 w-5 text-red-600" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-900 mb-1">{notification.title}</h3>
+                        <p className="text-sm text-slate-600 line-clamp-2">{notification.message}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(notification.priority)}`}>
+                        {notification.priority}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                        {notification.type}
+                      </span>
+                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                        notification.is_active 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {notification.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => {
+                          setSelectedNotification(notification)
+                          setShowNotificationDetails(true)
+                        }}
+                        className="flex items-center px-3 py-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        <span className="text-sm font-medium">View</span>
+                      </button>
+                      <button className="flex items-center px-3 py-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-xl transition-all duration-200">
+                        <Edit className="h-4 w-4 mr-1" />
+                        <span className="text-sm font-medium">Edit</span>
+                      </button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleToggleNotificationStatus(notification.id, notification.is_active)}
+                        className={`flex items-center px-3 py-2 rounded-xl transition-all duration-200 ${
+                          notification.is_active 
+                            ? 'text-orange-600 hover:text-orange-900 hover:bg-orange-50' 
+                            : 'text-green-600 hover:text-green-900 hover:bg-green-50'
+                        }`}
+                      >
+                        {notification.is_active ? (
+                          <>
+                            <Pause className="h-4 w-4 mr-1" />
+                            <span className="text-sm font-medium">Pause</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-4 w-4 mr-1" />
+                            <span className="text-sm font-medium">Activate</span>
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteNotification(notification.id)}
+                        className="flex items-center px-3 py-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-xl transition-all duration-200"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        <span className="text-sm font-medium">Delete</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : viewMode === 'table' ? (
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
+            <div className="px-6 py-4 border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Bell className="h-5 w-5 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900">
               Notifications ({filteredNotifications.length})
             </h3>
+              </div>
           </div>
           
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Notification
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Priority
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Notification</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Priority</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-slate-200">
                 {filteredNotifications.map((notification) => (
-                  <tr key={notification.id} className="hover:bg-gray-50">
+                    <tr key={notification.id} className="hover:bg-slate-50 transition-colors duration-200">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {notification.title}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {notification.message}
-                        </div>
+                          <div className="text-sm font-medium text-slate-900">{notification.title}</div>
+                          <div className="text-sm text-slate-500">{notification.message}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -229,28 +504,28 @@ const ManageNotifications = () => {
                             setSelectedNotification(notification)
                             setShowNotificationDetails(true)
                           }}
-                          className="text-blue-600 hover:text-blue-900 flex items-center"
+                            className="text-blue-600 hover:text-blue-900 flex items-center px-2 py-1 rounded-lg hover:bg-blue-50 transition-all duration-200"
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View
                         </button>
-                        <button className="text-green-600 hover:text-green-900 flex items-center">
+                          <button className="text-green-600 hover:text-green-900 flex items-center px-2 py-1 rounded-lg hover:bg-green-50 transition-all duration-200">
                           <Edit className="h-4 w-4 mr-1" />
                           Edit
                         </button>
                         <button
                           onClick={() => handleToggleNotificationStatus(notification.id, notification.is_active)}
-                          className={`flex items-center ${
+                            className={`flex items-center px-2 py-1 rounded-lg transition-all duration-200 ${
                             notification.is_active 
-                              ? 'text-orange-600 hover:text-orange-900' 
-                              : 'text-green-600 hover:text-green-900'
+                                ? 'text-orange-600 hover:text-orange-900 hover:bg-orange-50' 
+                                : 'text-green-600 hover:text-green-900 hover:bg-green-50'
                           }`}
                         >
                           {notification.is_active ? 'Deactivate' : 'Activate'}
                         </button>
                         <button
                           onClick={() => handleDeleteNotification(notification.id)}
-                          className="text-red-600 hover:text-red-900 flex items-center"
+                            className="text-red-600 hover:text-red-900 flex items-center px-2 py-1 rounded-lg hover:bg-red-50 transition-all duration-200"
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
                           Delete
@@ -263,48 +538,181 @@ const ManageNotifications = () => {
             </table>
           </div>
         </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredNotifications.map((notification) => (
+              <div key={notification.id} className="group bg-white/70 backdrop-blur-sm rounded-xl border border-slate-200/50 hover:border-blue-300/50 transition-all duration-300 hover:shadow-lg">
+                <div className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-4">
+                      <div className={`p-2 rounded-lg ${notification.is_active ? 'bg-green-100' : 'bg-red-100'}`}>
+                        {notification.is_active ? (
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <XCircle className="h-5 w-5 text-red-600" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-slate-900 mb-2">{notification.title}</h3>
+                        <p className="text-slate-600 mb-3">{notification.message}</p>
+                        <div className="flex items-center space-x-3">
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                            {notification.type}
+                          </span>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(notification.priority)}`}>
+                            {notification.priority}
+                          </span>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            notification.is_active 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {notification.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => {
+                          setSelectedNotification(notification)
+                          setShowNotificationDetails(true)
+                        }}
+                        className="flex items-center px-3 py-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </button>
+                      <button className="flex items-center px-3 py-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg transition-all duration-200">
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleToggleNotificationStatus(notification.id, notification.is_active)}
+                        className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
+                          notification.is_active 
+                            ? 'text-orange-600 hover:text-orange-900 hover:bg-orange-50' 
+                            : 'text-green-600 hover:text-green-900 hover:bg-green-50'
+                        }`}
+                      >
+                        {notification.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteNotification(notification.id)}
+                        className="flex items-center px-3 py-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition-all duration-200"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
-        {/* Notification Details Modal */}
+        {/* Modern Notification Details Modal */}
         {showNotificationDetails && selectedNotification && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-200/50 shadow-2xl">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Notification Details</h3>
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Bell className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900">Notification Details</h3>
+                  </div>
                   <button
                     onClick={() => setShowNotificationDetails(false)}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200"
                   >
-                    <XCircle className="h-6 w-6" />
+                    <XCircle className="h-5 w-5" />
                   </button>
                 </div>
                 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Title</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedNotification.title}</p>
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-lg font-semibold text-slate-900">{selectedNotification.title}</h4>
+                      <div className="flex items-center space-x-2">
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getPriorityColor(selectedNotification.priority)}`}>
+                          {selectedNotification.priority}
+                        </span>
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                          selectedNotification.is_active 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {selectedNotification.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-slate-700 leading-relaxed">{selectedNotification.message}</p>
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Message</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedNotification.message}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-slate-50 rounded-xl p-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className="p-1 bg-blue-100 rounded-lg">
+                          <MessageSquare className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <label className="text-sm font-semibold text-slate-700">Type</label>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Type</label>
-                      <p className="mt-1 text-sm text-gray-900">{selectedNotification.type}</p>
+                      <p className="text-slate-900 font-medium">{selectedNotification.type}</p>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Priority</label>
-                      <p className="mt-1 text-sm text-gray-900">{selectedNotification.priority}</p>
+                    
+                    <div className="bg-slate-50 rounded-xl p-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className="p-1 bg-amber-100 rounded-lg">
+                          <AlertCircle className="h-4 w-4 text-amber-600" />
+                        </div>
+                        <label className="text-sm font-semibold text-slate-700">Priority</label>
+                      </div>
+                      <p className="text-slate-900 font-medium">{selectedNotification.priority}</p>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Status</label>
-                      <p className="mt-1 text-sm text-gray-900">
+                    
+                    <div className="bg-slate-50 rounded-xl p-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className={`p-1 rounded-lg ${selectedNotification.is_active ? 'bg-green-100' : 'bg-red-100'}`}>
+                          {selectedNotification.is_active ? (
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-red-600" />
+                          )}
+                        </div>
+                        <label className="text-sm font-semibold text-slate-700">Status</label>
+                      </div>
+                      <p className="text-slate-900 font-medium">
                         {selectedNotification.is_active ? 'Active' : 'Inactive'}
                       </p>
                     </div>
+                    
+                    <div className="bg-slate-50 rounded-xl p-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className="p-1 bg-blue-100 rounded-lg">
+                          <Clock className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <label className="text-sm font-semibold text-slate-700">Created</label>
+                      </div>
+                      <p className="text-slate-900 font-medium">
+                        {selectedNotification.created_at ? new Date(selectedNotification.created_at).toLocaleDateString() : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200">
+                    <button
+                      onClick={() => setShowNotificationDetails(false)}
+                      className="px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all duration-200"
+                    >
+                      Close
+                    </button>
+                    <button className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Notification
+                    </button>
                   </div>
                 </div>
               </div>

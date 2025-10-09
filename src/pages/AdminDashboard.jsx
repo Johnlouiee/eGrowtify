@@ -185,42 +185,38 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Enhanced Header */}
-      <div className="bg-white shadow-lg border-b border-gray-200">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100">
+      {/* Modern Header */}
+      <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <div className="flex items-center">
-                <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl mr-4">
-                  <Shield className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                    Admin Dashboard
-                  </h1>
-                  <p className="text-sm text-gray-600 mt-1">System Administration & Management Center</p>
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur-sm opacity-75"></div>
+                <div className="relative p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl">
+                  <Shield className="h-7 w-7 text-white" />
                 </div>
               </div>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900">Admin Center</h1>
+                <p className="text-sm text-slate-600">System management & analytics</p>
+              </div>
             </div>
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-4">
               <button
                 onClick={fetchAdminStats}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all duration-200"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </button>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                 <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">{user?.full_name}</p>
-                  <p className="text-xs text-gray-500 flex items-center">
-                    <Shield className="h-3 w-3 mr-1" />
-                    Administrator
-                  </p>
+                  <p className="text-sm font-semibold text-slate-900">{user?.full_name}</p>
+                  <p className="text-xs text-slate-500">Administrator</p>
                 </div>
-                <div className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-semibold text-lg">
+                <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-sm">
                     {user?.full_name?.charAt(0) || 'A'}
                   </span>
                 </div>
@@ -231,88 +227,117 @@ const AdminDashboard = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Enhanced System Stats */}
+        {/* Modern Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Users</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalUsers}</p>
-                <p className="text-xs text-green-600 flex items-center mt-1">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  +12% from last month
-                </p>
+          <div className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-blue-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-slate-900">{stats.totalUsers}</p>
+                  <p className="text-xs text-slate-500">Total</p>
+                </div>
               </div>
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <Users className="h-8 w-8 text-blue-600" />
+              <div>
+                <p className="text-sm font-semibold text-slate-700 mb-1">Total Users</p>
+                <p className="text-xs text-green-600 flex items-center">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  +12% this month
+                </p>
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
+          <div className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-green-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
+                  <Activity className="h-6 w-6 text-white" />
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-slate-900">{stats.activeUsers}</p>
+                  <p className="text-xs text-slate-500">Active</p>
+                </div>
+              </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Users</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.activeUsers}</p>
-                <p className="text-xs text-green-600 flex items-center mt-1">
-                  <Activity className="h-3 w-3 mr-1" />
+                <p className="text-sm font-semibold text-slate-700 mb-1">Active Users</p>
+                <p className="text-xs text-green-600 flex items-center">
+                  <CheckCircle className="h-3 w-3 mr-1" />
                   {Math.round((stats.activeUsers / stats.totalUsers) * 100)}% active
                 </p>
               </div>
-              <div className="p-3 bg-green-100 rounded-lg">
-                <CheckCircle className="h-8 w-8 text-green-600" />
-              </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-500 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
+          <div className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-amber-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-amber-500/10">
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-xl shadow-lg">
+                  <Crown className="h-6 w-6 text-white" />
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-slate-900">{stats.subscribedUsers}</p>
+                  <p className="text-xs text-slate-500">Premium</p>
+                </div>
+              </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Premium Users</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.subscribedUsers}</p>
-                <p className="text-xs text-yellow-600 flex items-center mt-1">
-                  <Crown className="h-3 w-3 mr-1" />
+                <p className="text-sm font-semibold text-slate-700 mb-1">Premium Users</p>
+                <p className="text-xs text-amber-600 flex items-center">
+                  <Star className="h-3 w-3 mr-1" />
                   Premium subscribers
                 </p>
               </div>
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <CreditCard className="h-8 w-8 text-yellow-600" />
-              </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Learning Modules</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalModules}</p>
-                <p className="text-xs text-purple-600 flex items-center mt-1">
-                  <BookOpen className="h-3 w-3 mr-1" />
-                  Educational content
-                </p>
+          <div className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-purple-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-violet-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-purple-500 to-violet-500 rounded-xl shadow-lg">
+                  <BookOpen className="h-6 w-6 text-white" />
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-slate-900">{stats.totalModules}</p>
+                  <p className="text-xs text-slate-500">Modules</p>
+                </div>
               </div>
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <BookOpen className="h-8 w-8 text-purple-600" />
+              <div>
+                <p className="text-sm font-semibold text-slate-700 mb-1">Learning Content</p>
+                <p className="text-xs text-purple-600 flex items-center">
+                  <Target className="h-3 w-3 mr-1" />
+                  Educational modules
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* System Alerts */}
+        {/* Modern System Alerts */}
         {systemAlerts.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <AlertTriangle className="h-5 w-5 mr-2 text-yellow-600" />
-              System Alerts
-            </h2>
+            <div className="flex items-center mb-4">
+              <div className="p-2 bg-amber-100 rounded-lg mr-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+              </div>
+              <h2 className="text-lg font-semibold text-slate-900">System Alerts</h2>
+            </div>
             <div className="space-y-3">
               {systemAlerts.map((alert) => {
                 const IconComponent = alert.icon
                 return (
-                  <div key={alert.id} className={`p-4 rounded-lg border-l-4 ${alert.bgColor} border-yellow-500`}>
-                    <div className="flex items-center">
-                      <IconComponent className={`h-5 w-5 ${alert.color} mr-3`} />
-                      <p className="text-sm text-gray-700">{alert.message}</p>
+                  <div key={alert.id} className="group bg-white/70 backdrop-blur-sm rounded-xl border border-slate-200/50 hover:border-amber-300/50 transition-all duration-200 hover:shadow-lg">
+                    <div className="p-4 flex items-center space-x-3">
+                      <div className="p-2 bg-amber-100 rounded-lg group-hover:bg-amber-200 transition-colors">
+                        <IconComponent className="h-4 w-4 text-amber-600" />
+                      </div>
+                      <p className="text-sm text-slate-700 flex-1">{alert.message}</p>
+                      <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
                     </div>
                   </div>
                 )
@@ -321,13 +346,20 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Main Content Grid */}
+        {/* Modern Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Admin Features - Enhanced */}
+          {/* Admin Features - Modern Design */}
           <div className="lg:col-span-3">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Management Tools</h2>
-              <p className="text-gray-600">Access all administrative functions and system controls</p>
+            <div className="mb-8">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl">
+                  <Settings className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">Management Tools</h2>
+                  <p className="text-slate-600">Access all administrative functions and system controls</p>
+                </div>
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {adminFeatures.map((feature) => {
@@ -336,27 +368,28 @@ const AdminDashboard = () => {
                   <Link
                     key={feature.id}
                     to={feature.path}
-                    className="group bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                    className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-blue-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1"
                   >
-                    <div className="p-6">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative p-6">
                       <div className="flex items-center justify-between mb-4">
-                        <div className={`p-3 ${feature.color} text-white rounded-lg group-hover:scale-110 transition-transform`}>
-                          <IconComponent className="h-6 w-6" />
+                        <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                          <IconComponent className="h-6 w-6 text-white" />
                         </div>
                         {feature.stats && (
                           <div className="text-right">
-                            <p className="text-2xl font-bold text-gray-900">{feature.stats}</p>
-                            <p className="text-xs text-gray-500">Total</p>
+                            <p className="text-2xl font-bold text-slate-900">{feature.stats}</p>
+                            <p className="text-xs text-slate-500">Total</p>
                           </div>
                         )}
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                        <h3 className="text-lg font-semibold text-slate-900 group-hover:text-blue-600 transition-colors mb-2">
                           {feature.title}
                         </h3>
-                        <p className="text-sm text-gray-600 mt-1">{feature.description}</p>
+                        <p className="text-sm text-slate-600 mb-4">{feature.description}</p>
                       </div>
-                      <div className="mt-4 flex items-center text-blue-600 group-hover:text-blue-700">
+                      <div className="flex items-center text-blue-600 group-hover:text-blue-700 transition-colors">
                         <span className="text-sm font-medium">Access Tool</span>
                         <ArrowLeft className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform" />
                       </div>
@@ -367,38 +400,66 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Sidebar */}
+          {/* Modern Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             {/* Today's Weather */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Globe className="h-5 w-5 mr-2 text-blue-600" />
-                Today's Weather
-              </h3>
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-6 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Globe className="h-5 w-5 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900">Today's Weather</h3>
+              </div>
               <WeatherCard />
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Activity className="h-5 w-5 mr-2 text-green-600" />
-                Recent Activity
-              </h3>
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-6 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Activity className="h-5 w-5 text-green-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900">Recent Activity</h3>
+              </div>
               <div className="space-y-4">
                 {recentActivity.map((activity) => {
                   const IconComponent = activity.icon
                   return (
-                    <div key={activity.id} className="flex items-start space-x-3">
-                      <div className={`p-2 bg-gray-100 rounded-lg`}>
+                    <div key={activity.id} className="group flex items-start space-x-3 p-3 rounded-xl hover:bg-slate-50 transition-colors">
+                      <div className="p-2 bg-slate-100 rounded-lg group-hover:bg-slate-200 transition-colors">
                         <IconComponent className={`h-4 w-4 ${activity.color}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-900">{activity.message}</p>
-                        <p className="text-xs text-gray-500">{formatTimeAgo(activity.timestamp)}</p>
+                        <p className="text-sm text-slate-900 font-medium">{activity.message}</p>
+                        <p className="text-xs text-slate-500 mt-1">{formatTimeAgo(activity.timestamp)}</p>
                       </div>
                     </div>
                   )
                 })}
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-6 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Zap className="h-5 w-5 text-purple-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900">Quick Actions</h3>
+              </div>
+              <div className="space-y-3">
+                <button className="w-full flex items-center space-x-3 p-3 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors text-left">
+                  <UserPlus className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-700">Add New User</span>
+                </button>
+                <button className="w-full flex items-center space-x-3 p-3 bg-green-50 hover:bg-green-100 rounded-xl transition-colors text-left">
+                  <Bell className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-700">Send Notification</span>
+                </button>
+                <button className="w-full flex items-center space-x-3 p-3 bg-amber-50 hover:bg-amber-100 rounded-xl transition-colors text-left">
+                  <BarChart3 className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm font-medium text-amber-700">View Reports</span>
+                </button>
               </div>
             </div>
           </div>
