@@ -154,17 +154,66 @@ const UserDashboard = () => {
   }
 
   useEffect(() => {
-    // FORCE CLEAR all old progress data first (aggressive migration)
-    clearOldProgressData()
-    
-    // FORCE RESET - Always start with 0% progress for now
-    console.log('🔄 DASHBOARD: FORCE RESETTING ALL PROGRESS - Starting fresh for all users')
-    setLearningProgress({
-      beginner: 0,
-      intermediate: 0,
-      expert: 0
-    })
-    
+    // Load learning progress from localStorage
+    const loadLearningProgress = () => {
+      const calculateProgress = () => {
+        const beginnerKey = getStorageKey('beginnerProgress')
+        const intermediateKey = getStorageKey('intermediateProgress')
+        const expertKey = getStorageKey('expertProgress')
+        
+        const beginnerData = localStorage.getItem(beginnerKey)
+        const intermediateData = localStorage.getItem(intermediateKey)
+        const expertData = localStorage.getItem(expertKey)
+        
+        let beginnerProgress = 0
+        let intermediateProgress = 0
+        let expertProgress = 0
+        
+        if (beginnerData) {
+          try {
+            const parsed = JSON.parse(beginnerData)
+            const totalModules = allModules.Beginner.length
+            const completedModules = parsed.completedModules?.length || 0
+            beginnerProgress = Math.round((completedModules / totalModules) * 100)
+          } catch (error) {
+            console.error('Error parsing beginner progress:', error)
+          }
+        }
+        
+        if (intermediateData) {
+          try {
+            const parsed = JSON.parse(intermediateData)
+            const totalModules = allModules.Intermediate.length
+            const completedModules = parsed.completedModules?.length || 0
+            intermediateProgress = Math.round((completedModules / totalModules) * 100)
+          } catch (error) {
+            console.error('Error parsing intermediate progress:', error)
+          }
+        }
+        
+        if (expertData) {
+          try {
+            const parsed = JSON.parse(expertData)
+            const totalModules = allModules.Expert.length
+            const completedModules = parsed.completedModules?.length || 0
+            expertProgress = Math.round((completedModules / totalModules) * 100)
+          } catch (error) {
+            console.error('Error parsing expert progress:', error)
+          }
+        }
+        
+        return {
+          beginner: beginnerProgress,
+          intermediate: intermediateProgress,
+          expert: expertProgress
+        }
+      }
+      
+      const progress = calculateProgress()
+      setLearningProgress(progress)
+    }
+
+    loadLearningProgress()
     fetchDashboardData()
     
     // Only refresh auth status if not done recently
@@ -178,13 +227,61 @@ const UserDashboard = () => {
   // Listen for localStorage changes to update learning progress
   useEffect(() => {
     const updateLearningProgress = () => {
-      // FORCE RESET - Always show 0% progress
-      console.log('🔄 DASHBOARD: Resetting progress display to 0%')
-      setLearningProgress({
-        beginner: 0,
-        intermediate: 0,
-        expert: 0
-      })
+      const calculateProgress = () => {
+        const beginnerKey = getStorageKey('beginnerProgress')
+        const intermediateKey = getStorageKey('intermediateProgress')
+        const expertKey = getStorageKey('expertProgress')
+        
+        const beginnerData = localStorage.getItem(beginnerKey)
+        const intermediateData = localStorage.getItem(intermediateKey)
+        const expertData = localStorage.getItem(expertKey)
+        
+        let beginnerProgress = 0
+        let intermediateProgress = 0
+        let expertProgress = 0
+        
+        if (beginnerData) {
+          try {
+            const parsed = JSON.parse(beginnerData)
+            const totalModules = allModules.Beginner.length
+            const completedModules = parsed.completedModules?.length || 0
+            beginnerProgress = Math.round((completedModules / totalModules) * 100)
+          } catch (error) {
+            console.error('Error parsing beginner progress:', error)
+          }
+        }
+        
+        if (intermediateData) {
+          try {
+            const parsed = JSON.parse(intermediateData)
+            const totalModules = allModules.Intermediate.length
+            const completedModules = parsed.completedModules?.length || 0
+            intermediateProgress = Math.round((completedModules / totalModules) * 100)
+          } catch (error) {
+            console.error('Error parsing intermediate progress:', error)
+          }
+        }
+        
+        if (expertData) {
+          try {
+            const parsed = JSON.parse(expertData)
+            const totalModules = allModules.Expert.length
+            const completedModules = parsed.completedModules?.length || 0
+            expertProgress = Math.round((completedModules / totalModules) * 100)
+          } catch (error) {
+            console.error('Error parsing expert progress:', error)
+          }
+        }
+        
+        return {
+          beginner: beginnerProgress,
+          intermediate: intermediateProgress,
+          expert: expertProgress
+        }
+      }
+      
+      const progress = calculateProgress()
+      setLearningProgress(progress)
     }
 
     // Update progress when component mounts or when localStorage changes
@@ -246,14 +343,61 @@ const UserDashboard = () => {
       setPlants(gardenResponse.data.plants || [])
       setGardens(gardenResponse.data.gardens || [])
       
-      // FORCE RESET - Always show 0% progress
-      console.log('🔄 DASHBOARD fetchDashboardData: Resetting progress to 0%')
-      const progress = {
-        beginner: 0,
-        intermediate: 0,
-        expert: 0
+      // Calculate learning progress from localStorage
+      const calculateProgress = () => {
+        const beginnerKey = getStorageKey('beginnerProgress')
+        const intermediateKey = getStorageKey('intermediateProgress')
+        const expertKey = getStorageKey('expertProgress')
+        
+        const beginnerData = localStorage.getItem(beginnerKey)
+        const intermediateData = localStorage.getItem(intermediateKey)
+        const expertData = localStorage.getItem(expertKey)
+        
+        let beginnerProgress = 0
+        let intermediateProgress = 0
+        let expertProgress = 0
+        
+        if (beginnerData) {
+          try {
+            const parsed = JSON.parse(beginnerData)
+            const totalModules = allModules.Beginner.length
+            const completedModules = parsed.completedModules?.length || 0
+            beginnerProgress = Math.round((completedModules / totalModules) * 100)
+          } catch (error) {
+            console.error('Error parsing beginner progress:', error)
+          }
+        }
+        
+        if (intermediateData) {
+          try {
+            const parsed = JSON.parse(intermediateData)
+            const totalModules = allModules.Intermediate.length
+            const completedModules = parsed.completedModules?.length || 0
+            intermediateProgress = Math.round((completedModules / totalModules) * 100)
+          } catch (error) {
+            console.error('Error parsing intermediate progress:', error)
+          }
+        }
+        
+        if (expertData) {
+          try {
+            const parsed = JSON.parse(expertData)
+            const totalModules = allModules.Expert.length
+            const completedModules = parsed.completedModules?.length || 0
+            expertProgress = Math.round((completedModules / totalModules) * 100)
+          } catch (error) {
+            console.error('Error parsing expert progress:', error)
+          }
+        }
+        
+        return {
+          beginner: beginnerProgress,
+          intermediate: intermediateProgress,
+          expert: expertProgress
+        }
       }
       
+      const progress = calculateProgress()
       setLearningProgress(progress)
       
       // Fetch seasonal tips
@@ -275,16 +419,60 @@ const UserDashboard = () => {
       ])
       
       // Calculate learning progress from localStorage even if API fails
-      const beginnerProgress = localStorage.getItem('beginnerProgress')
-      const intermediateProgress = localStorage.getItem('intermediateProgress')
-      const expertProgress = localStorage.getItem('expertProgress')
-      
-      const progress = {
-        beginner: beginnerProgress ? (JSON.parse(beginnerProgress).completedModules?.length || 0) * 10 : 0,
-        intermediate: intermediateProgress ? (JSON.parse(intermediateProgress).completedModules?.length || 0) * 20 : 0,
-        expert: expertProgress ? (JSON.parse(expertProgress).completedModules?.length || 0) * 20 : 0
+      const calculateProgress = () => {
+        const beginnerKey = getStorageKey('beginnerProgress')
+        const intermediateKey = getStorageKey('intermediateProgress')
+        const expertKey = getStorageKey('expertProgress')
+        
+        const beginnerData = localStorage.getItem(beginnerKey)
+        const intermediateData = localStorage.getItem(intermediateKey)
+        const expertData = localStorage.getItem(expertKey)
+        
+        let beginnerProgress = 0
+        let intermediateProgress = 0
+        let expertProgress = 0
+        
+        if (beginnerData) {
+          try {
+            const parsed = JSON.parse(beginnerData)
+            const totalModules = allModules.Beginner.length
+            const completedModules = parsed.completedModules?.length || 0
+            beginnerProgress = Math.round((completedModules / totalModules) * 100)
+          } catch (error) {
+            console.error('Error parsing beginner progress:', error)
+          }
+        }
+        
+        if (intermediateData) {
+          try {
+            const parsed = JSON.parse(intermediateData)
+            const totalModules = allModules.Intermediate.length
+            const completedModules = parsed.completedModules?.length || 0
+            intermediateProgress = Math.round((completedModules / totalModules) * 100)
+          } catch (error) {
+            console.error('Error parsing intermediate progress:', error)
+          }
+        }
+        
+        if (expertData) {
+          try {
+            const parsed = JSON.parse(expertData)
+            const totalModules = allModules.Expert.length
+            const completedModules = parsed.completedModules?.length || 0
+            expertProgress = Math.round((completedModules / totalModules) * 100)
+          } catch (error) {
+            console.error('Error parsing expert progress:', error)
+          }
+        }
+        
+        return {
+          beginner: beginnerProgress,
+          intermediate: intermediateProgress,
+          expert: expertProgress
+        }
       }
       
+      const progress = calculateProgress()
       setLearningProgress(progress)
     } finally {
       setLoading(false)

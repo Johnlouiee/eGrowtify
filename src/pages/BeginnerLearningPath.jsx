@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { 
   BookOpen, Droplets, Sun, Leaf, Sprout, Thermometer, AlertCircle, CheckCircle, 
   Lock, Play, Clock, Award, ArrowRight, ArrowLeft, Eye, FileText, HelpCircle,
@@ -12,6 +12,7 @@ import { getModuleData } from '../utils/learningPathData'
 
 const BeginnerLearningPath = () => {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [currentModule, setCurrentModule] = useState(null)
   const [completedModules, setCompletedModules] = useState([])
   const [currentLesson, setCurrentLesson] = useState(0)
@@ -21,6 +22,8 @@ const BeginnerLearningPath = () => {
   const [showVideo, setShowVideo] = useState(false)
   const [showQuizResults, setShowQuizResults] = useState(false)
   const [quizScore, setQuizScore] = useState(0)
+  const [quizAttempts, setQuizAttempts] = useState({})
+  const [showRetakeOption, setShowRetakeOption] = useState(false)
 
   // Create user-specific localStorage keys
   const getStorageKey = (key) => {
@@ -52,34 +55,44 @@ const BeginnerLearningPath = () => {
   }
 
   useEffect(() => {
-    // FORCE CLEAR all old progress data first (aggressive migration)
-    clearOldProgressData()
+    // Load existing progress from localStorage
+    const loadProgress = () => {
+      const storageKey = getStorageKey('beginnerProgress')
+      const savedProgress = localStorage.getItem(storageKey)
+      
+      if (savedProgress) {
+        try {
+          const progressData = JSON.parse(savedProgress)
+          setCompletedModules(progressData.completedModules || [])
+          setModuleProgress(progressData.moduleProgress || {})
+          setQuizAttempts(progressData.quizAttempts || {})
+        } catch (error) {
+          console.error('Error loading progress:', error)
+          setCompletedModules([])
+          setModuleProgress({})
+          setQuizAttempts({})
+        }
+      }
+    }
 
-    // FORCE RESET - Always start with empty progress for now
-    console.log('🔄 FORCE RESETTING ALL PROGRESS - Starting fresh for all users')
-    setCompletedModules([])
-    setModuleProgress({})
-
-    // Clear any remaining progress data
-    const storageKey = getStorageKey('beginnerProgress')
-    localStorage.removeItem(storageKey)
-
-    // Also clear any other possible keys
-    const allPossibleKeys = [
-      'beginnerProgress',
-      'intermediateProgress',
-      'expertProgress',
-      'learningProgress',
-      'userProgress'
-    ]
-
-    allPossibleKeys.forEach(key => {
-      localStorage.removeItem(key)
-      localStorage.removeItem(`${key}_user_${user?.id}`)
-    })
-
-    console.log('✅ ALL PROGRESS RESET - Every user now starts with 0%')
+    loadProgress()
   }, [user]) // Re-run when user changes
+
+  // Save progress whenever completedModules, moduleProgress, or quizAttempts changes
+  useEffect(() => {
+    const saveProgress = () => {
+      const storageKey = getStorageKey('beginnerProgress')
+      const progressData = {
+        completedModules,
+        moduleProgress,
+        quizAttempts,
+        lastUpdated: new Date().toISOString()
+      }
+      localStorage.setItem(storageKey, JSON.stringify(progressData))
+    }
+
+    saveProgress()
+  }, [completedModules, moduleProgress, quizAttempts, user])
 
   const startModule = (module) => {
     setCurrentModule(module)
@@ -88,6 +101,38 @@ const BeginnerLearningPath = () => {
     setQuizAnswers({})
     setShowQuizResults(false)
     setQuizScore(0)
+    setShowRetakeOption(false)
+  }
+
+  const handleModuleClick = (module) => {
+    const isCompleted = isModuleCompleted(module.id)
+    const hasQuizAttempts = quizAttempts[module.id] && quizAttempts[module.id].length > 0
+    
+    if (isCompleted && hasQuizAttempts) {
+      setCurrentModule(module)
+      setShowRetakeOption(true)
+    } else {
+      startModule(module)
+    }
+  }
+
+  const handleRetakeQuiz = () => {
+    setShowRetakeOption(false)
+    setShowQuiz(true)
+    setQuizAnswers({})
+    setShowQuizResults(false)
+    setQuizScore(0)
+  }
+
+  const handleContinueFromResults = () => {
+    setShowRetakeOption(false)
+    setShowQuizResults(true)
+    const attempts = quizAttempts[currentModule.id]
+    if (attempts && attempts.length > 0) {
+      const lastAttempt = attempts[attempts.length - 1]
+      setQuizScore(lastAttempt.score)
+      setQuizAnswers(lastAttempt.answers)
+    }
   }
 
   const nextLesson = () => {
@@ -122,12 +167,43 @@ const BeginnerLearningPath = () => {
     setQuizScore(score)
     setShowQuizResults(true)
     
+    // Record quiz attempt
+    const attempt = {
+      score,
+      totalQuestions: currentModule.quiz.questions.length,
+      answers: { ...quizAnswers },
+      timestamp: new Date().toISOString(),
+      attemptNumber: (quizAttempts[currentModule.id]?.length || 0) + 1
+    }
+    
+    setQuizAttempts(prev => ({
+      ...prev,
+      [currentModule.id]: [...(prev[currentModule.id] || []), attempt]
+    }))
+    
     // Mark module as completed
     if (!completedModules.includes(currentModule.id)) {
       setCompletedModules(prev => [...prev, currentModule.id])
     }
     
-    toast.success(`Quiz completed! Score: ${score}/${currentModule.quiz.questions.length}`)
+    // Check if all beginner modules are completed
+    const allModulesCompleted = completedModules.length + 1 >= modules.length
+    if (allModulesCompleted) {
+      // Update learning progress to 100%
+      const storageKey = getStorageKey('learningProgress')
+      const currentProgress = JSON.parse(localStorage.getItem(storageKey) || '{}')
+      currentProgress.beginner = 100
+      localStorage.setItem(storageKey, JSON.stringify(currentProgress))
+      
+      toast.success('🎉 Congratulations! You have completed the Beginner Learning Path! The Intermediate path is now unlocked!')
+    } else {
+      const nextModule = getNextModule()
+      if (nextModule && !isModuleLocked(nextModule.id)) {
+        toast.success(`Quiz completed! Score: ${score}/${currentModule.quiz.questions.length}. You can now proceed to the next module!`)
+      } else {
+        toast.success(`Quiz completed! Score: ${score}/${currentModule.quiz.questions.length}`)
+      }
+    }
   }
 
   const resetQuiz = () => {
@@ -158,6 +234,113 @@ const BeginnerLearningPath = () => {
     return !isModuleCompleted(previousModule.id)
   }
 
+  const getNextModule = () => {
+    const currentIndex = modules.findIndex(m => m.id === currentModule.id)
+    if (currentIndex < modules.length - 1) {
+      return modules[currentIndex + 1]
+    }
+    return null
+  }
+
+  const goToNextModule = () => {
+    const nextModule = getNextModule()
+    if (nextModule && !isModuleLocked(nextModule.id)) {
+      startModule(nextModule)
+    }
+  }
+
+  if (currentModule && showRetakeOption) {
+    const attempts = quizAttempts[currentModule.id] || []
+    const lastAttempt = attempts[attempts.length - 1]
+    
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-6">
+              <div className="flex items-center">
+                <button 
+                  onClick={() => setCurrentModule(null)}
+                  className="flex items-center text-gray-600 hover:text-gray-900 mr-6"
+                >
+                  <ArrowLeft className="h-5 w-5 mr-2" />
+                  Back to Modules
+                </button>
+                <div className="flex items-center">
+                  <BookOpen className="h-8 w-8 text-green-600 mr-3" />
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">{currentModule.title}</h1>
+                    <p className="text-sm text-gray-600">Module completed - Choose your next action</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div className="p-8">
+              <div className="text-center mb-8">
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="h-10 w-10 text-green-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Module Completed!</h2>
+                <p className="text-gray-600">You have already completed this module. What would you like to do?</p>
+              </div>
+
+              {lastAttempt && (
+                <div className="bg-gray-50 rounded-lg p-6 mb-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Last Quiz Results</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">{lastAttempt.score}/{lastAttempt.totalQuestions}</div>
+                      <div className="text-sm text-gray-600">Score</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">{lastAttempt.attemptNumber}</div>
+                      <div className="text-sm text-gray-600">Attempt</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-600">
+                        {Math.round((lastAttempt.score / lastAttempt.totalQuestions) * 100)}%
+                      </div>
+                      <div className="text-sm text-gray-600">Percentage</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={handleRetakeQuiz}
+                  className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                >
+                  <BookOpen className="h-5 w-5 mr-2" />
+                  Retake Quiz
+                </button>
+                <button
+                  onClick={handleContinueFromResults}
+                  className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
+                >
+                  <Eye className="h-5 w-5 mr-2" />
+                  View Results
+                </button>
+                <button
+                  onClick={() => setCurrentModule(null)}
+                  className="px-8 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                >
+                  Back to Modules
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (currentModule) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -166,13 +349,13 @@ const BeginnerLearningPath = () => {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-6">
               <div className="flex items-center">
-                <Link 
-                  to="/learning/beginner" 
+                <button 
+                  onClick={() => setCurrentModule(null)}
                   className="flex items-center text-gray-600 hover:text-gray-900 mr-6"
                 >
                   <ArrowLeft className="h-5 w-5 mr-2" />
                   Back to Modules
-                </Link>
+                </button>
                 <div className="flex items-center">
                   <BookOpen className="h-8 w-8 text-green-600 mr-3" />
                   <div>
@@ -359,12 +542,21 @@ const BeginnerLearningPath = () => {
                       >
                         Retake Quiz
                       </button>
-                      <Link
-                        to="/learning/beginner"
+                      {getNextModule() && !isModuleLocked(getNextModule().id) && (
+                        <button
+                          onClick={goToNextModule}
+                          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                        >
+                          Next Module
+                          <ArrowRight className="h-4 w-4 ml-2" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setCurrentModule(null)}
                         className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
                       >
                         Back to Modules
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 )}
@@ -383,13 +575,13 @@ const BeginnerLearningPath = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <Link 
-                to="/dashboard" 
+              <button 
+                onClick={() => navigate('/dashboard')}
                 className="flex items-center text-gray-600 hover:text-gray-900 mr-6"
               >
                 <ArrowLeft className="h-5 w-5 mr-2" />
                 Back to Dashboard
-              </Link>
+              </button>
               <div className="flex items-center">
                 <BookOpen className="h-8 w-8 text-green-600 mr-3" />
                 <div>
@@ -439,7 +631,7 @@ const BeginnerLearningPath = () => {
                     ? 'opacity-60 cursor-not-allowed' 
                     : 'hover:shadow-xl cursor-pointer'
                 }`}
-                onClick={() => !isLocked && startModule(module)}
+                onClick={() => !isLocked && handleModuleClick(module)}
               >
                 {/* Lock overlay */}
                 {isLocked && (
