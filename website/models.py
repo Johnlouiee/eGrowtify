@@ -100,6 +100,8 @@ class Plant(db.Model):
     watering_frequency = db.Column('WATERING_FREQUENCY', db.Integer)
     fertilizing_frequency = db.Column('FERTILIZING_FREQUENCY', db.Integer)
     pruning_frequency = db.Column('PRUNING_FREQUENCY', db.Integer)
+    image_path = db.Column('IMAGE_PATH', db.String(255))
+    created_at = db.Column('CREATED_AT', db.DateTime, default=lambda: datetime.now(timezone.utc))
     # Relationship to PlantTracking
     plant_trackings = db.relationship('PlantTracking', backref='plant', cascade='all, delete')
 
@@ -111,6 +113,10 @@ class Garden(db.Model):
     garden_type = db.Column('GARDEN_TYPE', db.String(20), nullable=False)
     location_city = db.Column('LOCATION_CITY', db.String(100))
     location_country = db.Column('LOCATION_COUNTRY', db.String(100))
+    grid_size = db.Column('GRID_SIZE', db.String(10), default='3x3')
+    base_grid_spaces = db.Column('BASE_GRID_SPACES', db.Integer, default=9)
+    additional_spaces_purchased = db.Column('ADDITIONAL_SPACES_PURCHASED', db.Integer, default=0)
+    used_grid_spaces = db.Column('USED_GRID_SPACES', db.Integer, default=0)
     created_at = db.Column('CREATED_AT', db.DateTime, default=lambda: datetime.now(timezone.utc))
     # Relationship to PlantTracking
     plant_trackings = db.relationship('PlantTracking', backref='garden', cascade='all, delete')
@@ -125,3 +131,24 @@ class PlantTracking(db.Model):
     last_fertilized = db.Column('LAST_FERTILIZED', db.Date)
     last_pruned = db.Column('LAST_PRUNED', db.Date)
     notes = db.Column('NOTES', db.Text)
+
+class GridSpace(db.Model):
+    __tablename__ = 'grid_spaces'
+    id = db.Column('SPACE_ID', db.Integer, primary_key=True)
+    garden_id = db.Column('GARDEN_ID', db.Integer, db.ForeignKey('garden.GARDEN_ID', ondelete='CASCADE'), nullable=False)
+    grid_position = db.Column('GRID_POSITION', db.String(10), nullable=False)  # Format: "row,column" (e.g., "1,1", "2,3")
+    plant_id = db.Column('PLANT_ID', db.Integer, db.ForeignKey('plant.PLANT_ID', ondelete='SET NULL'))
+    planting_date = db.Column('PLANTING_DATE', db.Date)
+    last_watered = db.Column('LAST_WATERED', db.Date)
+    last_fertilized = db.Column('LAST_FERTILIZED', db.Date)
+    last_pruned = db.Column('LAST_PRUNED', db.Date)
+    notes = db.Column('NOTES', db.Text)
+    image_path = db.Column('IMAGE_PATH', db.String(255))
+    care_suggestions = db.Column('CARE_SUGGESTIONS', db.Text)
+    last_updated = db.Column('LAST_UPDATED', db.DateTime, default=lambda: datetime.now(timezone.utc))
+    is_active = db.Column('IS_ACTIVE', db.Boolean, default=True)
+    created_at = db.Column('CREATED_AT', db.DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    garden = db.relationship('Garden', backref='grid_spaces')
+    plant = db.relationship('Plant', backref='grid_spaces')
