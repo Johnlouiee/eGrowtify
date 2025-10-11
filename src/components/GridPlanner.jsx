@@ -40,6 +40,13 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
     }
   }, [selectedGarden, gridSpaces])
 
+  // Re-fetch plants when environment filter changes
+  useEffect(() => {
+    if (selectedGarden && gridSpaces.length > 0) {
+      fetchPlants()
+    }
+  }, [isIndoorGrid])
+
   // Expose refresh function to parent component
   useImperativeHandle(ref, () => ({
     refresh: () => {
@@ -71,9 +78,20 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       console.log('🌱 GridPlanner - Raw API plants:', apiPlants)
       console.log('🌱 GridPlanner - Selected garden ID:', selectedGarden?.id)
       
-      // Show all plants but mark which ones belong to this garden
-      console.log('🌱 Showing all plants, marking garden-specific ones')
-      const gardenPlants = apiPlants
+      // Filter plants to only show those that belong to the selected garden and match the environment
+      const gardenPlants = apiPlants.filter(item => {
+        const plantGardenId = item.garden?.id
+        const plantEnvironment = item.plant?.environment
+        const belongsToSelectedGarden = plantGardenId === selectedGarden?.id
+        const matchesEnvironment = isIndoorGrid ? plantEnvironment === 'indoor' : plantEnvironment === 'outdoor'
+        
+        console.log(`🌱 Plant ${item.plant.name} - Garden: ${plantGardenId} (selected: ${selectedGarden?.id}), Environment: ${plantEnvironment} (indoor: ${isIndoorGrid})`)
+        console.log(`🌱 Belongs to garden: ${belongsToSelectedGarden}, Matches environment: ${matchesEnvironment}`)
+        
+        return belongsToSelectedGarden && matchesEnvironment
+      })
+      
+      console.log('🌱 Filtered plants for selected garden:', gardenPlants)
       
       // Get plant IDs that are already placed in the grid
       const placedPlantIds = gridSpaces
@@ -82,7 +100,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       
       console.log('🌱 Plants already in grid:', placedPlantIds)
       
-      // Transform all plants - no garden filtering
+      // Transform filtered plants
       const transformedPlants = gardenPlants.map(item => ({
         id: item.plant.id,
         name: item.plant.name,
@@ -90,11 +108,11 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
         environment: item.plant.environment,
         care_guide: item.plant.care_guide,
         ideal_soil_type: item.plant.ideal_soil_type,
-        garden_id: item.plant.garden_id,
+        garden_id: item.garden.id,
         planting_date: item.tracking.planting_date,
         latest_image: item.plant.latest_image,
         isPlaced: placedPlantIds.includes(item.plant.id),
-        belongsToGarden: true // All plants are available for now
+        belongsToGarden: true
       }))
       
       console.log('🌱 GridPlanner - Transformed plants for garden:', transformedPlants)
@@ -503,12 +521,19 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       ) : (
         <div className="p-4 border-b border-gray-200">
           <h4 className="text-sm font-medium text-gray-700 mb-3">
-            Plants in {selectedGarden?.name || 'Selected Garden'}
+            All Plants - Drag to Grid
           </h4>
           <div className="text-center py-4">
             <Leaf className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-            <p className="text-sm text-gray-500 mb-2">No plants in this garden yet</p>
-            <p className="text-xs text-gray-400">Add plants to this garden first, then you can place them in the grid</p>
+            <p className="text-sm text-gray-500 mb-2">
+              No {isIndoorGrid ? 'indoor' : 'outdoor'} plants in this garden
+            </p>
+            <p className="text-xs text-gray-400">
+              {isIndoorGrid 
+                ? 'Add indoor plants to this garden or switch to outdoor view' 
+                : 'Add outdoor plants to this garden or switch to indoor view'
+              }
+            </p>
           </div>
         </div>
       )}
@@ -525,6 +550,16 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
           {gridSpaces.map((space) => {
             const isOccupied = space.plant_id
             const plant = plants.find(p => p.id === space.plant_id)
+            
+            // Only show spaces that have plants matching the current environment filter
+            // or empty spaces that can accept plants from the current environment
+            const shouldShowSpace = !isOccupied || (plant && plant.environment === (isIndoorGrid ? 'indoor' : 'outdoor'))
+            
+            console.log(`🌱 Grid space ${space.grid_position}: occupied=${isOccupied}, plant=${plant?.name}, environment=${plant?.environment}, indoor=${isIndoorGrid}, shouldShow=${shouldShowSpace}`)
+            
+            if (!shouldShowSpace) {
+              return null // Don't render spaces with plants that don't match the environment
+            }
             
             return (
               <div
