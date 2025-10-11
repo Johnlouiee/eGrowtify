@@ -639,6 +639,13 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                             src={`/${space.image_path || plant?.latest_image}`}
                             alt="Plant preview"
                             className="w-16 h-16 object-cover rounded-lg border border-gray-300"
+                            onError={(e) => {
+                              console.log('Image load error:', space.image_path || plant?.latest_image)
+                              e.target.style.display = 'none'
+                              if (e.target.nextSibling) {
+                                e.target.nextSibling.style.display = 'flex'
+                              }
+                            }}
                           />
                           <div className="flex-1">
                             <label className="flex items-center space-x-2 text-xs text-gray-600 cursor-pointer hover:text-gray-800">
