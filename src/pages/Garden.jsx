@@ -1,15 +1,25 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Plus, Edit, Trash2, Leaf, MapPin, Calendar, Droplets, Sun, Scissors } from 'lucide-react'
+import { Plus, Edit, Trash2, Leaf, MapPin, Calendar, Droplets, Sun, Scissors, Camera } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import GridPlanner from '../components/GridPlanner'
 
 const Garden = () => {
-  const { user } = useAuth()
+  const { user, isPremium } = useAuth()
   const navigate = useNavigate()
-  // Static data for demonstration
+  
+  // Determine grid size based on subscription plan
+  const getGridSizeForPlan = (isPremium) => {
+    return isPremium ? '6x6' : '3x3'
+  }
+  
+  const getGridSpacesForPlan = (isPremium) => {
+    return isPremium ? 36 : 9
+  }
+  
+  // Static data for demonstration - grid size now depends on subscription
   const staticGardens = [
     {
       id: 'static-1',
@@ -17,10 +27,10 @@ const Garden = () => {
       garden_type: 'vegetable',
       location_city: 'Manila',
       location_country: 'Philippines',
-      grid_size: '6x6',
-      base_grid_spaces: 36,
+      grid_size: getGridSizeForPlan(isPremium),
+      base_grid_spaces: getGridSpacesForPlan(isPremium),
       additional_spaces_purchased: 0,
-      total_grid_spaces: 36,
+      total_grid_spaces: getGridSpacesForPlan(isPremium),
       used_grid_spaces: 0
     },
     {
@@ -29,10 +39,10 @@ const Garden = () => {
       garden_type: 'herb',
       location_city: 'Quezon City',
       location_country: 'Philippines',
-      grid_size: '6x6',
-      base_grid_spaces: 36,
+      grid_size: getGridSizeForPlan(isPremium),
+      base_grid_spaces: getGridSpacesForPlan(isPremium),
       additional_spaces_purchased: 0,
-      total_grid_spaces: 36,
+      total_grid_spaces: getGridSpacesForPlan(isPremium),
       used_grid_spaces: 0
     }
   ]
@@ -103,33 +113,105 @@ const Garden = () => {
   }
 
   const [plantForm, setPlantForm] = useState({
+    name: '',
     type: '',
     environment: '',
     care_guide: '',
     ideal_soil_type: '',
-    watering_frequency: '',
-    fertilizing_frequency: '',
-    pruning_frequency: '',
     garden_id: '',
     planting_date: ''
   })
+  
+  const [plantImage, setPlantImage] = useState(null)
+  const [isRecognizing, setIsRecognizing] = useState(false)
+  const [selectedImage, setSelectedImage] = useState(null)
+  const [showImageModal, setShowImageModal] = useState(false)
+  const gridPlannerRef = useRef()
 
   useEffect(() => {
     fetchGardens()
     fetchPlants()
-  }, [])
+  }, [isPremium]) // Re-fetch when subscription status changes
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    setPlantImage(file)
+    setIsRecognizing(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('image', file)
+
+      const response = await axios.post('/ai-recognition', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+
+      // Handle the response format from the AI recognition endpoint
+      let plantName = ''
+      let plantType = ''
+      let careGuide = ''
+      
+      if (response.data.plant_name) {
+        plantName = response.data.plant_name
+        plantType = response.data.plant_type || ''
+        careGuide = response.data.care_guide || ''
+      } else if (response.data.suggestions && response.data.suggestions.length > 0) {
+        plantName = response.data.suggestions[0].plant_name || response.data.suggestions[0].name
+        plantType = response.data.suggestions[0].plant_type || ''
+        careGuide = response.data.suggestions[0].care_guide || ''
+      }
+      
+      if (plantName) {
+        // Auto-fill plant name
+        setPlantForm(prev => ({...prev, name: plantName}))
+        
+        // Auto-fill plant type if available
+        if (plantType) {
+          setPlantForm(prev => ({...prev, type: plantType}))
+        }
+        
+        // Auto-fill care guide if available
+        if (careGuide) {
+          setPlantForm(prev => ({...prev, care_guide: careGuide}))
+        }
+        
+        toast.success(`Plant recognized: ${plantName}`)
+      } else if (response.data.error) {
+        toast.error(response.data.error)
+      } else {
+        toast.error('Could not recognize plant. Please enter the name manually.')
+      }
+    } catch (error) {
+      console.error('AI recognition error:', error)
+      toast.error('Failed to recognize plant. Please enter the name manually.')
+    } finally {
+      setIsRecognizing(false)
+    }
+  }
 
   const fetchGardens = async () => {
     try {
       const response = await axios.get('/garden')
       const apiGardens = response.data.gardens || []
-      // Combine static gardens with API gardens
-      const allGardens = [...staticGardens, ...apiGardens]
-      setGardens(allGardens)
+      
+      // Update API gardens to respect subscription plan
+      const updatedApiGardens = apiGardens.map(garden => ({
+        ...garden,
+        grid_size: getGridSizeForPlan(isPremium),
+        base_grid_spaces: getGridSpacesForPlan(isPremium),
+        total_grid_spaces: getGridSpacesForPlan(isPremium)
+      }))
+      
+      // Only show API gardens for real users, not static demo data
+      setGardens(updatedApiGardens)
       
       // Update selected garden if it exists in the new data
       if (selectedGarden) {
-        const updatedGarden = allGardens.find(g => g.id === selectedGarden.id)
+        const updatedGarden = updatedApiGardens.find(g => g.id === selectedGarden.id)
         if (updatedGarden) {
           setSelectedGarden(updatedGarden)
         }
@@ -141,8 +223,8 @@ const Garden = () => {
         return
       }
       console.error('Error fetching gardens:', error)
-      // If API fails, still show static gardens
-      setGardens(staticGardens)
+      // If API fails, show empty list instead of static demo data
+      setGardens([])
     }
   }
 
@@ -150,8 +232,9 @@ const Garden = () => {
     try {
       const response = await axios.get('/garden')
       const apiPlants = response.data.plants || []
-      // Combine static plants with API plants
-      setPlants([...staticPlants, ...apiPlants])
+      console.log('🌱 Fetched plants:', apiPlants)
+      // Only show API plants for real users, not static demo data
+      setPlants(apiPlants)
       setLoading(false)
     } catch (error) {
       if (error?.response?.status === 401) {
@@ -160,8 +243,8 @@ const Garden = () => {
         return
       }
       console.error('Error fetching plants:', error)
-      // If API fails, still show static plants
-      setPlants(staticPlants)
+      // If API fails, show empty list instead of static demo data
+      setPlants([])
       setLoading(false)
     }
   }
@@ -202,29 +285,55 @@ const Garden = () => {
   const handlePlantSubmit = async (e) => {
     e.preventDefault()
     try {
-      // Normalize payload to match backend (INT frequencies, required care_guide)
-      const payload = {
-        ...plantForm,
-        watering_frequency: toIntOrNull(plantForm.watering_frequency),
-        fertilizing_frequency: toIntOrNull(plantForm.fertilizing_frequency),
-        pruning_frequency: toIntOrNull(plantForm.pruning_frequency),
-        garden_id: Number(plantForm.garden_id),
-        care_guide: plantForm.care_guide || 'General care'
-      }
-
       if (editingPlant) {
+        // For editing, use JSON payload
+        const payload = {
+          ...plantForm,
+          name: plantForm.name || plantForm.type,
+          garden_id: Number(plantForm.garden_id),
+          care_guide: plantForm.care_guide || 'General care'
+        }
         await axios.post(`/plant/edit/${editingPlant.tracking.id}`, payload)
         toast.success('Plant updated successfully!')
         setEditingPlant(null)
       } else {
-        await axios.post('/plant/add', payload)
+        // For new plants, check if we have an image
+        if (plantImage) {
+          // Send form data with image
+          const formData = new FormData()
+          formData.append('name', plantForm.name || plantForm.type)
+          formData.append('type', plantForm.type)
+          formData.append('environment', plantForm.environment)
+          formData.append('care_guide', plantForm.care_guide || 'General care')
+          formData.append('ideal_soil_type', plantForm.ideal_soil_type)
+          formData.append('garden_id', plantForm.garden_id)
+          formData.append('planting_date', plantForm.planting_date)
+          formData.append('image', plantImage)
+          
+          await axios.post('/plant/add', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          })
+        } else {
+          // Send JSON payload without image
+          const payload = {
+            ...plantForm,
+            name: plantForm.name || plantForm.type,
+            garden_id: Number(plantForm.garden_id),
+            care_guide: plantForm.care_guide || 'General care'
+          }
+          await axios.post('/plant/add', payload)
+        }
         toast.success('Plant added successfully!')
       }
+      
       setPlantForm({
         name: '', type: '', environment: '', care_guide: '', ideal_soil_type: '',
-        watering_frequency: '', fertilizing_frequency: '', pruning_frequency: '',
         garden_id: '', planting_date: ''
       })
+      setPlantImage(null)
+      setIsRecognizing(false)
       setShowAddPlant(false)
       fetchPlants()
     } catch (error) {
@@ -268,10 +377,19 @@ const Garden = () => {
         await axios.post(`/plant/delete/${trackingId}`)
         toast.success('Plant deleted successfully!')
         fetchPlants()
+        // Refresh grid planner
+        if (gridPlannerRef.current) {
+          gridPlannerRef.current.refresh()
+        }
       } catch (error) {
         toast.error('Error deleting plant')
       }
     }
+  }
+
+  const handleImageClick = (imagePath) => {
+    setSelectedImage(imagePath)
+    setShowImageModal(true)
   }
 
   const editGarden = (garden) => {
@@ -361,8 +479,23 @@ const Garden = () => {
             {/* Gardens Section */}
             <div className="mb-12">
               <h2 className="text-2xl font-semibold text-gray-900 mb-6">My Gardens</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {gardens.map((garden) => (
+              {gardens.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Leaf className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No gardens yet</h3>
+                  <p className="text-gray-500 mb-4">Create your first garden to start planning your plants!</p>
+                  <button
+                    onClick={() => setShowAddGarden(true)}
+                    className="btn-primary"
+                  >
+                    Create Your First Garden
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {gardens.map((garden) => (
                   <div 
                     key={garden.id} 
                     className={`card cursor-pointer transition-all ${
@@ -408,6 +541,11 @@ const Garden = () => {
                         <div className="flex items-center space-x-2">
                           <div className="w-4 h-4 bg-green-200 rounded"></div>
                           <span>Grid: {garden.grid_size} ({garden.total_grid_spaces || 9} spaces)</span>
+                          {!isPremium && (
+                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                              Basic Plan
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
@@ -418,7 +556,8 @@ const Garden = () => {
                     )}
                   </div>
                 ))}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Plants Section */}
@@ -438,12 +577,10 @@ const Garden = () => {
 
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
             <div className="bg-gradient-to-r from-green-50 to-blue-50 px-6 py-3 border-b border-gray-200">
-              <div className="grid grid-cols-12 text-xs font-semibold text-gray-600">
+              <div className="grid grid-cols-8 text-xs font-semibold text-gray-600">
                 <div className="col-span-3">Plant</div>
                 <div className="col-span-2">Garden</div>
                 <div className="col-span-2">Environment</div>
-                <div className="col-span-2">Watering (days)</div>
-                <div className="col-span-2">Pruning (days)</div>
                 <div className="col-span-1 text-right">Actions</div>
               </div>
             </div>
@@ -461,11 +598,21 @@ const Garden = () => {
                 })
                 .map((plantData, index) => (
                 <li key={index} className="px-6 py-4 hover:bg-gray-50 transition-colors">
-                  <div className="grid grid-cols-12 items-center gap-2">
+                  <div className="grid grid-cols-8 items-center gap-2">
                     <div className="col-span-3 flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
-                        <Leaf className="h-5 w-5 text-green-700" />
-                      </div>
+                      {plantData.plant.latest_image ? (
+                        <img
+                          src={`/${plantData.plant.latest_image}`}
+                          alt={plantData.plant.name}
+                          className="w-9 h-9 rounded-lg object-cover border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => handleImageClick(plantData.plant.latest_image)}
+                          title="Click to view full size"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
+                          <Leaf className="h-5 w-5 text-green-700" />
+                        </div>
+                      )}
                       <div>
                         <div className="font-semibold text-gray-900 leading-none">{plantData.plant.name}</div>
                         <div className="text-xs text-gray-500 capitalize">{plantData.plant.type}</div>
@@ -476,18 +623,6 @@ const Garden = () => {
                       <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
                         <Sun className="h-3 w-3" /> {plantData.plant.environment}
                       </span>
-                    </div>
-                    <div className="col-span-2 text-sm text-gray-700">
-                      <div className="flex items-center gap-2">
-                        <Droplets className="h-4 w-4 text-blue-600" />
-                        <span>{plantData.plant.watering_frequency ?? 'n/a'}</span>
-                      </div>
-                    </div>
-                    <div className="col-span-2 text-sm text-gray-700">
-                      <div className="flex items-center gap-2">
-                        <Scissors className="h-4 w-4 text-rose-600" />
-                        <span>{plantData.plant.pruning_frequency ?? 'n/a'}</span>
-                      </div>
                     </div>
                     <div className="col-span-1">
                       <div className="flex items-center justify-end gap-2">
@@ -517,7 +652,15 @@ const Garden = () => {
                 </li>
               ))}
               {plants.length === 0 && (
-                <li className="px-6 py-12 text-center text-gray-500">No plants yet. Add your first plant to get started.</li>
+                <li className="px-6 py-12 text-center text-gray-500">
+                  <div className="flex flex-col items-center">
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                      <Leaf className="h-6 w-6 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 mb-2">No plants yet</p>
+                    <p className="text-sm text-gray-400">Add your first plant to get started!</p>
+                  </div>
+                </li>
               )}
             </ul>
           </div>
@@ -528,8 +671,10 @@ const Garden = () => {
           <div className="lg:col-span-1">
             <div className="sticky top-8">
               <GridPlanner 
+                ref={gridPlannerRef}
                 selectedGarden={selectedGarden} 
                 onGardenUpdate={fetchGardens}
+                onPlantUpdate={gridPlannerRef}
               />
             </div>
           </div>
@@ -629,7 +774,93 @@ const Garden = () => {
                 {editingPlant ? 'Edit Plant' : 'Add New Plant'}
               </h3>
               <form onSubmit={handlePlantSubmit} className="space-y-4">
-                {/* Plant name removed: backend will default to type if omitted */}
+                {/* Plant Name Field with Image Display */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Plant Name</label>
+                  <div className="flex items-center space-x-3">
+                    {/* Plant Image Display */}
+                    {plantImage && (
+                      <div className="flex-shrink-0">
+                        <img
+                          src={URL.createObjectURL(plantImage)}
+                          alt="Plant preview"
+                          className="w-16 h-16 object-cover rounded-lg border border-gray-300"
+                        />
+                      </div>
+                    )}
+                    {/* Plant Name Input */}
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={plantForm.name}
+                        onChange={(e) => setPlantForm({...plantForm, name: e.target.value})}
+                        className="input-field"
+                        placeholder="Enter plant name or upload image for AI recognition"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Image Upload for AI Recognition */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Upload Plant Image (AI Recognition)</label>
+                  <div className="flex items-center space-x-4">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="plant-image-upload"
+                      disabled={isRecognizing}
+                    />
+                    <label
+                      htmlFor="plant-image-upload"
+                      className={`flex items-center space-x-2 px-4 py-2 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                        isRecognizing 
+                          ? 'border-gray-300 bg-gray-100 cursor-not-allowed' 
+                          : 'border-green-300 bg-green-50 hover:bg-green-100'
+                      }`}
+                    >
+                      <Camera className="h-4 w-4 text-green-600" />
+                      <span className="text-sm text-green-700">
+                        {isRecognizing ? 'Recognizing...' : 'Upload Image'}
+                      </span>
+                    </label>
+                    {plantImage && (
+                      <span className="text-sm text-gray-600">
+                        {plantImage.name}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Upload a clear photo of your plant for AI-powered name recognition
+                  </p>
+                  
+                  {/* Image Preview */}
+                  {plantImage && (
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Image Preview</label>
+                      <div className="relative inline-block">
+                        <img
+                          src={URL.createObjectURL(plantImage)}
+                          alt="Plant preview"
+                          className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPlantImage(null)
+                            document.getElementById('plant-image-upload').value = ''
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Plant Type</label>
                   <select
@@ -693,38 +924,6 @@ const Garden = () => {
                     required
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Watering Frequency (days)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={plantForm.watering_frequency}
-                      onChange={(e) => setPlantForm({...plantForm, watering_frequency: e.target.value})}
-                      className="input-field"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Fertilizing Frequency (days)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={plantForm.fertilizing_frequency}
-                      onChange={(e) => setPlantForm({...plantForm, fertilizing_frequency: e.target.value})}
-                      className="input-field"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Pruning Frequency (days)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={plantForm.pruning_frequency}
-                    onChange={(e) => setPlantForm({...plantForm, pruning_frequency: e.target.value})}
-                    className="input-field"
-                  />
-                </div>
                 <div className="flex space-x-4">
                   <button type="submit" className="btn-primary flex-1">
                     {editingPlant ? 'Update Plant' : 'Add Plant'}
@@ -736,9 +935,10 @@ const Garden = () => {
                       setEditingPlant(null)
                       setPlantForm({
                         name: '', type: '', environment: '', care_guide: '', ideal_soil_type: '',
-                        watering_frequency: '', fertilizing_frequency: '', pruning_frequency: '',
                         garden_id: '', planting_date: ''
                       })
+                      setPlantImage(null)
+                      setIsRecognizing(false)
                     }}
                     className="btn-secondary flex-1"
                   >
@@ -749,6 +949,40 @@ const Garden = () => {
             </div>
           </div>
         )}
+
+      {/* Image Modal */}
+      {showImageModal && selectedImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[90vh] overflow-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Plant Image</h3>
+              <button
+                onClick={() => setShowImageModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex justify-center">
+              <img
+                src={`/${selectedImage}`}
+                alt="Plant image"
+                className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+              />
+            </div>
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => setShowImageModal(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   )

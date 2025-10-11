@@ -1,13 +1,14 @@
-from flask import Blueprint, jsonify, request, flash, redirect, url_for
+from flask import Blueprint, jsonify, request, flash, redirect, url_for, send_from_directory
 from flask_login import login_required, current_user
 from . import mysql
-from .models import db, User, Admin, Garden, Plant, PlantTracking
-from datetime import datetime, timedelta
+from .models import db, User, Admin, Garden, Plant, PlantTracking, GridSpace
+from datetime import datetime, timedelta, timezone
 import os
 import base64
 import requests
 import re
 import time
+import json
 import io
 import numpy as np
 from PIL import Image
@@ -19,6 +20,30 @@ _AI_CACHE_TTL_SECONDS = 60 * 60  # 1 hour
 # Weather cache to prevent API spam
 _WEATHER_CACHE = {}
 _WEATHER_CACHE_TTL_SECONDS = 10 * 60  # 10 minutes
+
+def create_grid_spaces_for_garden(garden_id, grid_size):
+    """Create grid spaces for a garden based on its grid size"""
+    try:
+        # Parse grid size (e.g., "3x3" -> rows=3, cols=3)
+        rows, cols = map(int, grid_size.split('x'))
+        
+        # Create grid spaces
+        for row in range(1, rows + 1):
+            for col in range(1, cols + 1):
+                grid_space = GridSpace(
+                    garden_id=garden_id,
+                    grid_position=f"{row},{col}",
+                    plant_id=None,
+                    planting_date=None,
+                    notes='',
+                    is_active=True
+                )
+                db.session.add(grid_space)
+        
+        db.session.flush()
+    except Exception as e:
+        print(f"Error creating grid spaces: {e}")
+        raise e
 _WEATHER_PENDING_REQUESTS = {}  # Track pending requests to prevent duplicates
 
 views = Blueprint('views', __name__)
@@ -518,8 +543,66 @@ def ai_plant_recognition():
             return None
 
         rule_enrichment = apply_rule_based_enrichment(name, display_name, wiki_text)
+        # Determine plant type based on scientific name and common names
+        def determine_plant_type(scientific_name, common_names, display_name):
+            name_lower = (scientific_name or '').lower()
+            common_lower = ' '.join(common_names).lower()
+            display_lower = (display_name or '').lower()
+            all_text = f"{name_lower} {common_lower} {display_lower}"
+            
+            # Vegetables
+            if any(keyword in all_text for keyword in ['carrot', 'tomato', 'cucumber', 'pepper', 'eggplant', 'onion', 'garlic', 'potato', 'lettuce', 'cabbage', 'spinach', 'beet', 'corn', 'bean', 'pea', 'zucchini', 'pumpkin', 'turnip', 'celery', 'parsley', 'cilantro', 'basil', 'mint', 'thyme', 'rosemary', 'oregano', 'chives']):
+                return 'vegetable'
+            # Fruits
+            elif any(keyword in all_text for keyword in ['orange', 'lemon', 'apple', 'pear', 'peach', 'cherry', 'strawberry', 'raspberry', 'grape', 'banana', 'avocado', 'mango', 'watermelon', 'cantaloupe', 'pineapple']):
+                return 'fruit'
+            # Herbs
+            elif any(keyword in all_text for keyword in ['basil', 'mint', 'thyme', 'rosemary', 'oregano', 'sage', 'cilantro', 'parsley', 'chives', 'lavender', 'ginger', 'turmeric', 'chili']):
+                return 'herb'
+            # Flowers
+            elif any(keyword in all_text for keyword in ['rose', 'tulip', 'lily', 'chrysanthemum', 'gerbera', 'sunflower', 'petunia', 'impatiens', 'begonia', 'marigold', 'zinnia']):
+                return 'flower'
+            # Trees
+            elif any(keyword in all_text for keyword in ['tree', 'oak', 'maple', 'pine', 'cedar', 'birch', 'willow', 'elm', 'ash', 'poplar']):
+                return 'tree'
+            else:
+                return 'flower'  # Default fallback
+        
+        # Generate comprehensive care guide
+        def generate_care_guide(rule_enrichment, inferred, display_name, scientific_name):
+            care_parts = []
+            
+            # Add watering info
+            watering = (rule_enrichment or {}).get('care_recommendations', {}).get('watering', inferred.get('watering', 'Water as needed; keep soil appropriate for species'))
+            care_parts.append(f"💧 Watering: {watering}")
+            
+            # Add sunlight info
+            sunlight = (rule_enrichment or {}).get('care_recommendations', {}).get('sunlight', inferred.get('sunlight', 'Provide suitable sun exposure for species'))
+            care_parts.append(f"☀️ Sunlight: {sunlight}")
+            
+            # Add soil info
+            soil = (rule_enrichment or {}).get('care_recommendations', {}).get('soil', inferred.get('soil', 'Well-draining soil is recommended'))
+            care_parts.append(f"🌱 Soil: {soil}")
+            
+            # Add growth stage info
+            growth_stage = (rule_enrichment or {}).get('growth_stage', 'Unknown')
+            if growth_stage != 'Unknown':
+                care_parts.append(f"📈 Growth Stage: {growth_stage}")
+            
+            # Add common issues if available
+            common_issues = (rule_enrichment or {}).get('common_issues', [])
+            if common_issues:
+                care_parts.append(f"⚠️ Common Issues: {', '.join(common_issues)}")
+            
+            return '\n\n'.join(care_parts)
+        
+        plant_type = determine_plant_type(scientific_name, common_names, display_name)
+        care_guide = generate_care_guide(rule_enrichment, inferred, display_name, scientific_name)
+        
         result = {
             'plant_name': display_name,  # This now uses our common name mapping
+            'plant_type': plant_type,  # Auto-determined plant type
+            'care_guide': care_guide,  # Generated care guide
             'scientific_name': scientific_name,  # Keep the scientific name for reference
             'original_name': name,  # Keep the original name from API
             'common_names': common_names,
@@ -602,9 +685,8 @@ def ai_plant_recognition():
                 
                 try:
                     # Try SDK path first with vision capabilities
-                    os.environ['OPENAI_API_KEY'] = openai_key
                     from openai import OpenAI
-                    client = OpenAI()
+                    client = OpenAI(api_key=openai_key)
                     
                     # Use vision model for image analysis
                     completion = client.chat.completions.create(
@@ -811,9 +893,8 @@ def soil_analysis():
 
         try:
             # Use OpenAI Vision API for soil analysis
-            os.environ['OPENAI_API_KEY'] = openai_key
             from openai import OpenAI
-            client = OpenAI()
+            client = OpenAI(api_key=openai_key)
             
             completion = client.chat.completions.create(
                 model="gpt-4o",  # Use vision-capable model
@@ -1845,6 +1926,11 @@ def garden():
     for pt in plant_trackings:
         plant = Plant.query.get(pt.plant_id)
         if plant:
+            # Get the latest image for this plant from grid spaces
+            latest_grid_space = GridSpace.query.filter_by(plant_id=plant.id).filter(GridSpace.image_path.isnot(None)).order_by(GridSpace.last_updated.desc()).first()
+            latest_image = latest_grid_space.image_path if latest_grid_space else None
+            print(f"🌱 Plant {plant.name} (ID: {plant.id}) - Latest image: {latest_image}")
+            
             plants.append({
                 'tracking': {
                     'id': pt.id,
@@ -1859,7 +1945,8 @@ def garden():
                     'ideal_soil_type': plant.ideal_soil_type,
                     'watering_frequency': plant.watering_frequency,
                     'fertilizing_frequency': plant.fertilizing_frequency,
-                    'pruning_frequency': plant.pruning_frequency
+                    'pruning_frequency': plant.pruning_frequency,
+                    'latest_image': latest_image or plant.image_path
                 },
                 'garden': {
                     'id': pt.garden.id,
@@ -1870,13 +1957,22 @@ def garden():
                 }
             })
     
+    print(f"🌱 Returning {len(plants)} plants to frontend")
+    for plant_data in plants:
+        print(f"  - {plant_data['plant']['name']} (ID: {plant_data['plant']['id']}) - Image: {plant_data['plant']['latest_image']}")
+    
     return jsonify({
         "gardens": [{
             'id': g.id,
             'name': g.name,
             'garden_type': g.garden_type,
             'location_city': g.location_city,
-            'location_country': g.location_country
+            'location_country': g.location_country,
+            'grid_size': getattr(g, 'grid_size', '3x3'),
+            'base_grid_spaces': getattr(g, 'base_grid_spaces', 9),
+            'additional_spaces_purchased': getattr(g, 'additional_spaces_purchased', 0),
+            'total_grid_spaces': getattr(g, 'base_grid_spaces', 9) + getattr(g, 'additional_spaces_purchased', 0),
+            'used_grid_spaces': getattr(g, 'used_grid_spaces', 0)
         } for g in gardens],
         "plants": plants
     })
@@ -1897,14 +1993,28 @@ def add_garden():
         if not name or not garden_type:
             return jsonify({"error": "Name and type are required."}), 400
 
+        # Determine grid size based on subscription plan
+        is_premium = getattr(current_user, 'subscribed', False) or getattr(current_user, 'subscription_plan', 'basic') == 'premium'
+        grid_size = '6x6' if is_premium else '3x3'
+        base_grid_spaces = 36 if is_premium else 9
+
         garden = Garden(
             user_id=current_user.id,
             name=name,
             garden_type=garden_type,
             location_city=location_city,
-            location_country=location_country
+            location_country=location_country,
+            grid_size=grid_size,
+            base_grid_spaces=base_grid_spaces,
+            additional_spaces_purchased=0,
+            used_grid_spaces=0
         )
         db.session.add(garden)
+        db.session.flush()  # Get the garden ID
+        
+        # Create grid spaces for the garden
+        create_grid_spaces_for_garden(garden.id, grid_size)
+        
         db.session.commit()
 
         return jsonify({"success": True, "message": "Garden added successfully!", "garden_id": garden.id})
@@ -1946,17 +2056,50 @@ def add_plant():
     # Only regular users can add plants to gardens
     if hasattr(current_user, 'is_admin') and current_user.is_admin():
         return jsonify({"error": "Admins cannot add plants. Please use a user account."}), 403
-    data = request.get_json()
-    name = data.get('name')
-    type_ = data.get('type')
-    environment = data.get('environment')
-    care_guide = data.get('care_guide')
-    ideal_soil_type = data.get('ideal_soil_type')
-    watering_frequency = data.get('watering_frequency')
-    fertilizing_frequency = data.get('fertilizing_frequency')
-    pruning_frequency = data.get('pruning_frequency')
-    garden_id = data.get('garden_id')
-    planting_date = data.get('planting_date')
+    
+    # Check if this is a form data request (with image) or JSON request
+    if request.content_type and 'multipart/form-data' in request.content_type:
+        # Handle form data with image
+        name = request.form.get('name')
+        type_ = request.form.get('type')
+        environment = request.form.get('environment')
+        care_guide = request.form.get('care_guide')
+        ideal_soil_type = request.form.get('ideal_soil_type')
+        watering_frequency = request.form.get('watering_frequency')
+        fertilizing_frequency = request.form.get('fertilizing_frequency')
+        pruning_frequency = request.form.get('pruning_frequency')
+        garden_id = request.form.get('garden_id')
+        planting_date = request.form.get('planting_date')
+        
+        # Handle image upload
+        image_path = None
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename:
+                # Create uploads directory if it doesn't exist
+                upload_dir = os.path.join(os.getcwd(), 'uploads', 'plants')
+                os.makedirs(upload_dir, exist_ok=True)
+                
+                # Generate unique filename
+                import time
+                filename = f"plant_{int(time.time())}_{file.filename}"
+                file_path = os.path.join(upload_dir, filename)
+                file.save(file_path)
+                image_path = f"uploads/plants/{filename}"
+    else:
+        # Handle JSON data
+        data = request.get_json()
+        name = data.get('name')
+        type_ = data.get('type')
+        environment = data.get('environment')
+        care_guide = data.get('care_guide')
+        ideal_soil_type = data.get('ideal_soil_type')
+        watering_frequency = data.get('watering_frequency')
+        fertilizing_frequency = data.get('fertilizing_frequency')
+        pruning_frequency = data.get('pruning_frequency')
+        garden_id = data.get('garden_id')
+        planting_date = data.get('planting_date')
+        image_path = None
     
     if not type_ or not environment or not care_guide or not garden_id or not planting_date:
         return jsonify({"error": "Missing required fields."}), 400
@@ -1973,7 +2116,8 @@ def add_plant():
         ideal_soil_type=ideal_soil_type, 
         watering_frequency=watering_frequency, 
         fertilizing_frequency=fertilizing_frequency, 
-        pruning_frequency=pruning_frequency
+        pruning_frequency=pruning_frequency,
+        image_path=image_path
     )
     db.session.add(plant)
     db.session.commit()
@@ -2024,10 +2168,478 @@ def delete_plant(tracking_id):
     if garden.user_id != current_user.id:
         return jsonify({"error": "Unauthorized."}), 403
     
+    plant_id = tracking.plant_id
+    
+    # Remove plant from all grid spaces
+    grid_spaces = GridSpace.query.filter_by(plant_id=plant_id).all()
+    for space in grid_spaces:
+        space.plant_id = None
+        space.planting_date = None
+        space.last_watered = None
+        space.last_fertilized = None
+        space.last_pruned = None
+        space.notes = None
+        space.image_path = None
+        space.care_suggestions = None
+        space.last_updated = None
+    
+    # Delete the plant record
+    plant = Plant.query.get(plant_id)
+    if plant:
+        db.session.delete(plant)
+    
+    # Delete the tracking record
     db.session.delete(tracking)
+    
     db.session.commit()
     
     return jsonify({"message": "Plant deleted successfully!"})
+
+# Grid Spaces API endpoints
+@views.route('/garden/<int:garden_id>/grid-spaces', methods=['GET'])
+@login_required
+def get_grid_spaces(garden_id):
+    """Get all grid spaces for a specific garden"""
+    garden = Garden.query.get_or_404(garden_id)
+    if garden.user_id != current_user.id:
+        return jsonify({"error": "Unauthorized."}), 403
+    
+    try:
+        grid_spaces = GridSpace.query.filter_by(garden_id=garden_id, is_active=True).all()
+        spaces_data = []
+        
+        for space in grid_spaces:
+            # Parse care suggestions if available
+            care_suggestions = None
+            if space.care_suggestions:
+                try:
+                    import json
+                    care_suggestions = json.loads(space.care_suggestions)
+                except:
+                    care_suggestions = None
+            
+            spaces_data.append({
+                'id': space.id,
+                'garden_id': space.garden_id,
+                'grid_position': space.grid_position,
+                'plant_id': space.plant_id,
+                'planting_date': space.planting_date.isoformat() if space.planting_date else None,
+                'last_watered': space.last_watered.isoformat() if space.last_watered else None,
+                'last_fertilized': space.last_fertilized.isoformat() if space.last_fertilized else None,
+                'last_pruned': space.last_pruned.isoformat() if space.last_pruned else None,
+                'notes': space.notes,
+                'image_path': space.image_path,
+                'care_suggestions': care_suggestions,
+                'last_updated': space.last_updated.isoformat() if space.last_updated else None,
+                'is_active': space.is_active
+            })
+        
+        return jsonify({"grid_spaces": spaces_data})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/garden/place-plant', methods=['POST'])
+@login_required
+def place_plant():
+    """Place a plant in a specific grid space"""
+    try:
+        data = request.get_json()
+        space_id = data.get('space_id')
+        plant_id = data.get('plant_id')
+        planting_date = data.get('planting_date')
+        notes = data.get('notes', '')
+        
+        if not space_id or not plant_id or not planting_date:
+            return jsonify({"error": "Missing required fields."}), 400
+        
+        # Get the grid space
+        grid_space = GridSpace.query.get_or_404(space_id)
+        garden = Garden.query.get(grid_space.garden_id)
+        
+        # Check authorization
+        if garden.user_id != current_user.id:
+            return jsonify({"error": "Unauthorized."}), 403
+        
+        # Check if space is already occupied
+        if grid_space.plant_id:
+            return jsonify({"error": "This grid space is already occupied."}), 400
+        
+        # Update the grid space with plant information
+        grid_space.plant_id = plant_id
+        grid_space.planting_date = planting_date
+        grid_space.notes = notes
+        
+        db.session.commit()
+        
+        return jsonify({"message": "Plant placed successfully!"})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/garden/remove-plant/<int:space_id>', methods=['POST'])
+@login_required
+def remove_plant(space_id):
+    """Remove a plant from a specific grid space"""
+    try:
+        grid_space = GridSpace.query.get_or_404(space_id)
+        garden = Garden.query.get(grid_space.garden_id)
+        
+        # Check authorization
+        if garden.user_id != current_user.id:
+            return jsonify({"error": "Unauthorized."}), 403
+        
+        # Remove plant from grid space
+        grid_space.plant_id = None
+        grid_space.planting_date = None
+        grid_space.notes = ''
+        
+        db.session.commit()
+        
+        return jsonify({"message": "Plant removed successfully!"})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/garden/upload-plant-image', methods=['POST'])
+@login_required
+def upload_plant_image():
+    """Upload an image for a planted space"""
+    try:
+        print("🔄 Starting image upload process...")
+        
+        space_id = request.form.get('space_id')
+        print(f"📋 Space ID: {space_id}")
+        if not space_id:
+            return jsonify({"error": "Space ID is required."}), 400
+        
+        grid_space = GridSpace.query.get_or_404(space_id)
+        garden = Garden.query.get(grid_space.garden_id)
+        if garden.user_id != current_user.id:
+            return jsonify({"error": "Unauthorized."}), 403
+        
+        file = request.files.get('image')
+        print(f"📁 File received: {file}")
+        if not file:
+            return jsonify({"error": "Image file is required."}), 400
+        
+        # Create uploads directory if it doesn't exist
+        upload_dir = os.path.join(os.getcwd(), 'uploads', 'plants')
+        print(f"📁 Upload directory: {upload_dir}")
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Generate unique filename
+        import time
+        filename = f"space_{space_id}_{int(time.time())}.jpg"
+        file_path = os.path.join(upload_dir, filename)
+        print(f"💾 File path: {file_path}")
+        
+        # Save the file
+        print("💾 Saving file...")
+        file.save(file_path)
+        print("✅ File saved successfully!")
+        
+        # Update grid space with image path
+        grid_space.image_path = f"uploads/plants/{filename}"
+        print(f"🗄️ Updated image path: {grid_space.image_path}")
+        
+        # AI Analysis for care suggestions
+        import json  # Import json at the beginning of the function
+        care_suggestions = {
+            "needs_water": False,
+            "needs_fertilize": False,
+            "needs_prune": False,
+            "confidence": 0.0,
+            "reasoning": "AI analysis not available"
+        }
+        
+        try:
+            openai_key = os.getenv('OPENAI_API_KEY')
+            if openai_key:
+                print("🤖 Starting AI analysis...")
+                
+                # Read and base64 encode image for OpenAI Vision
+                with open(file_path, 'rb') as img_file:
+                    image_bytes = img_file.read()
+                    image_b64 = base64.b64encode(image_bytes).decode('utf-8')
+                
+                # Get plant name for context
+                plant_name = "plant"
+                if grid_space.plant_id:
+                    plant = Plant.query.get(grid_space.plant_id)
+                    if plant:
+                        plant_name = plant.name
+                
+                print(f"🌱 Analyzing {plant_name} plant...")
+                
+                # OpenAI Vision analysis
+                try:
+                    from openai import OpenAI
+                    # Don't set environment variable to avoid conflicts
+                    client = OpenAI(api_key=openai_key)
+                    print(f"✅ OpenAI client initialized successfully")
+                    
+                    response = client.chat.completions.create(
+                        model="gpt-4o",
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": f"Analyze this {plant_name} plant image for health issues. Look for mold, rot, disease, spoilage, or any problems. You MUST respond with ONLY valid JSON in this exact format: {{\"needs_water\": true, \"needs_fertilize\": false, \"needs_prune\": false, \"confidence\": 0.8, \"reasoning\": \"description of what you see\"}}. If you see mold, rot, spoilage, or any health issues, set needs_water to true. If plant looks healthy, set needs_water to false. Be very specific about what you see in the image."
+                                    },
+                                    {
+                                        "type": "image_url",
+                                        "image_url": {
+                                            "url": f"data:image/jpeg;base64,{image_b64}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        max_tokens=300
+                    )
+                    
+                    # Parse AI response
+                    ai_response = response.choices[0].message.content
+                    print(f"🤖 AI Response: {ai_response}")
+                    print(f"🌱 Plant being analyzed: {plant_name}")
+                    
+                    try:
+                        # Clean the response before parsing
+                        cleaned_response = ai_response.strip()
+                        if cleaned_response.startswith('```json'):
+                            cleaned_response = cleaned_response.replace('```json', '').replace('```', '').strip()
+                        elif cleaned_response.startswith('```'):
+                            cleaned_response = cleaned_response.replace('```', '').strip()
+                        
+                        suggestions = json.loads(cleaned_response)
+                        care_suggestions = suggestions
+                        # Clean up the reasoning text if it contains JSON formatting
+                        if 'reasoning' in care_suggestions and isinstance(care_suggestions['reasoning'], str):
+                            reasoning = care_suggestions['reasoning']
+                            if '```json' in reasoning or '```' in reasoning:
+                                # Extract clean text from reasoning
+                                clean_reasoning = reasoning.replace('```json', '').replace('```', '').strip()
+                                if clean_reasoning.startswith('{'):
+                                    try:
+                                        json_data = json.loads(clean_reasoning)
+                                        care_suggestions['reasoning'] = json_data.get('reasoning', reasoning)
+                                    except:
+                                        care_suggestions['reasoning'] = reasoning
+                                else:
+                                    care_suggestions['reasoning'] = clean_reasoning
+                        print(f"✅ AI Analysis completed: {care_suggestions}")
+                        
+                        # Enhanced health issue detection - check for negative statements first
+                        negative_indicators = ['no signs of', 'no visible', 'no evidence of', 'appears healthy', 'looks healthy', 'no mold', 'no rot', 'no spoilage', 'no disease', 'no problems', 'no issues']
+                        has_negative_indicators = any(indicator in ai_response.lower() for indicator in negative_indicators)
+                        
+                        health_issue_phrases = [
+                            'mold detected', 'rot detected', 'disease detected', 'spoilage detected',
+                            'fungal infection', 'powdery mildew', 'white coating', 'gray coating', 
+                            'green coating', 'shriveled fruit', 'wrinkled fruit', 'damaged fruit',
+                            'discolored fruit', 'brown spots', 'black spots', 'soft spots',
+                            'mushy fruit', 'decay present', 'health issues', 'plant problems',
+                            'needs treatment', 'urgent care', 'immediate attention'
+                        ]
+                        detected_issues = [phrase for phrase in health_issue_phrases if phrase in ai_response.lower()]
+                        
+                        # Only override if health issues detected AND no negative indicators
+                        if detected_issues and not has_negative_indicators:
+                            print(f"🚨 AI detected health issues: {detected_issues}")
+                            print(f"🚨 Full AI response: {ai_response}")
+                            if not care_suggestions.get('needs_water', False):
+                                print(f"⚠️ WARNING: AI detected health issues but didn't set needs_water to true!")
+                                care_suggestions['needs_water'] = True
+                                care_suggestions['reasoning'] = f"URGENT: Health issues detected ({', '.join(detected_issues)}) - {care_suggestions.get('reasoning', '')}"
+                                care_suggestions['confidence'] = max(care_suggestions.get('confidence', 0.5), 0.8)  # Increase confidence for health issues
+                        elif has_negative_indicators:
+                            print(f"✅ AI indicates healthy plant: {ai_response}")
+                            # Override to healthy if AI explicitly says no problems
+                            care_suggestions['needs_water'] = False
+                            # Extract clean reasoning from AI response
+                            clean_reasoning = ai_response.replace('```json', '').replace('```', '').strip()
+                            if clean_reasoning.startswith('{'):
+                                # If it's JSON, extract just the reasoning field
+                                try:
+                                    json_data = json.loads(clean_reasoning)
+                                    clean_reasoning = json_data.get('reasoning', 'Plant appears healthy')
+                                except:
+                                    clean_reasoning = 'Plant appears healthy'
+                            care_suggestions['reasoning'] = clean_reasoning[:200] + ('...' if len(clean_reasoning) > 200 else '')
+                            care_suggestions['confidence'] = max(care_suggestions.get('confidence', 0.5), 0.8)
+                    except Exception as parse_error:
+                        print(f"⚠️ JSON parsing failed: {parse_error}")
+                        print(f"🔍 Raw AI response: {ai_response}")
+                        
+                        # Enhanced fallback with negative statement detection
+                        negative_indicators = ['no signs of', 'no visible', 'no evidence of', 'appears healthy', 'looks healthy', 'no mold', 'no rot', 'no spoilage', 'no disease', 'no problems', 'no issues']
+                        has_negative_indicators = any(indicator in ai_response.lower() for indicator in negative_indicators)
+                        
+                        health_issue_phrases = [
+                            'mold detected', 'rot detected', 'disease detected', 'spoilage detected',
+                            'fungal infection', 'powdery mildew', 'white coating', 'gray coating', 
+                            'green coating', 'shriveled fruit', 'wrinkled fruit', 'damaged fruit',
+                            'discolored fruit', 'brown spots', 'black spots', 'soft spots',
+                            'mushy fruit', 'decay present', 'health issues', 'plant problems',
+                            'needs treatment', 'urgent care', 'immediate attention'
+                        ]
+                        detected_issues = [phrase for phrase in health_issue_phrases if phrase in ai_response.lower()]
+                        
+                        # Also check for positive health indicators
+                        healthy_indicators = ['healthy', 'fresh', 'ripe', 'good condition', 'no problems', 'no issues', 'looks good', 'appears healthy']
+                        healthy_detected = [indicator for indicator in healthy_indicators if indicator in ai_response.lower()]
+                        
+                        # Priority: negative indicators override everything
+                        if has_negative_indicators:
+                            print(f"✅ Fallback: Detected negative indicators (healthy): {[ind for ind in negative_indicators if ind in ai_response.lower()]}")
+                            # Extract clean reasoning from AI response
+                            clean_reasoning = ai_response.replace('```json', '').replace('```', '').strip()
+                            if clean_reasoning.startswith('{'):
+                                # If it's JSON, extract just the reasoning field
+                                try:
+                                    json_data = json.loads(clean_reasoning)
+                                    clean_reasoning = json_data.get('reasoning', 'Plant appears healthy')
+                                except:
+                                    clean_reasoning = 'Plant appears healthy'
+                            care_suggestions = {
+                                "needs_water": False,
+                                "needs_fertilize": False, 
+                                "needs_prune": False,
+                                "confidence": 0.8,
+                                "reasoning": clean_reasoning[:200] + ('...' if len(clean_reasoning) > 200 else '')
+                            }
+                        elif detected_issues and not healthy_detected:
+                            print(f"🚨 Fallback: Detected health issues in response: {detected_issues}")
+                            care_suggestions = {
+                                "needs_water": True,
+                                "needs_fertilize": False, 
+                                "needs_prune": False,
+                                "confidence": 0.8,
+                                "reasoning": f"URGENT: Health issues detected ({', '.join(detected_issues)}) - {ai_response[:200]}..."
+                            }
+                        elif healthy_detected:
+                            print(f"✅ Fallback: Detected healthy indicators: {healthy_detected}")
+                            # Extract clean reasoning from AI response
+                            clean_reasoning = ai_response.replace('```json', '').replace('```', '').strip()
+                            if clean_reasoning.startswith('{'):
+                                # If it's JSON, extract just the reasoning field
+                                try:
+                                    json_data = json.loads(clean_reasoning)
+                                    clean_reasoning = json_data.get('reasoning', 'Plant appears healthy')
+                                except:
+                                    clean_reasoning = 'Plant appears healthy'
+                            care_suggestions = {
+                                "needs_water": False,
+                                "needs_fertilize": False, 
+                                "needs_prune": False,
+                                "confidence": 0.7,
+                                "reasoning": clean_reasoning[:200] + ('...' if len(clean_reasoning) > 200 else '')
+                            }
+                        else:
+                            care_suggestions = {
+                                "needs_water": False,
+                                "needs_fertilize": False, 
+                                "needs_prune": False,
+                                "confidence": 0.3,
+                                "reasoning": f"AI analysis completed but response format unclear: {ai_response[:100]}..."
+                            }
+                        
+                except Exception as openai_error:
+                    print(f"❌ OpenAI client error: {openai_error}")
+                    print(f"❌ Error type: {type(openai_error).__name__}")
+                    care_suggestions = {
+                        "needs_water": False,
+                        "needs_fertilize": False, 
+                        "needs_prune": False,
+                        "confidence": 0.0,
+                        "reasoning": f"AI analysis failed: {str(openai_error)}"
+                    }
+            else:
+                print("⚠️ OpenAI API key not configured")
+                care_suggestions = {
+                    "needs_water": False,
+                    "needs_fertilize": False,
+                    "needs_prune": False, 
+                    "confidence": 0.0,
+                    "reasoning": "OpenAI API key not configured"
+                }
+        except Exception as ai_error:
+            print(f"❌ AI analysis error: {ai_error}")
+            care_suggestions = {
+                "needs_water": False,
+                "needs_fertilize": False,
+                "needs_prune": False,
+                "confidence": 0.0,
+                "reasoning": f"AI analysis failed: {str(ai_error)}"
+            }
+        
+        # Store care suggestions in grid space
+        grid_space.care_suggestions = json.dumps(care_suggestions)
+        grid_space.last_updated = datetime.now(timezone.utc)
+        print(f"🗄️ Stored care suggestions: {care_suggestions}")
+        print(f"📅 Updated last_updated timestamp")
+        
+        print("💾 Committing to database...")
+        db.session.commit()
+        print("✅ Database commit successful!")
+        
+        print("🎉 Upload process completed successfully!")
+        return jsonify({
+            "message": "Image uploaded successfully!", 
+            "image_path": grid_space.image_path,
+            "care_suggestions": care_suggestions
+        })
+    except Exception as e:
+        print(f"❌ Error in upload process: {str(e)}")
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/garden/update-plant-care', methods=['POST'])
+@login_required
+def update_plant_care():
+    """Update plant care activities (water, fertilize, prune)"""
+    try:
+        data = request.get_json()
+        space_id = data.get('space_id')
+        action = data.get('action')
+        date = data.get('date')
+        
+        if not space_id or not action:
+            return jsonify({"error": "Space ID and action are required."}), 400
+        
+        grid_space = GridSpace.query.get_or_404(space_id)
+        garden = Garden.query.get(grid_space.garden_id)
+        if garden.user_id != current_user.id:
+            return jsonify({"error": "Unauthorized."}), 403
+        
+        # Update the appropriate field based on action
+        if action == 'water':
+            grid_space.last_watered = date
+        elif action == 'fertilize':
+            grid_space.last_fertilized = date
+        elif action == 'prune':
+            grid_space.last_pruned = date
+        else:
+            return jsonify({"error": "Invalid action. Must be 'water', 'fertilize', or 'prune'."}), 400
+        
+        # Update the last_updated timestamp
+        grid_space.last_updated = datetime.now(timezone.utc)
+        
+        db.session.commit()
+        
+        return jsonify({"message": f"Plant {action}ed successfully!"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    """Serve uploaded files"""
+    return send_from_directory(os.path.join(os.getcwd(), 'uploads'), filename)
 
 @views.route('/smart-alerts')
 @login_required
