@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Camera, Upload, Leaf, Info, AlertCircle, CheckCircle, Droplets, Beaker, Thermometer, Image as ImageIcon } from 'lucide-react'
+import { Camera, Upload, Leaf, Info, AlertCircle, CheckCircle, Droplets, Beaker, Thermometer, Image as ImageIcon, ChevronDown, ChevronRight, Shield, Calendar, X, MapPin, Sun, Home } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
@@ -115,9 +115,88 @@ const AIPlantRecognition = () => {
   const [showCamera, setShowCamera] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [showPlantModal, setShowPlantModal] = useState(false)
+  const [expandedSections, setExpandedSections] = useState({
+    care: false,
+    seasonal: false,
+    pests: false,
+    issues: false
+  })
+  const [showAddToGardenModal, setShowAddToGardenModal] = useState(false)
+  const [gardens, setGardens] = useState([])
+  const [addToGardenForm, setAddToGardenForm] = useState({
+    garden_id: '',
+    environment: 'outdoor',
+    planting_date: new Date().toISOString().split('T')[0]
+  })
   const fileInputRef = useRef(null)
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
+
+  // Toggle collapsible sections
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }))
+  }
+
+  // Fetch gardens for the dropdown
+  const fetchGardens = async () => {
+    try {
+      const response = await axios.get('/garden')
+      setGardens(response.data.gardens || [])
+    } catch (error) {
+      console.error('Error fetching gardens:', error)
+      toast.error('Failed to load gardens')
+    }
+  }
+
+  // Handle add to garden form submission
+  const handleAddToGarden = async (e) => {
+    e.preventDefault()
+    
+    if (!addToGardenForm.garden_id) {
+      toast.error('Please select a garden')
+      return
+    }
+
+    try {
+      // Create FormData to include the image
+      const formData = new FormData()
+      formData.append('name', analysisResult.plant_name)
+      formData.append('type', analysisResult.plant_type || 'unknown')
+      formData.append('environment', addToGardenForm.environment)
+      formData.append('care_guide', analysisResult.care_guide)
+      formData.append('ideal_soil_type', analysisResult.care_recommendations?.soil || 'Well-draining soil')
+      formData.append('watering_frequency', '7')
+      formData.append('fertilizing_frequency', '30')
+      formData.append('pruning_frequency', '60')
+      formData.append('garden_id', addToGardenForm.garden_id)
+      formData.append('planting_date', addToGardenForm.planting_date)
+      
+      // Add the original uploaded image if available
+      if (selectedImage) {
+        formData.append('image', selectedImage)
+      }
+
+      const response = await axios.post('/plant/add', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+
+      toast.success('Plant added to garden successfully!')
+      setShowAddToGardenModal(false)
+      setAddToGardenForm({
+        garden_id: '',
+        environment: 'outdoor',
+        planting_date: new Date().toISOString().split('T')[0]
+      })
+    } catch (error) {
+      console.error('Error adding plant to garden:', error)
+      toast.error('Failed to add plant to garden')
+    }
+  }
 
   // Detect mobile to prioritize camera UX
   React.useEffect(() => {
@@ -295,16 +374,6 @@ const AIPlantRecognition = () => {
     }
   }
 
-  const addToGarden = async () => {
-    if (!analysisResult) return
-
-    try {
-      // This would integrate with your existing garden management
-      toast.success('Plant added to your garden!')
-    } catch (error) {
-      toast.error('Error adding plant to garden')
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -481,190 +550,237 @@ const AIPlantRecognition = () => {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-6">
-                {/* Plant Identification */}
-                <div className="bg-green-50 rounded-lg p-4">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <h3 className="font-semibold text-green-900">
-                      {analysisResult.plant_name}
-                    </h3>
-                  </div>
-                  <p className="text-sm text-green-700">
-                    Confidence: {analysisResult.confidence}%
-                  </p>
-                </div>
-
-                {/* Health Status */}
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">
-                    Health Status
-                    {analysisResult.ai_enriched && (
-                      <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                        Image-Based Analysis
-                      </span>
-                    )}
-                  </h4>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-gray-700">{analysisResult.health_status}</span>
-                  </div>
-                </div>
-
-                {/* Growth Stage */}
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">
-                    Growth Stage
-                    {analysisResult.ai_enriched && (
-                      <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                        Image-Based Analysis
-                      </span>
-                    )}
-                  </h4>
-                  <p className="text-gray-700">{analysisResult.growth_stage}</p>
-                </div>
-
-                {/* Care Recommendations */}
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-3">Care Recommendations</h4>
-                  <div className="space-y-3">
-                    {Object.entries(analysisResult.care_recommendations).map(([key, value]) => (
-                      <div key={key} className="bg-gray-50 rounded-lg p-3">
-                        <h5 className="font-medium text-gray-900 capitalize mb-1">
-                          {key}
-                        </h5>
-                        <p className="text-sm text-gray-700">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Seasonal Notes */}
-                {analysisResult.seasonal_notes && (
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Seasonal Care Notes</h4>
-                    <div className="text-gray-700 text-sm bg-blue-50 rounded-lg p-3">
-                      {typeof analysisResult.seasonal_notes === 'string' ? (
-                        <p>{analysisResult.seasonal_notes}</p>
-                      ) : typeof analysisResult.seasonal_notes === 'object' ? (
-                        <div>
-                          {Object.entries(analysisResult.seasonal_notes).map(([season, notes]) => (
-                            <div key={season} className="mb-2">
-                              <strong className="capitalize">{season}:</strong>
-                              <p className="ml-2">{notes}</p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p>{String(analysisResult.seasonal_notes)}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Pest & Disease Information */}
-                {analysisResult.pest_diseases && (
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Pest & Disease Prevention</h4>
-                    <div className="text-gray-700 text-sm bg-yellow-50 rounded-lg p-3">
-                      {typeof analysisResult.pest_diseases === 'string' ? (
-                        <p>{analysisResult.pest_diseases}</p>
-                      ) : typeof analysisResult.pest_diseases === 'object' ? (
-                        <div>
-                          {analysisResult.pest_diseases.common_threats && (
-                            <div className="mb-2">
-                              <strong>Common Threats:</strong>
-                              <ul className="list-disc list-inside ml-2">
-                                {Array.isArray(analysisResult.pest_diseases.common_threats) ? 
-                                  analysisResult.pest_diseases.common_threats.map((threat, index) => (
-                                    <li key={index}>{threat}</li>
-                                  )) : 
-                                  <li>{analysisResult.pest_diseases.common_threats}</li>
-                                }
-                              </ul>
-                            </div>
-                          )}
-                          {analysisResult.pest_diseases.prevention && (
-                            <div>
-                              <strong>Prevention:</strong>
-                              <ul className="list-disc list-inside ml-2">
-                                {Array.isArray(analysisResult.pest_diseases.prevention) ? 
-                                  analysisResult.pest_diseases.prevention.map((prevention, index) => (
-                                    <li key={index}>{prevention}</li>
-                                  )) : 
-                                  <li>{analysisResult.pest_diseases.prevention}</li>
-                                }
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <p>{String(analysisResult.pest_diseases)}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* AI Enhancement Indicator */}
-                {analysisResult.ai_enriched && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="space-y-3">
+                {/* Plant Identification - Ultra Compact Header */}
+                <div className="bg-green-50 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium text-green-800">Enhanced with AI Vision Analysis</span>
+                      <h3 className="font-semibold text-green-900 text-lg">
+                        {analysisResult.plant_name}
+                      </h3>
+                      <span className="text-sm text-green-700">
+                        ({analysisResult.confidence}% confidence)
+                      </span>
                     </div>
-                    <p className="text-xs text-green-700 mt-1">
-                      This analysis has been enhanced using advanced AI vision to analyze the actual plant condition in your image for more accurate health status and growth stage assessment.
-                    </p>
+                    {analysisResult.ai_enriched && (
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                        AI Enhanced
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Health Status and Growth Stage */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Health Status */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-3">
+                    <h4 className="font-semibold text-gray-900 mb-2 text-sm">Health Status</h4>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm text-gray-700">{analysisResult.health_status}</span>
+                    </div>
+                  </div>
+
+                  {/* Growth Stage */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-3">
+                    <h4 className="font-semibold text-gray-900 mb-2 text-sm">Growth Stage</h4>
+                    <p className="text-sm text-gray-700">{analysisResult.growth_stage}</p>
+                  </div>
+                </div>
+
+                {/* Collapsible Care Recommendations */}
+                <div className="bg-white border border-gray-200 rounded-lg">
+                  <button
+                    onClick={() => toggleSection('care')}
+                    className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Info className="h-4 w-4 text-blue-600" />
+                      <span className="font-medium text-gray-900">Care Recommendations</span>
+                      <span className="text-xs text-gray-500">({Object.keys(analysisResult.care_recommendations).length} items)</span>
+                    </div>
+                    {expandedSections.care ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  </button>
+                  {expandedSections.care && (
+                    <div className="px-3 pb-3 border-t border-gray-100">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                        {Object.entries(analysisResult.care_recommendations).map(([key, value]) => (
+                          <div key={key} className="bg-gray-50 rounded-lg p-3">
+                            <h5 className="font-medium text-gray-900 capitalize mb-2 text-sm">
+                              {key}
+                            </h5>
+                            <p className="text-sm text-gray-700 leading-relaxed">{value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Collapsible Seasonal Notes */}
+                {analysisResult.seasonal_notes && (
+                  <div className="bg-white border border-gray-200 rounded-lg">
+                    <button
+                      onClick={() => toggleSection('seasonal')}
+                      className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="h-4 w-4 text-blue-600" />
+                        <span className="font-medium text-gray-900">Seasonal Care Notes</span>
+                      </div>
+                      {expandedSections.seasonal ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </button>
+                    {expandedSections.seasonal && (
+                      <div className="px-3 pb-3 border-t border-gray-100">
+                        <div className="text-gray-700 text-sm mt-3">
+                          {typeof analysisResult.seasonal_notes === 'string' ? (
+                            <p>{analysisResult.seasonal_notes}</p>
+                          ) : typeof analysisResult.seasonal_notes === 'object' ? (
+                            <div className="space-y-2">
+                              {Object.entries(analysisResult.seasonal_notes).map(([season, notes]) => (
+                                <div key={season}>
+                                  <strong className="capitalize text-sm">{season}:</strong>
+                                  <p className="text-sm ml-1 mt-1">{notes}</p>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p>{String(analysisResult.seasonal_notes)}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Common Issues */}
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Common Issues</h4>
-                  <ul className="space-y-2">
-                    {Array.isArray(analysisResult.common_issues) ? analysisResult.common_issues.map((issue, index) => (
-                      <li key={index} className="flex items-start space-x-2">
-                        <AlertCircle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm text-gray-700">
-                          {typeof issue === 'string' ? (
-                            <span>{issue}</span>
-                          ) : typeof issue === 'object' && issue.issue ? (
-                            <div>
-                              <div className="font-medium">{issue.issue}</div>
-                              {issue.solution && (
-                                <div className="text-xs text-gray-600 mt-1">
-                                  <strong>Solution:</strong> {issue.solution}
+                {/* Collapsible Pest & Disease Information */}
+                {analysisResult.pest_diseases && (
+                  <div className="bg-white border border-gray-200 rounded-lg">
+                    <button
+                      onClick={() => toggleSection('pests')}
+                      className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Shield className="h-4 w-4 text-yellow-600" />
+                        <span className="font-medium text-gray-900">Pest & Disease Prevention</span>
+                      </div>
+                      {expandedSections.pests ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </button>
+                    {expandedSections.pests && (
+                      <div className="px-3 pb-3 border-t border-gray-100">
+                        <div className="text-gray-700 text-sm mt-3">
+                          {typeof analysisResult.pest_diseases === 'string' ? (
+                            <p>{analysisResult.pest_diseases}</p>
+                          ) : typeof analysisResult.pest_diseases === 'object' ? (
+                            <div className="space-y-2">
+                              {analysisResult.pest_diseases.common_threats && (
+                                <div>
+                                  <strong className="text-sm">Common Threats:</strong>
+                                  <p className="text-sm ml-1 mt-1">
+                                    {Array.isArray(analysisResult.pest_diseases.common_threats) ? 
+                                      analysisResult.pest_diseases.common_threats.join(', ') : 
+                                      analysisResult.pest_diseases.common_threats
+                                    }
+                                  </p>
+                                </div>
+                              )}
+                              {analysisResult.pest_diseases.prevention && (
+                                <div>
+                                  <strong className="text-sm">Prevention:</strong>
+                                  <p className="text-sm ml-1 mt-1">
+                                    {Array.isArray(analysisResult.pest_diseases.prevention) ? 
+                                      analysisResult.pest_diseases.prevention.join(', ') : 
+                                      analysisResult.pest_diseases.prevention
+                                    }
+                                  </p>
                                 </div>
                               )}
                             </div>
                           ) : (
-                            <span>{String(issue)}</span>
+                            <p>{String(analysisResult.pest_diseases)}</p>
                           )}
                         </div>
-                      </li>
-                    )) : (
-                      <li className="flex items-start space-x-2">
-                        <AlertCircle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm text-gray-700">{String(analysisResult.common_issues || 'No issues identified')}</span>
-                      </li>
+                      </div>
                     )}
-                  </ul>
-                </div>
+                  </div>
+                )}
 
-                {/* Estimated Yield */}
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Estimated Yield</h4>
-                  <p className="text-gray-700">{analysisResult.estimated_yield}</p>
-                </div>
+                {/* Collapsible Common Issues */}
+                {analysisResult.common_issues && analysisResult.common_issues.length > 0 && (
+                  <div className="bg-white border border-gray-200 rounded-lg">
+                    <button
+                      onClick={() => toggleSection('issues')}
+                      className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <AlertCircle className="h-4 w-4 text-yellow-600" />
+                        <span className="font-medium text-gray-900">Common Issues</span>
+                        <span className="text-xs text-gray-500">({analysisResult.common_issues.length} issues)</span>
+                      </div>
+                      {expandedSections.issues ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </button>
+                    {expandedSections.issues && (
+                      <div className="px-3 pb-3 border-t border-gray-100">
+                        <div className="space-y-2 mt-3">
+                          {Array.isArray(analysisResult.common_issues) ? analysisResult.common_issues.map((issue, index) => (
+                            <div key={index} className="flex items-start space-x-2">
+                              <AlertCircle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                              <div className="text-sm text-gray-700">
+                                {typeof issue === 'string' ? (
+                                  <span>{issue}</span>
+                                ) : typeof issue === 'object' && issue.issue ? (
+                                  <div>
+                                    <div className="font-medium text-sm">{issue.issue}</div>
+                                    {issue.solution && (
+                                      <div className="text-sm text-gray-600 mt-1">
+                                        <strong>Solution:</strong> {issue.solution}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span>{String(issue)}</span>
+                                )}
+                              </div>
+                            </div>
+                          )) : (
+                            <div className="flex items-start space-x-2">
+                              <AlertCircle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                              <div className="text-sm text-gray-700">{String(analysisResult.common_issues || 'No issues identified')}</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                {/* Add to Garden Button */}
-                <button
-                  onClick={addToGarden}
-                  className="btn-primary w-full flex items-center justify-center space-x-2"
-                >
-                  <Leaf className="h-4 w-4" />
-                  <span>Add to My Garden</span>
-                </button>
+                {/* Ultra Compact Footer with Action */}
+                <div className="flex items-center justify-between bg-green-50 rounded-lg p-3">
+                  <div className="flex items-center space-x-4">
+                    {analysisResult.ai_enriched && (
+                      <div className="flex items-center space-x-1">
+                        <CheckCircle className="h-3 w-3 text-green-600" />
+                        <span className="text-xs text-green-700">AI Enhanced</span>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      console.log('Add to Garden button clicked')
+                      fetchGardens()
+                      setShowAddToGardenModal(true)
+                      console.log('Modal should be opening')
+                    }}
+                    className="btn-primary flex items-center space-x-2 px-4 py-2 text-sm"
+                  >
+                    <Leaf className="h-4 w-4" />
+                    <span>Add to Garden</span>
+                  </button>
+                </div>
                 </div>
               )
             ) : (
@@ -1025,6 +1141,122 @@ const AIPlantRecognition = () => {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add to Garden Modal */}
+      {showAddToGardenModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Add Plant to Garden</h3>
+              <button
+                onClick={() => setShowAddToGardenModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddToGarden} className="p-4 space-y-4">
+              {/* Plant Info Display */}
+              <div className="bg-green-50 rounded-lg p-3">
+                <div className="flex items-center space-x-2 mb-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="font-medium text-green-900">{analysisResult.plant_name}</span>
+                  <span className="text-sm text-green-700">({analysisResult.confidence}% confidence)</span>
+                </div>
+                <p className="text-sm text-green-700">{analysisResult.plant_type}</p>
+              </div>
+
+              {/* Garden Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <MapPin className="h-4 w-4 inline mr-1" />
+                  Select Garden
+                </label>
+                <select
+                  value={addToGardenForm.garden_id}
+                  onChange={(e) => setAddToGardenForm(prev => ({ ...prev, garden_id: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="">Choose a garden...</option>
+                  {gardens.map((garden) => (
+                    <option key={garden.id} value={garden.id}>
+                      {garden.name} ({garden.garden_type})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Environment Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Environment
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setAddToGardenForm(prev => ({ ...prev, environment: 'outdoor' }))}
+                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border-2 transition-colors ${
+                      addToGardenForm.environment === 'outdoor'
+                        ? 'border-green-500 bg-green-50 text-green-700'
+                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Sun className="h-4 w-4" />
+                    <span className="font-medium">Outdoor</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAddToGardenForm(prev => ({ ...prev, environment: 'indoor' }))}
+                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border-2 transition-colors ${
+                      addToGardenForm.environment === 'indoor'
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Home className="h-4 w-4" />
+                    <span className="font-medium">Indoor</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Planting Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Calendar className="h-4 w-4 inline mr-1" />
+                  Planting Date
+                </label>
+                <input
+                  type="date"
+                  value={addToGardenForm.planting_date}
+                  onChange={(e) => setAddToGardenForm(prev => ({ ...prev, planting_date: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddToGardenModal(false)}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <Leaf className="h-4 w-4" />
+                  <span>Add to Garden</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

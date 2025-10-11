@@ -356,11 +356,13 @@ const Garden = () => {
     
     if (window.confirm('Are you sure you want to delete this garden?')) {
       try {
-        await axios.post(`/garden/delete/${gardenId}`)
+        const response = await axios.post(`/garden/delete/${gardenId}`)
         toast.success('Garden deleted successfully!')
         fetchGardens()
       } catch (error) {
-        toast.error('Error deleting garden')
+        console.error('Error deleting garden:', error)
+        const errorMessage = error.response?.data?.error || error.message || 'Error deleting garden'
+        toast.error(errorMessage)
       }
     }
   }
@@ -600,13 +602,22 @@ const Garden = () => {
                 <li key={index} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                   <div className="grid grid-cols-8 items-center gap-2">
                     <div className="col-span-3 flex items-center gap-3">
-                      {plantData.plant.latest_image ? (
+                      {plantData.plant.latest_image && 
+                       !plantData.plant.latest_image.includes('blob') && 
+                       !plantData.plant.latest_image.includes('_blob') ? (
                         <img
                           src={`/${plantData.plant.latest_image}`}
                           alt={plantData.plant.name}
                           className="w-9 h-9 rounded-lg object-cover border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
                           onClick={() => handleImageClick(plantData.plant.latest_image)}
                           title="Click to view full size"
+                          onError={(e) => {
+                            console.log('Image load error:', plantData.plant.latest_image)
+                            e.target.style.display = 'none'
+                            if (e.target.nextSibling) {
+                              e.target.nextSibling.style.display = 'flex'
+                            }
+                          }}
                         />
                       ) : (
                         <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
