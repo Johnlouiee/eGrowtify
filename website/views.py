@@ -384,6 +384,35 @@ def ai_plant_recognition():
         details = top.get('plant_details', {})
         common_names = details.get('common_names') or []
         wiki = details.get('wiki_description', {})
+        
+        # Check for very low confidence - likely not a plant
+        if probability < 15.0:
+            return jsonify({"error": "No plants detected. Please upload a clear photo of a plant."}), 200
+        
+        # Additional validation: Check for common non-plant objects that might be misidentified
+        name_lower = (name or '').lower()
+        scientific_lower = (scientific_name or '').lower()
+        common_lower = ' '.join(common_names).lower()
+        all_text = f"{name_lower} {scientific_lower} {common_lower}"
+        
+        # List of non-plant objects that might be misidentified as plants
+        non_plant_indicators = [
+            'person', 'human', 'face', 'man', 'woman', 'child', 'baby', 'people',
+            'car', 'vehicle', 'truck', 'motorcycle', 'bicycle', 'bike',
+            'building', 'house', 'wall', 'door', 'window', 'roof',
+            'furniture', 'chair', 'table', 'bed', 'sofa', 'desk',
+            'electronic', 'phone', 'computer', 'laptop', 'television', 'tv',
+            'food', 'bread', 'meat', 'pizza', 'sandwich', 'cake', 'cookie',
+            'animal', 'dog', 'cat', 'bird', 'fish', 'horse', 'cow',
+            'clothing', 'shirt', 'dress', 'pants', 'shoes', 'hat',
+            'book', 'paper', 'document', 'text', 'writing',
+            'sky', 'cloud', 'sun', 'moon', 'star'
+        ]
+        
+        # If the identified "plant" matches common non-plant objects, reject it
+        for indicator in non_plant_indicators:
+            if indicator in all_text:
+                return jsonify({"error": "No plants detected. Please upload a clear photo of a plant."}), 200
 
         # Get the best common name using our mapping
         display_name = get_best_common_name(name, scientific_name, common_names)
