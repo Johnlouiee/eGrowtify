@@ -44,6 +44,54 @@ def create_grid_spaces_for_garden(garden_id, grid_size):
     except Exception as e:
         print(f"Error creating grid spaces: {e}")
         raise e
+
+def create_additional_grid_spaces(garden_id, additional_spaces, grid_size):
+    """Create additional grid spaces for purchased spaces"""
+    try:
+        # Parse grid size to get columns
+        rows, cols = map(int, grid_size.split('x'))
+        
+        # Get the current highest position in the grid
+        existing_spaces = GridSpace.query.filter_by(garden_id=garden_id).all()
+        max_row = 0
+        max_col = 0
+        
+        for space in existing_spaces:
+            try:
+                row, col = map(int, space.grid_position.split(','))
+                max_row = max(max_row, row)
+                max_col = max(max_col, col)
+            except:
+                continue
+        
+        # Start creating additional spaces from the next available position
+        current_row = max_row + 1
+        current_col = 1
+        
+        for i in range(additional_spaces):
+            # Create grid space at the calculated position
+            grid_space = GridSpace(
+                garden_id=garden_id,
+                grid_position=f"{current_row},{current_col}",
+                plant_id=None,
+                planting_date=None,
+                notes='',
+                is_active=True
+            )
+            db.session.add(grid_space)
+            
+            # Move to next position
+            current_col += 1
+            if current_col > cols:
+                current_col = 1
+                current_row += 1
+        
+        db.session.flush()
+        print(f"✅ Created {additional_spaces} additional grid spaces for garden {garden_id}")
+        
+    except Exception as e:
+        print(f"Error creating additional grid spaces: {e}")
+        raise e
 _WEATHER_PENDING_REQUESTS = {}  # Track pending requests to prevent duplicates
 
 views = Blueprint('views', __name__)
@@ -2373,6 +2421,49 @@ def get_grid_spaces(garden_id):
         return jsonify({"grid_spaces": spaces_data})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@views.route('/garden/verify-payment', methods=['POST'])
+@login_required
+def verify_payment():
+    """Verify GCash payment and add purchased spaces to garden"""
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        garden_id = data.get('garden_id')
+        spaces_purchased = data.get('spaces_purchased', 0)
+        transaction_id = data.get('transaction_id')
+        
+        if not garden_id or spaces_purchased <= 0:
+            return jsonify({"success": False, "error": "Invalid payment data"}), 400
+        
+        # Get the garden
+        garden = Garden.query.get_or_404(garden_id)
+        if garden.user_id != current_user.id:
+            return jsonify({"success": False, "error": "Unauthorized"}), 403
+        
+        # For demo purposes, we'll simulate successful payment verification
+        # In production, this would verify with GCash API
+        print(f"💰 Payment verification for Garden {garden_id}: {spaces_purchased} spaces")
+        print(f"💰 Transaction ID: {transaction_id}")
+        
+        # Update garden with additional spaces
+        current_additional = getattr(garden, 'additional_spaces_purchased', 0)
+        garden.additional_spaces_purchased = current_additional + spaces_purchased
+        
+        # Create additional grid spaces for the purchased spaces
+        create_additional_grid_spaces(garden.id, spaces_purchased, garden.grid_size)
+        
+        db.session.commit()
+        
+        return jsonify({
+            "success": True, 
+            "message": f"Payment verified! {spaces_purchased} additional spaces added to your garden.",
+            "total_spaces": getattr(garden, 'base_grid_spaces', 9) + garden.additional_spaces_purchased
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error verifying payment: {str(e)}")
+        return jsonify({"success": False, "error": f"Payment verification failed: {str(e)}"}), 500
 
 @views.route('/garden/place-plant', methods=['POST'])
 @login_required

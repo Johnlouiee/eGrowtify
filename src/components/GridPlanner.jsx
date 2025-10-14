@@ -30,8 +30,22 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
   useEffect(() => {
     if (selectedGarden) {
       fetchGridSpaces()
+      checkPaymentStatus()
     }
   }, [selectedGarden])
+
+  // Watch for changes in additional_spaces_purchased and refresh grid
+  useEffect(() => {
+    if (selectedGarden?.additional_spaces_purchased > 0) {
+      console.log(`🌱 Additional spaces detected: ${selectedGarden.additional_spaces_purchased}, refreshing grid...`)
+      fetchGridSpaces()
+    }
+  }, [selectedGarden?.additional_spaces_purchased])
+
+  // Check for payment success on component mount
+  useEffect(() => {
+    checkPaymentStatus()
+  }, [])
 
   // Fetch plants after grid spaces are loaded
   useEffect(() => {
@@ -62,7 +76,23 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
     
     try {
       const response = await axios.get(`/garden/${selectedGarden.id}/grid-spaces`)
-      setGridSpaces(response.data.grid_spaces || [])
+      const spaces = response.data.grid_spaces || []
+      
+      // Calculate expected total spaces including purchased spaces
+      const baseSpaces = isPremium ? 36 : 9
+      const additionalSpaces = selectedGarden?.additional_spaces_purchased || 0
+      const expectedTotalSpaces = baseSpaces + additionalSpaces
+      
+      console.log(`🌱 Fetched ${spaces.length} grid spaces for garden ${selectedGarden.id}`)
+      console.log(`🌱 Premium status: ${isPremium}, Base spaces: ${baseSpaces}, Additional: ${additionalSpaces}, Expected total: ${expectedTotalSpaces}`)
+      
+      // If we don't have enough spaces, create mock spaces
+      if (spaces.length < expectedTotalSpaces) {
+        console.log(`🌱 Not enough spaces (${spaces.length}/${expectedTotalSpaces}), creating mock spaces`)
+        createMockGridSpaces()
+      } else {
+        setGridSpaces(spaces)
+      }
     } catch (error) {
       console.error('Error fetching grid spaces:', error)
       // Create mock grid spaces for demo
@@ -126,13 +156,18 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
 
   const createMockGridSpaces = () => {
     const spaces = []
-    const gridSize = selectedGarden.grid_size || '3x3'
-    const [rows, cols] = gridSize.split('x').map(Number)
+    const baseGridSize = isPremium ? '6x6' : '3x3'
+    const [baseRows, baseCols] = baseGridSize.split('x').map(Number)
     
-    for (let row = 1; row <= rows; row++) {
-      for (let col = 1; col <= cols; col++) {
+    console.log(`🌱 Creating mock grid spaces: base=${baseGridSize} (${baseRows}x${baseCols})`)
+    console.log(`🌱 Premium status: ${isPremium}`)
+    
+    // Create spaces for the base grid only
+    for (let row = 1; row <= baseRows; row++) {
+      for (let col = 1; col <= baseCols; col++) {
+        const spaceId = `mock-${selectedGarden.id}-${row}-${col}`
         spaces.push({
-          id: `${row}-${col}`,
+          id: spaceId,
           garden_id: selectedGarden.id,
           grid_position: `${row},${col}`,
           plant_id: null,
@@ -146,8 +181,11 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       }
     }
     
+    console.log(`🌱 Created ${spaces.length} base grid spaces`)
+    console.log(`🌱 Space positions:`, spaces.map(s => s.grid_position).slice(0, 10))
+    
     // Add some sample plants for demo purposes
-    if (selectedGarden.id === 'static-2' && gridSize === '6x6') {
+    if (selectedGarden.id === 'static-2' && baseGridSize === '6x6') {
       // Add a few sample plants to the Herb Collection
       spaces[0].plant_id = 2 // Basil
       spaces[0].planting_date = '2024-02-01'
@@ -162,27 +200,125 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       spaces[12].notes = 'Basil - Row 3, Col 1'
     }
     
+    console.log(`🌱 Created ${spaces.length} mock grid spaces`)
     setGridSpaces(spaces)
   }
 
+  const checkPaymentStatus = async () => {
+    // Check URL parameters for payment success
+    const urlParams = new URLSearchParams(window.location.search)
+    const paymentSuccess = urlParams.get('payment_success')
+    const spaces = urlParams.get('spaces')
+    const gardenId = urlParams.get('garden_id')
+    
+    console.log('🌱 Checking payment status:', { paymentSuccess, spaces, gardenId, selectedGardenId: selectedGarden?.id })
+    
+    if (paymentSuccess === 'true' && spaces && gardenId && selectedGarden && selectedGarden.id === parseInt(gardenId)) {
+      try {
+        console.log('🌱 Payment successful, verifying with backend...')
+        
+        // Get pending purchase details
+        const pendingPurchase = localStorage.getItem('pending_purchase')
+        const purchaseData = pendingPurchase ? JSON.parse(pendingPurchase) : null
+        
+        console.log('🌱 Pending purchase data:', purchaseData)
+        
+        // Verify payment with backend
+        const response = await axios.post('/garden/verify-payment', {
+          garden_id: selectedGarden.id,
+          spaces_purchased: parseInt(spaces),
+          transaction_id: purchaseData?.transaction_id || null,
+          amount: purchaseData?.amount || (parseInt(spaces) * 20)
+        })
+        
+        console.log('🌱 Payment verification response:', response.data)
+        
+        if (response.data.success) {
+          toast.success(`🎉 Payment successful! ${spaces} additional grid spaces added to your garden!`)
+          
+          // Clear pending purchase
+          localStorage.removeItem('pending_purchase')
+          
+          // Force refresh of garden data and grid spaces
+          onGardenUpdate()
+          
+          // Wait a moment for garden data to update, then refresh grid spaces
+          setTimeout(() => {
+            console.log('🌱 Refreshing grid spaces after payment...')
+            fetchGridSpaces()
+          }, 500)
+          
+          // Clean URL
+          window.history.replaceState({}, document.title, window.location.pathname)
+        } else {
+          toast.error('Payment verification failed. Please contact support.')
+        }
+      } catch (error) {
+        console.error('Error verifying payment:', error)
+        console.error('Error details:', error.response?.data)
+        toast.error(`Failed to verify payment: ${error.response?.data?.error || error.message}`)
+      }
+    }
+    
+    // Check for payment cancellation
+    const paymentCancelled = urlParams.get('payment_cancelled')
+    if (paymentCancelled === 'true') {
+      console.log('🌱 Payment was cancelled')
+      toast.error('Payment was cancelled.')
+      localStorage.removeItem('pending_purchase')
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+  }
+
+  const generateGCashPaymentURL = (amount, spaces) => {
+    // Generate a unique transaction ID
+    const transactionId = `garden_${selectedGarden.id}_${Date.now()}`
+    
+    // Store purchase details in localStorage for verification
+    localStorage.setItem('pending_purchase', JSON.stringify({
+      garden_id: selectedGarden.id,
+      spaces_to_purchase: spaces,
+      amount: amount,
+      transaction_id: transactionId,
+      timestamp: Date.now()
+    }))
+    
+    // Create GCash payment URL with phone number input
+    // This would be the actual GCash payment gateway URL in production
+    const baseURL = 'https://payments.gcash.com/pay'
+    const params = new URLSearchParams({
+      amount: amount.toString(),
+      currency: 'PHP',
+      description: `Garden Grid Spaces - ${spaces} additional spaces`,
+      merchant_id: 'egrowtify_garden',
+      transaction_id: transactionId,
+      return_url: `${window.location.origin}/garden?payment_success=true&spaces=${spaces}&garden_id=${selectedGarden.id}`,
+      cancel_url: `${window.location.origin}/garden?payment_cancelled=true`,
+      phone_required: 'true',
+      phone_label: 'Enter your GCash mobile number'
+    })
+    
+    return `${baseURL}?${params.toString()}`
+  }
+
   const handlePurchaseSpaces = async () => {
-    setLoading(true)
+    const totalAmount = spacesToPurchase * 20
+    
     try {
-      const response = await axios.post('/garden/purchase-spaces', {
-        garden_id: selectedGarden.id,
-        spaces_to_purchase: spacesToPurchase
-      })
+      // Generate GCash payment URL
+      const paymentURL = generateGCashPaymentURL(totalAmount, spacesToPurchase)
       
-      toast.success(`${spacesToPurchase} additional grid spaces purchased for ₱${spacesToPurchase * 20}!`)
+      // Show redirect message
+      toast.success('Redirecting to GCash payment...')
       setShowPurchaseModal(false)
       setSpacesToPurchase(1)
-      fetchGridSpaces()
-      onGardenUpdate()
+      
+      // Redirect to GCash payment
+      window.location.href = paymentURL
+      
     } catch (error) {
-      console.error('Error purchasing spaces:', error)
-      toast.error('Failed to purchase grid spaces')
-    } finally {
-      setLoading(false)
+      console.error('Error initiating payment:', error)
+      toast.error('Failed to initiate payment')
     }
   }
 
@@ -253,11 +389,23 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
   const handleDrop = async (e, space) => {
     e.preventDefault()
     
-    if (!draggedPlant) return
+    console.log('🌱 handleDrop called:', { draggedPlant, space })
     
-    // Check if space is already occupied
-    if (space.plant_id) {
-      toast.error('This space is already occupied!')
+    if (!draggedPlant) {
+      console.log('🌱 No dragged plant')
+      return
+    }
+    
+    // Check if we're moving a plant to the same space it's already in
+    if (space.plant_id === draggedPlant.id) {
+      console.log('🌱 Plant is already in this space')
+      setDraggedPlant(null)
+      return
+    }
+    
+    // Check if space is already occupied by a different plant
+    if (space.plant_id && space.plant_id !== draggedPlant.id) {
+      toast.error('This space is already occupied by another plant!')
       return
     }
 
@@ -265,19 +413,91 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       // Use the plant's existing planting date, or today's date if not available
       const plantingDate = draggedPlant.planting_date || new Date().toISOString().split('T')[0]
       
-      await axios.post('/garden/place-plant', {
+      console.log('🌱 Attempting to place plant:', {
         space_id: space.id,
         plant_id: draggedPlant.id,
         planting_date: plantingDate,
-        notes: `Placed via drag and drop`
+        plant_name: draggedPlant.name
       })
       
-      toast.success(`${draggedPlant.name} placed successfully!`)
+      // Check if this is a mock space (for demo purposes)
+      if (space.id.startsWith('mock-')) {
+        console.log('🌱 Mock space detected, updating locally')
+        
+        // Find the original space where this plant was located
+        const originalSpace = gridSpaces.find(s => s.plant_id === draggedPlant.id)
+        
+        // Update the spaces locally for demo purposes
+        setGridSpaces(prevSpaces => 
+          prevSpaces.map(s => {
+            if (s.id === space.id) {
+              // Place plant in new space
+              return { ...s, plant_id: draggedPlant.id, planting_date: plantingDate, notes: 'Moved via drag and drop' }
+            } else if (originalSpace && s.id === originalSpace.id) {
+              // Clear the original space
+              return { ...s, plant_id: null, planting_date: null, notes: '' }
+            }
+            return s
+          })
+        )
+        
+        const action = originalSpace ? 'moved' : 'placed'
+        toast.success(`${draggedPlant.name} ${action} successfully! (Demo mode)`)
+        setDraggedPlant(null)
+        return
+      }
+      
+      // Find the original space where this plant was located
+      const originalSpace = gridSpaces.find(s => s.plant_id === draggedPlant.id)
+      
+      // If moving a plant, first remove it from the original space
+      if (originalSpace) {
+        console.log('🌱 Moving plant from space:', originalSpace.id)
+        await axios.post(`/garden/remove-plant/${originalSpace.id}`)
+      }
+      
+      const response = await axios.post('/garden/place-plant', {
+        space_id: space.id,
+        plant_id: draggedPlant.id,
+        planting_date: plantingDate,
+        notes: originalSpace ? `Moved via drag and drop` : `Placed via drag and drop`
+      })
+      
+      console.log('🌱 Plant placement response:', response.data)
+      const action = originalSpace ? 'moved' : 'placed'
+      toast.success(`${draggedPlant.name} ${action} successfully!`)
       setDraggedPlant(null)
       fetchGridSpaces()
     } catch (error) {
       console.error('Error placing plant:', error)
-      toast.error('Failed to place plant')
+      console.error('Error details:', error.response?.data)
+      
+      // If it's a mock space, try to update locally anyway
+      if (space.id.startsWith('mock-')) {
+        console.log('🌱 API failed but updating mock space locally')
+        
+        // Find the original space where this plant was located
+        const originalSpace = gridSpaces.find(s => s.plant_id === draggedPlant.id)
+        
+        setGridSpaces(prevSpaces => 
+          prevSpaces.map(s => {
+            if (s.id === space.id) {
+              // Place plant in new space
+              return { ...s, plant_id: draggedPlant.id, planting_date: plantingDate, notes: 'Moved via drag and drop' }
+            } else if (originalSpace && s.id === originalSpace.id) {
+              // Clear the original space
+              return { ...s, plant_id: null, planting_date: null, notes: '' }
+            }
+            return s
+          })
+        )
+        
+        const action = originalSpace ? 'moved' : 'placed'
+        toast.success(`${draggedPlant.name} ${action} successfully! (Demo mode)`)
+        setDraggedPlant(null)
+      } else {
+        toast.error(`Failed to place plant: ${error.response?.data?.error || error.message}`)
+      }
     }
   }
 
@@ -377,13 +597,27 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
   }
 
   const getGridDimensions = () => {
-    const gridSize = selectedGarden?.grid_size || '3x3'
-    const [rows, cols] = gridSize.split('x').map(Number)
-    return { rows, cols }
+    // Determine base grid size based on premium status
+    const baseGridSize = isPremium ? '6x6' : '3x3'
+    const [baseRows, baseCols] = baseGridSize.split('x').map(Number)
+    
+    // Calculate additional spaces from purchases
+    const additionalSpaces = selectedGarden?.additional_spaces_purchased || 0
+    const totalSpaces = (baseRows * baseCols) + additionalSpaces
+    
+    // Keep the base grid dimensions (no extra rows)
+    const rows = baseRows
+    const cols = baseCols
+    
+    console.log(`🌱 Grid dimensions: base=${baseRows}x${baseCols}, additional=${additionalSpaces}, total=${totalSpaces}`)
+    
+    return { rows, cols, totalSpaces }
   }
 
   const getTotalSpaces = () => {
-    return selectedGarden?.total_grid_spaces || 9
+    const baseSpaces = isPremium ? 36 : 9
+    const additionalSpaces = selectedGarden?.additional_spaces_purchased || 0
+    return baseSpaces + additionalSpaces
   }
 
   const getUsedSpaces = () => {
@@ -405,7 +639,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
     )
   }
 
-  const { rows, cols } = getGridDimensions()
+  const { rows, cols, totalSpaces } = getGridDimensions()
 
   return (
     <div className="w-full h-full bg-white rounded-lg shadow-sm border border-gray-200">
@@ -429,7 +663,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
             className="flex items-center space-x-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
           >
             <ShoppingCart className="h-4 w-4" />
-            <span>Buy Spaces</span>
+            <span>Buy More Spaces</span>
           </button>
         </div>
         </div>
@@ -451,6 +685,19 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
               <span>Upgrade Now</span>
               <ArrowRight className="h-3 w-3" />
             </button>
+          </div>
+        )}
+        
+        {/* Premium status indicator */}
+        {isPremium && (
+          <div className="mb-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <Crown className="h-4 w-4 text-green-600" />
+              <span className="text-sm font-medium text-green-800">Premium Plan - 6x6 Grid</span>
+            </div>
+            <p className="text-xs text-green-700 mt-1">
+              You have access to a 6x6 grid (36 spaces) with premium features!
+            </p>
           </div>
         )}
         
@@ -540,64 +787,137 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
 
       {/* Grid */}
       <div className="p-4">
-        <div 
-          className="grid gap-1 mx-auto overflow-auto max-h-96"
-          style={{ 
-            gridTemplateColumns: `repeat(${cols}, 1fr)`,
-            maxWidth: cols > 3 ? '500px' : '300px'
-          }}
-        >
-          {gridSpaces.map((space) => {
-            const isOccupied = space.plant_id
-            const plant = plants.find(p => p.id === space.plant_id)
+        {/* Main Grid Container */}
+        <div className="flex flex-col items-center space-y-4">
+          {/* Base Grid (6x6 for premium, 3x3 for basic) */}
+          <div 
+            className="grid gap-1"
+            style={{ 
+              gridTemplateColumns: `repeat(${cols}, 1fr)`,
+              maxWidth: cols > 3 ? '600px' : '300px'
+            }}
+          >
+            {(() => {
+              console.log(`🌱 Rendering base grid: ${rows}x${cols}, ${gridSpaces.length} total spaces, isPremium: ${isPremium}`)
+              console.log(`🌱 Grid spaces:`, gridSpaces.slice(0, 10))
+              
+              let renderedCount = 0
+              return gridSpaces.map((space) => {
+                const isOccupied = space.plant_id
+                const plant = plants.find(p => p.id === space.plant_id)
+                
+                // Show all spaces for premium users (6x6 grid)
+                // For basic users, apply environment filtering
+                const shouldShowSpace = isPremium || !isOccupied || (plant && plant.environment === (isIndoorGrid ? 'indoor' : 'outdoor'))
+                
+                console.log(`🌱 Grid space ${space.grid_position}: occupied=${isOccupied}, plant=${plant?.name}, environment=${plant?.environment}, indoor=${isIndoorGrid}, shouldShow=${shouldShowSpace}, isPremium=${isPremium}`)
+                
+                if (!shouldShowSpace) {
+                  console.log(`🌱 Hiding space ${space.grid_position} due to environment filter`)
+                  return null // Don't render spaces with plants that don't match the environment
+                }
+                
+                renderedCount++
+                console.log(`🌱 Rendering space ${space.grid_position} (${renderedCount}/${gridSpaces.length})`)
+                
+                return (
+                  <div
+                    key={space.id}
+                    className={`
+                      aspect-square border-2 rounded-lg flex items-center justify-center cursor-pointer transition-all
+                      ${cols > 3 ? 'h-10 w-10' : 'h-16 w-16'}
+                      ${isOccupied 
+                        ? 'border-green-300 bg-green-50 hover:bg-green-100' 
+                        : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
+                      }
+                      ${draggedPlant && !isOccupied ? 'border-blue-300 bg-blue-50' : ''}
+                      ${draggedPlant && isOccupied && space.plant_id === draggedPlant.id ? 'border-yellow-300 bg-yellow-50 opacity-50' : ''}
+                      ${selectedPlantSpace && selectedPlantSpace.id === space.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
+                    `}
+                    onClick={() => isOccupied ? handlePlantSelect(space) : handlePlacePlant(space)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, space)}
+                    title={isOccupied ? `${plant?.name || 'Plant'} - Click to select` : 'Click to place plant or drag a plant here'}
+                  >
+                    {isOccupied ? (
+                      <div 
+                        className="text-center cursor-move"
+                        draggable={true}
+                        onDragStart={(e) => handleDragStart(e, plant)}
+                        onDragEnd={handleDragEnd}
+                        title={`Drag to move ${plant?.name || 'Plant'}`}
+                      >
+                        <Leaf className={`${cols > 3 ? 'h-3 w-3' : 'h-6 w-6'} text-green-600 mx-auto mb-1`} />
+                        <div className={`${cols > 3 ? 'text-[8px]' : 'text-xs'} font-medium text-green-800 truncate px-1`}>
+                          {plant?.name || 'Plant'}
+                        </div>
+                        <div className={`${cols > 3 ? 'text-[6px]' : 'text-xs'} text-green-600`}>
+                          {space.grid_position}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center text-gray-400">
+                        <Plus className={`${cols > 3 ? 'h-2 w-2' : 'h-4 w-4'} mx-auto mb-1`} />
+                        <div className={`${cols > 3 ? 'text-[6px]' : 'text-xs'}`}>{space.grid_position}</div>
+                      </div>
+                    )}
+                  </div>
+                )
+              }).filter(Boolean)
+            })()}
+          </div>
+
+          {/* Additional Individual Containers */}
+          {(() => {
+            const additionalSpaces = selectedGarden?.additional_spaces_purchased || 0
+            console.log(`🌱 Additional spaces: ${additionalSpaces}`)
             
-            // Only show spaces that have plants matching the current environment filter
-            // or empty spaces that can accept plants from the current environment
-            const shouldShowSpace = !isOccupied || (plant && plant.environment === (isIndoorGrid ? 'indoor' : 'outdoor'))
-            
-            console.log(`🌱 Grid space ${space.grid_position}: occupied=${isOccupied}, plant=${plant?.name}, environment=${plant?.environment}, indoor=${isIndoorGrid}, shouldShow=${shouldShowSpace}`)
-            
-            if (!shouldShowSpace) {
-              return null // Don't render spaces with plants that don't match the environment
+            if (additionalSpaces > 0) {
+              return (
+                <div className="mt-4">
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {Array.from({ length: additionalSpaces }, (_, index) => {
+                      const spaceId = `additional-${selectedGarden.id}-${index + 1}`
+                      const space = {
+                        id: spaceId,
+                        garden_id: selectedGarden.id,
+                        grid_position: `A${index + 1}`,
+                        plant_id: null,
+                        planting_date: null,
+                        last_watered: null,
+                        last_fertilized: null,
+                        last_pruned: null,
+                        notes: '',
+                        is_active: true
+                      }
+                      
+                      return (
+                        <div
+                          key={space.id}
+                          className={`
+                            aspect-square border-2 rounded-lg flex items-center justify-center cursor-pointer transition-all
+                            ${cols > 3 ? 'h-10 w-10' : 'h-16 w-16'}
+                            border-blue-300 bg-blue-50 hover:bg-blue-100
+                            ${draggedPlant && !space.plant_id ? 'border-blue-400 bg-blue-100' : ''}
+                          `}
+                          onClick={() => handlePlacePlant(space)}
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, space)}
+                          title="Click to place plant or drag a plant here"
+                        >
+                          <div className="text-center text-gray-400">
+                            <Plus className={`${cols > 3 ? 'h-2 w-2' : 'h-4 w-4'} mx-auto mb-1`} />
+                            <div className={`${cols > 3 ? 'text-[6px]' : 'text-xs'}`}>{space.grid_position}</div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
             }
-            
-            return (
-              <div
-                key={space.id}
-                className={`
-                  aspect-square border-2 rounded-lg flex items-center justify-center cursor-pointer transition-all
-                  ${cols > 3 ? 'h-12 w-12' : 'h-16 w-16'}
-                  ${isOccupied 
-                    ? 'border-green-300 bg-green-50 hover:bg-green-100' 
-                    : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
-                  }
-                  ${draggedPlant && !isOccupied ? 'border-blue-300 bg-blue-50' : ''}
-                  ${selectedPlantSpace && selectedPlantSpace.id === space.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
-                `}
-                onClick={() => isOccupied ? handlePlantSelect(space) : handlePlacePlant(space)}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, space)}
-                title={isOccupied ? `${plant?.name || 'Plant'} - Click to select` : 'Click to place plant or drag a plant here'}
-              >
-                {isOccupied ? (
-                  <div className="text-center">
-                    <Leaf className={`${cols > 3 ? 'h-4 w-4' : 'h-6 w-6'} text-green-600 mx-auto mb-1`} />
-                    <div className={`${cols > 3 ? 'text-[10px]' : 'text-xs'} font-medium text-green-800 truncate px-1`}>
-                      {plant?.name || 'Plant'}
-                    </div>
-                    <div className={`${cols > 3 ? 'text-[8px]' : 'text-xs'} text-green-600`}>
-                      {space.grid_position}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-400">
-                    <Plus className={`${cols > 3 ? 'h-3 w-3' : 'h-4 w-4'} mx-auto mb-1`} />
-                    <div className={`${cols > 3 ? 'text-[8px]' : 'text-xs'}`}>{space.grid_position}</div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
+            return null
+          })()}
         </div>
 
         {/* Selected Plant Details */}
@@ -911,7 +1231,11 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       {showPurchaseModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Purchase Additional Grid Spaces</h3>
+            <div className="flex items-center space-x-2 mb-4">
+              <ShoppingCart className="h-6 w-6 text-green-600" />
+              <h3 className="text-lg font-semibold">Buy Additional Garden Spaces</h3>
+            </div>
+            
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -926,22 +1250,41 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
               </div>
-              <div className="bg-green-50 p-3 rounded-lg">
-                <div className="text-sm text-green-800">
-                  <strong>Cost:</strong> ₱{spacesToPurchase * 20} ({spacesToPurchase} spaces × ₱20 each)
+              
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-green-800">Total Cost:</span>
+                  <span className="text-lg font-bold text-green-900">₱{spacesToPurchase * 20}</span>
+                </div>
+                <div className="text-xs text-green-700">
+                  {spacesToPurchase} spaces × ₱20 each
                 </div>
               </div>
+              
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                <div className="flex items-center space-x-2 mb-2">
+                  <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">₱</span>
+                  </div>
+                  <span className="text-sm font-medium text-blue-800">Payment via GCash</span>
+                </div>
+                <p className="text-xs text-blue-700">
+                  You will be redirected to GCash to enter your mobile number and complete the payment securely.
+                </p>
+              </div>
+              
               <div className="flex space-x-3">
                 <button
                   onClick={handlePurchaseSpaces}
                   disabled={loading}
-                  className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50"
+                  className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center space-x-2 font-medium"
                 >
-                  {loading ? 'Processing...' : 'Purchase'}
+                  <ShoppingCart className="h-4 w-4" />
+                  <span>{loading ? 'Processing...' : 'Pay with GCash'}</span>
                 </button>
                 <button
                   onClick={() => setShowPurchaseModal(false)}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400"
+                  className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 font-medium"
                 >
                   Cancel
                 </button>

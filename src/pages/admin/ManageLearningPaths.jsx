@@ -775,8 +775,8 @@ const ManageLearningPaths = () => {
                   text: "View Modules",
                   icon: Eye,
                   onClick: () => {
-                    setSelectedPath(path)
-                    setShowPathDetails(true)
+                        setSelectedPath(path)
+                        setShowPathDetails(true)
                   },
                   className: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'
                 },
@@ -794,7 +794,7 @@ const ManageLearningPaths = () => {
                 }
               ]}
             >
-              <div className="space-y-2">
+                <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getDifficultyColor(path.difficulty)}`}>
                     {path.difficulty}
@@ -806,19 +806,19 @@ const ManageLearningPaths = () => {
                   }`}>
                     {path.is_active ? 'Active' : 'Inactive'}
                   </span>
-                </div>
+                  </div>
                 <p className="text-sm text-slate-600">{path.description}</p>
-                <button
-                  onClick={() => handleTogglePathStatus(path.id, path.is_active)}
+                  <button
+                    onClick={() => handleTogglePathStatus(path.id, path.is_active)}
                   className={`w-full px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                    path.is_active 
-                      ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                      : 'bg-red-100 text-red-800 hover:bg-red-200'
-                  }`}
-                >
+                      path.is_active 
+                        ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                        : 'bg-red-100 text-red-800 hover:bg-red-200'
+                    }`}
+                  >
                   {path.is_active ? 'Deactivate' : 'Activate'}
-                </button>
-              </div>
+                  </button>
+                </div>
             </AdminCard>
           ))}
         </AdminCardGrid>
@@ -886,18 +886,18 @@ const ManageLearningPaths = () => {
                         <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-lg">
                           <BookOpen className="h-6 w-6 text-white" />
                         </div>
-                        <div>
+                      <div>
                           <h5 className="text-2xl font-bold text-slate-900">{selectedPath.difficulty} Learning Path Modules</h5>
                           <div className="flex items-center mt-2 space-x-4">
                             <span className={`inline-flex px-4 py-2 text-sm font-semibold rounded-full ${getDifficultyColor(selectedPath.difficulty)}`}>
-                              {selectedPath.difficulty} Level
-                            </span>
+                            {selectedPath.difficulty} Level
+                          </span>
                             <span className="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-                              {selectedPath.modules.length} modules
-                            </span>
+                            {selectedPath.modules.length} modules
+                          </span>
                             <span className="text-sm text-slate-500 bg-blue-100 px-3 py-1 rounded-full">
                               {selectedPath.modules.reduce((total, module) => total + (module.lessons?.length || 0), 0)} lessons
-                            </span>
+                          </span>
                           </div>
                         </div>
                       </div>
@@ -943,7 +943,7 @@ const ManageLearningPaths = () => {
                                   <div className="flex items-center space-x-3 mb-3">
                                     <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg shadow-lg">
                                       <BookOpen className="h-5 w-5 text-white" />
-                                    </div>
+                                </div>
                                     <div>
                                       <h6 className="font-bold text-slate-900 text-xl">{module.title}</h6>
                                       <div className="flex items-center text-sm text-slate-500 mt-1">
@@ -1019,7 +1019,7 @@ const ManageLearningPaths = () => {
                                         <div className="flex items-center space-x-3">
                                           <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
                                             {index + 1}
-                                          </div>
+                                        </div>
                                           <div>
                                             <span className="text-base font-semibold text-slate-900">{lesson.title}</span>
                                             <p className="text-sm text-slate-500 mt-1 line-clamp-2">{lesson.content}</p>
@@ -1071,18 +1071,18 @@ const ManageLearningPaths = () => {
                                 </div>
                                 <div className="bg-slate-50 rounded-xl p-4">
                                   <div className="text-base font-semibold text-slate-900 mb-2">
-                                    {module.quiz.title || 'No quiz added'}
-                                  </div>
-                                  {module.quiz.questions && module.quiz.questions.length > 0 && (
+                                  {module.quiz.title || 'No quiz added'}
+                                </div>
+                                {module.quiz.questions && module.quiz.questions.length > 0 && (
                                     <div className="flex items-center space-x-4">
                                       <div className="text-sm text-slate-500 bg-blue-100 px-3 py-1 rounded-full">
-                                        {module.quiz.questions.length} questions
+                                    {module.quiz.questions.length} questions
                                       </div>
                                       <div className="text-sm text-slate-500 bg-green-100 px-3 py-1 rounded-full">
                                         Ready to use
                                       </div>
-                                    </div>
-                                  )}
+                                  </div>
+                                )}
                                 </div>
                               </div>
                             </div>
@@ -1386,52 +1386,52 @@ const ManageLearningPaths = () => {
                       <h4 className="text-xl font-bold text-slate-900">Basic Information</h4>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
                         <label className="block text-lg font-semibold text-slate-700 mb-3">Module Title</label>
-                        <input
-                          type="text"
-                          value={moduleFormData.title}
-                          onChange={(e) => setModuleFormData(prev => ({ ...prev, title: e.target.value }))}
+                      <input
+                        type="text"
+                        value={moduleFormData.title}
+                        onChange={(e) => setModuleFormData(prev => ({ ...prev, title: e.target.value }))}
                           className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
                           placeholder="Enter module title..."
-                          required
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-lg font-semibold text-slate-700 mb-3">Estimated Time</label>
-                        <select
-                          value={moduleFormData.estimatedTime}
-                          onChange={(e) => setModuleFormData(prev => ({ ...prev, estimatedTime: e.target.value }))}
-                          className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
-                        >
-                          <option value="15 min">15 minutes</option>
-                          <option value="20 min">20 minutes</option>
-                          <option value="25 min">25 minutes</option>
-                          <option value="30 min">30 minutes</option>
-                          <option value="35 min">35 minutes</option>
-                          <option value="40 min">40 minutes</option>
-                          <option value="45 min">45 minutes</option>
-                          <option value="50 min">50 minutes</option>
-                          <option value="55 min">55 minutes</option>
-                          <option value="60 min">1 hour</option>
-                          <option value="65 min">1 hour 5 minutes</option>
-                          <option value="70 min">1 hour 10 minutes</option>
-                        </select>
-                      </div>
+                        required
+                      />
                     </div>
                     
+                    <div>
+                        <label className="block text-lg font-semibold text-slate-700 mb-3">Estimated Time</label>
+                      <select
+                        value={moduleFormData.estimatedTime}
+                        onChange={(e) => setModuleFormData(prev => ({ ...prev, estimatedTime: e.target.value }))}
+                          className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
+                      >
+                        <option value="15 min">15 minutes</option>
+                        <option value="20 min">20 minutes</option>
+                        <option value="25 min">25 minutes</option>
+                        <option value="30 min">30 minutes</option>
+                        <option value="35 min">35 minutes</option>
+                        <option value="40 min">40 minutes</option>
+                        <option value="45 min">45 minutes</option>
+                        <option value="50 min">50 minutes</option>
+                        <option value="55 min">55 minutes</option>
+                        <option value="60 min">1 hour</option>
+                        <option value="65 min">1 hour 5 minutes</option>
+                        <option value="70 min">1 hour 10 minutes</option>
+                      </select>
+                    </div>
+                  </div>
+                  
                     <div className="mt-6">
                       <label className="block text-lg font-semibold text-slate-700 mb-3">Description</label>
-                      <textarea
-                        value={moduleFormData.description}
-                        onChange={(e) => setModuleFormData(prev => ({ ...prev, description: e.target.value }))}
+                    <textarea
+                      value={moduleFormData.description}
+                      onChange={(e) => setModuleFormData(prev => ({ ...prev, description: e.target.value }))}
                         rows="4"
                         className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
                         placeholder="Describe what students will learn in this module..."
-                        required
-                      />
+                      required
+                    />
                     </div>
                   </div>
 
@@ -1453,26 +1453,26 @@ const ManageLearningPaths = () => {
                             <Image className="mx-auto h-16 w-16 text-green-500 mb-4" />
                             <h5 className="text-lg font-semibold text-slate-900 mb-2">Upload Module Images</h5>
                             <p className="text-slate-600 mb-4">Add visual content to enhance learning experience</p>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              multiple
-                              onChange={(e) => {
-                                Array.from(e.target.files).forEach(file => {
-                                  handleImageUpload(file)
-                                })
-                              }}
-                              className="hidden"
-                              id="image-upload"
-                              disabled={uploading}
-                            />
-                            <label
-                              htmlFor="image-upload"
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => {
+                            Array.from(e.target.files).forEach(file => {
+                              handleImageUpload(file)
+                            })
+                          }}
+                          className="hidden"
+                          id="image-upload"
+                          disabled={uploading}
+                        />
+                        <label
+                          htmlFor="image-upload"
                               className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 cursor-pointer disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl text-lg font-semibold"
-                            >
+                        >
                               <Upload className="h-5 w-5 mr-2" />
-                              {uploading ? 'Uploading...' : 'Choose Images'}
-                            </label>
+                          {uploading ? 'Uploading...' : 'Choose Images'}
+                        </label>
                           </div>
                         </div>
                       </div>
@@ -1524,26 +1524,26 @@ const ManageLearningPaths = () => {
                             <Video className="mx-auto h-16 w-16 text-purple-500 mb-4" />
                             <h5 className="text-lg font-semibold text-slate-900 mb-2">Upload Module Videos</h5>
                             <p className="text-slate-600 mb-4">Add video content to make learning more engaging</p>
-                            <input
-                              type="file"
-                              accept="video/*"
-                              multiple
-                              onChange={(e) => {
-                                Array.from(e.target.files).forEach(file => {
-                                  handleVideoUpload(file)
-                                })
-                              }}
-                              className="hidden"
-                              id="video-upload"
-                              disabled={uploading}
-                            />
-                            <label
-                              htmlFor="video-upload"
+                        <input
+                          type="file"
+                          accept="video/*"
+                          multiple
+                          onChange={(e) => {
+                            Array.from(e.target.files).forEach(file => {
+                              handleVideoUpload(file)
+                            })
+                          }}
+                          className="hidden"
+                          id="video-upload"
+                          disabled={uploading}
+                        />
+                        <label
+                          htmlFor="video-upload"
                               className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 cursor-pointer disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl text-lg font-semibold"
-                            >
+                        >
                               <Upload className="h-5 w-5 mr-2" />
-                              {uploading ? 'Uploading...' : 'Choose Videos'}
-                            </label>
+                          {uploading ? 'Uploading...' : 'Choose Videos'}
+                        </label>
                           </div>
                         </div>
                       </div>
@@ -1613,7 +1613,7 @@ const ManageLearningPaths = () => {
                             <div className="flex items-center space-x-4">
                               <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
                                 {index + 1}
-                              </div>
+                            </div>
                               <div>
                                 <span className="text-lg font-semibold text-slate-900">{lesson.title}</span>
                                 <p className="text-sm text-slate-500 mt-1 line-clamp-2">{lesson.content}</p>
@@ -1967,19 +1967,19 @@ const ManageLearningPaths = () => {
                     <div className="space-y-4">
                       {moduleFormData.lessons.map((lesson, index) => (
                         <div key={lesson.id} className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
-                          <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4">
                               <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
                                 {index + 1}
                               </div>
-                              <div>
+                          <div>
                                 <span className="text-lg font-semibold text-slate-900">{lesson.title}</span>
                                 <p className="text-sm text-slate-500 mt-1 line-clamp-2">{lesson.content}</p>
-                              </div>
                             </div>
+                          </div>
                             <div className="flex items-center space-x-2">
-                              <button
-                                type="button"
+                          <button
+                            type="button"
                                 onClick={() => openEditLessonModal(lesson)}
                                 className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
                                 title="Edit Lesson"
@@ -1993,9 +1993,9 @@ const ManageLearningPaths = () => {
                                 title="Delete Lesson"
                               >
                                 <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
+                          </button>
+                        </div>
+                      </div>
                         </div>
                       ))}
                     </div>
