@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import AdminHeader from '../../components/AdminHeader'
 
 const ContentManagement = () => {
   const [activeTab, setActiveTab] = useState('learning-paths')
@@ -76,30 +77,15 @@ const ContentManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Link 
-                to="/admin" 
-                className="flex items-center text-gray-600 hover:text-gray-900 mr-6"
-              >
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                Back to Admin Dashboard
-              </Link>
-              <div className="flex items-center">
-                <Settings className="h-8 w-8 text-green-600 mr-3" />
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Content Management</h1>
-                  <p className="text-sm text-gray-600">Manage system content and configurations</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AdminHeader
+        title="Content Management"
+        subtitle="Manage system content and configurations"
+        icon={Settings}
+        iconColor="from-green-600 to-emerald-600"
+        showBackButton={true}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tabs */}

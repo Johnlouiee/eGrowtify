@@ -12,6 +12,8 @@ import {
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import WeatherCard from '../components/WeatherCard'
+import AdminHeader from '../components/AdminHeader'
+import AdminStatsCard from '../components/AdminStatsCard'
 
 const AdminDashboard = () => {
   const { user, isAdmin } = useAuth()
@@ -187,135 +189,85 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100">
       {/* Modern Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur-sm opacity-75"></div>
-                <div className="relative p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl">
-                  <Shield className="h-7 w-7 text-white" />
-                </div>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900">Admin Center</h1>
-                <p className="text-sm text-slate-600">System management & analytics</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={fetchAdminStats}
-                className="flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all duration-200"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </button>
-              <div className="flex items-center space-x-3">
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-slate-900">{user?.full_name}</p>
-                  <p className="text-xs text-slate-500">Administrator</p>
-                </div>
-                <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold text-sm">
-                    {user?.full_name?.charAt(0) || 'A'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AdminHeader
+        title="Admin Center"
+        subtitle="System management & analytics"
+        icon={Shield}
+        iconColor="from-blue-600 to-indigo-600"
+        onRefresh={fetchAdminStats}
+        showBackButton={false}
+        actions={[
+          {
+            text: user?.full_name || 'Admin',
+            icon: null,
+            className: 'bg-slate-100 text-slate-700 hover:bg-slate-200 shadow-none hover:shadow-none',
+            onClick: () => {}
+          }
+        ]}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Modern Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-blue-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
-                  <Users className="h-6 w-6 text-white" />
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-slate-900">{stats.totalUsers}</p>
-                  <p className="text-xs text-slate-500">Total</p>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-700 mb-1">Total Users</p>
-                <p className="text-xs text-green-600 flex items-center">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  +12% this month
-                </p>
-              </div>
-            </div>
-          </div>
+          <AdminStatsCard
+            title="Total Users"
+            value={stats.totalUsers}
+            subtitle="Total"
+            icon={Users}
+            iconColor="from-blue-500 to-blue-600"
+            bgColor="from-blue-500/5 to-indigo-500/5"
+            borderColor="hover:border-blue-300/50"
+            shadowColor="hover:shadow-blue-500/10"
+            trend={true}
+            trendIcon={TrendingUp}
+            trendText="+12% this month"
+            trendColor="text-green-600"
+          />
           
-          <div className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-green-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
-                  <Activity className="h-6 w-6 text-white" />
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-slate-900">{stats.activeUsers}</p>
-                  <p className="text-xs text-slate-500">Active</p>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-700 mb-1">Active Users</p>
-                <p className="text-xs text-green-600 flex items-center">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  {Math.round((stats.activeUsers / stats.totalUsers) * 100)}% active
-                </p>
-              </div>
-            </div>
-          </div>
+          <AdminStatsCard
+            title="Active Users"
+            value={stats.activeUsers}
+            subtitle="Active"
+            icon={Activity}
+            iconColor="from-green-500 to-green-600"
+            bgColor="from-green-500/5 to-emerald-500/5"
+            borderColor="hover:border-green-300/50"
+            shadowColor="hover:shadow-green-500/10"
+            trend={true}
+            trendIcon={CheckCircle}
+            trendText={`${Math.round((stats.activeUsers / stats.totalUsers) * 100)}% active`}
+            trendColor="text-green-600"
+          />
           
-          <div className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-amber-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-amber-500/10">
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-xl shadow-lg">
-                  <Crown className="h-6 w-6 text-white" />
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-slate-900">{stats.subscribedUsers}</p>
-                  <p className="text-xs text-slate-500">Premium</p>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-700 mb-1">Premium Users</p>
-                <p className="text-xs text-amber-600 flex items-center">
-                  <Star className="h-3 w-3 mr-1" />
-                  Premium subscribers
-                </p>
-              </div>
-            </div>
-          </div>
+          <AdminStatsCard
+            title="Premium Users"
+            value={stats.subscribedUsers}
+            subtitle="Premium"
+            icon={Crown}
+            iconColor="from-amber-500 to-yellow-500"
+            bgColor="from-amber-500/5 to-yellow-500/5"
+            borderColor="hover:border-amber-300/50"
+            shadowColor="hover:shadow-amber-500/10"
+            trend={true}
+            trendIcon={Star}
+            trendText="Premium subscribers"
+            trendColor="text-amber-600"
+          />
           
-          <div className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-purple-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-violet-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-purple-500 to-violet-500 rounded-xl shadow-lg">
-                  <BookOpen className="h-6 w-6 text-white" />
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-slate-900">{stats.totalModules}</p>
-                  <p className="text-xs text-slate-500">Modules</p>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-700 mb-1">Learning Content</p>
-                <p className="text-xs text-purple-600 flex items-center">
-                  <Target className="h-3 w-3 mr-1" />
-                  Educational modules
-                </p>
-              </div>
-            </div>
-          </div>
+          <AdminStatsCard
+            title="Learning Content"
+            value={stats.totalModules}
+            subtitle="Modules"
+            icon={BookOpen}
+            iconColor="from-purple-500 to-violet-500"
+            bgColor="from-purple-500/5 to-violet-500/5"
+            borderColor="hover:border-purple-300/50"
+            shadowColor="hover:shadow-purple-500/10"
+            trend={true}
+            trendIcon={Target}
+            trendText="Educational modules"
+            trendColor="text-purple-600"
+          />
         </div>
 
         {/* Modern System Alerts */}

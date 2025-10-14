@@ -10,6 +10,9 @@ import {
 } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import AdminHeader from '../../components/AdminHeader'
+import AdminStatsCard from '../../components/AdminStatsCard'
+import AdminFilters from '../../components/AdminFilters'
 
 const ManageSubscription = () => {
   const [subscriptionStats, setSubscriptionStats] = useState({
@@ -244,240 +247,140 @@ const ManageSubscription = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100">
       {/* Enhanced Header */}
-      <div className="bg-white shadow-lg border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Link 
-                to="/admin" 
-                className="flex items-center text-gray-600 hover:text-gray-900 mr-6"
-              >
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                Back to Admin Dashboard
-              </Link>
-              <div className="flex items-center">
-                <div className="p-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl mr-4">
-                  <CreditCard className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                    Subscription Management
-                  </h1>
-                  <p className="text-sm text-gray-600 mt-1">Monitor and manage user subscriptions & billing</p>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={fetchSubscriptionData}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </button>
-              <button
-                onClick={exportSubscribers}
-                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AdminHeader
+        title="Subscription Management"
+        subtitle="Monitor and manage user subscriptions & billing"
+        icon={CreditCard}
+        iconColor="from-purple-600 to-blue-600"
+        onRefresh={fetchSubscriptionData}
+        actions={[
+          {
+            text: "Export",
+            icon: Download,
+            onClick: exportSubscribers,
+            className: 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700'
+          }
+        ]}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Enhanced Subscription Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Subscribers</p>
-                <p className="text-3xl font-bold text-gray-900">{subscriptionStats.totalSubscribers}</p>
-                <p className="text-xs text-green-600 flex items-center mt-1">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  +{subscriptionStats.newSubscribersThisMonth} this month
-                </p>
-              </div>
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <Users className="h-8 w-8 text-blue-600" />
-              </div>
-            </div>
-          </div>
+          <AdminStatsCard
+            title="Total Subscribers"
+            value={subscriptionStats.totalSubscribers}
+            subtitle="Total"
+            icon={Users}
+            iconColor="from-blue-500 to-blue-600"
+            bgColor="from-blue-500/5 to-indigo-500/5"
+            borderColor="hover:border-blue-300/50"
+            shadowColor="hover:shadow-blue-500/10"
+            trend={true}
+            trendIcon={TrendingUp}
+            trendText={`+${subscriptionStats.newSubscribersThisMonth} this month`}
+            trendColor="text-green-600"
+          />
           
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Active Subscriptions</p>
-                <p className="text-3xl font-bold text-gray-900">{subscriptionStats.activeSubscriptions}</p>
-                <p className="text-xs text-green-600 flex items-center mt-1">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  {Math.round((subscriptionStats.activeSubscriptions / subscriptionStats.totalSubscribers) * 100)}% active rate
-                </p>
-              </div>
-              <div className="p-3 bg-green-100 rounded-lg">
-                <CheckCircle className="h-8 w-8 text-green-600" />
-              </div>
-            </div>
-          </div>
+          <AdminStatsCard
+            title="Active Subscriptions"
+            value={subscriptionStats.activeSubscriptions}
+            subtitle="Active"
+            icon={CheckCircle}
+            iconColor="from-green-500 to-green-600"
+            bgColor="from-green-500/5 to-emerald-500/5"
+            borderColor="hover:border-green-300/50"
+            shadowColor="hover:shadow-green-500/10"
+            trend={true}
+            trendIcon={CheckCircle}
+            trendText={`${Math.round((subscriptionStats.activeSubscriptions / subscriptionStats.totalSubscribers) * 100)}% active rate`}
+            trendColor="text-green-600"
+          />
           
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Monthly Revenue</p>
-                <p className="text-3xl font-bold text-gray-900">${subscriptionStats.monthlyRevenue}</p>
-                <p className="text-xs text-purple-600 flex items-center mt-1">
-                  <DollarSign className="h-3 w-3 mr-1" />
-                  ${subscriptionStats.averageRevenuePerUser} ARPU
-                </p>
-              </div>
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <DollarSign className="h-8 w-8 text-purple-600" />
-              </div>
-            </div>
-          </div>
+          <AdminStatsCard
+            title="Monthly Revenue"
+            value={`$${subscriptionStats.monthlyRevenue}`}
+            subtitle="Revenue"
+            icon={DollarSign}
+            iconColor="from-purple-500 to-purple-600"
+            bgColor="from-purple-500/5 to-violet-500/5"
+            borderColor="hover:border-purple-300/50"
+            shadowColor="hover:shadow-purple-500/10"
+            trend={true}
+            trendIcon={DollarSign}
+            trendText={`$${subscriptionStats.averageRevenuePerUser} ARPU`}
+            trendColor="text-purple-600"
+          />
           
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-orange-500 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Subscription Rate</p>
-                <p className="text-3xl font-bold text-gray-900">{subscriptionStats.subscriptionRate}%</p>
-                <p className="text-xs text-orange-600 flex items-center mt-1">
-                  <Target className="h-3 w-3 mr-1" />
-                  {subscriptionStats.churnRate}% churn rate
-                </p>
-              </div>
-              <div className="p-3 bg-orange-100 rounded-lg">
-                <TrendingUp className="h-8 w-8 text-orange-600" />
-              </div>
-            </div>
-          </div>
+          <AdminStatsCard
+            title="Subscription Rate"
+            value={`${subscriptionStats.subscriptionRate}%`}
+            subtitle="Rate"
+            icon={TrendingUp}
+            iconColor="from-orange-500 to-orange-600"
+            bgColor="from-orange-500/5 to-amber-500/5"
+            borderColor="hover:border-orange-300/50"
+            shadowColor="hover:shadow-orange-500/10"
+            trend={true}
+            trendIcon={Target}
+            trendText={`${subscriptionStats.churnRate}% churn rate`}
+            trendColor="text-orange-600"
+          />
         </div>
 
         {/* Enhanced Filters and Controls */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search subscribers by name or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex items-center">
-                <Filter className="h-5 w-5 text-gray-400 mr-2" />
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="all">All Status</option>
-                  <option value="subscribed">Subscribed</option>
-                  <option value="not_subscribed">Not Subscribed</option>
-                </select>
-              </div>
-              
-              <div className="flex items-center">
-                <select
-                  value={filterPlan}
-                  onChange={(e) => setFilterPlan(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="all">All Plans</option>
-                  <option value="premium">Premium</option>
-                  <option value="basic">Basic</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={`p-2 rounded-lg ${viewMode === 'table' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-                >
-                  <BarChart3 className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-                >
-                  <Grid className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-                >
-                  <List className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              {selectedSubscribers.length > 0 && (
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">{selectedSubscribers.length} selected</span>
-                  <button
-                    onClick={() => setShowBulkActions(!showBulkActions)}
-                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  >
-                    Bulk Actions
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Bulk Actions Panel */}
-          {showBulkActions && selectedSubscribers.length > 0 && (
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-blue-900">
-                  {selectedSubscribers.length} subscribers selected
-                </span>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => handleBulkAction('activate')}
-                    className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                  >
-                    Activate
-                  </button>
-                  <button
-                    onClick={() => handleBulkAction('deactivate')}
-                    className="px-3 py-1 bg-orange-600 text-white rounded text-sm hover:bg-orange-700"
-                  >
-                    Deactivate
-                  </button>
-                  <button
-                    onClick={() => handleBulkAction('export')}
-                    className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700"
-                  >
-                    Export
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedSubscribers([])
-                      setShowBulkActions(false)
-                    }}
-                    className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        <AdminFilters
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchPlaceholder="Search subscribers by name or email..."
+          filters={[
+            {
+              value: filterStatus,
+              onChange: setFilterStatus,
+              options: [
+                { value: 'all', label: 'All Status' },
+                { value: 'subscribed', label: 'Subscribed' },
+                { value: 'not_subscribed', label: 'Not Subscribed' }
+              ]
+            },
+            {
+              value: filterPlan,
+              onChange: setFilterPlan,
+              options: [
+                { value: 'all', label: 'All Plans' },
+                { value: 'premium', label: 'Premium' },
+                { value: 'basic', label: 'Basic' }
+              ]
+            }
+          ]}
+          viewModes={[
+            { id: 'table', icon: BarChart3, title: 'Table View' },
+            { id: 'grid', icon: Grid, title: 'Grid View' },
+            { id: 'list', icon: List, title: 'List View' }
+          ]}
+          currentViewMode={viewMode}
+          onViewModeChange={setViewMode}
+          onRefresh={fetchSubscriptionData}
+          showBulkActions={selectedSubscribers.length > 0}
+          bulkActionsCount={selectedSubscribers.length}
+          onBulkAction={handleBulkAction}
+          bulkActionOptions={[
+            {
+              text: "Activate",
+              action: 'activate',
+              className: 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700'
+            },
+            {
+              text: "Deactivate",
+              action: 'deactivate',
+              className: 'bg-gradient-to-r from-orange-600 to-amber-600 text-white hover:from-orange-700 hover:to-amber-700'
+            },
+            {
+              text: "Export",
+              action: 'export',
+              className: 'bg-gradient-to-r from-purple-600 to-violet-600 text-white hover:from-purple-700 hover:to-violet-700'
+            }
+          ]}
+        />
 
         {/* Subscribers Display */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">

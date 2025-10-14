@@ -10,6 +10,9 @@ import {
 } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import AdminHeader from '../../components/AdminHeader'
+import AdminStatsCard from '../../components/AdminStatsCard'
+import AdminFilters from '../../components/AdminFilters'
 
 const ManageNotifications = () => {
   const [notifications, setNotifications] = useState([])
@@ -118,228 +121,130 @@ const ManageNotifications = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100">
       {/* Modern Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <Link 
-                to="/admin" 
-                className="flex items-center px-3 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all duration-200"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                <span className="text-sm font-medium">Back to Dashboard</span>
-              </Link>
-              <div className="flex items-center space-x-3">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur-sm opacity-75"></div>
-                  <div className="relative p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl">
-                    <Bell className="h-6 w-6 text-white" />
-                  </div>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-slate-900">Notification Center</h1>
-                  <p className="text-sm text-slate-600">Manage system notifications and announcements</p>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={fetchNotifications}
-                className="flex items-center px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all duration-200"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                <span className="text-sm font-medium">Refresh</span>
-              </button>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-              <Plus className="h-4 w-4 mr-2" />
-                <span className="text-sm font-medium">Create Notification</span>
-            </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AdminHeader
+        title="Notification Center"
+        subtitle="Manage system notifications and announcements"
+        icon={Bell}
+        iconColor="from-blue-600 to-indigo-600"
+        onRefresh={fetchNotifications}
+        actions={[
+          {
+            text: "Create Notification",
+            icon: Plus,
+            onClick: () => setShowCreateModal(true)
+          }
+        ]}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Modern Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-blue-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
-                  <Bell className="h-6 w-6 text-white" />
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
-                  <p className="text-xs text-slate-500">Total</p>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-700 mb-1">Total Notifications</p>
-                <p className="text-xs text-blue-600 flex items-center">
-                  <Bell className="h-3 w-3 mr-1" />
-                  All notifications
-                </p>
-              </div>
-            </div>
-          </div>
+          <AdminStatsCard
+            title="Total Notifications"
+            value={stats.total}
+            subtitle="Total"
+            icon={Bell}
+            iconColor="from-blue-500 to-blue-600"
+            bgColor="from-blue-500/5 to-indigo-500/5"
+            borderColor="hover:border-blue-300/50"
+            shadowColor="hover:shadow-blue-500/10"
+            trend={true}
+            trendIcon={Bell}
+            trendText="All notifications"
+            trendColor="text-blue-600"
+          />
           
-          <div className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-green-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
-                  <CheckCircle className="h-6 w-6 text-white" />
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-slate-900">{stats.active}</p>
-                  <p className="text-xs text-slate-500">Active</p>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-700 mb-1">Active Notifications</p>
-                <p className="text-xs text-green-600 flex items-center">
-                  <Play className="h-3 w-3 mr-1" />
-                  Currently active
-                </p>
-              </div>
-            </div>
-          </div>
+          <AdminStatsCard
+            title="Active Notifications"
+            value={stats.active}
+            subtitle="Active"
+            icon={CheckCircle}
+            iconColor="from-green-500 to-green-600"
+            bgColor="from-green-500/5 to-emerald-500/5"
+            borderColor="hover:border-green-300/50"
+            shadowColor="hover:shadow-green-500/10"
+            trend={true}
+            trendIcon={Play}
+            trendText="Currently active"
+            trendColor="text-green-600"
+          />
           
-          <div className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-red-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-red-500/10">
-            <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-rose-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg">
-                  <AlertCircle className="h-6 w-6 text-white" />
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-slate-900">{stats.high}</p>
-                  <p className="text-xs text-slate-500">High</p>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-700 mb-1">High Priority</p>
-                <p className="text-xs text-red-600 flex items-center">
-                  <AlertCircle className="h-3 w-3 mr-1" />
-                  Urgent notifications
-                </p>
-              </div>
-            </div>
-          </div>
+          <AdminStatsCard
+            title="High Priority"
+            value={stats.high}
+            subtitle="High"
+            icon={AlertCircle}
+            iconColor="from-red-500 to-red-600"
+            bgColor="from-red-500/5 to-rose-500/5"
+            borderColor="hover:border-red-300/50"
+            shadowColor="hover:shadow-red-500/10"
+            trend={true}
+            trendIcon={AlertCircle}
+            trendText="Urgent notifications"
+            trendColor="text-red-600"
+          />
           
-          <div className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-blue-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
-                  <Send className="h-6 w-6 text-white" />
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-slate-900">{stats.sent}</p>
-                  <p className="text-xs text-slate-500">Sent</p>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-700 mb-1">Sent Notifications</p>
-                <p className="text-xs text-blue-600 flex items-center">
-                  <Send className="h-3 w-3 mr-1" />
-                  Delivered to users
-                </p>
-              </div>
-            </div>
-          </div>
+          <AdminStatsCard
+            title="Sent Notifications"
+            value={stats.sent}
+            subtitle="Sent"
+            icon={Send}
+            iconColor="from-blue-500 to-blue-600"
+            bgColor="from-blue-500/5 to-indigo-500/5"
+            borderColor="hover:border-blue-300/50"
+            shadowColor="hover:shadow-blue-500/10"
+            trend={true}
+            trendIcon={Send}
+            trendText="Delivered to users"
+            trendColor="text-blue-600"
+          />
         </div>
 
         {/* Modern Filters and Controls */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-6 mb-8 hover:shadow-lg transition-all duration-300">
-          <div className="flex flex-col lg:flex-row gap-6">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="h-5 w-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search notifications..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/50 backdrop-blur-sm transition-all duration-200"
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex items-center space-x-2">
-                <Filter className="h-5 w-5 text-slate-500" />
-                <select
-                  value={filterType}
-                  onChange={(e) => setFilterType(e.target.value)}
-                  className="border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/50 backdrop-blur-sm transition-all duration-200"
-                >
-                  <option value="all">All Types</option>
-                  <option value="System">System</option>
-                  <option value="Feature">Feature</option>
-                  <option value="Maintenance">Maintenance</option>
-                </select>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <select
-                  value={filterPriority}
-                  onChange={(e) => setFilterPriority(e.target.value)}
-                  className="border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/50 backdrop-blur-sm transition-all duration-200"
-                >
-                  <option value="all">All Priorities</option>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
-                </select>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/50 backdrop-blur-sm transition-all duration-200"
-                >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between mt-6 pt-6 border-t border-slate-200/60">
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-2 bg-slate-100 rounded-xl p-1">
-                <button
-                  onClick={() => setViewMode('cards')}
-                  className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'cards' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  title="Card View"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  title="Table View"
-                >
-                  <Settings className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  title="List View"
-                >
-                  <MessageSquare className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <AdminFilters
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchPlaceholder="Search notifications..."
+          filters={[
+            {
+              value: filterType,
+              onChange: setFilterType,
+              options: [
+                { value: 'all', label: 'All Types' },
+                { value: 'System', label: 'System' },
+                { value: 'Feature', label: 'Feature' },
+                { value: 'Maintenance', label: 'Maintenance' }
+              ]
+            },
+            {
+              value: filterPriority,
+              onChange: setFilterPriority,
+              options: [
+                { value: 'all', label: 'All Priorities' },
+                { value: 'High', label: 'High' },
+                { value: 'Medium', label: 'Medium' },
+                { value: 'Low', label: 'Low' }
+              ]
+            },
+            {
+              value: filterStatus,
+              onChange: setFilterStatus,
+              options: [
+                { value: 'all', label: 'All Status' },
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Inactive' }
+              ]
+            }
+          ]}
+          viewModes={[
+            { id: 'cards', icon: BarChart3, title: 'Card View' },
+            { id: 'table', icon: Settings, title: 'Table View' },
+            { id: 'list', icon: MessageSquare, title: 'List View' }
+          ]}
+          currentViewMode={viewMode}
+          onViewModeChange={setViewMode}
+          onRefresh={fetchNotifications}
+        />
 
         {/* Modern Notifications Display */}
         {viewMode === 'cards' ? (

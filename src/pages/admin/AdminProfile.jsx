@@ -8,6 +8,9 @@ import {
 } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import AdminHeader from '../../components/AdminHeader'
+import AdminCard, { AdminCardGrid, AdminCardSection } from '../../components/AdminCard'
+import AdminForm, { AdminFormField, AdminFormGroup, AdminFormActions } from '../../components/AdminForm'
 
 const AdminProfile = () => {
   const { user, updateProfile, isAdmin } = useAuth()
@@ -136,50 +139,31 @@ const AdminProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100">
       {/* Header */}
-      <div className="bg-white shadow-lg border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Link 
-                to="/admin" 
-                className="flex items-center text-gray-600 hover:text-gray-900 mr-6"
-              >
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                Back to Admin Dashboard
-              </Link>
-              <div className="flex items-center">
-                <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl mr-4">
-                  <Shield className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                    Admin Profile
-                  </h1>
-                  <p className="text-sm text-gray-600 mt-1">Manage your administrator account</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AdminHeader
+        title="Admin Profile"
+        subtitle="Manage your administrator account"
+        icon={Shield}
+        iconColor="from-blue-600 to-purple-600"
+        showBackButton={true}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Profile Information */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-lg p-8">
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-bold text-gray-900">Profile Information</h2>
-                <button
-                  onClick={() => setIsEditing(!isEditing)}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  {isEditing ? 'Cancel' : 'Edit Profile'}
-                </button>
-              </div>
+            <AdminCardSection
+              title="Profile Information"
+              actions={[
+                {
+                  text: isEditing ? 'Cancel' : 'Edit Profile',
+                  icon: Edit,
+                  onClick: () => setIsEditing(!isEditing),
+                  className: 'bg-blue-600 text-white hover:bg-blue-700'
+                }
+              ]}
+            >
 
               {/* Profile Photo */}
               <div className="flex items-center mb-8">
@@ -220,292 +204,220 @@ const AdminProfile = () => {
               </div>
 
               {/* Profile Form */}
-              <form onSubmit={handleProfileUpdate} className="space-y-6">
+              <AdminForm onSubmit={handleProfileUpdate}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Full Name
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={profileData.full_name}
-                        onChange={(e) => setProfileData({ ...profileData, full_name: e.target.value })}
-                        disabled={!isEditing}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-                        required
-                      />
-                    </div>
-                  </div>
+                  <AdminFormField
+                    label="Full Name"
+                    name="full_name"
+                    type="text"
+                    value={profileData.full_name}
+                    onChange={(e) => setProfileData({ ...profileData, full_name: e.target.value })}
+                    disabled={!isEditing}
+                    required
+                    icon={User}
+                  />
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <input
-                        type="email"
-                        value={profileData.email}
-                        onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                        disabled={!isEditing}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-                        required
-                      />
-                    </div>
-                  </div>
+                  <AdminFormField
+                    label="Email Address"
+                    name="email"
+                    type="email"
+                    value={profileData.email}
+                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                    disabled={!isEditing}
+                    required
+                    icon={Mail}
+                  />
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone Number
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <input
-                        type="tel"
-                        value={profileData.phone}
-                        onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                        disabled={!isEditing}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-                      />
-                    </div>
-                  </div>
+                  <AdminFormField
+                    label="Phone Number"
+                    name="phone"
+                    type="tel"
+                    value={profileData.phone}
+                    onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                    disabled={!isEditing}
+                    icon={Phone}
+                  />
                 </div>
 
                 {isEditing && (
-                  <div className="flex justify-end space-x-4">
-                    <button
-                      type="button"
-                      onClick={() => setIsEditing(false)}
-                      className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center disabled:opacity-50"
-                    >
-                      {loading ? (
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      ) : (
-                        <Save className="h-5 w-5 mr-2" />
-                      )}
-                      Save Changes
-                    </button>
-                  </div>
+                  <AdminFormActions
+                    onCancel={() => setIsEditing(false)}
+                    onSave={handleProfileUpdate}
+                    loading={loading}
+                    saveText="Save Changes"
+                  />
                 )}
-              </form>
+              </AdminForm>
 
               {/* Password Change Section */}
-              <div className="mt-8 pt-8 border-t border-gray-200">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Security Settings</h3>
-                  <button
-                    onClick={() => setShowPasswordChange(!showPasswordChange)}
-                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    <Lock className="h-4 w-4 mr-2" />
-                    Change Password
-                  </button>
-                </div>
-
+              <AdminFormGroup
+                title="Security Settings"
+                actions={[
+                  {
+                    text: showPasswordChange ? 'Cancel' : 'Change Password',
+                    icon: Lock,
+                    onClick: () => setShowPasswordChange(!showPasswordChange),
+                    className: 'bg-red-600 text-white hover:bg-red-700'
+                  }
+                ]}
+              >
                 {showPasswordChange && (
-                  <form onSubmit={handlePasswordChange} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Current Password
-                      </label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <input
-                          type={showCurrentPassword ? 'text' : 'password'}
-                          value={passwordData.current_password}
-                          onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
-                          className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          {showCurrentPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                        </button>
-                      </div>
-                    </div>
+                  <AdminForm onSubmit={handlePasswordChange}>
+                    <AdminFormField
+                      label="Current Password"
+                      name="current_password"
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      value={passwordData.current_password}
+                      onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
+                      required
+                      icon={Lock}
+                      showPasswordToggle={true}
+                      showPassword={showCurrentPassword}
+                      onTogglePassword={() => setShowCurrentPassword(!showCurrentPassword)}
+                    />
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        New Password
-                      </label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <input
-                          type={showNewPassword ? 'text' : 'password'}
-                          value={passwordData.new_password}
-                          onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
-                          className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowNewPassword(!showNewPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                        </button>
-                      </div>
-                    </div>
+                    <AdminFormField
+                      label="New Password"
+                      name="new_password"
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={passwordData.new_password}
+                      onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
+                      required
+                      icon={Lock}
+                      showPasswordToggle={true}
+                      showPassword={showNewPassword}
+                      onTogglePassword={() => setShowNewPassword(!showNewPassword)}
+                    />
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Confirm New Password
-                      </label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <input
-                          type={showConfirmPassword ? 'text' : 'password'}
-                          value={passwordData.confirm_password}
-                          onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
-                          className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                        </button>
-                      </div>
-                    </div>
+                    <AdminFormField
+                      label="Confirm New Password"
+                      name="confirm_password"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={passwordData.confirm_password}
+                      onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
+                      required
+                      icon={Lock}
+                      showPasswordToggle={true}
+                      showPassword={showConfirmPassword}
+                      onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
+                    />
 
-                    <div className="flex justify-end space-x-4">
-                      <button
-                        type="button"
-                        onClick={() => setShowPasswordChange(false)}
-                        className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center disabled:opacity-50"
-                      >
-                        {loading ? (
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                        ) : (
-                          <Save className="h-5 w-5 mr-2" />
-                        )}
-                        Update Password
-                      </button>
-                    </div>
-                  </form>
+                    <AdminFormActions
+                      onCancel={() => setShowPasswordChange(false)}
+                      onSave={handlePasswordChange}
+                      loading={loading}
+                      saveText="Update Password"
+                      saveVariant="error"
+                    />
+                  </AdminForm>
                 )}
-              </div>
-            </div>
+              </AdminFormGroup>
+            </AdminCardSection>
           </div>
 
           {/* Admin Stats Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             {/* Account Status */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
-                Account Status
-              </h3>
+            <AdminCardSection
+              title="Account Status"
+              icon={CheckCircle}
+              iconColor="text-green-600"
+            >
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Role</span>
+                  <span className="text-sm text-slate-600">Role</span>
                   <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
                     Administrator
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Status</span>
+                  <span className="text-sm text-slate-600">Status</span>
                   <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
                     Active
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Member Since</span>
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm text-slate-600">Member Since</span>
+                  <span className="text-sm font-medium text-slate-900">
                     {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Last Login</span>
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm text-slate-600">Last Login</span>
+                  <span className="text-sm font-medium text-slate-900">
                     {adminStats.lastLogin.toLocaleDateString()}
                   </span>
                 </div>
               </div>
-            </div>
+            </AdminCardSection>
 
             {/* Admin Statistics */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
-                Admin Statistics
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Total Users</span>
-                  <span className="text-lg font-bold text-gray-900">{adminStats.totalUsers}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Learning Modules</span>
-                  <span className="text-lg font-bold text-gray-900">{adminStats.totalModules}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">System Uptime</span>
-                  <span className="text-lg font-bold text-green-600">{adminStats.systemUptime}</span>
-                </div>
-              </div>
-            </div>
+            <AdminCardGrid columns={1}>
+              <AdminCard
+                title="Total Users"
+                value={adminStats.totalUsers}
+                subtitle="Registered"
+                icon={User}
+                iconColor="from-blue-500 to-blue-600"
+                status="info"
+              />
+              <AdminCard
+                title="Learning Modules"
+                value={adminStats.totalModules}
+                subtitle="Available"
+                icon={Database}
+                iconColor="from-green-500 to-green-600"
+                status="success"
+              />
+              <AdminCard
+                title="System Uptime"
+                value={adminStats.systemUptime}
+                subtitle="Reliability"
+                icon={Activity}
+                iconColor="from-purple-500 to-purple-600"
+                status="success"
+              />
+            </AdminCardGrid>
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Settings className="h-5 w-5 mr-2 text-gray-600" />
-                Quick Actions
-              </h3>
+            <AdminCardSection
+              title="Quick Actions"
+              icon={Settings}
+              iconColor="text-slate-600"
+            >
               <div className="space-y-3">
                 <Link
                   to="/admin"
-                  className="flex items-center p-3 text-left rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center p-3 text-left rounded-lg hover:bg-slate-50 transition-colors"
                 >
                   <Shield className="h-5 w-5 text-blue-600 mr-3" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Admin Dashboard</p>
-                    <p className="text-xs text-gray-500">View system overview</p>
+                    <p className="text-sm font-medium text-slate-900">Admin Dashboard</p>
+                    <p className="text-xs text-slate-500">View system overview</p>
                   </div>
                 </Link>
                 <Link
                   to="/admin/users"
-                  className="flex items-center p-3 text-left rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center p-3 text-left rounded-lg hover:bg-slate-50 transition-colors"
                 >
                   <User className="h-5 w-5 text-green-600 mr-3" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Manage Users</p>
-                    <p className="text-xs text-gray-500">User management</p>
+                    <p className="text-sm font-medium text-slate-900">Manage Users</p>
+                    <p className="text-xs text-slate-500">User management</p>
                   </div>
                 </Link>
                 <Link
                   to="/admin/subscription"
-                  className="flex items-center p-3 text-left rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center p-3 text-left rounded-lg hover:bg-slate-50 transition-colors"
                 >
                   <Crown className="h-5 w-5 text-yellow-600 mr-3" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Subscriptions</p>
-                    <p className="text-xs text-gray-500">Manage subscriptions</p>
+                    <p className="text-sm font-medium text-slate-900">Subscriptions</p>
+                    <p className="text-xs text-slate-500">Manage subscriptions</p>
                   </div>
                 </Link>
               </div>
-            </div>
+            </AdminCardSection>
           </div>
         </div>
       </div>

@@ -2,10 +2,14 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { 
   Download, BarChart3, Users, TrendingUp, Calendar,
-  ArrowLeft, FileText, PieChart, Activity, AlertCircle
+  ArrowLeft, FileText, PieChart, Activity, AlertCircle,
+  DollarSign, Crown, Star, Eye, Clock, Target,
+  CheckCircle, XCircle, Zap, Globe, RefreshCw
 } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import AdminHeader from '../../components/AdminHeader'
+import AdminStatsCard from '../../components/AdminStatsCard'
 
 const Reports = () => {
   const [reports, setReports] = useState([])
@@ -13,6 +17,25 @@ const Reports = () => {
   const [generating, setGenerating] = useState(false)
   const [selectedReport, setSelectedReport] = useState(null)
   const [reportData, setReportData] = useState(null)
+  const [userActivity, setUserActivity] = useState([])
+  const [incomeStats, setIncomeStats] = useState({
+    monthlyIncome: 0,
+    dailyIncome: 0,
+    totalRevenue: 0,
+    subscriptionRevenue: 0,
+    conversionRate: 0,
+    churnRate: 0,
+    averageRevenuePerUser: 0,
+    newSubscribersToday: 0,
+    newSubscribersThisMonth: 0
+  })
+  const [subscriptionStats, setSubscriptionStats] = useState({
+    totalSubscribers: 0,
+    activeSubscribers: 0,
+    premiumUsers: 0,
+    basicUsers: 0,
+    subscriptionRate: 0
+  })
 
   useEffect(() => {
     fetchReports()
@@ -21,11 +44,74 @@ const Reports = () => {
   const fetchReports = async () => {
     try {
       setLoading(true)
-      const response = await axios.get('/api/admin/reports')
-      setReports(response.data)
+      const [reportsRes, activityRes, incomeRes, subscriptionRes] = await Promise.all([
+        axios.get('/api/admin/reports'),
+        axios.get('/api/admin/user-activity'),
+        axios.get('/api/admin/income-stats'),
+        axios.get('/api/admin/subscription-stats')
+      ])
+      
+      setReports(reportsRes.data)
+      setUserActivity(activityRes.data)
+      setIncomeStats(incomeRes.data)
+      setSubscriptionStats(subscriptionRes.data)
     } catch (error) {
       console.error('Error fetching reports:', error)
-      toast.error('Failed to load reports')
+      // Mock data for demonstration
+      setUserActivity([
+        {
+          id: 1,
+          user: 'John Doe',
+          email: 'john@example.com',
+          activity: 'Logged in',
+          timestamp: new Date(Date.now() - 1000 * 60 * 30),
+          subscription: 'Premium',
+          isActive: true,
+          lastLogin: new Date(Date.now() - 1000 * 60 * 30)
+        },
+        {
+          id: 2,
+          user: 'Jane Smith',
+          email: 'jane@example.com',
+          activity: 'Completed lesson',
+          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
+          subscription: 'Basic',
+          isActive: true,
+          lastLogin: new Date(Date.now() - 1000 * 60 * 60 * 2)
+        },
+        {
+          id: 3,
+          user: 'Bob Johnson',
+          email: 'bob@example.com',
+          activity: 'Upgraded to Premium',
+          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
+          subscription: 'Premium',
+          isActive: true,
+          lastLogin: new Date(Date.now() - 1000 * 60 * 60 * 4)
+        }
+      ])
+      
+      setIncomeStats({
+        monthlyIncome: 2450.00,
+        dailyIncome: 81.67,
+        totalRevenue: 12500.00,
+        subscriptionRevenue: 2450.00,
+        conversionRate: 12.5,
+        churnRate: 3.2,
+        averageRevenuePerUser: 8.50,
+        newSubscribersToday: 3,
+        newSubscribersThisMonth: 45
+      })
+      
+      setSubscriptionStats({
+        totalSubscribers: 195,
+        activeSubscribers: 180,
+        premiumUsers: 45,
+        basicUsers: 150,
+        subscriptionRate: 23.1
+      })
+      
+      toast.error('Failed to load reports - showing mock data')
     } finally {
       setLoading(false)
     }
@@ -129,34 +215,208 @@ const Reports = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Link 
-                to="/admin" 
-                className="flex items-center text-gray-600 hover:text-gray-900 mr-6"
-              >
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                Back to Admin Dashboard
-              </Link>
-              <div className="flex items-center">
-                <Download className="h-8 w-8 text-orange-600 mr-3" />
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
-                  <p className="text-sm text-gray-600">Generate and download system reports</p>
+      <AdminHeader
+        title="Reports & Analytics"
+        subtitle="Generate and download system reports"
+        icon={Download}
+        iconColor="from-orange-600 to-red-600"
+        showBackButton={true}
+        />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Income & Subscription Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <AdminStatsCard
+              title="Monthly Income"
+              value={`$${incomeStats.monthlyIncome.toLocaleString()}`}
+              subtitle="This Month"
+              icon={DollarSign}
+              iconColor="from-green-500 to-green-600"
+              bgColor="from-green-500/5 to-emerald-500/5"
+              borderColor="hover:border-green-300/50"
+              shadowColor="hover:shadow-green-500/10"
+              trend={true}
+              trendIcon={TrendingUp}
+              trendText={`+${incomeStats.newSubscribersThisMonth} new subscribers`}
+              trendColor="text-green-600"
+            />
+            
+            <AdminStatsCard
+              title="Daily Income"
+              value={`$${incomeStats.dailyIncome.toFixed(2)}`}
+              subtitle="Today"
+              icon={Clock}
+              iconColor="from-blue-500 to-blue-600"
+              bgColor="from-blue-500/5 to-indigo-500/5"
+              borderColor="hover:border-blue-300/50"
+              shadowColor="hover:shadow-blue-500/10"
+              trend={true}
+              trendIcon={Target}
+              trendText={`${incomeStats.newSubscribersToday} new today`}
+              trendColor="text-blue-600"
+            />
+            
+            <AdminStatsCard
+              title="Total Revenue"
+              value={`$${incomeStats.totalRevenue.toLocaleString()}`}
+              subtitle="All Time"
+              icon={Crown}
+              iconColor="from-purple-500 to-purple-600"
+              bgColor="from-purple-500/5 to-violet-500/5"
+              borderColor="hover:border-purple-300/50"
+              shadowColor="hover:shadow-purple-500/10"
+              trend={true}
+              trendIcon={Star}
+              trendText={`$${incomeStats.averageRevenuePerUser} ARPU`}
+              trendColor="text-purple-600"
+            />
+            
+            <AdminStatsCard
+              title="Conversion Rate"
+              value={`${incomeStats.conversionRate}%`}
+              subtitle="Premium"
+              icon={Target}
+              iconColor="from-orange-500 to-orange-600"
+              bgColor="from-orange-500/5 to-amber-500/5"
+              borderColor="hover:border-orange-300/50"
+              shadowColor="hover:shadow-orange-500/10"
+              trend={true}
+              trendIcon={CheckCircle}
+              trendText={`${incomeStats.churnRate}% churn rate`}
+              trendColor="text-orange-600"
+            />
+          </div>
+
+          {/* User Activity & Subscription Status */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <div className="lg:col-span-2">
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-6 hover:shadow-lg transition-all duration-300">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Activity className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-900">Recent User Activity</h3>
+                  </div>
+                  <button
+                    onClick={fetchReports}
+                    className="flex items-center px-3 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all duration-200"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <span className="text-sm font-medium">Refresh</span>
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  {userActivity.map((activity) => (
+                    <div key={activity.id} className="flex items-center space-x-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                      <div className="flex-shrink-0">
+                        <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                          activity.subscription === 'Premium' 
+                            ? 'bg-gradient-to-r from-yellow-400 to-orange-500' 
+                            : 'bg-gradient-to-r from-blue-400 to-blue-500'
+                        }`}>
+                          {activity.subscription === 'Premium' ? (
+                            <Crown className="h-5 w-5 text-white" />
+                          ) : (
+                            <Users className="h-5 w-5 text-white" />
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-slate-900 truncate">{activity.user}</p>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            activity.subscription === 'Premium' 
+                              ? 'bg-yellow-100 text-yellow-800' 
+                              : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {activity.subscription}
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-600">{activity.activity}</p>
+                        <p className="text-xs text-slate-500">
+                          {new Date(activity.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <div className={`w-2 h-2 rounded-full ${
+                          activity.isActive ? 'bg-green-400' : 'bg-gray-400'
+                        }`}></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="lg:col-span-1">
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-6 hover:shadow-lg transition-all duration-300">
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <PieChart className="h-5 w-5 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900">Subscription Overview</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <Users className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <span className="text-sm font-medium text-slate-700">Total Users</span>
+                    </div>
+                    <span className="text-lg font-bold text-slate-900">{subscriptionStats.totalSubscribers}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      </div>
+                      <span className="text-sm font-medium text-slate-700">Active Users</span>
+                    </div>
+                    <span className="text-lg font-bold text-slate-900">{subscriptionStats.activeSubscribers}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-yellow-100 rounded-lg">
+                        <Crown className="h-4 w-4 text-yellow-600" />
+                      </div>
+                      <span className="text-sm font-medium text-slate-700">Premium Users</span>
+                    </div>
+                    <span className="text-lg font-bold text-slate-900">{subscriptionStats.premiumUsers}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <Star className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <span className="text-sm font-medium text-slate-700">Basic Users</span>
+                    </div>
+                    <span className="text-lg font-bold text-slate-900">{subscriptionStats.basicUsers}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <Target className="h-4 w-4 text-purple-600" />
+                      </div>
+                      <span className="text-sm font-medium text-slate-700">Subscription Rate</span>
+                    </div>
+                    <span className="text-lg font-bold text-slate-900">{subscriptionStats.subscriptionRate}%</span>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Report Types */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Report Types */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {reportTypes.map((report) => {
             const IconComponent = report.icon
             return (

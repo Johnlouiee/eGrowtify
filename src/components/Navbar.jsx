@@ -1,20 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Menu, X, User, LogOut, Calendar, Star, Info, Settings, Heart, ChevronDown, Bell } from 'lucide-react'
+import { Menu, X, User, LogOut, Calendar, Star, Info, Settings, Heart, ChevronDown, Bell, Users, BookOpen, BarChart3 } from 'lucide-react'
 
 const Navbar = () => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
   const userMenuRef = useRef(null)
+  const profileMenuRef = useRef(null)
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false)
+      }
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setIsProfileMenuOpen(false)
       }
     }
 
@@ -60,24 +65,67 @@ const Navbar = () => {
               <>
                 {user.role === 'admin' ? (
                   <>
-                    <Link to="/admin" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                    <Link to="/admin" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1">
+                      <Settings className="h-4 w-4" />
                       Admin Dashboard
                     </Link>
-                    <Link to="/admin/users" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                      Manage Users
-                    </Link>
-                    <Link to="/admin/notifications" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1">
-                      <Bell className="h-4 w-4" />
-                      Manage Notifications
-                    </Link>
-                    <Link to="/admin/subscription" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                      Manage Subscription
-                    </Link>
-                    <Link to="/admin/seasonal-content" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                      Manage Seasonal Content
-                    </Link>
-                    <Link to="/admin/learning-paths" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                      Manage Learning Paths
+                    <div className="relative" ref={userMenuRef}>
+                      <button 
+                        onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                        className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1"
+                      >
+                        <Users className="h-4 w-4" />
+                        Management
+                        <ChevronDown className="h-4 w-4" />
+                      </button>
+                      {isUserMenuOpen && (
+                        <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-[9999] border">
+                          <Link 
+                            to="/admin/users" 
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <Users className="h-4 w-4" />
+                            <span>User Management</span>
+                          </Link>
+                          <Link 
+                            to="/admin/notifications" 
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <Bell className="h-4 w-4" />
+                            <span>Notifications</span>
+                          </Link>
+                          <Link 
+                            to="/admin/subscription" 
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <Star className="h-4 w-4" />
+                            <span>Subscriptions</span>
+                          </Link>
+                          <Link 
+                            to="/admin/seasonal-content" 
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <Calendar className="h-4 w-4" />
+                            <span>Seasonal Content</span>
+                          </Link>
+                          <Link 
+                            to="/admin/learning-paths" 
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <BookOpen className="h-4 w-4" />
+                            <span>Learning Paths</span>
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                    <Link to="/admin/reports" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1">
+                      <BarChart3 className="h-4 w-4" />
+                      Reports
                     </Link>
                   </>
                 ) : (
@@ -101,26 +149,26 @@ const Navbar = () => {
                   </>
                 )}
                 
-                {/* User Menu Dropdown */}
-                <div className="relative" ref={userMenuRef}>
-                  <button
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center space-x-1 text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    <User className="h-4 w-4" />
-                    <span>Profile</span>
-                    <ChevronDown className="h-4 w-4" />
-                  </button>
-                  
-                  {isUserMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border">
+                 {/* User Menu Dropdown */}
+                 <div className="relative" ref={profileMenuRef}>
+                   <button
+                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                     className="flex items-center space-x-1 text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
+                   >
+                     <User className="h-4 w-4" />
+                     <span>Profile</span>
+                     <ChevronDown className="h-4 w-4" />
+                   </button>
+                   
+                   {isProfileMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-[9999] border">
                       {user.role === 'admin' ? (
                         // Admin Profile Menu
                         <>
                           <Link
                             to="/admin/profile"
                             className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={() => setIsUserMenuOpen(false)}
+                            onClick={() => setIsProfileMenuOpen(false)}
                           >
                             <User className="h-4 w-4" />
                             <span>Admin Profile</span>
@@ -128,7 +176,7 @@ const Navbar = () => {
                           <Link
                             to="/about"
                             className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={() => setIsUserMenuOpen(false)}
+                            onClick={() => setIsProfileMenuOpen(false)}
                           >
                             <Info className="h-4 w-4" />
                             <span>About</span>
@@ -136,7 +184,7 @@ const Navbar = () => {
                           <Link
                             to="/admin/subscription"
                             className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={() => setIsUserMenuOpen(false)}
+                            onClick={() => setIsProfileMenuOpen(false)}
                           >
                             <Star className="h-4 w-4" />
                             <span>Managing Subscription</span>
@@ -148,7 +196,7 @@ const Navbar = () => {
                           <Link
                             to="/seasonal-planning"
                             className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={() => setIsUserMenuOpen(false)}
+                            onClick={() => setIsProfileMenuOpen(false)}
                           >
                             <Calendar className="h-4 w-4" />
                             <span>Planning</span>
@@ -156,7 +204,7 @@ const Navbar = () => {
                           <Link
                             to="/subscription"
                             className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={() => setIsUserMenuOpen(false)}
+                            onClick={() => setIsProfileMenuOpen(false)}
                           >
                             <Star className="h-4 w-4" />
                             <span>Subscription</span>
@@ -164,7 +212,7 @@ const Navbar = () => {
                           <Link
                             to="/about"
                             className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={() => setIsUserMenuOpen(false)}
+                            onClick={() => setIsProfileMenuOpen(false)}
                           >
                             <Info className="h-4 w-4" />
                             <span>About</span>
@@ -172,7 +220,7 @@ const Navbar = () => {
                           <Link
                             to="/profile"
                             className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={() => setIsUserMenuOpen(false)}
+                            onClick={() => setIsProfileMenuOpen(false)}
                           >
                             <User className="h-4 w-4" />
                             <span>Profile</span>
@@ -180,7 +228,7 @@ const Navbar = () => {
                           <Link
                             to="/feedback"
                             className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={() => setIsUserMenuOpen(false)}
+                            onClick={() => setIsProfileMenuOpen(false)}
                           >
                             <Heart className="h-4 w-4" />
                             <span>Feedback</span>
@@ -191,7 +239,7 @@ const Navbar = () => {
                       <button
                         onClick={() => {
                           handleLogout()
-                          setIsUserMenuOpen(false)
+                          setIsProfileMenuOpen(false)
                         }}
                         className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
                       >

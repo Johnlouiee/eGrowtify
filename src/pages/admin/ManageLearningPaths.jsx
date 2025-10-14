@@ -11,6 +11,11 @@ import {
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { getLearningPathModules, getModuleData } from '../../utils/learningPathData'
+import AdminHeader from '../../components/AdminHeader'
+import AdminCard, { AdminCardGrid } from '../../components/AdminCard'
+import AdminFilters from '../../components/AdminFilters'
+import AdminModal, { AdminModalFooter, AdminModalActions } from '../../components/AdminModal'
+import AdminForm, { AdminFormField, AdminFormGroup, AdminFormActions } from '../../components/AdminForm'
 
 const ManageLearningPaths = () => {
   const [learningPaths, setLearningPaths] = useState([])
@@ -710,143 +715,135 @@ const ManageLearningPaths = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Link 
-                to="/admin" 
-                className="flex items-center text-gray-600 hover:text-gray-900 mr-6"
-              >
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                Back to Admin Dashboard
-              </Link>
-              <div className="flex items-center">
-                <BookOpen className="h-8 w-8 text-green-600 mr-3" />
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Manage User Learning Paths</h1>
-                  <p className="text-sm text-gray-600">Edit modules, lessons, and quizzes for the 3 learning paths users see in their dashboard</p>
-                </div>
-              </div>
-            </div>
-            <div className="text-sm text-gray-600">
-              Manage modules within the 3 learning paths: Beginner, Intermediate, and Expert
-            </div>
-          </div>
-        </div>
-      </div>
+      <AdminHeader
+        title="Manage Learning Paths"
+        subtitle="Edit modules, lessons, and quizzes for the 3 learning paths users see in their dashboard"
+        icon={BookOpen}
+        iconColor="from-green-600 to-emerald-600"
+        showBackButton={true}
+        actions={[
+          {
+            text: "Add Module",
+            icon: Plus,
+            onClick: () => setShowAddModuleModal(true),
+            className: 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700'
+          }
+        ]}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filters and Search */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search learning paths..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center">
-                <Filter className="h-5 w-5 text-gray-400 mr-2" />
-                <select
-                  value={filterDifficulty}
-                  onChange={(e) => setFilterDifficulty(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="all">All Difficulties</option>
-                  <option value="Beginner">Beginner</option>
-                  <option value="Intermediate">Intermediate</option>
-                  <option value="Expert">Expert</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
+        <AdminFilters
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchPlaceholder="Search learning paths..."
+          filters={[
+            {
+              value: filterDifficulty,
+              onChange: setFilterDifficulty,
+              options: [
+                { value: 'all', label: 'All Difficulties' },
+                { value: 'Beginner', label: 'Beginner' },
+                { value: 'Intermediate', label: 'Intermediate' },
+                { value: 'Expert', label: 'Expert' }
+              ]
+            }
+          ]}
+          viewModes={[
+            { id: 'grid', icon: Grid, title: 'Grid View' },
+            { id: 'list', icon: List, title: 'List View' }
+          ]}
+          currentViewMode={viewMode}
+          onViewModeChange={setViewMode}
+        />
 
         {/* Learning Paths Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <AdminCardGrid columns={3}>
           {filteredPaths.map((path) => (
-            <div key={path.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
+            <AdminCard
+              key={path.id}
+              title={path.title}
+              value={path.modules_count}
+              subtitle={`${path.modules_count} Modules`}
+              icon={BookOpen}
+              iconColor={getDifficultyColor(path.difficulty).includes('green') ? 'from-green-500 to-green-600' : 
+                         getDifficultyColor(path.difficulty).includes('blue') ? 'from-blue-500 to-blue-600' : 
+                         'from-red-500 to-red-600'}
+              status={path.is_active ? 'success' : 'error'}
+              actions={[
+                {
+                  text: "View Modules",
+                  icon: Eye,
+                  onClick: () => {
+                    setSelectedPath(path)
+                    setShowPathDetails(true)
+                  },
+                  className: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'
+                },
+                {
+                  text: "Edit",
+                  icon: Edit,
+                  onClick: () => openEditModal(path),
+                  className: 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'
+                },
+                {
+                  text: "Add Module",
+                  icon: Plus,
+                  onClick: () => openAddModuleModal(path),
+                  className: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'
+                }
+              ]}
+            >
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
                   <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getDifficultyColor(path.difficulty)}`}>
                     {path.difficulty}
                   </span>
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={() => {
-                        setSelectedPath(path)
-                        setShowPathDetails(true)
-                      }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center text-sm font-medium"
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Modules
-                    </button>
-                    <button 
-                      onClick={() => openEditModal(path)}
-                      className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
-                      title="Edit Learning Path"
-                    >
-                      <Edit className="h-6 w-6" />
-                    </button>
-                  </div>
-                </div>
-                
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{path.title}</h3>
-                <p className="text-sm text-gray-600 mb-4">{path.description}</p>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <BookOpen className="h-4 w-4 mr-2" />
-                    <span>{path.modules_count} Modules</span>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <span>Status: {path.is_active ? 'Active' : 'Inactive'}</span>
-                  </div>
-                </div>
-                
-                <div className="mt-4 flex items-center justify-between">
-                  <button
-                    onClick={() => handleTogglePathStatus(path.id, path.is_active)}
-                    className={`px-3 py-1 text-xs font-medium rounded-full ${
-                      path.is_active 
-                        ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                        : 'bg-red-100 text-red-800 hover:bg-red-200'
-                    }`}
-                  >
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    path.is_active 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
                     {path.is_active ? 'Active' : 'Inactive'}
-                  </button>
-                  <button
-                    onClick={() => openAddModuleModal(path)}
-                    className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center shadow-sm"
-                  >
-                    <Plus className="h-5 w-5 mr-2" />
-                    Add Module
-                  </button>
+                  </span>
                 </div>
+                <p className="text-sm text-slate-600">{path.description}</p>
+                <button
+                  onClick={() => handleTogglePathStatus(path.id, path.is_active)}
+                  className={`w-full px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                    path.is_active 
+                      ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                      : 'bg-red-100 text-red-800 hover:bg-red-200'
+                  }`}
+                >
+                  {path.is_active ? 'Deactivate' : 'Activate'}
+                </button>
               </div>
-            </div>
+            </AdminCard>
           ))}
-        </div>
+        </AdminCardGrid>
 
-        {/* Path Details Modal */}
+        {/* Enhanced Path Details Modal */}
         {showPathDetails && selectedPath && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Learning Path Details</h3>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
+            <div className="bg-white/95 backdrop-blur-sm rounded-3xl max-w-7xl w-full max-h-[95vh] overflow-y-auto border border-slate-200/50 shadow-2xl">
+              <div className="p-8">
+                <div className="flex justify-between items-center mb-8">
+                  <div className="flex items-center space-x-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur-sm opacity-75"></div>
+                      <div className="relative p-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl">
+                        <BookOpen className="h-8 w-8 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-3xl font-bold text-slate-900">Learning Path Details</h3>
+                      <p className="text-slate-600 mt-1">Manage modules, lessons, and quizzes for {selectedPath.title}</p>
+                    </div>
+                  </div>
                   <button
                     onClick={() => setShowPathDetails(false)}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all duration-200"
                   >
                     <X className="h-6 w-6" />
                   </button>
@@ -883,70 +880,91 @@ const ManageLearningPaths = () => {
                   </div>
 
                   {/* Enhanced Modules Section */}
-                  <div className="border-t pt-6">
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <h5 className="text-lg font-medium text-gray-900">{selectedPath.difficulty} Learning Path Modules</h5>
-                        <div className="flex items-center mt-2">
-                          <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getDifficultyColor(selectedPath.difficulty)}`}>
-                            {selectedPath.difficulty} Level
-                          </span>
-                          <span className="ml-3 text-sm text-gray-500">
-                            {selectedPath.modules.length} modules
-                          </span>
+                  <div className="border-t border-slate-200/60 pt-8">
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center space-x-4">
+                        <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-lg">
+                          <BookOpen className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <h5 className="text-2xl font-bold text-slate-900">{selectedPath.difficulty} Learning Path Modules</h5>
+                          <div className="flex items-center mt-2 space-x-4">
+                            <span className={`inline-flex px-4 py-2 text-sm font-semibold rounded-full ${getDifficultyColor(selectedPath.difficulty)}`}>
+                              {selectedPath.difficulty} Level
+                            </span>
+                            <span className="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                              {selectedPath.modules.length} modules
+                            </span>
+                            <span className="text-sm text-slate-500 bg-blue-100 px-3 py-1 rounded-full">
+                              {selectedPath.modules.reduce((total, module) => total + (module.lessons?.length || 0), 0)} lessons
+                            </span>
+                          </div>
                         </div>
                       </div>
                       
-                      <div className="flex items-center space-x-3">
-                        {/* View Mode Toggle */}
-                        <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                      <div className="flex items-center space-x-4">
+                        {/* Enhanced View Mode Toggle */}
+                        <div className="flex items-center bg-slate-100 rounded-xl p-1 shadow-inner">
                           <button
                             onClick={() => setViewMode('grid')}
-                            className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-white shadow-sm' : ''}`}
+                            className={`p-3 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
+                            title="Grid View"
                           >
-                            <Grid className="h-4 w-4" />
+                            <Grid className="h-5 w-5" />
                           </button>
                           <button
                             onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-white shadow-sm' : ''}`}
+                            className={`p-3 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
+                            title="List View"
                           >
-                            <List className="h-4 w-4" />
+                            <List className="h-5 w-5" />
                           </button>
                         </div>
                         
                         <button
                           onClick={() => openAddModuleModal(selectedPath)}
-                          className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center text-base font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                          className="px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 flex items-center text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
                         >
-                          <Plus className="h-5 w-5 mr-2" />
+                          <Plus className="h-6 w-6 mr-3" />
                           Add New Module
                         </button>
                       </div>
                     </div>
                     
-                    {/* Modules Display */}
+                    {/* Enhanced Modules Display */}
                     {viewMode === 'grid' ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {selectedPath.modules.map((module) => (
-                          <div key={module.id} className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                            {/* Module Header */}
-                            <div className="p-4 border-b border-gray-100">
-                              <div className="flex items-start justify-between">
+                          <div key={module.id} className="group relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-blue-300/50 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 transform hover:scale-105">
+                            {/* Enhanced Module Header */}
+                            <div className="p-6 border-b border-slate-200/60">
+                              <div className="flex items-start justify-between mb-4">
                                 <div className="flex-1">
-                                  <h6 className="font-semibold text-gray-900 text-lg">{module.title}</h6>
-                                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">{module.description}</p>
+                                  <div className="flex items-center space-x-3 mb-3">
+                                    <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg shadow-lg">
+                                      <BookOpen className="h-5 w-5 text-white" />
+                                    </div>
+                                    <div>
+                                      <h6 className="font-bold text-slate-900 text-xl">{module.title}</h6>
+                                      <div className="flex items-center text-sm text-slate-500 mt-1">
+                                        <Clock className="h-4 w-4 mr-1" />
+                                        {module.estimatedTime}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <p className="text-slate-600 leading-relaxed line-clamp-3">{module.description}</p>
                                 </div>
-                                <div className="flex items-center space-x-2 ml-3">
+                                <div className="flex items-center space-x-2 ml-4">
                                   <button
                                     onClick={() => openEditModuleModal(module)}
-                                    className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                                    className="p-3 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200 transition-all duration-200 shadow-lg hover:shadow-xl"
                                     title="Edit Module"
                                   >
                                     <Edit className="h-5 w-5" />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteModule(module.id)}
-                                    className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                                    className="p-3 bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition-all duration-200 shadow-lg hover:shadow-xl"
                                     title="Delete Module"
                                   >
                                     <Trash2 className="h-5 w-5" />
@@ -954,56 +972,70 @@ const ManageLearningPaths = () => {
                                 </div>
                               </div>
                               
-                              <div className="flex items-center justify-between mt-3">
-                                <div className="flex items-center text-xs text-gray-500">
-                                  <Clock className="h-3 w-3 mr-1" />
-                                  {module.estimatedTime}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-4">
+                                  <div className="flex items-center text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                                    <BookOpen className="h-4 w-4 mr-1" />
+                                    {module.lessons?.length || 0} lessons
+                                  </div>
+                                  <div className="flex items-center text-sm text-slate-500 bg-blue-100 px-3 py-1 rounded-full">
+                                    <FileText className="h-4 w-4 mr-1" />
+                                    {module.quiz?.questions?.length || 0} quiz
+                                  </div>
                                 </div>
                                 <button
                                   onClick={() => toggleModuleExpansion(module.id)}
-                                  className="flex items-center text-xs text-blue-600 hover:text-blue-700"
+                                  className="flex items-center px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
                                 >
                                   {expandedModules[module.id] ? 'Less' : 'More'}
-                                  {expandedModules[module.id] ? <ChevronUp className="h-3 w-3 ml-1" /> : <ChevronDown className="h-3 w-3 ml-1" />}
+                                  {expandedModules[module.id] ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
                                 </button>
                               </div>
                             </div>
                             
-                            {/* Module Content */}
-                            <div className="p-4">
-                              {/* Lessons Summary */}
-                              <div className="mb-4">
-                                <div className="flex items-center justify-between mb-2">
-                                  <h7 className="text-sm font-medium text-gray-700">Lessons ({module.lessons.length})</h7>
+                            {/* Enhanced Module Content */}
+                            <div className="p-6">
+                              {/* Enhanced Lessons Summary */}
+                              <div className="mb-6">
+                                <div className="flex items-center justify-between mb-4">
+                                  <div className="flex items-center space-x-3">
+                                    <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-lg">
+                                      <BookOpen className="h-5 w-5 text-white" />
+                                    </div>
+                                    <h7 className="text-lg font-bold text-slate-900">Lessons ({module.lessons.length})</h7>
+                                  </div>
                                   <button
                                     onClick={() => openAddLessonModal()}
-                                    className="px-3 py-1 text-sm text-green-600 hover:text-green-700 flex items-center bg-green-50 rounded-md hover:bg-green-100 transition-colors"
+                                    className="px-4 py-2 text-sm text-green-600 hover:text-green-700 flex items-center bg-green-50 rounded-xl hover:bg-green-100 transition-all duration-200 shadow-lg hover:shadow-xl"
                                   >
-                                    <Plus className="h-4 w-4 mr-1" />
+                                    <Plus className="h-4 w-4 mr-2" />
                                     Add Lesson
                                   </button>
                                 </div>
                                 {expandedModules[module.id] ? (
-                                  <div className="space-y-2">
+                                  <div className="space-y-3">
                                     {module.lessons.map((lesson, index) => (
-                                      <div key={lesson.id} className="flex items-center justify-between bg-gray-50 rounded p-2">
-                                        <div className="flex items-center">
-                                          <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium mr-2">
+                                      <div key={lesson.id} className="flex items-center justify-between bg-slate-50 rounded-xl p-4 hover:bg-slate-100 transition-all duration-200 shadow-sm hover:shadow-md">
+                                        <div className="flex items-center space-x-3">
+                                          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
                                             {index + 1}
-                                          </span>
-                                          <span className="text-sm text-gray-700">{lesson.title}</span>
+                                          </div>
+                                          <div>
+                                            <span className="text-base font-semibold text-slate-900">{lesson.title}</span>
+                                            <p className="text-sm text-slate-500 mt-1 line-clamp-2">{lesson.content}</p>
+                                          </div>
                                         </div>
-                                        <div className="flex items-center space-x-1">
+                                        <div className="flex items-center space-x-2">
                                           <button
                                             onClick={() => openEditLessonModal(lesson)}
-                                            className="p-1.5 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition-colors"
+                                            className="p-2 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200 transition-all duration-200 shadow-lg hover:shadow-xl"
                                             title="Edit Lesson"
                                           >
                                             <Edit className="h-4 w-4" />
                                           </button>
                                           <button
                                             onClick={() => handleDeleteLesson(lesson.id)}
-                                            className="p-1.5 bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
+                                            className="p-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition-all duration-200 shadow-lg hover:shadow-xl"
                                             title="Delete Lesson"
                                           >
                                             <Trash2 className="h-4 w-4" />
@@ -1013,33 +1045,45 @@ const ManageLearningPaths = () => {
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="text-xs text-gray-500">
+                                  <div className="text-sm text-slate-500 bg-slate-100 rounded-xl p-3">
                                     {module.lessons.slice(0, 2).map(lesson => lesson.title).join(', ')}
                                     {module.lessons.length > 2 && ` +${module.lessons.length - 2} more`}
                                   </div>
                                 )}
                               </div>
                               
-                              {/* Quiz Summary */}
-                              <div className="border-t pt-4">
-                                <div className="flex items-center justify-between mb-2">
-                                  <h7 className="text-sm font-medium text-gray-700">Quiz</h7>
+                              {/* Enhanced Quiz Summary */}
+                              <div className="border-t border-slate-200/60 pt-6">
+                                <div className="flex items-center justify-between mb-4">
+                                  <div className="flex items-center space-x-3">
+                                    <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow-lg">
+                                      <FileText className="h-5 w-5 text-white" />
+                                    </div>
+                                    <h7 className="text-lg font-bold text-slate-900">Quiz</h7>
+                                  </div>
                                   <button
                                     onClick={() => openAddQuizModal()}
-                                    className="px-3 py-1 text-sm text-green-600 hover:text-green-700 flex items-center bg-green-50 rounded-md hover:bg-green-100 transition-colors"
+                                    className="px-4 py-2 text-sm text-green-600 hover:text-green-700 flex items-center bg-green-50 rounded-xl hover:bg-green-100 transition-all duration-200 shadow-lg hover:shadow-xl"
                                   >
-                                    <Plus className="h-4 w-4 mr-1" />
+                                    <Plus className="h-4 w-4 mr-2" />
                                     Add Quiz
                                   </button>
                                 </div>
-                                <div className="text-sm text-gray-600">
-                                  {module.quiz.title || 'No quiz added'}
-                                </div>
-                                {module.quiz.questions && module.quiz.questions.length > 0 && (
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    {module.quiz.questions.length} questions
+                                <div className="bg-slate-50 rounded-xl p-4">
+                                  <div className="text-base font-semibold text-slate-900 mb-2">
+                                    {module.quiz.title || 'No quiz added'}
                                   </div>
-                                )}
+                                  {module.quiz.questions && module.quiz.questions.length > 0 && (
+                                    <div className="flex items-center space-x-4">
+                                      <div className="text-sm text-slate-500 bg-blue-100 px-3 py-1 rounded-full">
+                                        {module.quiz.questions.length} questions
+                                      </div>
+                                      <div className="text-sm text-slate-500 bg-green-100 px-3 py-1 rounded-full">
+                                        Ready to use
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1303,120 +1347,158 @@ const ManageLearningPaths = () => {
           </div>
         )}
 
-        {/* Add Module Modal */}
+        {/* Enhanced Add Module Modal */}
         {showAddModuleModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Add New Module</h3>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
+            <div className="bg-white/95 backdrop-blur-sm rounded-3xl max-w-6xl w-full max-h-[95vh] overflow-y-auto border border-slate-200/50 shadow-2xl">
+              <div className="p-8">
+                <div className="flex justify-between items-center mb-8">
+                  <div className="flex items-center space-x-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl blur-sm opacity-75"></div>
+                      <div className="relative p-4 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl">
+                        <Plus className="h-8 w-8 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-3xl font-bold text-slate-900">Add New Module</h3>
+                      <p className="text-slate-600 mt-1">Create a new learning module for {selectedPath?.title}</p>
+                    </div>
+                  </div>
                   <button
                     onClick={() => {
                       setShowAddModuleModal(false)
                       resetModuleForm()
                     }}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all duration-200"
                   >
                     <X className="h-6 w-6" />
                   </button>
                 </div>
                 
-                <form onSubmit={handleAddModule} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Module Title</label>
-                      <input
-                        type="text"
-                        value={moduleFormData.title}
-                        onChange={(e) => setModuleFormData(prev => ({ ...prev, title: e.target.value }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                <form onSubmit={handleAddModule} className="space-y-8">
+                  {/* Enhanced Basic Information */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
+                    <div className="flex items-center space-x-3 mb-6">
+                      <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg shadow-lg">
+                        <BookOpen className="h-5 w-5 text-white" />
+                      </div>
+                      <h4 className="text-xl font-bold text-slate-900">Basic Information</h4>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-lg font-semibold text-slate-700 mb-3">Module Title</label>
+                        <input
+                          type="text"
+                          value={moduleFormData.title}
+                          onChange={(e) => setModuleFormData(prev => ({ ...prev, title: e.target.value }))}
+                          className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
+                          placeholder="Enter module title..."
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-lg font-semibold text-slate-700 mb-3">Estimated Time</label>
+                        <select
+                          value={moduleFormData.estimatedTime}
+                          onChange={(e) => setModuleFormData(prev => ({ ...prev, estimatedTime: e.target.value }))}
+                          className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
+                        >
+                          <option value="15 min">15 minutes</option>
+                          <option value="20 min">20 minutes</option>
+                          <option value="25 min">25 minutes</option>
+                          <option value="30 min">30 minutes</option>
+                          <option value="35 min">35 minutes</option>
+                          <option value="40 min">40 minutes</option>
+                          <option value="45 min">45 minutes</option>
+                          <option value="50 min">50 minutes</option>
+                          <option value="55 min">55 minutes</option>
+                          <option value="60 min">1 hour</option>
+                          <option value="65 min">1 hour 5 minutes</option>
+                          <option value="70 min">1 hour 10 minutes</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-6">
+                      <label className="block text-lg font-semibold text-slate-700 mb-3">Description</label>
+                      <textarea
+                        value={moduleFormData.description}
+                        onChange={(e) => setModuleFormData(prev => ({ ...prev, description: e.target.value }))}
+                        rows="4"
+                        className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
+                        placeholder="Describe what students will learn in this module..."
                         required
                       />
                     </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Estimated Time</label>
-                      <select
-                        value={moduleFormData.estimatedTime}
-                        onChange={(e) => setModuleFormData(prev => ({ ...prev, estimatedTime: e.target.value }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="15 min">15 minutes</option>
-                        <option value="20 min">20 minutes</option>
-                        <option value="25 min">25 minutes</option>
-                        <option value="30 min">30 minutes</option>
-                        <option value="35 min">35 minutes</option>
-                        <option value="40 min">40 minutes</option>
-                        <option value="45 min">45 minutes</option>
-                        <option value="50 min">50 minutes</option>
-                        <option value="55 min">55 minutes</option>
-                        <option value="60 min">1 hour</option>
-                        <option value="65 min">1 hour 5 minutes</option>
-                        <option value="70 min">1 hour 10 minutes</option>
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                    <textarea
-                      value={moduleFormData.description}
-                      onChange={(e) => setModuleFormData(prev => ({ ...prev, description: e.target.value }))}
-                      rows="3"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
                   </div>
 
-                  {/* Images Section */}
-                  <div className="border-t pt-6">
-                    <h4 className="text-md font-medium text-gray-900 mb-4">Module Images</h4>
-                    <div className="space-y-4">
-                      {/* Upload New Image */}
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                        <Image className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                        <p className="text-sm text-gray-600 mb-2">Upload module images</p>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={(e) => {
-                            Array.from(e.target.files).forEach(file => {
-                              handleImageUpload(file)
-                            })
-                          }}
-                          className="hidden"
-                          id="image-upload"
-                          disabled={uploading}
-                        />
-                        <label
-                          htmlFor="image-upload"
-                          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer disabled:opacity-50"
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          {uploading ? 'Uploading...' : 'Choose Images'}
-                        </label>
+                  {/* Enhanced Images Section */}
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200/50">
+                    <div className="flex items-center space-x-3 mb-6">
+                      <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-lg">
+                        <Image className="h-5 w-5 text-white" />
+                      </div>
+                      <h4 className="text-xl font-bold text-slate-900">Module Images</h4>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      {/* Enhanced Upload Area */}
+                      <div className="border-2 border-dashed border-green-300 rounded-2xl p-8 text-center hover:border-green-400 transition-all duration-200 bg-white/50 backdrop-blur-sm">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl blur-sm opacity-25"></div>
+                          <div className="relative p-6">
+                            <Image className="mx-auto h-16 w-16 text-green-500 mb-4" />
+                            <h5 className="text-lg font-semibold text-slate-900 mb-2">Upload Module Images</h5>
+                            <p className="text-slate-600 mb-4">Add visual content to enhance learning experience</p>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={(e) => {
+                                Array.from(e.target.files).forEach(file => {
+                                  handleImageUpload(file)
+                                })
+                              }}
+                              className="hidden"
+                              id="image-upload"
+                              disabled={uploading}
+                            />
+                            <label
+                              htmlFor="image-upload"
+                              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 cursor-pointer disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl text-lg font-semibold"
+                            >
+                              <Upload className="h-5 w-5 mr-2" />
+                              {uploading ? 'Uploading...' : 'Choose Images'}
+                            </label>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Display Uploaded Images */}
+                      {/* Enhanced Display Uploaded Images */}
                       {moduleFormData.images.length > 0 && (
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                           {moduleFormData.images.map((image) => (
-                            <div key={image.id} className="relative group">
+                            <div key={image.id} className="relative group bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300">
                               <img
                                 src={image.url}
                                 alt={image.name}
-                                className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                                className="w-full h-40 object-cover rounded-xl border border-slate-200"
                               />
-                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-xl flex items-center justify-center">
                                 <button
                                   onClick={() => removeImage(image.id)}
-                                  className="opacity-0 group-hover:opacity-100 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-all"
+                                  className="opacity-0 group-hover:opacity-100 bg-red-600 text-white p-3 rounded-full hover:bg-red-700 transition-all shadow-lg"
                                 >
-                                  <X className="h-4 w-4" />
+                                  <X className="h-5 w-5" />
                                 </button>
                               </div>
-                              <p className="text-xs text-gray-500 mt-1 truncate">{image.name}</p>
+                              <div className="mt-3">
+                                <p className="text-sm font-semibold text-slate-900 truncate">{image.name}</p>
+                                <p className="text-xs text-slate-500">{(image.size / (1024 * 1024)).toFixed(2)} MB</p>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -1424,56 +1506,78 @@ const ManageLearningPaths = () => {
                     </div>
                   </div>
 
-                  {/* Videos Section */}
-                  <div className="border-t pt-6">
-                    <h4 className="text-md font-medium text-gray-900 mb-4">Module Videos</h4>
-                    <div className="space-y-4">
-                      {/* Upload New Video */}
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                        <Video className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                        <p className="text-sm text-gray-600 mb-2">Upload module videos</p>
-                        <input
-                          type="file"
-                          accept="video/*"
-                          multiple
-                          onChange={(e) => {
-                            Array.from(e.target.files).forEach(file => {
-                              handleVideoUpload(file)
-                            })
-                          }}
-                          className="hidden"
-                          id="video-upload"
-                          disabled={uploading}
-                        />
-                        <label
-                          htmlFor="video-upload"
-                          className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer disabled:opacity-50"
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          {uploading ? 'Uploading...' : 'Choose Videos'}
-                        </label>
+                  {/* Enhanced Videos Section */}
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200/50">
+                    <div className="flex items-center space-x-3 mb-6">
+                      <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow-lg">
+                        <Video className="h-5 w-5 text-white" />
+                      </div>
+                      <h4 className="text-xl font-bold text-slate-900">Module Videos</h4>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      {/* Enhanced Upload Area */}
+                      <div className="border-2 border-dashed border-purple-300 rounded-2xl p-8 text-center hover:border-purple-400 transition-all duration-200 bg-white/50 backdrop-blur-sm">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur-sm opacity-25"></div>
+                          <div className="relative p-6">
+                            <Video className="mx-auto h-16 w-16 text-purple-500 mb-4" />
+                            <h5 className="text-lg font-semibold text-slate-900 mb-2">Upload Module Videos</h5>
+                            <p className="text-slate-600 mb-4">Add video content to make learning more engaging</p>
+                            <input
+                              type="file"
+                              accept="video/*"
+                              multiple
+                              onChange={(e) => {
+                                Array.from(e.target.files).forEach(file => {
+                                  handleVideoUpload(file)
+                                })
+                              }}
+                              className="hidden"
+                              id="video-upload"
+                              disabled={uploading}
+                            />
+                            <label
+                              htmlFor="video-upload"
+                              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 cursor-pointer disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl text-lg font-semibold"
+                            >
+                              <Upload className="h-5 w-5 mr-2" />
+                              {uploading ? 'Uploading...' : 'Choose Videos'}
+                            </label>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Display Uploaded Videos */}
+                      {/* Enhanced Display Uploaded Videos */}
                       {moduleFormData.videos.length > 0 && (
                         <div className="space-y-4">
                           {moduleFormData.videos.map((video) => (
-                            <div key={video.id} className="relative group border border-gray-200 rounded-lg p-4">
-                              <div className="flex items-center space-x-4">
+                            <div key={video.id} className="relative group bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
+                              <div className="flex items-center space-x-6">
                                 <div className="flex-shrink-0">
-                                  <Video className="h-12 w-12 text-gray-400" />
+                                  <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg">
+                                    <Video className="h-8 w-8 text-white" />
+                                  </div>
                                 </div>
                                 <div className="flex-1">
-                                  <p className="text-sm font-medium text-gray-900">{video.name}</p>
-                                  <p className="text-xs text-gray-500">
+                                  <h6 className="text-lg font-semibold text-slate-900 mb-1">{video.name}</h6>
+                                  <p className="text-sm text-slate-500 mb-2">
                                     {(video.size / (1024 * 1024)).toFixed(2)} MB
                                   </p>
+                                  <div className="flex items-center space-x-4">
+                                    <span className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                                      Video File
+                                    </span>
+                                    <span className="text-xs text-slate-500 bg-purple-100 px-3 py-1 rounded-full">
+                                      Ready to use
+                                    </span>
+                                  </div>
                                 </div>
                                 <button
                                   onClick={() => removeVideo(video.id)}
-                                  className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                                  className="p-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Trash2 className="h-5 w-5" />
                                 </button>
                               </div>
                             </div>
@@ -1483,44 +1587,54 @@ const ManageLearningPaths = () => {
                     </div>
                   </div>
 
-                  {/* Lessons Section */}
-                  <div className="border-t pt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-md font-medium text-gray-900">Lessons ({moduleFormData.lessons.length})</h4>
+                  {/* Enhanced Lessons Section */}
+                  <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6 border border-orange-200/50">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg shadow-lg">
+                          <BookOpen className="h-5 w-5 text-white" />
+                        </div>
+                        <h4 className="text-xl font-bold text-slate-900">Lessons ({moduleFormData.lessons.length})</h4>
+                      </div>
                       <button
                         type="button"
                         onClick={openAddLessonModal}
-                        className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center text-sm"
+                        className="px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl hover:from-orange-700 hover:to-red-700 flex items-center text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                       >
-                        <Plus className="h-4 w-4 mr-1" />
+                        <Plus className="h-5 w-5 mr-2" />
                         Add Lesson
                       </button>
                     </div>
                     
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {moduleFormData.lessons.map((lesson, index) => (
-                        <div key={lesson.id} className="border border-gray-200 rounded-lg p-3">
+                        <div key={lesson.id} className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium mr-3">
+                            <div className="flex items-center space-x-4">
+                              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
                                 {index + 1}
-                              </span>
-                              <span className="text-sm font-medium text-gray-900">{lesson.title}</span>
+                              </div>
+                              <div>
+                                <span className="text-lg font-semibold text-slate-900">{lesson.title}</span>
+                                <p className="text-sm text-slate-500 mt-1 line-clamp-2">{lesson.content}</p>
+                              </div>
                             </div>
-                            <div className="flex items-center space-x-1">
+                            <div className="flex items-center space-x-2">
                               <button
                                 type="button"
                                 onClick={() => openEditLessonModal(lesson)}
-                                className="p-1 text-gray-400 hover:text-blue-600"
+                                className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                                title="Edit Lesson"
                               >
-                                <Edit className="h-3 w-3" />
+                                <Edit className="h-4 w-4" />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleDeleteLesson(lesson.id)}
-                                className="p-1 text-gray-400 hover:text-red-600"
+                                className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200"
+                                title="Delete Lesson"
                               >
-                                <Trash2 className="h-3 w-3" />
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
                           </div>
@@ -1529,41 +1643,40 @@ const ManageLearningPaths = () => {
                     </div>
                   </div>
 
-                  {/* Quiz Section */}
-                  <div className="border-t pt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-md font-medium text-gray-900">Quiz</h4>
+                  {/* Enhanced Quiz Section */}
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200/50">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow-lg">
+                          <FileText className="h-5 w-5 text-white" />
+                        </div>
+                        <h4 className="text-xl font-bold text-slate-900">Quiz</h4>
+                      </div>
                       <button
                         type="button"
                         onClick={openAddQuizModal}
-                        className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center text-sm"
+                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 flex items-center text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                       >
-                        <Plus className="h-4 w-4 mr-1" />
+                        <Plus className="h-5 w-5 mr-2" />
                         Add Quiz
                       </button>
                     </div>
                     
-                    {moduleFormData.quiz.title ? (
-                      <div className="border border-gray-200 rounded-lg p-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="text-sm font-medium text-gray-900">{moduleFormData.quiz.title}</span>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {moduleFormData.quiz.questions.length} questions
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => openEditQuizModal(moduleFormData.quiz)}
-                            className="p-1 text-gray-400 hover:text-blue-600"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </button>
-                        </div>
+                    <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200">
+                      <div className="text-lg font-semibold text-slate-900 mb-2">
+                        {moduleFormData.quiz.title || 'No quiz added'}
                       </div>
-                    ) : (
-                      <div className="text-sm text-gray-500 italic">No quiz added yet</div>
-                    )}
+                      {moduleFormData.quiz.questions && moduleFormData.quiz.questions.length > 0 && (
+                        <div className="flex items-center space-x-4 mt-4">
+                          <div className="text-sm text-slate-500 bg-blue-100 px-3 py-1 rounded-full">
+                            {moduleFormData.quiz.questions.length} questions
+                          </div>
+                          <div className="text-sm text-slate-500 bg-green-100 px-3 py-1 rounded-full">
+                            Ready to use
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="flex justify-end space-x-3">
@@ -1583,6 +1696,364 @@ const ManageLearningPaths = () => {
                     >
                       <Save className="h-4 w-4 mr-2" />
                       Add Module
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Enhanced Edit Module Modal */}
+        {showEditModuleModal && editingModule && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
+            <div className="bg-white/95 backdrop-blur-sm rounded-3xl max-w-6xl w-full max-h-[95vh] overflow-y-auto border border-slate-200/50 shadow-2xl">
+              <div className="p-8">
+                <div className="flex justify-between items-center mb-8">
+                  <div className="flex items-center space-x-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur-sm opacity-75"></div>
+                      <div className="relative p-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl">
+                        <Edit className="h-8 w-8 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-3xl font-bold text-slate-900">Edit Module</h3>
+                      <p className="text-slate-600 mt-1">Update module information and content</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowEditModuleModal(false)
+                      setEditingModule(null)
+                      resetModuleForm()
+                    }}
+                    className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all duration-200"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+                
+                <form onSubmit={handleEditModule} className="space-y-8">
+                  {/* Enhanced Basic Information */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
+                    <div className="flex items-center space-x-3 mb-6">
+                      <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg shadow-lg">
+                        <BookOpen className="h-5 w-5 text-white" />
+                      </div>
+                      <h4 className="text-xl font-bold text-slate-900">Basic Information</h4>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-lg font-semibold text-slate-700 mb-3">Module Title</label>
+                        <input
+                          type="text"
+                          value={moduleFormData.title}
+                          onChange={(e) => setModuleFormData(prev => ({ ...prev, title: e.target.value }))}
+                          className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
+                          placeholder="Enter module title..."
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-lg font-semibold text-slate-700 mb-3">Estimated Time</label>
+                        <select
+                          value={moduleFormData.estimatedTime}
+                          onChange={(e) => setModuleFormData(prev => ({ ...prev, estimatedTime: e.target.value }))}
+                          className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
+                        >
+                          <option value="15 min">15 minutes</option>
+                          <option value="20 min">20 minutes</option>
+                          <option value="25 min">25 minutes</option>
+                          <option value="30 min">30 minutes</option>
+                          <option value="35 min">35 minutes</option>
+                          <option value="40 min">40 minutes</option>
+                          <option value="45 min">45 minutes</option>
+                          <option value="50 min">50 minutes</option>
+                          <option value="55 min">55 minutes</option>
+                          <option value="60 min">1 hour</option>
+                          <option value="65 min">1 hour 5 minutes</option>
+                          <option value="70 min">1 hour 10 minutes</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-6">
+                      <label className="block text-lg font-semibold text-slate-700 mb-3">Description</label>
+                      <textarea
+                        value={moduleFormData.description}
+                        onChange={(e) => setModuleFormData(prev => ({ ...prev, description: e.target.value }))}
+                        rows="4"
+                        className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
+                        placeholder="Describe what students will learn in this module..."
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Enhanced Images Section */}
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200/50">
+                    <div className="flex items-center space-x-3 mb-6">
+                      <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-lg">
+                        <Image className="h-5 w-5 text-white" />
+                      </div>
+                      <h4 className="text-xl font-bold text-slate-900">Module Images</h4>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      {/* Enhanced Upload Area */}
+                      <div className="border-2 border-dashed border-green-300 rounded-2xl p-8 text-center hover:border-green-400 transition-all duration-200 bg-white/50 backdrop-blur-sm">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl blur-sm opacity-25"></div>
+                          <div className="relative p-6">
+                            <Image className="mx-auto h-16 w-16 text-green-500 mb-4" />
+                            <h5 className="text-lg font-semibold text-slate-900 mb-2">Upload Module Images</h5>
+                            <p className="text-slate-600 mb-4">Add visual content to enhance learning experience</p>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={(e) => {
+                                Array.from(e.target.files).forEach(file => {
+                                  handleImageUpload(file)
+                                })
+                              }}
+                              className="hidden"
+                              id="edit-image-upload"
+                              disabled={uploading}
+                            />
+                            <label
+                              htmlFor="edit-image-upload"
+                              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 cursor-pointer disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl text-lg font-semibold"
+                            >
+                              <Upload className="h-5 w-5 mr-2" />
+                              {uploading ? 'Uploading...' : 'Choose Images'}
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Enhanced Display Uploaded Images */}
+                      {moduleFormData.images.length > 0 && (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                          {moduleFormData.images.map((image) => (
+                            <div key={image.id} className="relative group bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300">
+                              <img
+                                src={image.url}
+                                alt={image.name}
+                                className="w-full h-40 object-cover rounded-xl border border-slate-200"
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-xl flex items-center justify-center">
+                                <button
+                                  onClick={() => removeImage(image.id)}
+                                  className="opacity-0 group-hover:opacity-100 bg-red-600 text-white p-3 rounded-full hover:bg-red-700 transition-all shadow-lg"
+                                >
+                                  <X className="h-5 w-5" />
+                                </button>
+                              </div>
+                              <div className="mt-3">
+                                <p className="text-sm font-semibold text-slate-900 truncate">{image.name}</p>
+                                <p className="text-xs text-slate-500">{(image.size / (1024 * 1024)).toFixed(2)} MB</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Enhanced Videos Section */}
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200/50">
+                    <div className="flex items-center space-x-3 mb-6">
+                      <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow-lg">
+                        <Video className="h-5 w-5 text-white" />
+                      </div>
+                      <h4 className="text-xl font-bold text-slate-900">Module Videos</h4>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      {/* Enhanced Upload Area */}
+                      <div className="border-2 border-dashed border-purple-300 rounded-2xl p-8 text-center hover:border-purple-400 transition-all duration-200 bg-white/50 backdrop-blur-sm">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur-sm opacity-25"></div>
+                          <div className="relative p-6">
+                            <Video className="mx-auto h-16 w-16 text-purple-500 mb-4" />
+                            <h5 className="text-lg font-semibold text-slate-900 mb-2">Upload Module Videos</h5>
+                            <p className="text-slate-600 mb-4">Add video content to make learning more engaging</p>
+                            <input
+                              type="file"
+                              accept="video/*"
+                              multiple
+                              onChange={(e) => {
+                                Array.from(e.target.files).forEach(file => {
+                                  handleVideoUpload(file)
+                                })
+                              }}
+                              className="hidden"
+                              id="edit-video-upload"
+                              disabled={uploading}
+                            />
+                            <label
+                              htmlFor="edit-video-upload"
+                              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 cursor-pointer disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl text-lg font-semibold"
+                            >
+                              <Upload className="h-5 w-5 mr-2" />
+                              {uploading ? 'Uploading...' : 'Choose Videos'}
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Enhanced Display Uploaded Videos */}
+                      {moduleFormData.videos.length > 0 && (
+                        <div className="space-y-4">
+                          {moduleFormData.videos.map((video) => (
+                            <div key={video.id} className="relative group bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
+                              <div className="flex items-center space-x-6">
+                                <div className="flex-shrink-0">
+                                  <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg">
+                                    <Video className="h-8 w-8 text-white" />
+                                  </div>
+                                </div>
+                                <div className="flex-1">
+                                  <h6 className="text-lg font-semibold text-slate-900 mb-1">{video.name}</h6>
+                                  <p className="text-sm text-slate-500 mb-2">
+                                    {(video.size / (1024 * 1024)).toFixed(2)} MB
+                                  </p>
+                                  <div className="flex items-center space-x-4">
+                                    <span className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                                      Video File
+                                    </span>
+                                    <span className="text-xs text-slate-500 bg-purple-100 px-3 py-1 rounded-full">
+                                      Ready to use
+                                    </span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => removeVideo(video.id)}
+                                  className="p-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Enhanced Lessons Section */}
+                  <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6 border border-orange-200/50">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg shadow-lg">
+                          <BookOpen className="h-5 w-5 text-white" />
+                        </div>
+                        <h4 className="text-xl font-bold text-slate-900">Lessons ({moduleFormData.lessons.length})</h4>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={openAddLessonModal}
+                        className="px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl hover:from-orange-700 hover:to-red-700 flex items-center text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                      >
+                        <Plus className="h-5 w-5 mr-2" />
+                        Add Lesson
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      {moduleFormData.lessons.map((lesson, index) => (
+                        <div key={lesson.id} className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                                {index + 1}
+                              </div>
+                              <div>
+                                <span className="text-lg font-semibold text-slate-900">{lesson.title}</span>
+                                <p className="text-sm text-slate-500 mt-1 line-clamp-2">{lesson.content}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                type="button"
+                                onClick={() => openEditLessonModal(lesson)}
+                                className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                                title="Edit Lesson"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteLesson(lesson.id)}
+                                className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200"
+                                title="Delete Lesson"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Enhanced Quiz Section */}
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200/50">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow-lg">
+                          <FileText className="h-5 w-5 text-white" />
+                        </div>
+                        <h4 className="text-xl font-bold text-slate-900">Quiz</h4>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={openAddQuizModal}
+                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 flex items-center text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                      >
+                        <Plus className="h-5 w-5 mr-2" />
+                        Add Quiz
+                      </button>
+                    </div>
+                    
+                    <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200">
+                      <div className="text-lg font-semibold text-slate-900 mb-2">
+                        {moduleFormData.quiz.title || 'No quiz added'}
+                      </div>
+                      {moduleFormData.quiz.questions && moduleFormData.quiz.questions.length > 0 && (
+                        <div className="flex items-center space-x-4 mt-4">
+                          <div className="text-sm text-slate-500 bg-blue-100 px-3 py-1 rounded-full">
+                            {moduleFormData.quiz.questions.length} questions
+                          </div>
+                          <div className="text-sm text-slate-500 bg-green-100 px-3 py-1 rounded-full">
+                            Ready to use
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowEditModuleModal(false)
+                        setEditingModule(null)
+                        resetModuleForm()
+                      }}
+                      className="px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                    >
+                      Update Module
                     </button>
                   </div>
                 </form>
