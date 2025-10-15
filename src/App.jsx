@@ -32,6 +32,7 @@ import ManageNotifications from './pages/admin/ManageNotifications'
 import ManageSubscription from './pages/admin/ManageSubscription'
 import ManageSeasonalContent from './pages/admin/ManageSeasonalContent'
 import ManageLearningPaths from './pages/admin/ManageLearningPaths'
+import FeedbackManagement from './pages/admin/FeedbackManagement'
 import AdminProfile from './pages/admin/AdminProfile'
 
 // Components
@@ -155,6 +156,11 @@ function App() {
               <Route path="/admin/learning-paths" element={
                 <AdminRoute>
                   <ManageLearningPaths />
+                </AdminRoute>
+              } />
+              <Route path="/admin/feedback" element={
+                <AdminRoute>
+                  <FeedbackManagement />
                 </AdminRoute>
               } />
               <Route path="/admin/profile" element={

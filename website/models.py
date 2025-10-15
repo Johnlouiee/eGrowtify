@@ -152,3 +152,37 @@ class GridSpace(db.Model):
     # Relationships
     garden = db.relationship('Garden', backref='grid_spaces')
     plant = db.relationship('Plant', backref='grid_spaces')
+
+class Feedback(db.Model):
+    __tablename__ = 'feedback'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    subject = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    rating = db.Column(db.Integer, default=5)
+    category = db.Column(db.String(50), default='general')
+    status = db.Column(db.String(20), default='pending')  # pending, in_progress, resolved, closed
+    admin_response = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    user = db.relationship('User', backref='feedbacks')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'user_name': self.user.full_name if self.user else 'Anonymous',
+            'user_email': self.user.email if self.user else 'N/A',
+            'subject': self.subject,
+            'message': self.message,
+            'rating': self.rating,
+            'category': self.category,
+            'status': self.status,
+            'admin_response': self.admin_response,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+    
+    def __repr__(self):
+        return f'<Feedback {self.id}: {self.subject}>'

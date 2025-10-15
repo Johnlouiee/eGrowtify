@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, flash, redirect, url_for, send_from_directory
 from flask_login import login_required, current_user
 from . import mysql
-from .models import db, User, Admin, Garden, Plant, PlantTracking, GridSpace
+from .models import db, User, Admin, Garden, Plant, PlantTracking, GridSpace, Feedback
 from datetime import datetime, timedelta, timezone
 import os
 import base64
@@ -2987,35 +2987,14 @@ def admin_feedback():
     if not current_user.is_admin():
         return jsonify({"error": "Access denied. Admin privileges required."}), 403
     
-    # Get feedback data (placeholder for now)
-    feedback_list = [
-        {
-            'id': 1,
-            'user_email': 'john.doe@example.com',
-            'subject': 'Bug Report',
-            'message': 'The camera feature is not working properly on mobile devices.',
-            'status': 'pending',
-            'created_at': datetime.now().isoformat()
-        },
-        {
-            'id': 2,
-            'user_email': 'jane.smith@example.com',
-            'subject': 'Feature Request',
-            'message': 'Would love to have more plant varieties in the database.',
-            'status': 'reviewed',
-            'created_at': datetime.now().isoformat()
-        },
-        {
-            'id': 3,
-            'user_email': 'mike.wilson@example.com',
-            'subject': 'General Inquiry',
-            'message': 'How do I reset my password?',
-            'status': 'resolved',
-            'created_at': datetime.now().isoformat()
-        }
-    ]
-    
-    return jsonify({"feedback_list": feedback_list})
+    try:
+        # Get all feedback from database
+        feedbacks = Feedback.query.order_by(Feedback.created_at.desc()).all()
+        feedback_list = [feedback.to_dict() for feedback in feedbacks]
+        
+        return jsonify({"feedback_list": feedback_list})
+    except Exception as e:
+        return jsonify({"error": "Failed to fetch feedback. Please try again."}), 500
 
 @views.route('/admin/feedback/<int:feedback_id>/update', methods=['POST'])
 @login_required
@@ -3025,9 +3004,26 @@ def update_feedback_status(feedback_id):
     
     data = request.get_json()
     status = data.get('status')
-    # Here you would update the feedback status in the database
-    # For now, just flash a message
-    return jsonify({"message": f"Feedback status updated to {status}."})
+    admin_response = data.get('admin_response', '')
+    
+    if not status:
+        return jsonify({"error": "Status is required."}), 400
+    
+    try:
+        # Find the feedback
+        feedback = Feedback.query.get_or_404(feedback_id)
+        
+        # Update status and admin response
+        feedback.status = status
+        if admin_response:
+            feedback.admin_response = admin_response
+        
+        db.session.commit()
+        
+        return jsonify({"message": f"Feedback status updated to {status}."})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to update feedback status. Please try again."}), 500
 
 @views.route('/admin/system-content')
 @login_required
@@ -3183,28 +3179,14 @@ def admin_feedbacks():
     if not current_user.is_admin():
         return jsonify({"error": "Access denied. Admin privileges required."}), 403
     
-    # This would typically come from a Feedback model
-    # For now, returning placeholder data
-    feedbacks = [
-        {
-            "id": 1,
-            "subject": "Camera feature not working",
-            "message": "The camera feature is not working properly on mobile devices.",
-            "status": "pending",
-            "user": {"full_name": "John Doe", "email": "john@example.com"},
-            "created_at": datetime.now().isoformat()
-        },
-        {
-            "id": 2,
-            "subject": "More plant varieties needed",
-            "message": "Would love to have more plant varieties in the database.",
-            "status": "in_progress",
-            "user": {"full_name": "Jane Smith", "email": "jane@example.com"},
-            "created_at": datetime.now().isoformat()
-        }
-    ]
-    
-    return jsonify({"feedbacks": feedbacks})
+    try:
+        # Get all feedback from database
+        feedbacks = Feedback.query.order_by(Feedback.created_at.desc()).all()
+        feedback_list = [feedback.to_dict() for feedback in feedbacks]
+        
+        return jsonify({"feedbacks": feedback_list})
+    except Exception as e:
+        return jsonify({"error": "Failed to fetch feedback. Please try again."}), 500
 
 @views.route('/admin/feedbacks/<int:feedback_id>/status', methods=['PUT'])
 @login_required
@@ -3214,11 +3196,45 @@ def admin_feedback_status(feedback_id):
     
     data = request.get_json()
     status = data.get('status')
+    admin_response = data.get('admin_response', '')
     
-    # This would typically update a Feedback model
-    # For now, just return success
+    if not status:
+        return jsonify({"error": "Status is required."}), 400
     
-    return jsonify({"message": "Feedback status updated successfully"})
+    try:
+        # Find the feedback
+        feedback = Feedback.query.get_or_404(feedback_id)
+        
+        # Update status and admin response
+        feedback.status = status
+        if admin_response:
+            feedback.admin_response = admin_response
+        
+        db.session.commit()
+        
+        return jsonify({"message": "Feedback status updated successfully"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to update feedback status. Please try again."}), 500
+
+@views.route('/admin/feedback/<int:feedback_id>', methods=['DELETE'])
+@login_required
+def delete_feedback(feedback_id):
+    if not current_user.is_admin():
+        return jsonify({"error": "Access denied. Admin privileges required."}), 403
+    
+    try:
+        # Find the feedback
+        feedback = Feedback.query.get_or_404(feedback_id)
+        
+        # Delete the feedback
+        db.session.delete(feedback)
+        db.session.commit()
+        
+        return jsonify({"message": "Feedback deleted successfully"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to delete feedback. Please try again."}), 500
 
 @views.route('/feedback/submit', methods=['POST'])
 @login_required
@@ -3232,30 +3248,37 @@ def submit_feedback():
     if not subject or not message:
         return jsonify({"error": "Subject and message are required."}), 400
     
-    # This would typically save to a Feedback model
-    # For now, just return success
-    
-    return jsonify({"success": True, "message": "Feedback submitted successfully!"})
+    try:
+        # Create new feedback entry
+        feedback = Feedback(
+            user_id=current_user.id,
+            subject=subject,
+            message=message,
+            rating=rating,
+            category=category,
+            status='pending'
+        )
+        
+        db.session.add(feedback)
+        db.session.commit()
+        
+        return jsonify({"success": True, "message": "Feedback submitted successfully!"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to submit feedback. Please try again."}), 500
 
 @views.route('/feedback/user')
 @login_required
 def user_feedbacks():
-    # This would typically fetch from a Feedback model
-    # For now, returning placeholder data
-    feedbacks = [
-        {
-            "id": 1,
-            "subject": "Great app!",
-            "message": "Really enjoying using eGrowtify for my garden management.",
-            "rating": 5,
-            "category": "general",
-            "status": "resolved",
-            "admin_response": "Thank you for your feedback! We're glad you're enjoying the app.",
-            "created_at": datetime.now().isoformat()
-        }
-    ]
-    
-    return jsonify({"feedbacks": feedbacks})
+    try:
+        # Fetch user's feedback from database
+        feedbacks = Feedback.query.filter_by(user_id=current_user.id).order_by(Feedback.created_at.desc()).all()
+        
+        feedback_list = [feedback.to_dict() for feedback in feedbacks]
+        
+        return jsonify({"feedbacks": feedback_list})
+    except Exception as e:
+        return jsonify({"error": "Failed to fetch feedback. Please try again."}), 500
 
 @views.route('/api/weather')
 @login_required
@@ -3611,28 +3634,14 @@ def admin_api_feedback():
     if not current_user.is_admin():
         return jsonify({"error": "Admin access required"}), 403
     
-    # Mock data for feedback - in a real app, you'd have a Feedback model
-    feedback = [
-        {
-            "id": 1,
-            "user_name": "John Doe",
-            "user_email": "john@example.com",
-            "message": "Great app! The AI recognition feature is very helpful.",
-            "rating": 5,
-            "status": "new",
-            "created_at": datetime.now().isoformat()
-        },
-        {
-            "id": 2,
-            "user_name": "Jane Smith",
-            "user_email": "jane@example.com", 
-            "message": "Could you add more plant species to the recognition?",
-            "rating": 4,
-            "status": "read",
-            "created_at": datetime.now().isoformat()
-        }
-    ]
-    return jsonify(feedback)
+    try:
+        # Get all feedback from database
+        feedbacks = Feedback.query.order_by(Feedback.created_at.desc()).all()
+        feedback_list = [feedback.to_dict() for feedback in feedbacks]
+        
+        return jsonify(feedback_list)
+    except Exception as e:
+        return jsonify({"error": "Failed to fetch feedback. Please try again."}), 500
 
 @views.route('/api/admin/reports')
 @login_required

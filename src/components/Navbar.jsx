@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Menu, X, User, LogOut, Calendar, Star, Info, Settings, Heart, ChevronDown, Bell, Users, BookOpen, BarChart3 } from 'lucide-react'
+import { Menu, X, User, LogOut, Calendar, Star, Info, Settings, Heart, ChevronDown, Bell, Users, BookOpen, BarChart3, MessageSquare } from 'lucide-react'
 
 const Navbar = () => {
   const { user, logout } = useAuth()
@@ -119,6 +119,14 @@ const Navbar = () => {
                           >
                             <BookOpen className="h-4 w-4" />
                             <span>Learning Paths</span>
+                          </Link>
+                          <Link 
+                            to="/admin/feedback" 
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                            <span>Feedback Management</span>
                           </Link>
                         </div>
                       )}

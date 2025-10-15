@@ -24,7 +24,7 @@ const Feedback = () => {
 
   const fetchUserFeedbacks = async () => {
     try {
-      const response = await axios.get('/api/feedback/user')
+      const response = await axios.get('/feedback/user')
       setUserFeedbacks(response.data.feedbacks || [])
     } catch (error) {
       console.error('Error fetching feedbacks:', error)
@@ -42,7 +42,7 @@ const Feedback = () => {
     setSubmitting(true)
     
     try {
-      const response = await axios.post('/api/feedback/submit', feedbackForm)
+      const response = await axios.post('/feedback/submit', feedbackForm)
       
       if (response.data.success) {
         toast.success('Feedback submitted successfully!')
