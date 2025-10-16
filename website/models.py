@@ -186,3 +186,77 @@ class Feedback(db.Model):
     
     def __repr__(self):
         return f'<Feedback {self.id}: {self.subject}>'
+
+class SubscriptionPlan(db.Model):
+    __tablename__ = 'subscription_plans'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    plan_name = db.Column(db.String(50), unique=True, nullable=False)
+    plan_type = db.Column(db.String(20), nullable=False)
+    price = db.Column(db.Numeric(10, 2), nullable=False)
+    currency = db.Column(db.String(3), default='PHP')
+    grid_planner_size = db.Column(db.String(10), nullable=False)
+    free_ai_analyses = db.Column(db.Integer, nullable=False)
+    free_plant_analyses = db.Column(db.Integer, nullable=False)
+    free_soil_analyses = db.Column(db.Integer, nullable=False)
+    additional_grid_cost = db.Column(db.Numeric(10, 2), default=20.00)
+    additional_ai_cost = db.Column(db.Numeric(10, 2), default=25.00)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    user_subscriptions = db.relationship('UserSubscription', backref='subscription_plan')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'plan_name': self.plan_name,
+            'plan_type': self.plan_type,
+            'price': float(self.price),
+            'currency': self.currency,
+            'grid_planner_size': self.grid_planner_size,
+            'free_ai_analyses': self.free_ai_analyses,
+            'free_plant_analyses': self.free_plant_analyses,
+            'free_soil_analyses': self.free_soil_analyses,
+            'additional_grid_cost': float(self.additional_grid_cost),
+            'additional_ai_cost': float(self.additional_ai_cost),
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+    
+    def __repr__(self):
+        return f'<SubscriptionPlan {self.id}: {self.plan_name}>'
+
+class UserSubscription(db.Model):
+    __tablename__ = 'user_subscriptions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    plan_id = db.Column(db.Integer, db.ForeignKey('subscription_plans.id'), nullable=False)
+    start_date = db.Column(db.DateTime, nullable=False)
+    end_date = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(20), default='active')  # active, cancelled, expired
+    payment_status = db.Column(db.String(20), default='pending')  # pending, paid, failed
+    total_paid = db.Column(db.Numeric(10, 2), default=0.00)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    user = db.relationship('User', backref='subscriptions')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'plan_id': self.plan_id,
+            'start_date': self.start_date.isoformat() if self.start_date else None,
+            'end_date': self.end_date.isoformat() if self.end_date else None,
+            'status': self.status,
+            'payment_status': self.payment_status,
+            'total_paid': float(self.total_paid),
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    def __repr__(self):
+        return f'<UserSubscription {self.id}: User {self.user_id} - Plan {self.plan_id}>'

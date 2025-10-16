@@ -3737,6 +3737,77 @@ def admin_api_subscription_subscribers():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@views.route('/api/subscription/upgrade', methods=['POST'])
+@login_required
+def user_subscribe():
+    """Handle user subscription upgrade"""
+    try:
+        data = request.get_json() or {}
+        plan_type = data.get('plan_type', 'premium')
+        payment_method = data.get('payment_method', 'demo')
+        
+        # For demo purposes, we'll simulate successful subscription
+        print(f"💰 SUBSCRIPTION: User {current_user.id} upgrading to {plan_type} via {payment_method}")
+        
+        # Update user subscription status
+        current_user.subscribed = True
+        current_user.subscription_plan = plan_type
+        
+        # Create subscription record in user_subscriptions table
+        from website.models import UserSubscription, SubscriptionPlan
+        
+        # Get the premium plan
+        premium_plan = SubscriptionPlan.query.filter_by(plan_name='Premium Plan').first()
+        if not premium_plan:
+            # Create premium plan if it doesn't exist
+            premium_plan = SubscriptionPlan(
+                plan_name='Premium Plan',
+                plan_type='premium',
+                price=150.00,
+                currency='PHP',
+                grid_planner_size='6x6',
+                free_ai_analyses=20,
+                free_plant_analyses=10,
+                free_soil_analyses=10,
+                additional_grid_cost=20.00,
+                additional_ai_cost=25.00
+            )
+            db.session.add(premium_plan)
+            db.session.flush()  # Get the ID
+        
+        # Create user subscription record
+        from datetime import datetime, timedelta
+        subscription = UserSubscription(
+            user_id=current_user.id,
+            plan_id=premium_plan.id,
+            start_date=datetime.now(),
+            end_date=datetime.now() + timedelta(days=30),  # 30 days for demo
+            status='active',
+            payment_status='paid',
+            total_paid=150.00
+        )
+        db.session.add(subscription)
+        
+        db.session.commit()
+        
+        print(f"💰 SUBSCRIPTION: Successfully upgraded user {current_user.id} to premium")
+        
+        return jsonify({
+            "success": True,
+            "message": "Subscription upgraded successfully!",
+            "subscription": {
+                "plan": plan_type,
+                "status": "active",
+                "start_date": subscription.start_date.isoformat(),
+                "end_date": subscription.end_date.isoformat()
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error processing subscription: {str(e)}")
+        return jsonify({"success": False, "error": f"Subscription failed: {str(e)}"}), 500
+
 @views.route('/api/admin/subscription/<int:user_id>/toggle', methods=['PATCH'])
 @login_required
 def admin_api_toggle_subscription(user_id):

@@ -5,7 +5,7 @@ import axios from 'axios'
 import toast from 'react-hot-toast'
 
 const Subscription = () => {
-  const { isPremium, refreshAuthStatus, setDemoPremium } = useAuth()
+  const { isPremium, refreshAuthStatus } = useAuth()
 
   const [showCheckout, setShowCheckout] = useState(false)
   const [showSubscriptionDetails, setShowSubscriptionDetails] = useState(false)
@@ -93,30 +93,33 @@ const Subscription = () => {
       setIsProcessing(true)
       setError('')
       
-      // Demo payment - directly process the subscription upgrade
-      console.log('💰 DEMO SUBSCRIPTION: Processing Premium upgrade')
-      console.log('💰 DEMO SUBSCRIPTION: Amount: ₱150/month')
+      // Process subscription upgrade via backend
+      console.log('💰 SUBSCRIPTION: Processing Premium upgrade')
+      console.log('💰 SUBSCRIPTION: Amount: ₱150/month')
       
-                    // Show payment processing message
-                    toast.success('Processing subscription upgrade...')
+      // Show payment processing message
+      toast.success('Processing subscription upgrade...')
       
-      // Simulate payment processing delay
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Call backend subscription endpoint
+      const response = await axios.post('/api/subscription/upgrade', {
+        plan_type: 'premium',
+        payment_method: 'demo'
+      })
       
-      // Mock successful upgrade - for demo purposes, directly update premium status
-      toast.success('Subscription upgrade successful! You now have Premium access.')
-      setShowUpgradeModal(false)
+      console.log('💰 SUBSCRIPTION: Backend response:', response.data)
       
-      // For demo purposes, we'll simulate the premium status update
-      // In a real system, this would come from the backend
-      console.log('🎯 DEMO: Simulating premium status update')
-      setDemoPremium(true)
-      
-      // Refresh auth status to update isPremium
-      await refreshAuthStatus()
-      
-      // Refresh subscription details
-      fetchSubscriptionDetails()
+      if (response.data.success) {
+        toast.success('Subscription upgrade successful! You now have Premium access.')
+        setShowUpgradeModal(false)
+        
+        // Refresh auth status to update isPremium
+        await refreshAuthStatus()
+        
+        // Refresh subscription details
+        fetchSubscriptionDetails()
+      } else {
+        throw new Error(response.data.error || 'Subscription failed')
+      }
     } catch (error) {
       setError('Failed to upgrade subscription. Please try again.')
     } finally {
@@ -805,33 +808,36 @@ const Subscription = () => {
                     setError('')
                     setSuccess(false)
                     
-                    // Demo payment - directly process the subscription
-                    console.log('💰 DEMO SUBSCRIPTION: Processing Premium subscription')
-                    console.log('💰 DEMO SUBSCRIPTION: Amount: ₱150/month')
+                    // Process subscription via backend
+                    console.log('💰 SUBSCRIPTION: Processing Premium subscription')
+                    console.log('💰 SUBSCRIPTION: Amount: ₱150/month')
                     
                     // Show payment processing message
                     toast.success('Processing subscription payment...')
                     
-                    // Simulate payment processing delay
-                    await new Promise(r => setTimeout(r, 1200))
+                    // Call backend subscription endpoint
+                    const response = await axios.post('/api/subscription/upgrade', {
+                      plan_type: 'premium',
+                      payment_method: paymentMethod
+                    })
                     
-                    // Mock successful payment - for demo purposes, directly update premium status
-                    setSuccess(true)
-                    toast.success('Subscription payment successful! You now have Premium access.')
+                    console.log('💰 SUBSCRIPTION: Backend response:', response.data)
                     
-                    // For demo purposes, we'll simulate the premium status update
-                    // In a real system, this would come from the backend
-                    console.log('🎯 DEMO: Simulating premium status update')
-                    setDemoPremium(true)
-                    
-                    // Refresh auth status to update isPremium
-                    await refreshAuthStatus()
-                    
-                    // Close modal after success
-                    setTimeout(() => {
-                      setShowCheckout(false)
-                      setSuccess(false)
-                    }, 2000)
+                    if (response.data.success) {
+                      setSuccess(true)
+                      toast.success('Subscription payment successful! You now have Premium access.')
+                      
+                      // Refresh auth status to update isPremium
+                      await refreshAuthStatus()
+                      
+                      // Close modal after success
+                      setTimeout(() => {
+                        setShowCheckout(false)
+                        setSuccess(false)
+                      }, 2000)
+                    } else {
+                      throw new Error(response.data.error || 'Subscription failed')
+                    }
                   } catch (e) {
                     setError('Something went wrong. Please try again.')
                   } finally {
