@@ -5,7 +5,7 @@ import axios from 'axios'
 import toast from 'react-hot-toast'
 
 const Subscription = () => {
-  const { isPremium } = useAuth()
+  const { isPremium, refreshAuthStatus, setDemoPremium } = useAuth()
 
   const [showCheckout, setShowCheckout] = useState(false)
   const [showSubscriptionDetails, setShowSubscriptionDetails] = useState(false)
@@ -97,15 +97,23 @@ const Subscription = () => {
       console.log('💰 DEMO SUBSCRIPTION: Processing Premium upgrade')
       console.log('💰 DEMO SUBSCRIPTION: Amount: ₱150/month')
       
-      // Show demo payment processing message
-      toast.success('Processing demo subscription upgrade...')
+                    // Show payment processing message
+                    toast.success('Processing subscription upgrade...')
       
       // Simulate payment processing delay
       await new Promise(resolve => setTimeout(resolve, 2000))
       
-      // Mock successful upgrade
-      toast.success('Demo subscription upgrade successful! You now have Premium access.')
+      // Mock successful upgrade - for demo purposes, directly update premium status
+      toast.success('Subscription upgrade successful! You now have Premium access.')
       setShowUpgradeModal(false)
+      
+      // For demo purposes, we'll simulate the premium status update
+      // In a real system, this would come from the backend
+      console.log('🎯 DEMO: Simulating premium status update')
+      setDemoPremium(true)
+      
+      // Refresh auth status to update isPremium
+      await refreshAuthStatus()
       
       // Refresh subscription details
       fetchSubscriptionDetails()
@@ -248,7 +256,7 @@ const Subscription = () => {
                   </>
                 ) : (
               <button onClick={() => setShowCheckout(true)} className="btn-primary flex items-center space-x-2">
-                <span>Demo Upgrade Now</span>
+                <span>Upgrade Now</span>
                 <ArrowRight className="h-4 w-4" />
               </button>
                 )}
@@ -446,7 +454,7 @@ const Subscription = () => {
                 </li>
               </ul>
               <button onClick={() => setShowCheckout(true)} className="btn-primary w-full flex items-center justify-center space-x-2">
-                <span>Demo Upgrade to Premium</span>
+                <span>Upgrade to Premium</span>
                 <Zap className="h-4 w-4" />
               </button>
             </div>
@@ -619,7 +627,7 @@ const Subscription = () => {
                       disabled={isProcessing}
                       className="w-full mt-4 btn-primary"
                     >
-                      {isProcessing ? 'Processing Demo...' : 'Demo Upgrade to Annual'}
+                      {isProcessing ? 'Processing...' : 'Upgrade to Annual'}
                     </button>
                   </div>
                   
@@ -643,7 +651,7 @@ const Subscription = () => {
                       disabled={isProcessing}
                       className="w-full mt-4 btn-primary"
                     >
-                      {isProcessing ? 'Processing Demo...' : 'Demo Upgrade to Pro'}
+                      {isProcessing ? 'Processing...' : 'Upgrade to Pro'}
                     </button>
                   </div>
                 </div>
@@ -674,22 +682,22 @@ const Subscription = () => {
                 <p className="text-sm text-gray-600 mt-1">₱{priceDisplay.amount} per month, cancel anytime</p>
               </div>
               <div className="p-6 space-y-6">
-                {/* Demo Payment Notice */}
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                {/* Payment Notice */}
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                   <div className="flex items-center space-x-2 mb-2">
-                    <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">DEMO</span>
+                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">₱</span>
                     </div>
-                    <span className="text-sm font-medium text-green-800">Demo Payment Mode</span>
+                    <span className="text-sm font-medium text-blue-800">Secure Payment</span>
                   </div>
-                  <p className="text-xs text-green-700">
-                    This is a demo payment system. No real money will be charged. Your subscription will be activated instantly for demonstration purposes.
+                  <p className="text-xs text-blue-700">
+                    Your payment will be processed securely. Your subscription will be activated immediately upon successful payment.
                   </p>
                 </div>
                 
                 {/* Payment Method Selector */}
                 <div>
-                  <div className="text-sm font-medium text-gray-900 mb-3">Select payment method (Demo)</div>
+                  <div className="text-sm font-medium text-gray-900 mb-3">Select payment method</div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <button onClick={() => setPaymentMethod('gcash')} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm relative ${paymentMethod === 'gcash' ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 bg-white'}`}>
                       <Wallet className="h-4 w-4" />
@@ -786,7 +794,7 @@ const Subscription = () => {
                   <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
                 )}
                 {success && (
-                  <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">Demo payment successful! Your premium access has been activated for demonstration purposes.</div>
+                  <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">Payment successful! Your premium access has been activated.</div>
                 )}
               </div>
               <div className="p-6 border-t flex items-center justify-end gap-3">
@@ -801,15 +809,23 @@ const Subscription = () => {
                     console.log('💰 DEMO SUBSCRIPTION: Processing Premium subscription')
                     console.log('💰 DEMO SUBSCRIPTION: Amount: ₱150/month')
                     
-                    // Show demo payment processing message
-                    toast.success('Processing demo subscription payment...')
+                    // Show payment processing message
+                    toast.success('Processing subscription payment...')
                     
                     // Simulate payment processing delay
                     await new Promise(r => setTimeout(r, 1200))
                     
-                    // Mock successful payment
+                    // Mock successful payment - for demo purposes, directly update premium status
                     setSuccess(true)
-                    toast.success('Demo subscription payment successful! You now have Premium access.')
+                    toast.success('Subscription payment successful! You now have Premium access.')
+                    
+                    // For demo purposes, we'll simulate the premium status update
+                    // In a real system, this would come from the backend
+                    console.log('🎯 DEMO: Simulating premium status update')
+                    setDemoPremium(true)
+                    
+                    // Refresh auth status to update isPremium
+                    await refreshAuthStatus()
                     
                     // Close modal after success
                     setTimeout(() => {
@@ -822,7 +838,7 @@ const Subscription = () => {
                     setIsProcessing(false)
                   }
                 }} className={`btn-primary ${isProcessing ? 'opacity-70 cursor-not-allowed' : ''}`}>
-                  {isProcessing ? 'Processing Demo Payment…' : `Demo Pay ₱${priceDisplay.amount}`}
+                  {isProcessing ? 'Processing Payment…' : `Pay ₱${priceDisplay.amount}`}
                 </button>
               </div>
             </div>

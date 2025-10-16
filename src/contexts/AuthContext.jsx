@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [isPremium, setIsPremium] = useState(false)
+  const [demoPremiumOverride, setDemoPremiumOverride] = useState(false)
   const [lastAuthCheck, setLastAuthCheck] = useState(0)
 
   // Configure axios defaults
@@ -151,17 +152,23 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const setDemoPremium = (premium) => {
+    setDemoPremiumOverride(premium)
+    console.log(`🎯 DEMO: Premium override set to ${premium}`)
+  }
+
   const value = {
     user,
     loading,
     isAdmin,
-    isPremium,
+    isPremium: isPremium || demoPremiumOverride,
     login,
     register,
     logout,
     updateProfile,
     checkAuthStatus,
-    refreshAuthStatus
+    refreshAuthStatus,
+    setDemoPremium
   }
 
   return (

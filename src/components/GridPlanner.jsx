@@ -202,6 +202,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
     
     console.log(`🌱 Creating mock grid spaces: base=${baseGridSize} (${baseRows}x${baseCols}), additional=${additionalSpaces}`)
     console.log(`🌱 Premium status: ${isPremium}`)
+    console.log(`🌱 DEBUG: isPremium type: ${typeof isPremium}, value: ${isPremium}`)
     
     // Create spaces for the base grid
     for (let row = 1; row <= baseRows; row++) {
