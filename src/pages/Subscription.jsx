@@ -92,10 +92,21 @@ const Subscription = () => {
     try {
       setIsProcessing(true)
       setError('')
-      // Mock upgrade process
+      
+      // Demo payment - directly process the subscription upgrade
+      console.log('💰 DEMO SUBSCRIPTION: Processing Premium upgrade')
+      console.log('💰 DEMO SUBSCRIPTION: Amount: ₱150/month')
+      
+      // Show demo payment processing message
+      toast.success('Processing demo subscription upgrade...')
+      
+      // Simulate payment processing delay
       await new Promise(resolve => setTimeout(resolve, 2000))
-      toast.success('Successfully upgraded to Premium!')
+      
+      // Mock successful upgrade
+      toast.success('Demo subscription upgrade successful! You now have Premium access.')
       setShowUpgradeModal(false)
+      
       // Refresh subscription details
       fetchSubscriptionDetails()
     } catch (error) {
@@ -236,10 +247,10 @@ const Subscription = () => {
                     </button>
                   </>
                 ) : (
-                  <button onClick={() => setShowCheckout(true)} className="btn-primary flex items-center space-x-2">
-                    <span>Upgrade Now</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
+              <button onClick={() => setShowCheckout(true)} className="btn-primary flex items-center space-x-2">
+                <span>Demo Upgrade Now</span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
                 )}
               </div>
             </div>
@@ -435,7 +446,7 @@ const Subscription = () => {
                 </li>
               </ul>
               <button onClick={() => setShowCheckout(true)} className="btn-primary w-full flex items-center justify-center space-x-2">
-                <span>Upgrade to Premium</span>
+                <span>Demo Upgrade to Premium</span>
                 <Zap className="h-4 w-4" />
               </button>
             </div>
@@ -608,7 +619,7 @@ const Subscription = () => {
                       disabled={isProcessing}
                       className="w-full mt-4 btn-primary"
                     >
-                      {isProcessing ? 'Processing...' : 'Upgrade to Annual'}
+                      {isProcessing ? 'Processing Demo...' : 'Demo Upgrade to Annual'}
                     </button>
                   </div>
                   
@@ -632,7 +643,7 @@ const Subscription = () => {
                       disabled={isProcessing}
                       className="w-full mt-4 btn-primary"
                     >
-                      {isProcessing ? 'Processing...' : 'Upgrade to Pro'}
+                      {isProcessing ? 'Processing Demo...' : 'Demo Upgrade to Pro'}
                     </button>
                   </div>
                 </div>
@@ -663,9 +674,22 @@ const Subscription = () => {
                 <p className="text-sm text-gray-600 mt-1">₱{priceDisplay.amount} per month, cancel anytime</p>
               </div>
               <div className="p-6 space-y-6">
+                {/* Demo Payment Notice */}
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">DEMO</span>
+                    </div>
+                    <span className="text-sm font-medium text-green-800">Demo Payment Mode</span>
+                  </div>
+                  <p className="text-xs text-green-700">
+                    This is a demo payment system. No real money will be charged. Your subscription will be activated instantly for demonstration purposes.
+                  </p>
+                </div>
+                
                 {/* Payment Method Selector */}
                 <div>
-                  <div className="text-sm font-medium text-gray-900 mb-3">Select payment method</div>
+                  <div className="text-sm font-medium text-gray-900 mb-3">Select payment method (Demo)</div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <button onClick={() => setPaymentMethod('gcash')} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm relative ${paymentMethod === 'gcash' ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 bg-white'}`}>
                       <Wallet className="h-4 w-4" />
@@ -762,7 +786,7 @@ const Subscription = () => {
                   <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
                 )}
                 {success && (
-                  <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">Payment successful! Your premium will be activated shortly.</div>
+                  <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">Demo payment successful! Your premium access has been activated for demonstration purposes.</div>
                 )}
               </div>
               <div className="p-6 border-t flex items-center justify-end gap-3">
@@ -772,16 +796,33 @@ const Subscription = () => {
                     setIsProcessing(true)
                     setError('')
                     setSuccess(false)
-                    // Mock checkout call
+                    
+                    // Demo payment - directly process the subscription
+                    console.log('💰 DEMO SUBSCRIPTION: Processing Premium subscription')
+                    console.log('💰 DEMO SUBSCRIPTION: Amount: ₱150/month')
+                    
+                    // Show demo payment processing message
+                    toast.success('Processing demo subscription payment...')
+                    
+                    // Simulate payment processing delay
                     await new Promise(r => setTimeout(r, 1200))
+                    
+                    // Mock successful payment
                     setSuccess(true)
+                    toast.success('Demo subscription payment successful! You now have Premium access.')
+                    
+                    // Close modal after success
+                    setTimeout(() => {
+                      setShowCheckout(false)
+                      setSuccess(false)
+                    }, 2000)
                   } catch (e) {
                     setError('Something went wrong. Please try again.')
                   } finally {
                     setIsProcessing(false)
                   }
                 }} className={`btn-primary ${isProcessing ? 'opacity-70 cursor-not-allowed' : ''}`}>
-                  {isProcessing ? 'Processing…' : `Pay ₱${priceDisplay.amount}`}
+                  {isProcessing ? 'Processing Demo Payment…' : `Demo Pay ₱${priceDisplay.amount}`}
                 </button>
               </div>
             </div>
