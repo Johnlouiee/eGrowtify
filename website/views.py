@@ -2877,66 +2877,349 @@ def uploaded_file(filename):
     """Serve uploaded files"""
     return send_from_directory(os.path.join(os.getcwd(), 'uploads'), filename)
 
+def get_watering_recommendation(plant, days_since_watered):
+    """Generate plant-specific watering recommendations"""
+    plant_type = getattr(plant, 'type', '').lower()
+    environment = getattr(plant, 'environment', '').lower()
+    
+    recommendations = []
+    
+    # Base recommendations by plant type
+    if 'tomato' in plant.name.lower():
+        recommendations.append("Water at the base, avoid wetting leaves to prevent disease")
+        recommendations.append("Use 1-2 inches of water per week")
+    elif 'basil' in plant.name.lower() or 'herb' in plant_type:
+        recommendations.append("Keep soil consistently moist but not waterlogged")
+        recommendations.append("Water when top inch of soil feels dry")
+    elif 'succulent' in plant.name.lower() or 'cactus' in plant.name.lower():
+        recommendations.append("Water deeply but infrequently - let soil dry between waterings")
+        recommendations.append("Use well-draining soil")
+    else:
+        recommendations.append("Water when top 1-2 inches of soil feels dry")
+    
+    # Environment-specific recommendations
+    if environment == 'indoor':
+        recommendations.append("Check for proper drainage to prevent root rot")
+    elif environment == 'outdoor':
+        recommendations.append("Water early morning for best absorption")
+    
+    # Overdue recommendations
+    if days_since_watered > 7:
+        recommendations.append("⚠️ Plant may be stressed - water immediately and check for wilting")
+    
+    return " | ".join(recommendations)
+
+def get_new_plant_recommendation(plant):
+    """Generate recommendations for newly planted plants"""
+    plant_type = getattr(plant, 'type', '').lower()
+    
+    recommendations = []
+    recommendations.append("First watering: water thoroughly to help establish roots")
+    
+    if 'tomato' in plant.name.lower():
+        recommendations.append("Add support stake now for easier training later")
+    elif 'herb' in plant_type:
+        recommendations.append("Pinch back any flowers to encourage leaf growth")
+    
+    recommendations.append("Monitor for signs of transplant shock")
+    
+    return " | ".join(recommendations)
+
+def get_fertilizing_recommendation(plant, days_since_fertilized):
+    """Generate plant-specific fertilizing recommendations"""
+    plant_type = getattr(plant, 'type', '').lower()
+    
+    recommendations = []
+    
+    if 'tomato' in plant.name.lower():
+        recommendations.append("Use balanced fertilizer (10-10-10) or tomato-specific fertilizer")
+        recommendations.append("Apply around base, avoid direct contact with stems")
+    elif 'herb' in plant_type:
+        recommendations.append("Use diluted liquid fertilizer (half strength)")
+        recommendations.append("Organic options: compost tea or fish emulsion")
+    else:
+        recommendations.append("Use balanced fertilizer according to package instructions")
+    
+    if days_since_fertilized > 30:
+        recommendations.append("⚠️ Long overdue - use gentle fertilizer to avoid shock")
+    
+    return " | ".join(recommendations)
+
+def get_pruning_recommendation(plant, days_since_pruned):
+    """Generate plant-specific pruning recommendations"""
+    plant_type = getattr(plant, 'type', '').lower()
+    
+    recommendations = []
+    
+    if 'tomato' in plant.name.lower():
+        recommendations.append("Remove suckers (small shoots between main stem and branches)")
+        recommendations.append("Prune lower leaves that touch the ground")
+    elif 'herb' in plant_type:
+        recommendations.append("Pinch back tips to encourage bushier growth")
+        recommendations.append("Remove any yellow or dead leaves")
+    else:
+        recommendations.append("Remove dead, damaged, or diseased branches")
+        recommendations.append("Prune for shape and air circulation")
+    
+    return " | ".join(recommendations)
+
 @views.route('/smart-alerts')
 @login_required
 def smart_alerts():
-    # Get user's plants and generate alerts based on care schedules
-    plant_trackings = PlantTracking.query.join(Garden).filter(Garden.user_id == current_user.id).all()
-    
+    """Generate smart alerts for user's plants based on care schedules"""
     alerts = []
     today = datetime.now().date()
     
-    for pt in plant_trackings:
-        plant = Plant.query.get(pt.plant_id)
-        if not plant:
-            continue
+    # Get user's gardens
+    user_gardens = Garden.query.filter_by(user_id=current_user.id).all()
+    
+    for garden in user_gardens:
+        # Check GridSpace plants (from GridPlanner)
+        grid_spaces = GridSpace.query.filter_by(garden_id=garden.id).filter(GridSpace.plant_id.isnot(None)).all()
+        
+        for space in grid_spaces:
+            if space.plant_id:
+                plant = Plant.query.get(space.plant_id)
+                if not plant:
+                    continue
+                
+                # Check watering schedule for grid plants
+                if space.last_watered:
+                    days_since_watered = (today - space.last_watered).days
+                    # Default watering frequency if not set in plant
+                    watering_freq = getattr(plant, 'watering_frequency', 3) or 3
+                    
+                    if days_since_watered >= watering_freq:
+                        # Generate plant-specific watering recommendations
+                        watering_recommendation = get_watering_recommendation(plant, days_since_watered)
+                        
+                        alerts.append({
+                            'id': f"grid_water_{space.id}",
+                            'type': 'watering',
+                            'plant_name': plant.name,
+                            'garden_name': garden.name,
+                            'message': f'Time to water your {plant.name} in {garden.name}',
+                            'due_date': (space.last_watered + timedelta(days=watering_freq)).isoformat(),
+                            'priority': 'high' if days_since_watered > watering_freq + 2 else 'medium',
+                            'status': 'overdue' if days_since_watered > watering_freq else 'pending',
+                            'space_id': space.id,
+                            'garden_id': garden.id,
+                            'recommendation': watering_recommendation,
+                            'grid_position': f"Row {space.row}, Col {space.column}" if hasattr(space, 'row') and hasattr(space, 'column') else None
+                        })
+                else:
+                    # New plant that hasn't been watered yet
+                    new_plant_recommendation = get_new_plant_recommendation(plant)
+                    
+                    alerts.append({
+                        'id': f"grid_water_new_{space.id}",
+                        'type': 'watering',
+                        'plant_name': plant.name,
+                        'garden_name': garden.name,
+                        'message': f'Your newly planted {plant.name} needs its first watering',
+                        'due_date': today.isoformat(),
+                        'priority': 'high',
+                        'status': 'pending',
+                        'space_id': space.id,
+                        'garden_id': garden.id,
+                        'recommendation': new_plant_recommendation,
+                        'grid_position': f"Row {space.row}, Col {space.column}" if hasattr(space, 'row') and hasattr(space, 'column') else None
+                    })
+                
+                # Check fertilizing schedule for grid plants
+                if space.last_fertilized:
+                    days_since_fertilized = (today - space.last_fertilized).days
+                    fertilizing_freq = getattr(plant, 'fertilizing_frequency', 14) or 14
+                    
+                    if days_since_fertilized >= fertilizing_freq:
+                        fertilizing_recommendation = get_fertilizing_recommendation(plant, days_since_fertilized)
+                        
+                        alerts.append({
+                            'id': f"grid_fertilize_{space.id}",
+                            'type': 'fertilizing',
+                            'plant_name': plant.name,
+                            'garden_name': garden.name,
+                            'message': f'Your {plant.name} needs fertilizer',
+                            'due_date': (space.last_fertilized + timedelta(days=fertilizing_freq)).isoformat(),
+                            'priority': 'medium',
+                            'status': 'overdue' if days_since_fertilized > fertilizing_freq else 'pending',
+                            'space_id': space.id,
+                            'garden_id': garden.id,
+                            'recommendation': fertilizing_recommendation,
+                            'grid_position': f"Row {space.row}, Col {space.column}" if hasattr(space, 'row') and hasattr(space, 'column') else None
+                        })
+                
+                # Check pruning schedule for grid plants
+                if space.last_pruned:
+                    days_since_pruned = (today - space.last_pruned).days
+                    pruning_freq = getattr(plant, 'pruning_frequency', 30) or 30
+                    
+                    if days_since_pruned >= pruning_freq:
+                        pruning_recommendation = get_pruning_recommendation(plant, days_since_pruned)
+                        
+                        alerts.append({
+                            'id': f"grid_prune_{space.id}",
+                            'type': 'pruning',
+                            'plant_name': plant.name,
+                            'garden_name': garden.name,
+                            'message': f'Time to prune your {plant.name}',
+                            'due_date': (space.last_pruned + timedelta(days=pruning_freq)).isoformat(),
+                            'priority': 'low',
+                            'status': 'overdue' if days_since_pruned > pruning_freq else 'pending',
+                            'space_id': space.id,
+                            'garden_id': garden.id,
+                            'recommendation': pruning_recommendation,
+                            'grid_position': f"Row {space.row}, Col {space.column}" if hasattr(space, 'row') and hasattr(space, 'column') else None
+                        })
+        
+        # Also check traditional PlantTracking (legacy system)
+        plant_trackings = PlantTracking.query.filter_by(garden_id=garden.id).all()
+        
+        for pt in plant_trackings:
+            plant = Plant.query.get(pt.plant_id)
+            if not plant:
+                continue
+                
+            # Check watering schedule
+            if plant.watering_frequency:
+                days_since_watered = (today - pt.last_watered).days if pt.last_watered else 999
+                if days_since_watered >= plant.watering_frequency:
+                    alerts.append({
+                        'id': f"track_water_{pt.id}",
+                        'type': 'watering',
+                        'plant_name': plant.name,
+                        'garden_name': garden.name,
+                        'message': f'Time to water your {plant.name}',
+                        'due_date': (pt.last_watered + timedelta(days=plant.watering_frequency)).isoformat() if pt.last_watered else today.isoformat(),
+                        'priority': 'high' if days_since_watered > plant.watering_frequency + 2 else 'medium',
+                        'status': 'overdue' if days_since_watered > plant.watering_frequency else 'pending'
+                    })
             
-        # Check watering schedule
-        if plant.watering_frequency:
-            days_since_watered = (today - pt.last_watered).days if pt.last_watered else 999
-            if days_since_watered >= plant.watering_frequency:
-                alerts.append({
-                    'id': f"water_{pt.id}",
-                    'type': 'watering',
-                    'plant_name': plant.name,
-                    'garden_name': pt.garden.name,
-                    'message': f'Time to water your {plant.name}',
-                    'due_date': (pt.last_watered + timedelta(days=plant.watering_frequency)).isoformat() if pt.last_watered else today.isoformat(),
-                    'priority': 'high' if days_since_watered > plant.watering_frequency + 2 else 'medium',
-                    'status': 'overdue' if days_since_watered > plant.watering_frequency else 'pending'
-                })
-        
-        # Check fertilizing schedule
-        if plant.fertilizing_frequency:
-            days_since_fertilized = (today - pt.last_fertilized).days if pt.last_fertilized else 999
-            if days_since_fertilized >= plant.fertilizing_frequency:
-                alerts.append({
-                    'id': f"fertilize_{pt.id}",
-                    'type': 'fertilizing',
-                    'plant_name': plant.name,
-                    'garden_name': pt.garden.name,
-                    'message': f'Your {plant.name} needs fertilizer',
-                    'due_date': (pt.last_fertilized + timedelta(days=plant.fertilizing_frequency)).isoformat() if pt.last_fertilized else today.isoformat(),
-                    'priority': 'medium',
-                    'status': 'overdue' if days_since_fertilized > plant.fertilizing_frequency else 'pending'
-                })
-        
-        # Check pruning schedule
-        if plant.pruning_frequency:
-            days_since_pruned = (today - pt.last_pruned).days if pt.last_pruned else 999
-            if days_since_pruned >= plant.pruning_frequency:
-                alerts.append({
-                    'id': f"prune_{pt.id}",
-                    'type': 'pruning',
-                    'plant_name': plant.name,
-                    'garden_name': pt.garden.name,
-                    'message': f'Time to prune your {plant.name}',
-                    'due_date': (pt.last_pruned + timedelta(days=plant.pruning_frequency)).isoformat() if pt.last_pruned else today.isoformat(),
-                    'priority': 'low',
-                    'status': 'overdue' if days_since_pruned > plant.pruning_frequency else 'pending'
-                })
+            # Check fertilizing schedule
+            if plant.fertilizing_frequency:
+                days_since_fertilized = (today - pt.last_fertilized).days if pt.last_fertilized else 999
+                if days_since_fertilized >= plant.fertilizing_frequency:
+                    alerts.append({
+                        'id': f"track_fertilize_{pt.id}",
+                        'type': 'fertilizing',
+                        'plant_name': plant.name,
+                        'garden_name': garden.name,
+                        'message': f'Your {plant.name} needs fertilizer',
+                        'due_date': (pt.last_fertilized + timedelta(days=plant.fertilizing_frequency)).isoformat() if pt.last_fertilized else today.isoformat(),
+                        'priority': 'medium',
+                        'status': 'overdue' if days_since_fertilized > plant.fertilizing_frequency else 'pending'
+                    })
+            
+            # Check pruning schedule
+            if plant.pruning_frequency:
+                days_since_pruned = (today - pt.last_pruned).days if pt.last_pruned else 999
+                if days_since_pruned >= plant.pruning_frequency:
+                    alerts.append({
+                        'id': f"track_prune_{pt.id}",
+                        'type': 'pruning',
+                        'plant_name': plant.name,
+                        'garden_name': garden.name,
+                        'message': f'Time to prune your {plant.name}',
+                        'due_date': (pt.last_pruned + timedelta(days=plant.pruning_frequency)).isoformat() if pt.last_pruned else today.isoformat(),
+                        'priority': 'low',
+                        'status': 'overdue' if days_since_pruned > plant.pruning_frequency else 'pending'
+                    })
+    
+    # Sort alerts by priority and due date
+    priority_order = {'high': 3, 'medium': 2, 'low': 1}
+    alerts.sort(key=lambda x: (priority_order.get(x['priority'], 0), x['due_date']), reverse=True)
     
     return jsonify({"alerts": alerts})
+
+@views.route('/alerts/mark-completed', methods=['POST'])
+@login_required
+def mark_alert_completed():
+    """Mark an alert as completed when user performs the care action"""
+    try:
+        data = request.get_json()
+        alert_id = data.get('alert_id')
+        action = data.get('action')  # 'water', 'fertilize', 'prune'
+        
+        print(f"🎯 ALERT COMPLETION: User {current_user.id} marking alert {alert_id} as {action}")
+        
+        if not alert_id or not action:
+            return jsonify({"error": "Alert ID and action are required"}), 400
+        
+        # Parse alert ID to determine if it's from grid or tracking
+        if alert_id.startswith('grid_'):
+            # Handle grid space alerts
+            space_id = alert_id.split('_')[-1]
+            print(f"🎯 ALERT COMPLETION: Processing grid space {space_id}")
+            
+            space = GridSpace.query.get(space_id)
+            
+            if not space:
+                print(f"🎯 ALERT COMPLETION: Grid space {space_id} not found")
+                return jsonify({"error": "Grid space not found"}), 404
+            
+            garden = Garden.query.get(space.garden_id)
+            if garden.user_id != current_user.id:
+                print(f"🎯 ALERT COMPLETION: Unauthorized access to garden {garden.id}")
+                return jsonify({"error": "Unauthorized"}), 403
+            
+            # Update the appropriate care field
+            today = datetime.now().date()
+            if action == 'water':
+                space.last_watered = today
+                print(f"🎯 ALERT COMPLETION: Updated last_watered to {today}")
+            elif action == 'fertilize':
+                space.last_fertilized = today
+                print(f"🎯 ALERT COMPLETION: Updated last_fertilized to {today}")
+            elif action == 'prune':
+                space.last_pruned = today
+                print(f"🎯 ALERT COMPLETION: Updated last_pruned to {today}")
+            else:
+                print(f"🎯 ALERT COMPLETION: Invalid action {action}")
+                return jsonify({"error": f"Invalid action: {action}"}), 400
+            
+            space.last_updated = datetime.now(timezone.utc)
+            db.session.commit()
+            
+            print(f"🎯 ALERT COMPLETION: Successfully updated grid space {space_id}")
+            return jsonify({
+                "success": True,
+                "message": f"Plant {action}ed successfully! Alert marked as completed."
+            })
+            
+        elif alert_id.startswith('track_'):
+            # Handle plant tracking alerts
+            tracking_id = alert_id.split('_')[-1]
+            tracking = PlantTracking.query.get(tracking_id)
+            
+            if not tracking:
+                return jsonify({"error": "Plant tracking not found"}), 404
+            
+            garden = Garden.query.get(tracking.garden_id)
+            if garden.user_id != current_user.id:
+                return jsonify({"error": "Unauthorized"}), 403
+            
+            # Update the appropriate care field
+            today = datetime.now().date()
+            if action == 'water':
+                tracking.last_watered = today
+            elif action == 'fertilize':
+                tracking.last_fertilized = today
+            elif action == 'prune':
+                tracking.last_pruned = today
+            
+            db.session.commit()
+            
+            return jsonify({
+                "success": True,
+                "message": f"Plant {action}ed successfully! Alert marked as completed."
+            })
+        
+        else:
+            return jsonify({"error": "Invalid alert ID format"}), 400
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 @views.route('/features')
 @login_required

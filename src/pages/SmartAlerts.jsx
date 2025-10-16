@@ -28,13 +28,67 @@ const SmartAlerts = () => {
     fetchProgressReports()
   }, [])
 
+  // Helper functions for alert formatting
+  const getAlertIcon = (type) => {
+    const iconMap = {
+      'watering': WaterDrop,
+      'fertilizing': Leaf,
+      'pruning': Scissors,
+      'pest': Bug,
+      'weather': Thermometer,
+      'growth': TrendingUp
+    }
+    return iconMap[type] || Bell
+  }
+
+  const getAlertColor = (priority, status) => {
+    if (status === 'completed') return 'gray'
+    if (status === 'overdue') return 'red'
+    if (priority === 'high') return 'red'
+    if (priority === 'medium') return 'yellow'
+    return 'blue'
+  }
+
+  const getAlertDetails = (type, plantName) => {
+    const detailsMap = {
+      'watering': `Water your ${plantName} thoroughly. Check soil moisture before watering.`,
+      'fertilizing': `Feed your ${plantName} with appropriate fertilizer. Follow package instructions.`,
+      'pruning': `Prune your ${plantName} to maintain shape and encourage growth.`,
+      'pest': `Check your ${plantName} for signs of pests. Use organic treatments when possible.`,
+      'weather': `Monitor weather conditions and adjust care for your ${plantName}.`,
+      'growth': `Your ${plantName} is showing good growth. Continue current care routine.`
+    }
+    return detailsMap[type] || `Care reminder for your ${plantName}.`
+  }
+
   const fetchAlerts = async () => {
     try {
-      // Simulate API call - replace with actual endpoint
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      setLoading(true)
       
-      // Mock data - replace with actual API response
-      const mockAlerts = [
+      // Call the real backend alerts endpoint
+      const response = await axios.get('/api/smart-alerts')
+      const alerts = response.data.alerts || []
+      
+      // Transform backend alerts to frontend format
+      const transformedAlerts = alerts.map(alert => ({
+        id: alert.id,
+        type: alert.type,
+        plant_name: alert.plant_name,
+        garden_name: alert.garden_name,
+        message: alert.message,
+        due_date: new Date(alert.due_date),
+        priority: alert.priority,
+        status: alert.status,
+        icon: getAlertIcon(alert.type),
+        color: getAlertColor(alert.priority, alert.status),
+        details: getAlertDetails(alert.type, alert.plant_name)
+      }))
+      
+      setAlerts(transformedAlerts)
+      
+      // Fallback to mock data if no real alerts
+      if (alerts.length === 0) {
+        const mockAlerts = [
         {
           id: 1,
           type: 'watering',
@@ -129,6 +183,8 @@ const SmartAlerts = () => {
       ]
       
       setAlerts(mockAlerts)
+      }
+      
       setLoading(false)
     } catch (error) {
       console.error('Error fetching alerts:', error)
@@ -227,20 +283,49 @@ const SmartAlerts = () => {
 
   const markAsCompleted = async (alertId) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // Find the alert to get its type
+      const alert = alerts.find(a => a.id === alertId)
+      if (!alert) {
+        toast.error('Alert not found')
+        return
+      }
       
-      setAlerts(prevAlerts => 
-        prevAlerts.map(alert => 
-          alert.id === alertId 
-            ? { ...alert, status: 'completed' }
-            : alert
+      // Map alert type to action
+      const actionMap = {
+        'watering': 'water',
+        'fertilizing': 'fertilize', 
+        'pruning': 'prune'
+      }
+      
+      const action = actionMap[alert.type]
+      if (!action) {
+        toast.error('Cannot mark this type of alert as completed')
+        return
+      }
+      
+      // Call backend to mark alert as completed
+      const response = await axios.post('/api/alerts/mark-completed', {
+        alert_id: alertId,
+        action: action
+      })
+      
+      if (response.data.success) {
+        // Update local state
+        setAlerts(prevAlerts => 
+          prevAlerts.map(alert => 
+            alert.id === alertId 
+              ? { ...alert, status: 'completed' }
+              : alert
+          )
         )
-      )
-      
-      toast.success('Task marked as completed!')
+        
+        toast.success(response.data.message)
+      } else {
+        throw new Error(response.data.error || 'Failed to mark alert as completed')
+      }
     } catch (error) {
-      toast.error('Error updating task')
+      console.error('Error marking alert as completed:', error)
+      toast.error('Failed to mark alert as completed')
     }
   }
 

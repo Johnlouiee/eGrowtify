@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Plus, Edit, Trash2, Leaf, MapPin, Calendar, Droplets, Sun, Scissors, Camera } from 'lucide-react'
+import { Plus, Edit, Trash2, Leaf, MapPin, Calendar, Droplets, Sun, Scissors, Camera, Bell, AlertCircle, CheckCircle, Clock } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import GridPlanner from '../components/GridPlanner'
@@ -127,11 +127,23 @@ const Garden = () => {
   const [selectedImage, setSelectedImage] = useState(null)
   const [showImageModal, setShowImageModal] = useState(false)
   const gridPlannerRef = useRef()
+  
+  // Garden alerts state
+  const [gardenAlerts, setGardenAlerts] = useState([])
+  const [alertsLoading, setAlertsLoading] = useState(false)
+  const [showAlerts, setShowAlerts] = useState(false)
 
   useEffect(() => {
     fetchGardens()
     fetchPlants()
   }, [isPremium]) // Re-fetch when subscription status changes
+
+  // Fetch alerts when a garden is selected
+  useEffect(() => {
+    if (selectedGarden) {
+      fetchGardenAlerts(selectedGarden.id)
+    }
+  }, [selectedGarden])
 
   const handleImageUpload = async (event) => {
     const file = event.target.files[0]
@@ -246,6 +258,130 @@ const Garden = () => {
       // If API fails, show empty list instead of static demo data
       setPlants([])
       setLoading(false)
+    }
+  }
+
+  const fetchGardenAlerts = async (gardenId) => {
+    if (!gardenId) return
+    
+    try {
+      setAlertsLoading(true)
+      const response = await axios.get('/api/smart-alerts')
+      const allAlerts = response.data.alerts || []
+      
+      // Filter alerts for the specific garden
+      const gardenSpecificAlerts = allAlerts.filter(alert => 
+        alert.garden_id === gardenId || alert.garden_name === selectedGarden?.name
+      )
+      
+      setGardenAlerts(gardenSpecificAlerts)
+    } catch (error) {
+      console.error('Error fetching garden alerts:', error)
+      setGardenAlerts([])
+    } finally {
+      setAlertsLoading(false)
+    }
+  }
+
+  const markAlertCompleted = async (alertId, action) => {
+    try {
+      console.log('🎯 Marking alert as completed:', { alertId, action })
+      
+      // Check if this is a mock/demo alert
+      if (alertId.includes('mock') || alertId.includes('demo')) {
+        console.log('🎯 Demo alert detected, updating locally only')
+        
+        // Update local state immediately for demo alerts
+        setGardenAlerts(prevAlerts => 
+          prevAlerts.map(alert => 
+            alert.id === alertId 
+              ? { ...alert, status: 'completed' }
+              : alert
+          )
+        )
+        
+        toast.success(`Plant ${action}ed successfully! (Demo mode)`)
+        return
+      }
+      
+      const response = await axios.post('/api/alerts/mark-completed', {
+        alert_id: alertId,
+        action: action
+      })
+      
+      console.log('🎯 Backend response:', response.data)
+      
+      if (response.data.success) {
+        toast.success(response.data.message)
+        
+        // Update local state immediately for better UX
+        setGardenAlerts(prevAlerts => 
+          prevAlerts.map(alert => 
+            alert.id === alertId 
+              ? { ...alert, status: 'completed' }
+              : alert
+          )
+        )
+        
+        // Refresh garden alerts to get updated data
+        if (selectedGarden) {
+          setTimeout(() => {
+            fetchGardenAlerts(selectedGarden.id)
+          }, 1000) // Small delay to ensure backend has processed
+        }
+      } else {
+        throw new Error(response.data.error || 'Failed to mark alert as completed')
+      }
+    } catch (error) {
+      console.error('Error marking alert as completed:', error)
+      
+      // For demo purposes, still update the local state even if backend fails
+      if (error.response?.status === 404 || error.response?.status === 500) {
+        console.log('🎯 Backend error, updating locally for demo purposes')
+        setGardenAlerts(prevAlerts => 
+          prevAlerts.map(alert => 
+            alert.id === alertId 
+              ? { ...alert, status: 'completed' }
+              : alert
+          )
+        )
+        toast.success(`Plant ${action}ed successfully! (Demo mode)`)
+        return
+      }
+      
+      // Show more specific error messages
+      if (error.response?.data?.error) {
+        toast.error(`Error: ${error.response.data.error}`)
+      } else if (error.message) {
+        toast.error(`Error: ${error.message}`)
+      } else {
+        toast.error('Failed to mark alert as completed')
+      }
+    }
+  }
+
+  const snoozeAlert = async (alertId, hours = 24) => {
+    try {
+      // Update local state immediately for better UX
+      const newDueDate = new Date(Date.now() + hours * 60 * 60 * 1000)
+      setGardenAlerts(prevAlerts => 
+        prevAlerts.map(alert => 
+          alert.id === alertId 
+            ? { ...alert, due_date: newDueDate.toISOString(), status: 'snoozed' }
+            : alert
+        )
+      )
+      
+      toast.success(`Alert snoozed for ${hours} hours`)
+      
+      // Optional: Call backend to persist snooze (if you want to implement this)
+      // const response = await axios.post('/api/alerts/snooze', {
+      //   alert_id: alertId,
+      //   hours: hours
+      // })
+    } catch (error) {
+      console.error('Error snoozing alert:', error)
+      toast.error('Failed to snooze alert')
     }
   }
 
@@ -678,9 +814,139 @@ const Garden = () => {
             </div>
           </div>
 
-          {/* Right Side - Grid Planner */}
+          {/* Right Side - Grid Planner and Alerts */}
           <div className="lg:col-span-1">
-            <div className="sticky top-8">
+            <div className="sticky top-8 space-y-6">
+              {/* Garden Alerts Widget */}
+              {selectedGarden && (
+                <div className="card">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                      <Bell className="w-5 h-5 mr-2 text-blue-600" />
+                      Garden Alerts
+                    </h3>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setShowAlerts(!showAlerts)}
+                        className="text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        {showAlerts ? 'Hide' : 'Show'} All
+                      </button>
+                      <button
+                        onClick={() => navigate('/smart-alerts')}
+                        className="text-sm text-green-600 hover:text-green-800 flex items-center"
+                      >
+                        <AlertCircle className="w-4 h-4 mr-1" />
+                        View All Alerts
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {alertsLoading ? (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                    </div>
+                  ) : gardenAlerts.length > 0 ? (
+                    <div className="space-y-3">
+                      {gardenAlerts.slice(0, showAlerts ? gardenAlerts.length : 3).map((alert) => (
+                        <div key={alert.id} className={`p-3 rounded-lg border-l-4 ${
+                          alert.status === 'completed' ? 'border-green-500 bg-green-50' :
+                          alert.priority === 'high' ? 'border-red-500 bg-red-50' :
+                          alert.priority === 'medium' ? 'border-yellow-500 bg-yellow-50' :
+                          'border-blue-500 bg-blue-50'
+                        }`}>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-1">
+                                {alert.type === 'watering' && <Droplets className="w-4 h-4 text-blue-600" />}
+                                {alert.type === 'fertilizing' && <Leaf className="w-4 h-4 text-green-600" />}
+                                {alert.type === 'pruning' && <Scissors className="w-4 h-4 text-gray-600" />}
+                                <span className="text-sm font-medium text-gray-900">{alert.plant_name}</span>
+                                <span className={`px-2 py-1 text-xs rounded-full ${
+                                  alert.status === 'overdue' ? 'bg-red-100 text-red-800' :
+                                  alert.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-green-100 text-green-800'
+                                }`}>
+                                  {alert.status}
+                                </span>
+                              </div>
+                               <p className="text-sm text-gray-600 mb-2">{alert.message}</p>
+                               
+                               {alert.recommendation && (
+                                 <div className="bg-blue-50 border-l-2 border-blue-400 p-2 mb-2 rounded">
+                                   <div className="text-xs font-medium text-blue-800 mb-1">💡 Recommendation</div>
+                                   <div className="text-xs text-blue-700">{alert.recommendation}</div>
+                                 </div>
+                               )}
+                               
+                               {alert.grid_position && (
+                                 <div className="text-xs text-gray-500 mb-2">
+                                   📍 Position: {alert.grid_position}
+                                 </div>
+                               )}
+                               
+                               <div className="flex items-center space-x-2">
+                                 <Clock className="w-3 h-3 text-gray-400" />
+                                 <span className="text-xs text-gray-500">
+                                   Due: {new Date(alert.due_date).toLocaleDateString()}
+                                 </span>
+                               </div>
+                            </div>
+                             {alert.status !== 'completed' && (
+                               <div className="flex space-x-1">
+                                 <button
+                                   onClick={() => {
+                                     const actionMap = {
+                                       'watering': 'water',
+                                       'fertilizing': 'fertilize',
+                                       'pruning': 'prune'
+                                     }
+                                     markAlertCompleted(alert.id, actionMap[alert.type])
+                                   }}
+                                   className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                                 >
+                                   <CheckCircle className="w-3 h-3 inline mr-1" />
+                                   Done
+                                 </button>
+                                 <button
+                                   onClick={() => snoozeAlert(alert.id, 24)}
+                                   className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                 >
+                                   <Clock className="w-3 h-3 inline mr-1" />
+                                   Snooze
+                                 </button>
+                               </div>
+                             )}
+                             {alert.status === 'completed' && (
+                               <div className="flex items-center text-green-600">
+                                 <CheckCircle className="w-4 h-4 mr-1" />
+                                 <span className="text-sm font-medium">Completed</span>
+                               </div>
+                             )}
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {gardenAlerts.length > 3 && !showAlerts && (
+                        <div className="text-center">
+                          <button
+                                onClick={() => setShowAlerts(true)}
+                                className="text-sm text-blue-600 hover:text-blue-800"
+                              >
+                                +{gardenAlerts.length - 3} more alerts
+                              </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-gray-500">
+                      <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                      <p className="text-sm">No alerts for this garden</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <GridPlanner 
                 ref={gridPlannerRef}
                 selectedGarden={selectedGarden} 
