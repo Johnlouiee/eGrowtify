@@ -35,6 +35,9 @@ const SeasonalPlanning = () => {
   const [searchCity, setSearchCity] = useState('')
   const [currentCity, setCurrentCity] = useState('Cebu')
   const [weatherLoading, setWeatherLoading] = useState(false)
+  const [searchResults, setSearchResults] = useState([])
+  const [showSearchResults, setShowSearchResults] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState(null)
   const [lastWeatherFetch, setLastWeatherFetch] = useState(0)
 
   // Philippines Plant Database - Common plants organized by categories
@@ -509,53 +512,9 @@ const SeasonalPlanning = () => {
     setShowRecommendedModal(true)
   }
 
-  // Function to handle city search and weather update
-  const handleCitySearch = async () => {
-    if (searchCity.trim()) {
-      const newCity = searchCity.trim()
-      setCurrentCity(newCity)
-      setSearchCity('')
-      
-      // Update weather data for the new city
-      try {
-        await fetchWeatherDataForCity(newCity)
-        await fetchSevenDayForecast(newCity)
-        await fetchSoilTemperature(newCity)
-        await fetchPlantWeatherTolerance(newCity, selectedPlant)
-      } catch (error) {
-        console.error('Error updating weather for new city:', error)
-      }
-    }
-  }
 
-  // Function to handle Enter key press in search
-  const handleSearchKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleCitySearch()
-    }
-  }
 
-  // Function to reset to Cebu as default city
-  const resetToCebu = async () => {
-    setCurrentCity('Cebu')
-    setUserLocation('Cebu, Philippines')
-    setUserCoordinates({ lat: 10.3157, lng: 123.8854 })
-    await fetchWeatherDataForCity('Cebu')
-  }
 
-  // Function to test API directly
-  const testWeatherAPI = async () => {
-    console.log('Testing weather API...')
-    try {
-      const response = await fetch('/api/weather?city=Cebu')
-      const data = await response.json()
-      console.log('Direct API test result:', data)
-      return data
-    } catch (error) {
-      console.error('API test failed:', error)
-      return null
-    }
-  }
 
   // Function to initialize weather data for current city
   const initializeWeatherData = async () => {
@@ -612,6 +571,112 @@ const SeasonalPlanning = () => {
           // Keep the city-based weather data we already loaded
         }
       )
+    }
+  }
+
+  // Function to search for cities and get location suggestions
+  const searchCities = async (query) => {
+    if (query.length < 2) {
+      setSearchResults([])
+      setShowSearchResults(false)
+      return
+    }
+
+    try {
+      // Mock city suggestions for demonstration
+      // In a real app, you'd call a geocoding API
+      const citySuggestions = [
+        { name: 'Manila, Philippines', country: 'Philippines', lat: 14.5995, lng: 120.9842 },
+        { name: 'Cebu City, Philippines', country: 'Philippines', lat: 10.3157, lng: 123.8854 },
+        { name: 'Davao City, Philippines', country: 'Philippines', lat: 7.1907, lng: 125.4553 },
+        { name: 'Quezon City, Philippines', country: 'Philippines', lat: 14.6760, lng: 121.0437 },
+        { name: 'Makati, Philippines', country: 'Philippines', lat: 14.5547, lng: 121.0244 },
+        { name: 'Baguio, Philippines', country: 'Philippines', lat: 16.4023, lng: 120.5960 },
+        { name: 'Iloilo City, Philippines', country: 'Philippines', lat: 10.7202, lng: 122.5621 },
+        { name: 'Cagayan de Oro, Philippines', country: 'Philippines', lat: 8.4803, lng: 124.6479 },
+        { name: 'Bacolod, Philippines', country: 'Philippines', lat: 10.6407, lng: 122.9689 },
+        { name: 'Zamboanga City, Philippines', country: 'Philippines', lat: 6.9214, lng: 122.0790 }
+      ]
+
+      const filteredResults = citySuggestions.filter(city => 
+        city.name.toLowerCase().includes(query.toLowerCase())
+      )
+      
+      setSearchResults(filteredResults)
+      setShowSearchResults(true)
+    } catch (error) {
+      console.error('Error searching cities:', error)
+      setSearchResults([])
+    }
+  }
+
+  // Function to select a city from search results
+  const selectCity = (city) => {
+    setCurrentCity(city.name)
+    setSearchCity(city.name)
+    setSelectedLocation(city)
+    setShowSearchResults(false)
+    setSearchResults([])
+    
+    // Fetch weather for the selected city
+    fetchWeatherDataForCity(city.name)
+    
+    // Show success message
+    toast.success(`Weather updated for ${city.name}`)
+  }
+
+  // Handle search key press
+  const handleSearchKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      if (searchResults.length > 0) {
+        selectCity(searchResults[0])
+      } else if (searchCity.trim()) {
+        // Try to search for the entered city
+        const cityData = {
+          name: `${searchCity.trim()}, Philippines`,
+          country: 'Philippines',
+          lat: 0,
+          lng: 0
+        }
+        selectCity(cityData)
+      }
+    }
+  }
+
+  // Handle city search button click
+  const handleCitySearch = () => {
+    if (searchCity.trim()) {
+      const cityData = {
+        name: `${searchCity.trim()}, Philippines`,
+        country: 'Philippines',
+        lat: 0,
+        lng: 0
+      }
+      selectCity(cityData)
+    }
+  }
+
+  // Reset to Cebu
+  const resetToCebu = () => {
+    const cebuData = {
+      name: 'Cebu City, Philippines',
+      country: 'Philippines',
+      lat: 10.3157,
+      lng: 123.8854
+    }
+    selectCity(cebuData)
+  }
+
+  // Test weather API
+  const testWeatherAPI = async () => {
+    try {
+      console.log('🧪 Testing weather API...')
+      const response = await axios.get('/api/weather?city=Manila')
+      console.log('🧪 API Test Response:', response.data)
+      toast.success('API test completed - check console for details')
+    } catch (error) {
+      console.error('🧪 API Test Error:', error)
+      toast.error('API test failed - check console for details')
     }
   }
 
@@ -2408,54 +2473,106 @@ const SeasonalPlanning = () => {
               {/* Weather Tab */}
               {activeTab === 'weather' && (
               <div className="space-y-4">
-                  {/* City Search Bar */}
+                  {/* Enhanced City Search Bar */}
                   <div className="bg-white rounded-lg p-4 border border-gray-200">
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-1">
+                    <div className="space-y-3">
+                      {/* Current Location Display */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <MapPin className="w-4 h-4 mr-2 text-blue-500" />
+                          <span>Current Location: <strong>{currentCity}</strong></span>
+                          {selectedLocation && (
+                            <span className="ml-2 text-xs text-gray-500">
+                              ({selectedLocation.lat.toFixed(2)}, {selectedLocation.lng.toFixed(2)})
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => fetchWeatherDataForCity(currentCity)}
+                            disabled={weatherLoading}
+                            className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm disabled:opacity-50"
+                            title="Refresh Weather Data"
+                          >
+                            <RefreshCw className={`w-4 h-4 ${weatherLoading ? 'animate-spin' : ''}`} />
+                          </button>
+                          <button
+                            onClick={resetToCebu}
+                            className="px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                            title="Reset to Cebu"
+                          >
+                            🏠
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Search Input with Dropdown */}
+                      <div className="relative">
                         <input
                           type="text"
                           value={searchCity}
-                          onChange={(e) => setSearchCity(e.target.value)}
+                          onChange={(e) => {
+                            setSearchCity(e.target.value)
+                            searchCities(e.target.value)
+                          }}
+                          onFocus={() => setShowSearchResults(searchResults.length > 0)}
                           onKeyPress={handleSearchKeyPress}
-                          placeholder={`Search city (Current: ${currentCity}, Philippines)`}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Search for a city in the Philippines..."
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
+                        <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        
+                        {/* Search Results Dropdown */}
+                        {showSearchResults && searchResults.length > 0 && (
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                            {searchResults.map((city, index) => (
+                              <button
+                                key={index}
+                                onClick={() => selectCity(city)}
+                                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center justify-between border-b border-gray-100 last:border-b-0"
+                              >
+                                <div>
+                                  <div className="font-medium text-gray-900">{city.name}</div>
+                                  <div className="text-sm text-gray-500">{city.country}</div>
+                                </div>
+                                <MapPin className="w-4 h-4 text-gray-400" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <button
-                        onClick={handleCitySearch}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        Search
-                      </button>
-                      <button
-                        onClick={() => fetchWeatherDataForCity(currentCity)}
-                        className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                        title="Refresh Weather Data"
-                      >
-                        🔄
-                      </button>
-                      <button
-                        onClick={resetToCebu}
-                        className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
-                        title="Reset to Cebu"
-                      >
-                        🏠
-                      </button>
-                      <button
-                        onClick={testWeatherAPI}
-                        className="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
-                        title="Test API"
-                      >
-                        🧪
-                      </button>
+                      
+                      {/* Quick City Buttons */}
+                      <div className="flex flex-wrap gap-2">
+                        <span className="text-sm text-gray-500 mr-2">Quick select:</span>
+                        {['Manila', 'Cebu', 'Davao', 'Baguio', 'Iloilo'].map(city => (
+                          <button
+                            key={city}
+                            onClick={() => {
+                              const cityData = searchResults.find(c => c.name.includes(city)) || 
+                                             { name: `${city}, Philippines`, country: 'Philippines', lat: 0, lng: 0 }
+                              selectCity(cityData)
+                            }}
+                            className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+                          >
+                            {city}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Current Weather - Compact */}
+                  {/* Current Weather - Enhanced */}
                   {weatherData && (
                     <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold text-gray-900">Current Weather</h3>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">Current Weather</h3>
+                          <p className="text-sm text-gray-600 flex items-center">
+                            <MapPin className="w-4 h-4 mr-1" />
+                            {currentCity}
+                          </p>
+                        </div>
                         <div className="flex items-center space-x-2">
                           {weatherLoading && (
                             <div className="text-xs text-gray-500">Loading...</div>
@@ -2503,10 +2620,27 @@ const SeasonalPlanning = () => {
                       </div>
                       {/* Debug info */}
                       <div className="mt-2 text-xs text-gray-500 bg-gray-100 p-2 rounded">
-                        <div>Debug Info:</div>
-                        <div>Current City: {currentCity}</div>
-                        <div>Weather Data: {JSON.stringify(weatherData, null, 2)}</div>
-                        <div>Loading: {weatherLoading ? 'Yes' : 'No'}</div>
+                        <div className="font-medium text-gray-700 mb-2">Debug Info:</div>
+                        <div className="grid grid-cols-2 gap-2 text-gray-600">
+                          <div>Current City: <strong>{currentCity}</strong></div>
+                          <div>Loading: {weatherLoading ? 'Yes' : 'No'}</div>
+                          {selectedLocation && (
+                            <>
+                              <div>Latitude: {selectedLocation.lat.toFixed(4)}</div>
+                              <div>Longitude: {selectedLocation.lng.toFixed(4)}</div>
+                            </>
+                          )}
+                          <div>Last Fetch: {new Date().toLocaleTimeString()}</div>
+                          <div>Data Source: {weatherData.mock ? 'Mock Data' : 'API'}</div>
+                        </div>
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
+                            Raw Weather Data
+                          </summary>
+                          <pre className="mt-2 text-xs bg-white p-2 rounded border overflow-auto max-h-32">
+                            {JSON.stringify(weatherData, null, 2)}
+                          </pre>
+                        </details>
                       </div>
                     </div>
                   )}

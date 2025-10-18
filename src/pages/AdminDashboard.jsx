@@ -7,7 +7,8 @@ import {
   Settings, Database, FileText, Mail, AlertTriangle, 
   Activity, Clock, DollarSign, UserPlus, Eye, Edit,
   RefreshCw, Download, Upload, Filter, Search, MoreVertical,
-  Crown, Star, Target, Zap, Globe, Lock, Unlock, MessageSquare
+  Crown, Star, Target, Zap, Globe, Lock, Unlock, MessageSquare,
+  History
 } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
@@ -158,6 +159,22 @@ const AdminDashboard = () => {
       icon: MessageSquare,
       color: 'bg-pink-500',
       path: '/admin/feedback'
+    },
+    {
+      id: 'activity-logs',
+      title: 'Activity Logs',
+      description: 'Monitor system activities and user actions',
+      icon: Activity,
+      color: 'bg-blue-600',
+      path: '/admin/activity-logs'
+    },
+    {
+      id: 'history-logs',
+      title: 'History Logs',
+      description: 'Track data changes and system modifications',
+      icon: History,
+      color: 'bg-purple-600',
+      path: '/admin/history-logs'
     },
     {
       id: 'system-settings',

@@ -34,6 +34,8 @@ import ManageSeasonalContent from './pages/admin/ManageSeasonalContent'
 import ManageLearningPaths from './pages/admin/ManageLearningPaths'
 import FeedbackManagement from './pages/admin/FeedbackManagement'
 import AdminProfile from './pages/admin/AdminProfile'
+import ActivityLogs from './pages/admin/ActivityLogs'
+import HistoryLogs from './pages/admin/HistoryLogs'
 
 // Components
 import Navbar from './components/Navbar'
@@ -166,6 +168,16 @@ function App() {
               <Route path="/admin/profile" element={
                 <AdminRoute>
                   <AdminProfile />
+                </AdminRoute>
+              } />
+              <Route path="/admin/activity-logs" element={
+                <AdminRoute>
+                  <ActivityLogs />
+                </AdminRoute>
+              } />
+              <Route path="/admin/history-logs" element={
+                <AdminRoute>
+                  <HistoryLogs />
                 </AdminRoute>
               } />
             </Routes>
