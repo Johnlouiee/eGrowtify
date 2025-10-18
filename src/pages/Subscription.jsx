@@ -144,17 +144,30 @@ const Subscription = () => {
   }
 
   const handleCancelSubscription = async () => {
-    if (window.confirm('Are you sure you want to cancel your subscription? You will lose access to Premium features at the end of your billing period.')) {
+    if (window.confirm('Are you sure you want to cancel your subscription? You will immediately lose access to Premium features including advanced learning paths and 6x6 garden grids.')) {
       try {
         setIsProcessing(true)
-        // Mock cancellation process
-        await new Promise(resolve => setTimeout(resolve, 1500))
-        toast.success('Subscription cancelled. You will retain Premium access until the end of your billing period.')
-        setShowSubscriptionDetails(false)
-        // Refresh subscription details
-        fetchSubscriptionDetails()
+        setError('')
+        
+        // Call backend subscription cancellation endpoint
+        const response = await axios.post('/api/subscription/cancel')
+        
+        if (response.data.success) {
+          toast.success('Subscription cancelled successfully. You have been reverted to the basic plan.')
+          setShowSubscriptionDetails(false)
+          
+          // Refresh auth status to update isPremium
+          await refreshAuthStatus()
+          
+          // Refresh subscription details
+          fetchSubscriptionDetails()
+        } else {
+          throw new Error(response.data.error || 'Subscription cancellation failed')
+        }
       } catch (error) {
+        console.error('Subscription cancellation error:', error)
         toast.error('Failed to cancel subscription. Please try again.')
+        setError('Failed to cancel subscription. Please try again.')
       } finally {
         setIsProcessing(false)
       }

@@ -4091,6 +4091,72 @@ def user_subscribe():
         print(f"Error processing subscription: {str(e)}")
         return jsonify({"success": False, "error": f"Subscription failed: {str(e)}"}), 500
 
+@views.route('/api/subscription/cancel', methods=['POST'])
+@login_required
+def user_cancel_subscription():
+    """Handle user subscription cancellation"""
+    try:
+        print(f"💰 SUBSCRIPTION CANCELLATION: User {current_user.id} cancelling subscription")
+        
+        # Update user subscription status to basic
+        current_user.subscribed = False
+        current_user.subscription_plan = 'basic'
+        
+        # Update active subscription status to cancelled
+        from website.models import UserSubscription
+        active_subscription = UserSubscription.query.filter_by(
+            user_id=current_user.id,
+            status='active'
+        ).first()
+        
+        if active_subscription:
+            active_subscription.status = 'cancelled'
+            active_subscription.updated_at = datetime.now(timezone.utc)
+        
+        # Revert garden features to basic
+        from website.models import Garden
+        user_gardens = Garden.query.filter_by(user_id=current_user.id).all()
+        
+        for garden in user_gardens:
+            # Revert to 3x3 grid for basic plan
+            garden.grid_size = '3x3'
+            garden.base_grid_spaces = 9
+            garden.additional_spaces_purchased = 0
+            
+            # Remove any plants beyond the basic 9 spaces
+            from website.models import GridSpace
+            grid_spaces = GridSpace.query.filter_by(garden_id=garden.id).all()
+            
+            # Keep only the first 9 spaces (3x3 grid)
+            spaces_to_remove = grid_spaces[9:]  # Remove spaces beyond 9
+            for space in spaces_to_remove:
+                if space.plant_id:  # If there's a plant in this space
+                    # Remove the plant from the space
+                    space.plant_id = None
+                    space.planting_date = None
+                    space.notes = None
+                db.session.delete(space)
+            
+            # Update used grid spaces count
+            remaining_spaces = GridSpace.query.filter_by(garden_id=garden.id).all()
+            garden.used_grid_spaces = len([s for s in remaining_spaces if s.plant_id is not None])
+        
+        db.session.commit()
+        
+        print(f"✅ SUBSCRIPTION CANCELLED: User {current_user.id} reverted to basic plan")
+        
+        return jsonify({
+            "success": True,
+            "message": "Subscription cancelled successfully. You have been reverted to the basic plan.",
+            "subscription_plan": "basic"
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ SUBSCRIPTION CANCELLATION ERROR: {str(e)}")
+        
+        return jsonify({"success": False, "error": f"Subscription cancellation failed: {str(e)}"}), 500
+
 @views.route('/api/admin/subscription/<int:user_id>/toggle', methods=['PATCH'])
 @login_required
 def admin_api_toggle_subscription(user_id):
