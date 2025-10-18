@@ -918,9 +918,8 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                 const isOccupied = space.plant_id
                 const plant = plants.find(p => p.id === space.plant_id)
                 
-                // Show all spaces for premium users (6x6 grid)
-                // For basic users, apply environment filtering
-                const shouldShowSpace = isPremium || !isOccupied || (plant && plant.environment === (isIndoorGrid ? 'indoor' : 'outdoor'))
+                // Always show all spaces - no environment filtering for basic users
+                const shouldShowSpace = true
                 
                 console.log(`🌱 Grid space ${space.grid_position}: occupied=${isOccupied}, plant=${plant?.name}, environment=${plant?.environment}, indoor=${isIndoorGrid}, shouldShow=${shouldShowSpace}, isPremium=${isPremium}`)
                 
