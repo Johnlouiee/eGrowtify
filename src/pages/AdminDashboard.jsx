@@ -7,7 +7,7 @@ import {
   Settings, Database, FileText, Mail, AlertTriangle, 
   Activity, Clock, DollarSign, UserPlus, Eye, Edit,
   RefreshCw, Download, Upload, Filter, Search, MoreVertical,
-  Crown, Star, Target, Zap, Globe, Lock, Unlock, MessageSquare,
+  Crown, Star, Target, Globe, Lock, Unlock, MessageSquare,
   History
 } from 'lucide-react'
 import axios from 'axios'
@@ -212,203 +212,178 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100">
-      {/* Modern Header */}
-      <AdminHeader
-        title="Admin Center"
-        subtitle="System management & analytics"
-        icon={Shield}
-        iconColor="from-blue-600 to-indigo-600"
-        onRefresh={fetchAdminStats}
-        showBackButton={false}
-        actions={[
-          {
-            text: user?.full_name || 'Admin',
-            icon: null,
-            className: 'bg-slate-100 text-slate-700 hover:bg-slate-200 shadow-none hover:shadow-none',
-            onClick: () => {}
-          }
-        ]}
-      />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Modern Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <AdminStatsCard
-            title="Total Users"
-            value={stats.totalUsers}
-            subtitle="Total"
-            icon={Users}
-            iconColor="from-blue-500 to-blue-600"
-            bgColor="from-blue-500/5 to-indigo-500/5"
-            borderColor="hover:border-blue-300/50"
-            shadowColor="hover:shadow-blue-500/10"
-            trend={true}
-            trendIcon={TrendingUp}
-            trendText="+12% this month"
-            trendColor="text-green-600"
-          />
-          
-          <AdminStatsCard
-            title="Active Users"
-            value={stats.activeUsers}
-            subtitle="Active"
-            icon={Activity}
-            iconColor="from-green-500 to-green-600"
-            bgColor="from-green-500/5 to-emerald-500/5"
-            borderColor="hover:border-green-300/50"
-            shadowColor="hover:shadow-green-500/10"
-            trend={true}
-            trendIcon={CheckCircle}
-            trendText={`${Math.round((stats.activeUsers / stats.totalUsers) * 100)}% active`}
-            trendColor="text-green-600"
-          />
-          
-          <AdminStatsCard
-            title="Premium Users"
-            value={stats.subscribedUsers}
-            subtitle="Premium"
-            icon={Crown}
-            iconColor="from-amber-500 to-yellow-500"
-            bgColor="from-amber-500/5 to-yellow-500/5"
-            borderColor="hover:border-amber-300/50"
-            shadowColor="hover:shadow-amber-500/10"
-            trend={true}
-            trendIcon={Star}
-            trendText="Premium subscribers"
-            trendColor="text-amber-600"
-          />
-          
-          <AdminStatsCard
-            title="Learning Content"
-            value={stats.totalModules}
-            subtitle="Modules"
-            icon={BookOpen}
-            iconColor="from-purple-500 to-violet-500"
-            bgColor="from-purple-500/5 to-violet-500/5"
-            borderColor="hover:border-purple-300/50"
-            shadowColor="hover:shadow-purple-500/10"
-            trend={true}
-            trendIcon={Target}
-            trendText="Educational modules"
-            trendColor="text-purple-600"
-          />
-        </div>
-
-        {/* Modern System Alerts */}
-        {systemAlerts.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center mb-4">
-              <div className="p-2 bg-amber-100 rounded-lg mr-3">
-                <AlertTriangle className="h-5 w-5 text-amber-600" />
+    <div className="min-h-screen bg-gray-50">
+      {/* Welcome Banner */}
+      <div className="bg-gradient-to-r from-pink-100 to-purple-100 p-8 mb-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <Shield className="h-8 w-8 text-white" />
               </div>
-              <h2 className="text-lg font-semibold text-slate-900">System Alerts</h2>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome {user?.full_name || 'Admin'}</h1>
+                <p className="text-gray-600">System management & analytics dashboard</p>
+              </div>
             </div>
-            <div className="space-y-3">
-              {systemAlerts.map((alert) => {
-                const IconComponent = alert.icon
-                return (
-                  <div key={alert.id} className="group bg-white/70 backdrop-blur-sm rounded-xl border border-slate-200/50 hover:border-amber-300/50 transition-all duration-200 hover:shadow-lg">
-                    <div className="p-4 flex items-center space-x-3">
-                      <div className="p-2 bg-amber-100 rounded-lg group-hover:bg-amber-200 transition-colors">
-                        <IconComponent className="h-4 w-4 text-amber-600" />
-                      </div>
-                      <p className="text-sm text-slate-700 flex-1">{alert.message}</p>
-                      <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
-                    </div>
-                  </div>
-                )
-              })}
+            <button 
+              onClick={() => navigate('/admin/profile')}
+              className="bg-white/80 hover:bg-white text-gray-700 px-4 py-2 rounded-lg border border-pink-200 transition-all duration-200 hover:shadow-md"
+            >
+              View Profile
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Total Users Card */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-blue-100 rounded-xl">
+                <Users className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
+                <p className="text-sm text-gray-500">Total Users</p>
+              </div>
+            </div>
+            <div className="flex items-center text-green-600">
+              <TrendingUp className="h-4 w-4 mr-1" />
+              <span className="text-sm font-medium">+12% this month</span>
             </div>
           </div>
-        )}
 
-        {/* Modern Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Admin Features - Modern Design */}
-          <div className="lg:col-span-3">
-            <div className="mb-8">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl">
-                  <Settings className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-slate-900">Management Tools</h2>
-                  <p className="text-slate-600">Access all administrative functions and system controls</p>
-                </div>
+          {/* Active Users Card */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-green-100 rounded-xl">
+                <Activity className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-gray-900">{stats.activeUsers}</p>
+                <p className="text-sm text-gray-500">Active Users</p>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {adminFeatures.map((feature) => {
-                const IconComponent = feature.icon
-                return (
-                  <Link
-                    key={feature.id}
-                    to={feature.path}
-                    className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-blue-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <div className="relative p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                          <IconComponent className="h-6 w-6 text-white" />
+            <div className="flex items-center text-green-600">
+              <CheckCircle className="h-4 w-4 mr-1" />
+              <span className="text-sm font-medium">{Math.round((stats.activeUsers / stats.totalUsers) * 100)}% active</span>
+            </div>
+          </div>
+
+          {/* Premium Users Card */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-yellow-100 rounded-xl">
+                <Crown className="h-6 w-6 text-yellow-600" />
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-gray-900">{stats.subscribedUsers}</p>
+                <p className="text-sm text-gray-500">Premium Users</p>
+              </div>
+            </div>
+            <div className="flex items-center text-yellow-600">
+              <Star className="h-4 w-4 mr-1" />
+              <span className="text-sm font-medium">Premium subscribers</span>
+            </div>
+          </div>
+
+          {/* Learning Content Card */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-purple-100 rounded-xl">
+                <BookOpen className="h-6 w-6 text-purple-600" />
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-gray-900">{stats.totalModules}</p>
+                <p className="text-sm text-gray-500">Learning Modules</p>
+              </div>
+            </div>
+            <div className="flex items-center text-purple-600">
+              <Target className="h-4 w-4 mr-1" />
+              <span className="text-sm font-medium">Educational content</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Management Tools - Left Column */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Settings className="h-6 w-6 text-blue-600" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">Management Tools</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {adminFeatures.map((feature) => {
+                  const IconComponent = feature.icon
+                  return (
+                    <Link
+                      key={feature.id}
+                      to={feature.path}
+                      className="group p-4 bg-gray-50 hover:bg-blue-50 rounded-xl border border-gray-200 hover:border-blue-200 transition-all duration-200 hover:shadow-sm"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-white rounded-lg group-hover:bg-blue-100 transition-colors">
+                          <IconComponent className="h-5 w-5 text-gray-600 group-hover:text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                            {feature.title}
+                          </h3>
+                          <p className="text-sm text-gray-500">{feature.description}</p>
                         </div>
                         {feature.stats && (
                           <div className="text-right">
-                            <p className="text-2xl font-bold text-slate-900">{feature.stats}</p>
-                            <p className="text-xs text-slate-500">Total</p>
+                            <p className="text-lg font-bold text-gray-900">{feature.stats}</p>
+                            <p className="text-xs text-gray-500">Total</p>
                           </div>
                         )}
                       </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-slate-900 group-hover:text-blue-600 transition-colors mb-2">
-                          {feature.title}
-                        </h3>
-                        <p className="text-sm text-slate-600 mb-4">{feature.description}</p>
-                      </div>
-                      <div className="flex items-center text-blue-600 group-hover:text-blue-700 transition-colors">
-                        <span className="text-sm font-medium">Access Tool</span>
-                        <ArrowLeft className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </div>
-                  </Link>
-                )
-              })}
+                    </Link>
+                  )
+                })}
+              </div>
             </div>
           </div>
 
-          {/* Modern Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Today's Weather */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-6 hover:shadow-lg transition-all duration-300">
+          {/* Sidebar - Right Column */}
+          <div className="space-y-6">
+            {/* Weather Card */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <Globe className="h-5 w-5 text-blue-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900">Today's Weather</h3>
+                <h3 className="font-semibold text-gray-900">Today's Weather</h3>
               </div>
               <WeatherCard />
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-6 hover:shadow-lg transition-all duration-300">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <Activity className="h-5 w-5 text-green-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900">Recent Activity</h3>
+                <h3 className="font-semibold text-gray-900">Recent Activity</h3>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {recentActivity.map((activity) => {
                   const IconComponent = activity.icon
                   return (
-                    <div key={activity.id} className="group flex items-start space-x-3 p-3 rounded-xl hover:bg-slate-50 transition-colors">
-                      <div className="p-2 bg-slate-100 rounded-lg group-hover:bg-slate-200 transition-colors">
+                    <div key={activity.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="p-1.5 bg-white rounded-lg">
                         <IconComponent className={`h-4 w-4 ${activity.color}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-slate-900 font-medium">{activity.message}</p>
-                        <p className="text-xs text-slate-500 mt-1">{formatTimeAgo(activity.timestamp)}</p>
+                        <p className="text-sm font-medium text-gray-900">{activity.message}</p>
+                        <p className="text-xs text-gray-500 mt-1">{formatTimeAgo(activity.timestamp)}</p>
                       </div>
                     </div>
                   )
@@ -416,29 +391,30 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-6 hover:shadow-lg transition-all duration-300">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Zap className="h-5 w-5 text-purple-600" />
+            {/* System Alerts */}
+            {systemAlerts.length > 0 && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="p-2 bg-amber-100 rounded-lg">
+                    <AlertTriangle className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900">System Alerts</h3>
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900">Quick Actions</h3>
+                <div className="space-y-3">
+                  {systemAlerts.map((alert) => {
+                    const IconComponent = alert.icon
+                    return (
+                      <div key={alert.id} className="flex items-center space-x-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                        <IconComponent className="h-4 w-4 text-amber-600" />
+                        <p className="text-sm text-amber-800 flex-1">{alert.message}</p>
+                        <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-              <div className="space-y-3">
-                <button className="w-full flex items-center space-x-3 p-3 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors text-left">
-                  <UserPlus className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-700">Add New User</span>
-                </button>
-                <button className="w-full flex items-center space-x-3 p-3 bg-green-50 hover:bg-green-100 rounded-xl transition-colors text-left">
-                  <Bell className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-700">Send Notification</span>
-                </button>
-                <button className="w-full flex items-center space-x-3 p-3 bg-amber-50 hover:bg-amber-100 rounded-xl transition-colors text-left">
-                  <BarChart3 className="h-4 w-4 text-amber-600" />
-                  <span className="text-sm font-medium text-amber-700">View Reports</span>
-                </button>
-              </div>
-            </div>
+            )}
+
           </div>
         </div>
       </div>
