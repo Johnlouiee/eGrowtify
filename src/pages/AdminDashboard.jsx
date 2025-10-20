@@ -177,6 +177,14 @@ const AdminDashboard = () => {
       path: '/admin/history-logs'
     },
     {
+      id: 'reports',
+      title: 'Reports & Analytics',
+      description: 'View system reports, activity logs, and analytics',
+      icon: BarChart3,
+      color: 'bg-indigo-500',
+      path: '/admin/reports'
+    },
+    {
       id: 'system-settings',
       title: 'System Settings',
       description: 'Configure system settings and preferences',

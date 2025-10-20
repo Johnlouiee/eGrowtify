@@ -21,6 +21,86 @@ _AI_CACHE_TTL_SECONDS = 60 * 60  # 1 hour
 _WEATHER_CACHE = {}
 _WEATHER_CACHE_TTL_SECONDS = 10 * 60  # 10 minutes
 
+# Activity logging cache
+_ACTIVITY_LOGS = []
+_SUBSCRIPTION_LOGS = []
+_HISTORY_LOGS = []
+
+def log_activity(user_id, user_name, action, description, ip_address=None, user_agent=None, status='success'):
+    """Log user activity"""
+    try:
+        from datetime import datetime
+        activity = {
+            'id': len(_ACTIVITY_LOGS) + 1,
+            'user_id': user_id,
+            'user_name': user_name,
+            'action': action,
+            'description': description,
+            'ip_address': ip_address or request.remote_addr,
+            'user_agent': user_agent or request.headers.get('User-Agent', ''),
+            'timestamp': datetime.now().isoformat(),
+            'status': status
+        }
+        _ACTIVITY_LOGS.append(activity)
+        print(f"📝 ACTIVITY LOG: {user_name} ({user_id}) - {action}: {description}")
+    except Exception as e:
+        print(f"Error logging activity: {str(e)}")
+
+def log_subscription_activity(user_id, user_name, action, plan_name, amount, currency, payment_method, status, subscription_id=None):
+    """Log subscription-related activity"""
+    try:
+        from datetime import datetime
+        subscription_log = {
+            'id': len(_SUBSCRIPTION_LOGS) + 1,
+            'user_id': user_id,
+            'user_name': user_name,
+            'action': action,
+            'plan_name': plan_name,
+            'amount': amount,
+            'currency': currency,
+            'payment_method': payment_method,
+            'status': status,
+            'start_date': datetime.now().isoformat(),
+            'end_date': (datetime.now() + timedelta(days=30)).isoformat() if status == 'active' else None,
+            'timestamp': datetime.now().isoformat(),
+            'subscription_id': subscription_id
+        }
+        _SUBSCRIPTION_LOGS.append(subscription_log)
+        print(f"💳 SUBSCRIPTION LOG: {user_name} ({user_id}) - {action}: {plan_name} - {currency} {amount}")
+    except Exception as e:
+        print(f"Error logging subscription activity: {str(e)}")
+
+def log_history_change(table_name, record_id, action, old_values, new_values, changed_by):
+    """Log database changes"""
+    try:
+        from datetime import datetime
+        # Determine which fields changed
+        field_changes = []
+        if old_values and new_values:
+            for key in new_values:
+                if key in old_values and old_values[key] != new_values[key]:
+                    field_changes.append(key)
+        elif new_values:
+            field_changes = list(new_values.keys())
+        elif old_values:
+            field_changes = list(old_values.keys())
+        
+        history_log = {
+            'id': len(_HISTORY_LOGS) + 1,
+            'table_name': table_name,
+            'record_id': record_id,
+            'action': action,
+            'old_values': old_values,
+            'new_values': new_values,
+            'changed_by': changed_by,
+            'timestamp': datetime.now().isoformat(),
+            'field_changes': field_changes
+        }
+        _HISTORY_LOGS.append(history_log)
+        print(f"📋 HISTORY LOG: {table_name} - {action} - Record {record_id} by {changed_by}")
+    except Exception as e:
+        print(f"Error logging history change: {str(e)}")
+
 def create_grid_spaces_for_garden(garden_id, grid_size):
     """Create grid spaces for a garden based on its grid size"""
     try:
@@ -4071,6 +4151,27 @@ def user_subscribe():
         )
         db.session.add(subscription)
         
+        # Log the subscription activity
+        log_subscription_activity(
+            user_id=current_user.id,
+            user_name=current_user.full_name,
+            action='subscription_created',
+            plan_name='Premium Plan',
+            amount=150.00,
+            currency='PHP',
+            payment_method=payment_method,
+            status='active',
+            subscription_id=subscription.id
+        )
+        
+        # Log the user activity
+        log_activity(
+            user_id=current_user.id,
+            user_name=current_user.full_name,
+            action='subscription_upgrade',
+            description='User upgraded to Premium plan'
+        )
+        
         db.session.commit()
         
         print(f"💰 SUBSCRIPTION: Successfully upgraded user {current_user.id} to premium")
@@ -4113,11 +4214,42 @@ def user_cancel_subscription():
             active_subscription.status = 'cancelled'
             active_subscription.updated_at = datetime.now(timezone.utc)
         
+        # Log the subscription cancellation
+        log_subscription_activity(
+            user_id=current_user.id,
+            user_name=current_user.full_name,
+            action='subscription_cancelled',
+            plan_name='Premium Plan',
+            amount=150.00,
+            currency='PHP',
+            payment_method='demo',
+            status='cancelled',
+            subscription_id=active_subscription.id if active_subscription else None
+        )
+        
+        # Log the user activity
+        log_activity(
+            user_id=current_user.id,
+            user_name=current_user.full_name,
+            action='subscription_cancelled',
+            description='User cancelled Premium subscription and reverted to basic plan'
+        )
+        
         # Revert garden features to basic
         from website.models import Garden
         user_gardens = Garden.query.filter_by(user_id=current_user.id).all()
         
         for garden in user_gardens:
+            # Log the garden changes
+            log_history_change(
+                table_name='garden',
+                record_id=garden.id,
+                action='UPDATE',
+                old_values={'grid_size': garden.grid_size, 'base_grid_spaces': garden.base_grid_spaces},
+                new_values={'grid_size': '3x3', 'base_grid_spaces': 9},
+                changed_by=f'user_{current_user.id}'
+            )
+            
             # Revert to 3x3 grid for basic plan
             garden.grid_size = '3x3'
             garden.base_grid_spaces = 9
@@ -4156,6 +4288,218 @@ def user_cancel_subscription():
         print(f"❌ SUBSCRIPTION CANCELLATION ERROR: {str(e)}")
         
         return jsonify({"success": False, "error": f"Subscription cancellation failed: {str(e)}"}), 500
+
+# Reports API endpoints
+@views.route('/api/admin/activity-logs')
+@login_required
+def admin_api_activity_logs():
+    """Get activity logs for admin reports"""
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        date_range = request.args.get('date_range', '7d')
+        
+        # Calculate date filter
+        from datetime import datetime, timedelta
+        now = datetime.now()
+        if date_range == '1d':
+            start_date = now - timedelta(days=1)
+        elif date_range == '7d':
+            start_date = now - timedelta(days=7)
+        elif date_range == '30d':
+            start_date = now - timedelta(days=30)
+        elif date_range == '90d':
+            start_date = now - timedelta(days=90)
+        else:
+            start_date = now - timedelta(days=7)
+        
+        # Get real activity logs from memory cache
+        activity_logs = _ACTIVITY_LOGS.copy()
+        
+        # Add some mock data if no real logs exist yet
+        if not activity_logs:
+            activity_logs = [
+                {
+                    'id': 1,
+                    'user_id': 1,
+                    'user_name': 'John Doe',
+                    'action': 'user_login',
+                    'description': 'User logged in successfully',
+                    'ip_address': '192.168.1.100',
+                    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                    'timestamp': (now - timedelta(minutes=30)).isoformat(),
+                    'status': 'success'
+                },
+                {
+                    'id': 2,
+                    'user_id': 2,
+                    'user_name': 'Jane Smith',
+                    'action': 'subscription_upgrade',
+                    'description': 'User upgraded to Premium plan',
+                    'ip_address': '192.168.1.101',
+                    'user_agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+                    'timestamp': (now - timedelta(hours=2)).isoformat(),
+                    'status': 'success'
+                }
+            ]
+        
+        return jsonify({
+            "success": True,
+            "logs": activity_logs,
+            "total": len(activity_logs),
+            "date_range": date_range
+        })
+        
+    except Exception as e:
+        print(f"Error fetching activity logs: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/history-logs')
+@login_required
+def admin_api_history_logs():
+    """Get history logs for admin reports"""
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        date_range = request.args.get('date_range', '7d')
+        
+        # Calculate date filter
+        from datetime import datetime, timedelta
+        now = datetime.now()
+        if date_range == '1d':
+            start_date = now - timedelta(days=1)
+        elif date_range == '7d':
+            start_date = now - timedelta(days=7)
+        elif date_range == '30d':
+            start_date = now - timedelta(days=30)
+        elif date_range == '90d':
+            start_date = now - timedelta(days=90)
+        else:
+            start_date = now - timedelta(days=7)
+        
+        # Get real history logs from memory cache
+        history_logs = _HISTORY_LOGS.copy()
+        
+        # Add some mock data if no real logs exist yet
+        if not history_logs:
+            history_logs = [
+                {
+                    'id': 1,
+                    'table_name': 'users',
+                    'record_id': 1,
+                    'action': 'UPDATE',
+                    'old_values': {'full_name': 'John Doe'},
+                    'new_values': {'full_name': 'John Smith'},
+                    'changed_by': 'admin',
+                    'timestamp': (now - timedelta(hours=1)).isoformat(),
+                    'field_changes': ['full_name']
+                }
+            ]
+        
+        return jsonify({
+            "success": True,
+            "logs": history_logs,
+            "total": len(history_logs),
+            "date_range": date_range
+        })
+        
+    except Exception as e:
+        print(f"Error fetching history logs: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/subscription-logs')
+@login_required
+def admin_api_subscription_logs():
+    """Get subscription logs for admin reports"""
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        date_range = request.args.get('date_range', '7d')
+        
+        # Calculate date filter
+        from datetime import datetime, timedelta
+        now = datetime.now()
+        if date_range == '1d':
+            start_date = now - timedelta(days=1)
+        elif date_range == '7d':
+            start_date = now - timedelta(days=7)
+        elif date_range == '30d':
+            start_date = now - timedelta(days=30)
+        elif date_range == '90d':
+            start_date = now - timedelta(days=90)
+        else:
+            start_date = now - timedelta(days=7)
+        
+        # Get real subscription logs from memory cache
+        subscription_logs = _SUBSCRIPTION_LOGS.copy()
+        
+        # Add some mock data if no real logs exist yet
+        if not subscription_logs:
+            subscription_logs = [
+                {
+                    'id': 1,
+                    'user_id': 2,
+                    'user_name': 'Jane Smith',
+                    'action': 'subscription_created',
+                    'plan_name': 'Premium Plan',
+                    'amount': 150.00,
+                    'currency': 'PHP',
+                    'payment_method': 'gcash',
+                    'status': 'active',
+                    'start_date': (now - timedelta(days=7)).isoformat(),
+                    'end_date': (now + timedelta(days=23)).isoformat(),
+                    'timestamp': (now - timedelta(days=7)).isoformat()
+                }
+            ]
+        
+        return jsonify({
+            "success": True,
+            "logs": subscription_logs,
+            "total": len(subscription_logs),
+            "date_range": date_range
+        })
+        
+    except Exception as e:
+        print(f"Error fetching subscription logs: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/reports/summary')
+@login_required
+def admin_api_reports_summary():
+    """Get summary statistics for reports"""
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        date_range = request.args.get('date_range', '7d')
+        
+        # Calculate real summary statistics from logged data
+        total_activities = len(_ACTIVITY_LOGS)
+        total_history = len(_HISTORY_LOGS)
+        total_subscriptions = len(_SUBSCRIPTION_LOGS)
+        active_subscriptions = len([log for log in _SUBSCRIPTION_LOGS if log.get('status') == 'active'])
+        cancelled_subscriptions = len([log for log in _SUBSCRIPTION_LOGS if log.get('status') == 'cancelled'])
+        
+        summary_stats = {
+            'totalActivities': total_activities,
+            'totalHistoryRecords': total_history,
+            'totalSubscriptions': total_subscriptions,
+            'activeSubscriptions': active_subscriptions,
+            'cancelledSubscriptions': cancelled_subscriptions,
+            'date_range': date_range
+        }
+        
+        return jsonify({
+            "success": True,
+            **summary_stats
+        })
+        
+    except Exception as e:
+        print(f"Error fetching reports summary: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @views.route('/api/admin/subscription/<int:user_id>/toggle', methods=['PATCH'])
 @login_required

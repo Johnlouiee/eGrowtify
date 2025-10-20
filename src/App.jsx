@@ -36,6 +36,7 @@ import FeedbackManagement from './pages/admin/FeedbackManagement'
 import AdminProfile from './pages/admin/AdminProfile'
 import ActivityLogs from './pages/admin/ActivityLogs'
 import HistoryLogs from './pages/admin/HistoryLogs'
+import Reports from './pages/admin/Reports'
 
 // Components
 import Navbar from './components/Navbar'
@@ -178,6 +179,11 @@ function App() {
               <Route path="/admin/history-logs" element={
                 <AdminRoute>
                   <HistoryLogs />
+                </AdminRoute>
+              } />
+              <Route path="/admin/reports" element={
+                <AdminRoute>
+                  <Reports />
                 </AdminRoute>
               } />
             </Routes>
