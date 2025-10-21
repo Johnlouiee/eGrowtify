@@ -61,19 +61,26 @@ def create_app():
     app.register_blueprint(views, url_prefix='/')
     app.register_blueprint(auth, url_prefix='/')
 
-    # Create database tables (commented out for now to avoid startup errors)
-    # with app.app_context():
-    #     db.create_all()
-    #     # Create a default admin user if none exists
-    #     if not Admin.query.filter_by(username='admin').first():
-    #         admin = Admin(
-    #             username='admin',
-    #             email='admin@egrowtify.com',
-    #             full_name='System Administrator',
-    #             is_super_admin=True
-    #         )
-    #         admin.set_password('admin123')
-    #         db.session.add(admin)
-    #         db.session.commit()
+    # Create database tables
+    with app.app_context():
+        try:
+            db.create_all()
+            print("✅ Database tables created successfully")
+            
+            # Create a default admin user if none exists
+            if not Admin.query.filter_by(username='admin').first():
+                admin = Admin(
+                    username='admin',
+                    email='admin@egrowtify.com',
+                    full_name='System Administrator',
+                    is_super_admin=True
+                )
+                admin.set_password('admin123')
+                db.session.add(admin)
+                db.session.commit()
+                print("✅ Default admin user created")
+        except Exception as e:
+            print(f"❌ Database initialization error: {e}")
+            print("💡 Make sure XAMPP MySQL is running and the 'egrowtifydb' database exists")
 
     return app

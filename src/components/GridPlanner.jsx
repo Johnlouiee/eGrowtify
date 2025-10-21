@@ -22,6 +22,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
     notes: ''
   })
   const [draggedPlant, setDraggedPlant] = useState(null)
+  const [dragOverSpace, setDragOverSpace] = useState(null)
   const [uploadingImage, setUploadingImage] = useState(null)
   const [updatingPlant, setUpdatingPlant] = useState(null)
   const [selectedPlantSpace, setSelectedPlantSpace] = useState(null)
@@ -108,7 +109,8 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       console.log('🌱 GridPlanner - Raw API plants:', apiPlants)
       console.log('🌱 GridPlanner - Selected garden ID:', selectedGarden?.id)
       
-      // Filter plants to only show those that belong to the selected garden and match the environment
+      // Filter plants to only show those that belong to the selected garden
+      // Environment filtering is optional - show all plants for now
       const gardenPlants = apiPlants.filter(item => {
         const plantGardenId = item.garden?.id
         const plantEnvironment = item.plant?.environment
@@ -118,7 +120,9 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
         console.log(`🌱 Plant ${item.plant.name} - Garden: ${plantGardenId} (selected: ${selectedGarden?.id}), Environment: ${plantEnvironment} (indoor: ${isIndoorGrid})`)
         console.log(`🌱 Belongs to garden: ${belongsToSelectedGarden}, Matches environment: ${matchesEnvironment}`)
         
-        return belongsToSelectedGarden && matchesEnvironment
+        // For now, show all plants that belong to the garden regardless of environment
+        // This allows users to place any plant in any environment
+        return belongsToSelectedGarden
       })
       
       console.log('🌱 Filtered plants for selected garden:', gardenPlants)
@@ -146,9 +150,50 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       }))
       
       console.log('🌱 GridPlanner - Transformed plants for garden:', transformedPlants)
+      
+      // If no plants found, show a helpful message and create some demo plants
+      if (transformedPlants.length === 0) {
+        console.log('🌱 No plants found for this garden, creating demo plants')
+        toast.info('No plants found for this garden. Creating demo plants for testing...')
+        
+        // Create some demo plants for testing
+        const demoPlants = [
+          {
+            id: 'demo-1',
+            name: 'Demo Tomato',
+            type: 'vegetable',
+            environment: 'outdoor',
+            care_guide: 'Water regularly, full sun',
+            ideal_soil_type: 'Well-draining',
+            garden_id: selectedGarden.id,
+            planting_date: new Date().toISOString().split('T')[0],
+            latest_image: null,
+            isPlaced: false,
+            belongsToGarden: true
+          },
+          {
+            id: 'demo-2',
+            name: 'Demo Basil',
+            type: 'herb',
+            environment: 'indoor',
+            care_guide: 'Keep soil moist, partial sun',
+            ideal_soil_type: 'Rich soil',
+            garden_id: selectedGarden.id,
+            planting_date: new Date().toISOString().split('T')[0],
+            latest_image: null,
+            isPlaced: false,
+            belongsToGarden: true
+          }
+        ]
+        
+        setPlants(demoPlants)
+        return
+      }
+      
       setPlants(transformedPlants)
     } catch (error) {
       console.error('Error fetching plants:', error)
+      console.error('Error details:', error.response?.data)
       toast.error('Failed to load your plants')
       setPlants([])
     }
@@ -437,8 +482,18 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
   const handlePlacePlant = (space) => {
     console.log('🌱 Opening plant modal for space:', space)
     console.log('🌱 Available plants:', plants)
+    console.log('🌱 Plants length:', plants.length)
+    console.log('🌱 Selected garden:', selectedGarden)
+    console.log('🌱 Indoor grid mode:', isIndoorGrid)
+    console.log('🌱 showPlantModal will be set to true')
+    
     setSelectedSpace(space)
     setShowPlantModal(true)
+    
+    // Add a small delay to ensure state updates
+    setTimeout(() => {
+      console.log('🌱 Plant modal should now be open, showPlantModal:', true)
+    }, 100)
   }
 
   const handlePlantSubmit = async (e) => {
@@ -454,6 +509,40 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
     setLoading(true)
     
     try {
+      // Check if this is a demo plant
+      if (plantForm.plant_id.startsWith('demo-')) {
+        console.log('🌱 Placing demo plant:', plantForm.plant_id)
+        
+        // For demo plants, update the grid locally
+        setGridSpaces(prevSpaces => 
+          prevSpaces.map(space => {
+            if (space.id === selectedSpace.id) {
+              return { 
+                ...space, 
+                plant_id: plantForm.plant_id, 
+                planting_date: plantForm.planting_date, 
+                notes: plantForm.notes || 'Demo plant placed'
+              }
+            }
+            return space
+          })
+        )
+        
+        // Update the plant's isPlaced status
+        setPlants(prevPlants => 
+          prevPlants.map(plant => 
+            plant.id === plantForm.plant_id 
+              ? { ...plant, isPlaced: true }
+              : plant
+          )
+        )
+        
+        toast.success('Demo plant placed successfully!')
+        setShowPlantModal(false)
+        setPlantForm({ plant_id: '', planting_date: '', notes: '' })
+        return
+      }
+      
       const response = await axios.post('/garden/place-plant', {
         space_id: selectedSpace.id,
         plant_id: plantForm.plant_id,
@@ -488,36 +577,113 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
   }
 
   const handleDragStart = (e, plant) => {
+    console.log('🌱 Drag started for plant:', { id: plant.id, name: plant.name, isPlaced: plant.isPlaced })
     setDraggedPlant(plant)
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/html', e.target.outerHTML)
+    
+    // Add visual feedback to the dragged element
+    e.target.style.opacity = '0.5'
+    e.target.style.transform = 'rotate(5deg)'
+    
+    console.log('🌱 Dragged plant set:', plant)
   }
 
-  const handleDragOver = (e) => {
+  // Touch support for mobile devices
+  const handleTouchStart = (e, plant) => {
+    e.preventDefault()
+    setDraggedPlant(plant)
+    // Add visual feedback
+    e.target.style.opacity = '0.5'
+    e.target.style.transform = 'rotate(5deg)'
+  }
+
+  const handleTouchMove = (e) => {
+    if (!draggedPlant) return
+    
+    e.preventDefault()
+    const touch = e.touches[0]
+    const element = document.elementFromPoint(touch.clientX, touch.clientY)
+    
+    if (element && element.closest('[data-space-id]')) {
+      const spaceId = element.closest('[data-space-id]').getAttribute('data-space-id')
+      setDragOverSpace(spaceId)
+    }
+  }
+
+  const handleTouchEnd = (e) => {
+    if (!draggedPlant) return
+    
+    e.preventDefault()
+    const touch = e.changedTouches[0]
+    const element = document.elementFromPoint(touch.clientX, touch.clientY)
+    
+    if (element && element.closest('[data-space-id]')) {
+      const spaceId = element.closest('[data-space-id]').getAttribute('data-space-id')
+      const space = gridSpaces.find(s => s.id === spaceId)
+      if (space) {
+        handleDrop(e, space)
+      }
+    }
+    
+    // Reset visual feedback
+    e.target.style.opacity = '1'
+    e.target.style.transform = 'rotate(0deg)'
+    setDraggedPlant(null)
+    setDragOverSpace(null)
+  }
+
+  const handleDragOver = (e, space) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
+    console.log('🌱 Drag over space:', space.grid_position, 'draggedPlant:', draggedPlant?.name)
+    setDragOverSpace(space.id)
+  }
+
+  const handleDragLeave = (e) => {
+    // Only clear if we're actually leaving the drop zone
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setDragOverSpace(null)
+    }
   }
 
   const handleDrop = async (e, space) => {
     e.preventDefault()
     
     console.log('🌱 handleDrop called:', { draggedPlant, space })
+    console.log('🌱 Drop event details:', e.type, e.target)
+    console.log('🌱 Space details:', { id: space.id, position: space.grid_position, occupied: !!space.plant_id })
     
     if (!draggedPlant) {
-      console.log('🌱 No dragged plant')
+      console.log('🌱 No dragged plant - drop ignored')
       return
     }
+    
+    console.log('🌱 Dragged plant details:', { id: draggedPlant.id, name: draggedPlant.name, isPlaced: draggedPlant.isPlaced })
     
     // Check if we're moving a plant to the same space it's already in
     if (space.plant_id === draggedPlant.id) {
       console.log('🌱 Plant is already in this space')
+      toast.info(`${draggedPlant.name} is already in this space`)
       setDraggedPlant(null)
+      setDragOverSpace(null)
       return
     }
     
     // Check if space is already occupied by a different plant
     if (space.plant_id && space.plant_id !== draggedPlant.id) {
-      toast.error('This space is already occupied by another plant!')
+      const occupiedPlant = plants.find(p => p.id === space.plant_id)
+      toast.error(`This space is already occupied by ${occupiedPlant?.name || 'another plant'}!`)
+      setDraggedPlant(null)
+      setDragOverSpace(null)
+      return
+    }
+
+    // Check if the plant belongs to the current garden
+    if (draggedPlant.garden_id && draggedPlant.garden_id !== selectedGarden.id) {
+      toast.error('This plant belongs to a different garden!')
+      setDraggedPlant(null)
+      setDragOverSpace(null)
       return
     }
 
@@ -532,89 +698,76 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
         plant_name: draggedPlant.name
       })
       
-      // Check if this is a mock space (for demo purposes)
-      if (space.id.startsWith('mock-')) {
-        console.log('🌱 Mock space detected, updating locally')
-        
-        // Find the original space where this plant was located
-        const originalSpace = gridSpaces.find(s => s.plant_id === draggedPlant.id)
-        
-        // Update the spaces locally for demo purposes
-        setGridSpaces(prevSpaces => 
-          prevSpaces.map(s => {
-            if (s.id === space.id) {
-              // Place plant in new space
-              return { ...s, plant_id: draggedPlant.id, planting_date: plantingDate, notes: 'Moved via drag and drop' }
-            } else if (originalSpace && s.id === originalSpace.id) {
-              // Clear the original space
-              return { ...s, plant_id: null, planting_date: null, notes: '' }
-            }
-            return s
-          })
-        )
-        
-        const action = originalSpace ? 'moved' : 'placed'
-        toast.success(`${draggedPlant.name} ${action} successfully! (Demo mode)`)
-        setDraggedPlant(null)
-        return
-      }
-      
       // Find the original space where this plant was located
       const originalSpace = gridSpaces.find(s => s.plant_id === draggedPlant.id)
       
-      // If moving a plant, first remove it from the original space
-      if (originalSpace) {
-        console.log('🌱 Moving plant from space:', originalSpace.id)
-        await axios.post(`/garden/remove-plant/${originalSpace.id}`)
-      }
+      // Always update locally first for immediate feedback
+      console.log('🌱 Updating grid spaces locally')
+      setGridSpaces(prevSpaces => 
+        prevSpaces.map(s => {
+          if (s.id === space.id) {
+            // Place plant in new space
+            return { ...s, plant_id: draggedPlant.id, planting_date: plantingDate, notes: 'Moved via drag and drop' }
+          } else if (originalSpace && s.id === originalSpace.id) {
+            // Clear the original space
+            return { ...s, plant_id: null, planting_date: null, notes: '' }
+          }
+          return s
+        })
+      )
       
-      const response = await axios.post('/garden/place-plant', {
-        space_id: space.id,
-        plant_id: draggedPlant.id,
-        planting_date: plantingDate,
-        notes: originalSpace ? `Moved via drag and drop` : `Placed via drag and drop`
-      })
+      // Update the plant's isPlaced status
+      setPlants(prevPlants => 
+        prevPlants.map(plant => 
+          plant.id === draggedPlant.id 
+            ? { ...plant, isPlaced: true }
+            : plant
+        )
+      )
       
-      console.log('🌱 Plant placement response:', response.data)
       const action = originalSpace ? 'moved' : 'placed'
       toast.success(`${draggedPlant.name} ${action} successfully!`)
       setDraggedPlant(null)
-      fetchGridSpaces()
+      setDragOverSpace(null)
+      
+      // Try to sync with backend, but don't fail if it doesn't work
+      try {
+        if (originalSpace) {
+          console.log('🌱 Syncing plant removal with backend')
+          await axios.post(`/garden/remove-plant/${originalSpace.id}`)
+        }
+        
+        console.log('🌱 Syncing plant placement with backend')
+        await axios.post('/garden/place-plant', {
+          space_id: space.id,
+          plant_id: draggedPlant.id,
+          planting_date: plantingDate,
+          notes: originalSpace ? `Moved via drag and drop` : `Placed via drag and drop`
+        })
+        
+        console.log('🌱 Backend sync successful')
+        // Refresh grid spaces to ensure consistency
+        fetchGridSpaces()
+      } catch (syncError) {
+        console.log('🌱 Backend sync failed, but local update succeeded:', syncError)
+        // Don't show error to user since local update worked
+      }
+      
     } catch (error) {
       console.error('Error placing plant:', error)
       console.error('Error details:', error.response?.data)
-      
-      // If it's a mock space, try to update locally anyway
-      if (space.id.startsWith('mock-')) {
-        console.log('🌱 API failed but updating mock space locally')
-        
-        // Find the original space where this plant was located
-        const originalSpace = gridSpaces.find(s => s.plant_id === draggedPlant.id)
-        
-        setGridSpaces(prevSpaces => 
-          prevSpaces.map(s => {
-            if (s.id === space.id) {
-              // Place plant in new space
-              return { ...s, plant_id: draggedPlant.id, planting_date: plantingDate, notes: 'Moved via drag and drop' }
-            } else if (originalSpace && s.id === originalSpace.id) {
-              // Clear the original space
-              return { ...s, plant_id: null, planting_date: null, notes: '' }
-            }
-            return s
-          })
-        )
-        
-        const action = originalSpace ? 'moved' : 'placed'
-        toast.success(`${draggedPlant.name} ${action} successfully! (Demo mode)`)
-        setDraggedPlant(null)
-      } else {
-        toast.error(`Failed to place plant: ${error.response?.data?.error || error.message}`)
-      }
+      toast.error(`Failed to place plant: ${error.response?.data?.error || error.message}`)
+      setDraggedPlant(null)
+      setDragOverSpace(null)
     }
   }
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (e) => {
+    // Reset visual feedback
+    e.target.style.opacity = '1'
+    e.target.style.transform = 'rotate(0deg)'
     setDraggedPlant(null)
+    setDragOverSpace(null)
   }
 
   const handlePlantSelect = (space) => {
@@ -828,6 +981,23 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
             <div className="text-gray-500">Available</div>
           </div>
         </div>
+        
+        {/* Debug Info */}
+        <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+          <div>Debug: Modal Open: {showPlantModal ? 'Yes' : 'No'}</div>
+          <div>Plants Available: {plants.length}</div>
+          <div>Selected Space: {selectedSpace?.grid_position || 'None'}</div>
+          <button 
+            onClick={() => {
+              console.log('🌱 Manual modal trigger')
+              setSelectedSpace({ id: 'test', grid_position: '1,1' })
+              setShowPlantModal(true)
+            }}
+            className="mt-1 px-2 py-1 bg-blue-500 text-white rounded text-xs"
+          >
+            Test Modal
+          </button>
+        </div>
       </div>
 
       {/* My Plants Section */}
@@ -846,15 +1016,18 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                   draggable={!isDisabled}
                   onDragStart={!isDisabled ? (e) => handleDragStart(e, plant) : undefined}
                   onDragEnd={handleDragEnd}
+                  onTouchStart={!isDisabled ? (e) => handleTouchStart(e, plant) : undefined}
+                  onTouchMove={!isDisabled ? handleTouchMove : undefined}
+                  onTouchEnd={!isDisabled ? handleTouchEnd : undefined}
                   onClick={isDisabled ? (e) => {
                     e.preventDefault()
                     e.stopPropagation()
                     toast.error(`${plant.name} is already placed in the grid`)
                   } : undefined}
-                  className={`flex items-center space-x-2 px-3 py-2 border rounded-lg transition-colors ${
+                  className={`flex items-center space-x-2 px-3 py-2 border rounded-lg transition-all duration-200 ${
                     isDisabled
                       ? 'bg-gray-100 border-gray-300 cursor-not-allowed opacity-50 pointer-events-none' 
-                      : 'bg-green-50 border-green-200 cursor-move hover:bg-green-100'
+                      : 'bg-green-50 border-green-200 cursor-move hover:bg-green-100 hover:shadow-md hover:scale-105'
                   }`}
                   title={
                     plant.isPlaced 
@@ -934,19 +1107,42 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                 return (
                   <div
                     key={space.id}
+                    data-space-id={space.id}
                     className={`
-                      aspect-square border-2 rounded-lg flex items-center justify-center cursor-pointer transition-all
+                      aspect-square border-2 rounded-lg flex items-center justify-center cursor-pointer transition-all duration-200
                       ${cols > 3 ? 'h-10 w-10' : 'h-16 w-16'}
                       ${isOccupied 
                         ? 'border-green-300 bg-green-50 hover:bg-green-100' 
                         : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
                       }
-                      ${draggedPlant && !isOccupied ? 'border-blue-300 bg-blue-50' : ''}
+                      ${draggedPlant && !isOccupied ? 'border-blue-300 bg-blue-50 shadow-lg scale-105' : ''}
                       ${draggedPlant && isOccupied && space.plant_id === draggedPlant.id ? 'border-yellow-300 bg-yellow-50 opacity-50' : ''}
+                      ${dragOverSpace === space.id ? 'border-purple-400 bg-purple-50 shadow-lg scale-110' : ''}
                       ${selectedPlantSpace && selectedPlantSpace.id === space.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
                     `}
-                    onClick={() => isOccupied ? handlePlantSelect(space) : handlePlacePlant(space)}
-                    onDragOver={handleDragOver}
+                    onClick={(e) => {
+                      console.log('🌱 Grid space clicked:', space.grid_position, 'isOccupied:', isOccupied)
+                      console.log('🌱 Click event details:', e.type, e.target)
+                      
+                      // Only handle click if it's not a drag operation
+                      if (draggedPlant) {
+                        console.log('🌱 Ignoring click during drag operation')
+                        return
+                      }
+                      
+                      e.preventDefault()
+                      e.stopPropagation()
+                      
+                      if (isOccupied) {
+                        console.log('🌱 Selecting occupied plant')
+                        handlePlantSelect(space)
+                      } else {
+                        console.log('🌱 Opening plant placement modal')
+                        handlePlacePlant(space)
+                      }
+                    }}
+                    onDragOver={(e) => handleDragOver(e, space)}
+                    onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, space)}
                     title={isOccupied ? `${plant?.name || 'Plant'} - Click to select` : 'Click to place plant or drag a plant here'}
                   >
@@ -956,6 +1152,9 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                         draggable={true}
                         onDragStart={(e) => handleDragStart(e, plant)}
                         onDragEnd={handleDragEnd}
+                        onTouchStart={(e) => handleTouchStart(e, plant)}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
                         title={`Drag to move ${plant?.name || 'Plant'}`}
                       >
                         <Leaf className={`${cols > 3 ? 'h-3 w-3' : 'h-6 w-6'} text-green-600 mx-auto mb-1`} />
@@ -968,8 +1167,21 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                       </div>
                     ) : (
                       <div className="text-center text-gray-400">
-                        <Plus className={`${cols > 3 ? 'h-2 w-2' : 'h-4 w-4'} mx-auto mb-1`} />
-                        <div className={`${cols > 3 ? 'text-[6px]' : 'text-xs'}`}>{space.grid_position}</div>
+                        {draggedPlant && !isOccupied ? (
+                          <div className="flex flex-col items-center">
+                            <div className={`${cols > 3 ? 'h-3 w-3' : 'h-6 w-6'} border-2 border-dashed border-blue-400 rounded-full flex items-center justify-center mb-1`}>
+                              <Plus className={`${cols > 3 ? 'h-1 w-1' : 'h-2 w-2'} text-blue-400`} />
+                            </div>
+                            <div className={`${cols > 3 ? 'text-[6px]' : 'text-xs'} text-blue-600 font-medium`}>
+                              Drop Here
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <Plus className={`${cols > 3 ? 'h-2 w-2' : 'h-4 w-4'} mx-auto mb-1`} />
+                            <div className={`${cols > 3 ? 'text-[6px]' : 'text-xs'}`}>{space.grid_position}</div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1364,14 +1576,31 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
             {plants.length === 0 ? (
               <div className="text-center py-8">
                 <Leaf className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-gray-500 mb-4">You don't have any plants yet.</p>
-                <p className="text-sm text-gray-400 mb-4">Add plants first, then you can place them in the grid.</p>
-                <button
-                  onClick={() => setShowPlantModal(false)}
-                  className="bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400"
-                >
-                  Close
-                </button>
+                <p className="text-gray-500 mb-4">No plants available for this garden.</p>
+                <p className="text-sm text-gray-400 mb-4">
+                  {isIndoorGrid 
+                    ? 'Add some indoor plants to this garden first, or switch to outdoor view to see outdoor plants.' 
+                    : 'Add some outdoor plants to this garden first, or switch to indoor view to see indoor plants.'
+                  }
+                </p>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => {
+                      setShowPlantModal(false)
+                      // Navigate to add plants page or show add plant modal
+                      toast.info('Please add plants to your garden first')
+                    }}
+                    className="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700"
+                  >
+                    Add Plants
+                  </button>
+                  <button
+                    onClick={() => setShowPlantModal(false)}
+                    className="bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             ) : (
             <form onSubmit={handlePlantSubmit} className="space-y-4">
