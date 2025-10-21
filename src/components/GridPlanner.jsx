@@ -982,22 +982,6 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
           </div>
         </div>
         
-        {/* Debug Info */}
-        <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-          <div>Debug: Modal Open: {showPlantModal ? 'Yes' : 'No'}</div>
-          <div>Plants Available: {plants.length}</div>
-          <div>Selected Space: {selectedSpace?.grid_position || 'None'}</div>
-          <button 
-            onClick={() => {
-              console.log('🌱 Manual modal trigger')
-              setSelectedSpace({ id: 'test', grid_position: '1,1' })
-              setShowPlantModal(true)
-            }}
-            className="mt-1 px-2 py-1 bg-blue-500 text-white rounded text-xs"
-          >
-            Test Modal
-          </button>
-        </div>
       </div>
 
       {/* My Plants Section */}
