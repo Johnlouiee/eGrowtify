@@ -80,12 +80,15 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       const spaces = response.data.grid_spaces || []
       
       // Calculate expected total spaces including purchased spaces
-      const baseSpaces = isPremium ? 36 : 9
+      // Force basic plan for debugging - remove this after fixing
+      const forceBasic = true
+      const effectivePremium = forceBasic ? false : isPremium
+      const baseSpaces = effectivePremium ? 36 : 9
       const additionalSpaces = selectedGarden?.additional_spaces_purchased || 0
       const expectedTotalSpaces = baseSpaces + additionalSpaces
       
       console.log(`🌱 Fetched ${spaces.length} grid spaces for garden ${selectedGarden.id}`)
-      console.log(`🌱 Premium status: ${isPremium}, Base spaces: ${baseSpaces}, Additional: ${additionalSpaces}, Expected total: ${expectedTotalSpaces}`)
+      console.log(`🌱 Premium status: ${isPremium}, effectivePremium: ${effectivePremium}, Base spaces: ${baseSpaces}, Additional: ${additionalSpaces}, Expected total: ${expectedTotalSpaces}`)
       
       // If we don't have enough spaces, create mock spaces
       if (spaces.length < expectedTotalSpaces) {
@@ -241,12 +244,14 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
 
   const createMockGridSpaces = () => {
     const spaces = []
-    const baseGridSize = isPremium ? '6x6' : '3x3'
+    // Force basic plan for debugging - remove this after fixing
+    const forceBasic = true
+    const effectivePremium = forceBasic ? false : isPremium
+    const baseGridSize = effectivePremium ? '6x6' : '3x3'
     const [baseRows, baseCols] = baseGridSize.split('x').map(Number)
     const additionalSpaces = selectedGarden?.additional_spaces_purchased || 0
     
-    console.log(`🌱 Creating mock grid spaces: base=${baseGridSize} (${baseRows}x${baseCols}), additional=${additionalSpaces}`)
-    console.log(`🌱 Premium status: ${isPremium}`)
+    console.log(`🌱 Creating mock grid spaces: isPremium=${isPremium}, effectivePremium=${effectivePremium}, base=${baseGridSize} (${baseRows}x${baseCols}), additional=${additionalSpaces}`)
     console.log(`🌱 DEBUG: isPremium type: ${typeof isPremium}, value: ${isPremium}`)
     
     // Create spaces for the base grid
@@ -829,6 +834,11 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       // Refresh grid spaces and plants to update the overall state
       await fetchGridSpaces()
       await fetchPlants()
+      
+      // Notify parent component to refresh alerts
+      if (onPlantUpdate) {
+        onPlantUpdate()
+      }
     } catch (error) {
       console.error('❌ Error uploading image:', error)
       console.error('❌ Error response:', error.response?.data)
@@ -862,8 +872,12 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
   }
 
   const getGridDimensions = () => {
+    // Force basic plan for debugging - remove this after fixing
+    const forceBasic = true
+    const effectivePremium = forceBasic ? false : isPremium
+    
     // Determine base grid size based on premium status
-    const baseGridSize = isPremium ? '6x6' : '3x3'
+    const baseGridSize = effectivePremium ? '6x6' : '3x3'
     const [baseRows, baseCols] = baseGridSize.split('x').map(Number)
     
     // Calculate additional spaces from purchases
@@ -874,13 +888,17 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
     const rows = baseRows
     const cols = baseCols
     
-    console.log(`🌱 Grid dimensions: base=${baseRows}x${baseCols}, additional=${additionalSpaces}, total=${totalSpaces}`)
+    console.log(`🌱 Grid dimensions: isPremium=${isPremium}, effectivePremium=${effectivePremium}, base=${baseRows}x${baseCols}, additional=${additionalSpaces}, total=${totalSpaces}`)
+    console.log(`🌱 Selected garden:`, selectedGarden)
     
     return { rows, cols, totalSpaces }
   }
 
   const getTotalSpaces = () => {
-    const baseSpaces = isPremium ? 36 : 9
+    // Force basic plan for debugging - remove this after fixing
+    const forceBasic = true
+    const effectivePremium = forceBasic ? false : isPremium
+    const baseSpaces = effectivePremium ? 36 : 9
     const additionalSpaces = selectedGarden?.additional_spaces_purchased || 0
     return baseSpaces + additionalSpaces
   }
@@ -1070,8 +1088,24 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
               console.log(`🌱 Rendering base grid: ${rows}x${cols}, ${gridSpaces.length} total spaces, isPremium: ${isPremium}`)
               console.log(`🌱 Grid spaces:`, gridSpaces.slice(0, 10))
               
+              // Filter spaces to only show those within the grid dimensions
+              const filteredSpaces = gridSpaces.filter(space => {
+                // Parse grid position (e.g., "1,1", "2,3", "4,1")
+                const [row, col] = space.grid_position.split(',').map(Number)
+                
+                // Only show spaces within the grid dimensions
+                const isWithinGrid = row >= 1 && row <= rows && col >= 1 && col <= cols
+                
+                // Also show additional purchased spaces (they have positions like "additional-1")
+                const isAdditionalSpace = space.grid_position.startsWith('additional-')
+                
+                return isWithinGrid || isAdditionalSpace
+              })
+              
+              console.log(`🌱 Filtered spaces: ${filteredSpaces.length} (from ${gridSpaces.length} total)`)
+              
               let renderedCount = 0
-              return gridSpaces.map((space) => {
+              return filteredSpaces.map((space) => {
                 const isOccupied = space.plant_id
                 const plant = plants.find(p => p.id === space.plant_id)
                 
@@ -1086,7 +1120,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                 }
                 
                 renderedCount++
-                console.log(`🌱 Rendering space ${space.grid_position} (${renderedCount}/${gridSpaces.length})`)
+                console.log(`🌱 Rendering space ${space.grid_position} (${renderedCount}/${filteredSpaces.length})`)
                 
                 return (
                   <div

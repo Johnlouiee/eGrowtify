@@ -68,6 +68,7 @@ const SmartAlerts = () => {
       // Call the real backend alerts endpoint
       const response = await axios.get('/api/smart-alerts')
       const alerts = response.data.alerts || []
+      const completedActions = response.data.completed_actions || []
       
       // Transform backend alerts to frontend format
       const transformedAlerts = alerts.map(alert => ({
@@ -84,10 +85,40 @@ const SmartAlerts = () => {
         details: getAlertDetails(alert.type, alert.plant_name)
       }))
       
-      setAlerts(transformedAlerts)
+      // Transform completed actions to frontend format
+      const transformedCompletedActions = completedActions.map(action => ({
+        id: action.id,
+        type: action.type,
+        plant_name: action.plant_name,
+        garden_name: action.garden_name,
+        message: `${action.plant_name} ${action.type}ed successfully`,
+        due_date: new Date(action.action_date),
+        priority: 'low',
+        status: 'completed',
+        icon: getAlertIcon(action.type),
+        color: 'gray',
+        details: `Completed ${action.type}ing for ${action.plant_name} on ${new Date(action.action_date).toLocaleDateString()}`
+      }))
       
-      // Fallback to mock data if no real alerts
+      // Combine alerts and completed actions
+      const allAlerts = [...transformedAlerts, ...transformedCompletedActions]
+      setAlerts(allAlerts)
+      
+      // Show success message if we have real alerts
+      if (alerts.length > 0) {
+        console.log(`Loaded ${alerts.length} real alerts from backend`)
+      }
+      
+      if (completedActions.length > 0) {
+        console.log(`Loaded ${completedActions.length} completed actions from backend`)
+      }
+      
+      // Show empty state if no alerts
       if (alerts.length === 0) {
+        console.log('No alerts found - showing empty state')
+        // Remove mock data fallback
+      } else {
+        // Keep the mock data for now but don't use it
         const mockAlerts = [
         {
           id: 1,
@@ -182,7 +213,7 @@ const SmartAlerts = () => {
         }
       ]
       
-      setAlerts(mockAlerts)
+      // setAlerts(mockAlerts) // Disabled mock data
       }
       
       setLoading(false)
