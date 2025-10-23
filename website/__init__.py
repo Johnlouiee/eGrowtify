@@ -65,7 +65,7 @@ def create_app():
     with app.app_context():
         try:
             db.create_all()
-            print("✅ Database tables created successfully")
+            print("Database tables created successfully")
             
             # Create a default admin user if none exists
             if not Admin.query.filter_by(username='admin').first():
@@ -78,9 +78,9 @@ def create_app():
                 admin.set_password('admin123')
                 db.session.add(admin)
                 db.session.commit()
-                print("✅ Default admin user created")
+                print("Default admin user created")
         except Exception as e:
-            print(f"❌ Database initialization error: {e}")
-            print("💡 Make sure XAMPP MySQL is running and the 'egrowtifydb' database exists")
+            print(f"Database initialization error: {e}")
+            print("Make sure XAMPP MySQL is running and the 'egrowtifydb' database exists")
 
     return app

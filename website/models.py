@@ -145,6 +145,9 @@ class GridSpace(db.Model):
     notes = db.Column('NOTES', db.Text)
     image_path = db.Column('IMAGE_PATH', db.String(255))
     care_suggestions = db.Column('CARE_SUGGESTIONS', db.Text)
+    ai_analyzed = db.Column('AI_ANALYZED', db.Boolean, default=False)
+    ai_analysis_date = db.Column('AI_ANALYSIS_DATE', db.DateTime)
+    ai_analysis_result = db.Column('AI_ANALYSIS_RESULT', db.Text)
     last_updated = db.Column('LAST_UPDATED', db.DateTime, default=lambda: datetime.now(timezone.utc))
     is_active = db.Column('IS_ACTIVE', db.Boolean, default=True)
     created_at = db.Column('CREATED_AT', db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -260,3 +263,39 @@ class UserSubscription(db.Model):
     
     def __repr__(self):
         return f'<UserSubscription {self.id}: User {self.user_id} - Plan {self.plan_id}>'
+
+class ActivityLog(db.Model):
+    """Track completed plant care actions for reports and analytics"""
+    __tablename__ = 'activity_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    garden_id = db.Column(db.Integer, db.ForeignKey('garden.GARDEN_ID'), nullable=True)
+    space_id = db.Column(db.Integer, db.ForeignKey('grid_spaces.SPACE_ID'), nullable=True)
+    plant_id = db.Column(db.Integer, db.ForeignKey('plant.PLANT_ID'), nullable=True)
+    action = db.Column(db.String(20), nullable=False)  # 'water', 'fertilize', 'prune'
+    action_date = db.Column(db.Date, nullable=False)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    user = db.relationship('User', backref='activity_logs')
+    garden = db.relationship('Garden', backref='activity_logs')
+    space = db.relationship('GridSpace', backref='activity_logs')
+    plant = db.relationship('Plant', backref='activity_logs')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'garden_id': self.garden_id,
+            'space_id': self.space_id,
+            'plant_id': self.plant_id,
+            'action': self.action,
+            'action_date': self.action_date.isoformat(),
+            'notes': self.notes,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+    
+    def __repr__(self):
+        return f'<ActivityLog {self.id}: User {self.user_id} - {self.action} on {self.action_date}>'

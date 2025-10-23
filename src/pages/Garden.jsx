@@ -46,6 +46,8 @@ const Garden = () => {
       used_grid_spaces: 0
     }
   ]
+  
+  console.log('🌱 Static gardens created with isPremium:', isPremium, 'grid_size:', getGridSizeForPlan(isPremium))
 
   const staticPlants = [
     {
@@ -130,10 +132,18 @@ const Garden = () => {
   
   // Garden alerts state
   const [gardenAlerts, setGardenAlerts] = useState([])
+  const [completedActions, setCompletedActions] = useState([])
   const [alertsLoading, setAlertsLoading] = useState(false)
   const [showAlerts, setShowAlerts] = useState(false)
+  const [alertFilter, setAlertFilter] = useState('all')
+  
+  // Plants pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(5)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
+    console.log('🌱 Garden component - isPremium:', isPremium, 'type:', typeof isPremium)
     fetchGardens()
     fetchPlants()
   }, [isPremium]) // Re-fetch when subscription status changes
@@ -144,6 +154,24 @@ const Garden = () => {
       fetchGardenAlerts(selectedGarden.id)
     }
   }, [selectedGarden])
+
+  // Auto-refresh alerts every 30 seconds
+  useEffect(() => {
+    if (!selectedGarden) return
+
+    const interval = setInterval(() => {
+      fetchGardenAlerts(selectedGarden.id)
+    }, 30000) // Refresh every 30 seconds
+
+    return () => clearInterval(interval)
+  }, [selectedGarden])
+
+  // Refresh alerts when plants are updated
+  const refreshAlerts = () => {
+    if (selectedGarden) {
+      fetchGardenAlerts(selectedGarden.id)
+    }
+  }
 
   const handleImageUpload = async (event) => {
     const file = event.target.files[0]
@@ -218,8 +246,14 @@ const Garden = () => {
         total_grid_spaces: getGridSpacesForPlan(isPremium)
       }))
       
-      // Only show API gardens for real users, not static demo data
-      setGardens(updatedApiGardens)
+      // If we have real gardens from API, use them
+      if (updatedApiGardens.length > 0) {
+        setGardens(updatedApiGardens)
+      } else {
+        // If no real gardens, show demo data for demonstration
+        console.log('🌱 No real gardens found, showing demo data')
+        setGardens(staticGardens)
+      }
       
       // Update selected garden if it exists in the new data
       if (selectedGarden) {
@@ -230,13 +264,15 @@ const Garden = () => {
       }
     } catch (error) {
       if (error?.response?.status === 401) {
-        toast.error('Please sign in to manage your garden')
-        navigate('/login')
+        // User not logged in, show demo data instead of redirecting
+        console.log('🌱 User not logged in, showing demo gardens')
+        setGardens(staticGardens)
         return
       }
       console.error('Error fetching gardens:', error)
-      // If API fails, show empty list instead of static demo data
-      setGardens([])
+      // If API fails, show demo data for demonstration
+      console.log('🌱 API failed, showing demo gardens')
+      setGardens(staticGardens)
     }
   }
 
@@ -245,18 +281,28 @@ const Garden = () => {
       const response = await axios.get('/garden')
       const apiPlants = response.data.plants || []
       console.log('🌱 Fetched plants:', apiPlants)
-      // Only show API plants for real users, not static demo data
-      setPlants(apiPlants)
+      
+      // If we have real plants from API, use them
+      if (apiPlants.length > 0) {
+        setPlants(apiPlants)
+      } else {
+        // If no real plants, show demo data for demonstration
+        console.log('🌱 No real plants found, showing demo data')
+        setPlants(staticPlants)
+      }
       setLoading(false)
     } catch (error) {
       if (error?.response?.status === 401) {
-        toast.error('Please sign in to view your plants')
-        navigate('/login')
+        // User not logged in, show demo data instead of redirecting
+        console.log('🌱 User not logged in, showing demo data')
+        setPlants(staticPlants)
+        setLoading(false)
         return
       }
       console.error('Error fetching plants:', error)
-      // If API fails, show empty list instead of static demo data
-      setPlants([])
+      // If API fails, show demo data for demonstration
+      console.log('🌱 API failed, showing demo data')
+      setPlants(staticPlants)
       setLoading(false)
     }
   }
@@ -268,41 +314,103 @@ const Garden = () => {
       setAlertsLoading(true)
       const response = await axios.get('/api/smart-alerts')
       const allAlerts = response.data.alerts || []
+      const completedActions = response.data.completed_actions || []
       
       // Filter alerts for the specific garden
       const gardenSpecificAlerts = allAlerts.filter(alert => 
         alert.garden_id === gardenId || alert.garden_name === selectedGarden?.name
       )
       
+      // Filter completed actions for the specific garden
+      const gardenCompletedActions = completedActions.filter(action => 
+        action.garden_name === selectedGarden?.name
+      )
+      
       setGardenAlerts(gardenSpecificAlerts)
+      setCompletedActions(gardenCompletedActions)
     } catch (error) {
       console.error('Error fetching garden alerts:', error)
       setGardenAlerts([])
+      setCompletedActions([])
     } finally {
       setAlertsLoading(false)
     }
   }
 
+  // Filter alerts based on selected care type
+  const getFilteredAlerts = () => {
+    if (alertFilter === 'all') return gardenAlerts
+    
+    const filterMap = {
+      'water': 'watering',
+      'fertilize': 'fertilizing', 
+      'prune': 'pruning'
+    }
+    
+    return gardenAlerts.filter(alert => alert.type === filterMap[alertFilter])
+  }
+
+  // Plants pagination and search logic
+  const getFilteredPlants = () => {
+    let filtered = plants
+    
+    // If a garden is selected, filter by that garden
+    if (selectedGarden) {
+      filtered = plants.filter(plant => {
+        // Handle both API plants (with garden.id) and static plants (with garden.id)
+        const plantGardenId = plant.garden?.id || plant.garden_id
+        return plantGardenId === selectedGarden.id
+      })
+    }
+    
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(plant => {
+        const plantName = plant.plant?.name || plant.name
+        const plantType = plant.plant?.type || plant.type
+        const plantEnvironment = plant.plant?.environment || plant.environment
+        const gardenName = plant.garden?.name || selectedGarden?.name || ''
+        
+        return plantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               plantType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               plantEnvironment.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               gardenName.toLowerCase().includes(searchQuery.toLowerCase())
+      })
+    }
+    
+    return filtered
+  }
+
+  const getPaginatedPlants = () => {
+    const filtered = getFilteredPlants()
+    
+    if (itemsPerPage === 'all') {
+      return filtered
+    }
+    
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    return filtered.slice(startIndex, endIndex)
+  }
+
+  const getTotalPages = () => {
+    const filtered = getFilteredPlants()
+    return itemsPerPage === 'all' ? 1 : Math.ceil(filtered.length / itemsPerPage)
+  }
+
+  const handleItemsPerPageChange = (value) => {
+    setItemsPerPage(value)
+    setCurrentPage(1) // Reset to first page when changing items per page
+  }
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value)
+    setCurrentPage(1) // Reset to first page when searching
+  }
+
   const markAlertCompleted = async (alertId, action) => {
     try {
       console.log('🎯 Marking alert as completed:', { alertId, action })
-      
-      // Check if this is a mock/demo alert
-      if (alertId.includes('mock') || alertId.includes('demo')) {
-        console.log('🎯 Demo alert detected, updating locally only')
-        
-        // Update local state immediately for demo alerts
-        setGardenAlerts(prevAlerts => 
-          prevAlerts.map(alert => 
-            alert.id === alertId 
-              ? { ...alert, status: 'completed' }
-              : alert
-          )
-        )
-        
-        toast.success(`Plant ${action}ed successfully! (Demo mode)`)
-        return
-      }
       
       const response = await axios.post('/api/alerts/mark-completed', {
         alert_id: alertId,
@@ -312,9 +420,10 @@ const Garden = () => {
       console.log('🎯 Backend response:', response.data)
       
       if (response.data.success) {
-        toast.success(response.data.message)
+        // Show success message immediately
+        toast.success(`Plant ${action}ed successfully!`)
         
-        // Update local state immediately for better UX
+        // Update local state to show "completed" status immediately
         setGardenAlerts(prevAlerts => 
           prevAlerts.map(alert => 
             alert.id === alertId 
@@ -323,29 +432,34 @@ const Garden = () => {
           )
         )
         
-        // Refresh garden alerts to get updated data
-        if (selectedGarden) {
-          setTimeout(() => {
+        // Remove the alert from display after 2 seconds
+        setTimeout(() => {
+          setGardenAlerts(prevAlerts => 
+            prevAlerts.filter(alert => alert.id !== alertId)
+          )
+          
+          // Refresh garden alerts to get updated data
+          if (selectedGarden) {
             fetchGardenAlerts(selectedGarden.id)
-          }, 1000) // Small delay to ensure backend has processed
-        }
+          }
+        }, 2000) // 2-second delay before removing the alert
       } else {
         throw new Error(response.data.error || 'Failed to mark alert as completed')
       }
     } catch (error) {
       console.error('Error marking alert as completed:', error)
       
-      // For demo purposes, still update the local state even if backend fails
-      if (error.response?.status === 404 || error.response?.status === 500) {
-        console.log('🎯 Backend error, updating locally for demo purposes')
+      // Handle backend errors properly
+      if (error.response?.status === 404) {
+        // Alert not found - it may have already been completed
+        console.log('Alert not found, removing from local state:', alertId)
         setGardenAlerts(prevAlerts => 
-          prevAlerts.map(alert => 
-            alert.id === alertId 
-              ? { ...alert, status: 'completed' }
-              : alert
-          )
+          prevAlerts.filter(alert => alert.id !== alertId)
         )
-        toast.success(`Plant ${action}ed successfully! (Demo mode)`)
+        toast.success(`Plant ${action}ed successfully! (Alert already completed)`)
+        return
+      } else if (error.response?.status === 500) {
+        toast.error('Server error. Please try again.')
         return
       }
       
@@ -472,6 +586,8 @@ const Garden = () => {
       setIsRecognizing(false)
       setShowAddPlant(false)
       fetchPlants()
+      // Refresh alerts when new plant is added
+      refreshAlerts()
     } catch (error) {
       if (error?.response?.status === 401) {
         toast.error('Please sign in first')
@@ -702,15 +818,59 @@ const Garden = () => {
             <div className="mb-12">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-semibold text-gray-900">My Plants</h2>
-                <div className="w-full max-w-xs">
-                  <input
-                    type="text"
-                    value={plantSearch}
-                    onChange={(e) => setPlantSearch(e.target.value)}
-                    placeholder="Search plants, gardens, or environment..."
-                    className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400"
-                  />
+                <div className="flex items-center space-x-4">
+                  <div className="w-full max-w-xs">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={handleSearchChange}
+                      placeholder="Search plants, gardens, or environment..."
+                      className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">Show:</span>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value) || e.target.value)}
+                      className="rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400 text-sm"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value="all">All</option>
+                    </select>
+                  </div>
                 </div>
+              </div>
+              
+              {/* Garden Selection Helper */}
+              {!selectedGarden && gardens.length > 0 && (
+                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-blue-700">
+                        <strong>Tip:</strong> Click on a garden above to view its plants, or add a new plant to any garden.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Pagination Info */}
+              <div className="mb-4 text-sm text-gray-600">
+                {getFilteredPlants().length > 0 ? (
+                  <span>
+                    Showing {((currentPage - 1) * (itemsPerPage === 'all' ? getFilteredPlants().length : itemsPerPage)) + 1}-{Math.min(currentPage * (itemsPerPage === 'all' ? getFilteredPlants().length : itemsPerPage), getFilteredPlants().length)} of {getFilteredPlants().length} plants
+                  </span>
+                ) : (
+                  <span>No plants found</span>
+                )}
               </div>
 
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -723,93 +883,141 @@ const Garden = () => {
               </div>
             </div>
             <ul className="divide-y divide-gray-200">
-              {plants
-                .filter((p) => {
-                  const q = plantSearch.trim().toLowerCase()
-                  if (!q) return true
-                  return (
-                    (p.plant.name || '').toLowerCase().includes(q) ||
-                    (p.garden?.name || '').toLowerCase().includes(q) ||
-                    (p.plant.environment || '').toLowerCase().includes(q) ||
-                    (p.plant.type || '').toLowerCase().includes(q)
-                  )
-                })
-                .map((plantData, index) => (
-                <li key={index} className="px-6 py-4 hover:bg-gray-50 transition-colors">
-                  <div className="grid grid-cols-8 items-center gap-2">
-                    <div className="col-span-3 flex items-center gap-3">
-                      {plantData.plant.latest_image && 
-                       !plantData.plant.latest_image.includes('blob') && 
-                       !plantData.plant.latest_image.includes('_blob') ? (
-                        <img
-                          src={`/${plantData.plant.latest_image}`}
-                          alt={plantData.plant.name}
-                          className="w-9 h-9 rounded-lg object-cover border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => handleImageClick(plantData.plant.latest_image)}
-                          title="Click to view full size"
-                          onError={(e) => {
-                            console.log('Image load error:', plantData.plant.latest_image)
-                            e.target.style.display = 'none'
-                            if (e.target.nextSibling) {
-                              e.target.nextSibling.style.display = 'flex'
-                            }
-                          }}
-                        />
-                      ) : (
-                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
-                          <Leaf className="h-5 w-5 text-green-700" />
+              {getPaginatedPlants().map((plantData, index) => {
+                // Handle both API plant structure and static plant structure
+                const plant = plantData.plant || plantData
+                const garden = plantData.garden || { name: 'Unknown Garden' }
+                const tracking = plantData.tracking || { id: plantData.id, planting_date: plantData.planting_date }
+                const plantName = plant.name
+                const plantType = plant.type
+                const plantEnvironment = plant.environment
+                const plantImage = plant.latest_image || plant.image_path
+                const plantingDate = tracking.planting_date
+                
+                return (
+                  <li key={index} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                    <div className="grid grid-cols-8 items-center gap-2">
+                      <div className="col-span-3 flex items-center gap-3">
+                        {plantImage && 
+                         !plantImage.includes('blob') && 
+                         !plantImage.includes('_blob') ? (
+                          <img
+                            src={`/${plantImage}`}
+                            alt={plantName}
+                            className="w-9 h-9 rounded-lg object-cover border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => handleImageClick(plantImage)}
+                            title="Click to view full size"
+                            onError={(e) => {
+                              console.log('Image load error:', plantImage)
+                              e.target.style.display = 'none'
+                              if (e.target.nextSibling) {
+                                e.target.nextSibling.style.display = 'flex'
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
+                            <Leaf className="h-5 w-5 text-green-700" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-semibold text-gray-900 leading-none">{plantName}</div>
+                          <div className="text-xs text-gray-500 capitalize">{plantType}</div>
                         </div>
-                      )}
-                      <div>
-                        <div className="font-semibold text-gray-900 leading-none">{plantData.plant.name}</div>
-                        <div className="text-xs text-gray-500 capitalize">{plantData.plant.type}</div>
                       </div>
-                    </div>
-                    <div className="col-span-2 text-sm text-gray-700 truncate">{plantData.garden?.name || '—'}</div>
-                    <div className="col-span-2">
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
-                        <Sun className="h-3 w-3" /> {plantData.plant.environment}
-                      </span>
-                    </div>
-                    <div className="col-span-1">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => editPlant(plantData)}
-                          className="p-2 rounded-lg text-blue-600 hover:bg-blue-50"
-                          title="Edit"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => deletePlant(plantData.tracking.id)}
-                          className="p-2 rounded-lg text-red-600 hover:bg-red-50"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <div className="mt-1 text-[10px] text-gray-400 text-right">
-                        <span className="inline-flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(plantData.tracking.planting_date).toLocaleDateString()}
+                      <div className="col-span-2 text-sm text-gray-700 truncate">{garden.name}</div>
+                      <div className="col-span-2">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
+                          <Sun className="h-3 w-3" /> {plantEnvironment}
                         </span>
                       </div>
+                      <div className="col-span-1">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => editPlant(plantData)}
+                            className="p-2 rounded-lg text-blue-600 hover:bg-blue-50"
+                            title="Edit"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => deletePlant(tracking.id)}
+                            className="p-2 rounded-lg text-red-600 hover:bg-red-50"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                        <div className="mt-1 text-[10px] text-gray-400 text-right">
+                          <span className="inline-flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {plantingDate ? new Date(plantingDate).toLocaleDateString() : 'Unknown'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </li>
-              ))}
-              {plants.length === 0 && (
+                  </li>
+                )
+              })}
+              {getFilteredPlants().length === 0 && (
                 <li className="px-6 py-12 text-center text-gray-500">
                   <div className="flex flex-col items-center">
                     <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
                       <Leaf className="h-6 w-6 text-gray-400" />
                     </div>
-                    <p className="text-gray-500 mb-2">No plants yet</p>
-                    <p className="text-sm text-gray-400">Add your first plant to get started!</p>
+                    <p className="text-gray-500 mb-2">
+                      {searchQuery ? 'No plants found matching your search' : 
+                       selectedGarden ? 'No plants in this garden yet' : 
+                       'Select a garden to view plants or add your first plant!'}
+                    </p>
+                    <p className="text-sm text-gray-400">
+                      {searchQuery ? 'Try adjusting your search terms' : 
+                       selectedGarden ? 'Add your first plant to this garden!' :
+                       'Choose a garden from the list above to see its plants'}
+                    </p>
                   </div>
                 </li>
               )}
             </ul>
+            
+            {/* Pagination Controls */}
+            {getTotalPages() > 1 && itemsPerPage !== 'all' && (
+              <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200">
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm text-gray-600">
+                    Page {currentPage} of {getTotalPages()}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(Math.min(getTotalPages(), currentPage + 1))}
+                    disabled={currentPage === getTotalPages()}
+                    className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">Go to page:</span>
+                  <select
+                    value={currentPage}
+                    onChange={(e) => setCurrentPage(parseInt(e.target.value))}
+                    className="rounded-md border-gray-300 text-sm"
+                  >
+                    {Array.from({ length: getTotalPages() }, (_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        {i + 1}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
             </div>
           </div>
@@ -819,7 +1027,7 @@ const Garden = () => {
             <div className="sticky top-8 space-y-6">
               {/* Garden Alerts Widget */}
               {selectedGarden && (
-                <div className="card">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                       <Bell className="w-5 h-5 mr-2 text-blue-600" />
@@ -827,10 +1035,18 @@ const Garden = () => {
                     </h3>
                     <div className="flex items-center space-x-2">
                       <button
+                        onClick={refreshAlerts}
+                        className="text-sm text-gray-600 hover:text-gray-800 flex items-center"
+                        title="Refresh alerts"
+                      >
+                        <Clock className="w-4 h-4 mr-1" />
+                        Refresh
+                      </button>
+                      <button
                         onClick={() => setShowAlerts(!showAlerts)}
                         className="text-sm text-blue-600 hover:text-blue-800"
                       >
-                        {showAlerts ? 'Hide' : 'Show'} All
+                        Show All
                       </button>
                       <button
                         onClick={() => navigate('/smart-alerts')}
@@ -842,13 +1058,65 @@ const Garden = () => {
                     </div>
                   </div>
                   
+                  {/* Filter by care type */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Filter by care type:
+                    </label>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => setAlertFilter('all')}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                          alertFilter === 'all' 
+                            ? 'bg-gray-800 text-white' 
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        All
+                      </button>
+                      <button
+                        onClick={() => setAlertFilter('water')}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center ${
+                          alertFilter === 'water' 
+                            ? 'bg-blue-100 text-blue-700 border border-blue-300' 
+                            : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                        }`}
+                      >
+                        <Droplets className="w-4 h-4 mr-1" />
+                        Water
+                      </button>
+                      <button
+                        onClick={() => setAlertFilter('fertilize')}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center ${
+                          alertFilter === 'fertilize' 
+                            ? 'bg-yellow-100 text-yellow-700 border border-yellow-300' 
+                            : 'bg-yellow-50 text-yellow-600 hover:bg-yellow-100'
+                        }`}
+                      >
+                        <Leaf className="w-4 h-4 mr-1" />
+                        Fertilize
+                      </button>
+                      <button
+                        onClick={() => setAlertFilter('prune')}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center ${
+                          alertFilter === 'prune' 
+                            ? 'bg-pink-100 text-pink-700 border border-pink-300' 
+                            : 'bg-pink-50 text-pink-600 hover:bg-pink-100'
+                        }`}
+                      >
+                        <Scissors className="w-4 h-4 mr-1" />
+                        Prune
+                      </button>
+                    </div>
+                  </div>
+                  
                   {alertsLoading ? (
                     <div className="text-center py-4">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
                     </div>
-                  ) : gardenAlerts.length > 0 ? (
+                  ) : getFilteredAlerts().length > 0 ? (
                     <div className="space-y-3">
-                      {gardenAlerts.slice(0, showAlerts ? gardenAlerts.length : 3).map((alert) => (
+                      {getFilteredAlerts().slice(0, showAlerts ? getFilteredAlerts().length : 3).map((alert) => (
                         <div key={alert.id} className={`p-3 rounded-lg border-l-4 ${
                           alert.status === 'completed' ? 'border-green-500 bg-green-50' :
                           alert.priority === 'high' ? 'border-red-500 bg-red-50' :
@@ -872,51 +1140,76 @@ const Garden = () => {
                               </div>
                                <p className="text-sm text-gray-600 mb-2">{alert.message}</p>
                                
+                               {/* Combined AI Analysis and Recommendation Card */}
                                {alert.recommendation && (
-                                 <div className="bg-blue-50 border-l-2 border-blue-400 p-2 mb-2 rounded">
-                                   <div className="text-xs font-medium text-blue-800 mb-1">💡 Recommendation</div>
-                                   <div className="text-xs text-blue-700">{alert.recommendation}</div>
+                                 <div className="bg-purple-50 border-l-2 border-purple-400 p-3 mb-3 rounded">
+                                   <div className="flex items-center mb-2">
+                                     <span className="text-sm font-medium text-purple-800 mr-2">🤖 AI Analysis</span>
+                                     {alert.ai_confidence && (
+                                       <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded">
+                                         Confidence: {Math.round(alert.ai_confidence * 100)}%
+                                       </span>
+                                     )}
+                                   </div>
+                                   <div className="text-sm text-purple-700 mb-2">
+                                     {alert.recommendation}
+                                   </div>
+                                   <div className="text-xs text-purple-600">
+                                     💡 Recommendation: {alert.type === 'watering' ? 'Water thoroughly to help establish roots' : 
+                                       alert.type === 'fertilizing' ? 'Apply appropriate fertilizer following package instructions' :
+                                       alert.type === 'pruning' ? 'Prune for shape and air circulation' : 'Follow care guidelines'}
+                                   </div>
                                  </div>
                                )}
                                
-                               {alert.grid_position && (
-                                 <div className="text-xs text-gray-500 mb-2">
-                                   📍 Position: {alert.grid_position}
+                               {/* Position and Due Date */}
+                               <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                                 <div className="flex items-center space-x-4">
+                                   {alert.grid_position && (
+                                     <div className="flex items-center">
+                                       <span className="mr-1">📍</span>
+                                       Position: {alert.grid_position}
+                                     </div>
+                                   )}
+                                   <div className="flex items-center">
+                                     <Clock className="w-3 h-3 mr-1" />
+                                     Due: {new Date(alert.due_date).toLocaleDateString()}
+                                   </div>
                                  </div>
-                               )}
-                               
-                               <div className="flex items-center space-x-2">
-                                 <Clock className="w-3 h-3 text-gray-400" />
-                                 <span className="text-xs text-gray-500">
-                                   Due: {new Date(alert.due_date).toLocaleDateString()}
-                                 </span>
                                </div>
+                               
+                               {/* Action Buttons */}
+                               {alert.status !== 'completed' && (
+                                 <div className="flex space-x-2">
+                                   <button
+                                     onClick={() => {
+                                       const actionMap = {
+                                         'watering': 'water',
+                                         'fertilizing': 'fertilize',
+                                         'pruning': 'prune'
+                                       }
+                                       markAlertCompleted(alert.id, actionMap[alert.type])
+                                     }}
+                                     className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                       alert.type === 'watering' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
+                                       alert.type === 'fertilizing' ? 'bg-yellow-600 hover:bg-yellow-700 text-white' :
+                                       'bg-pink-600 hover:bg-pink-700 text-white'
+                                     }`}
+                                   >
+                                     {alert.type === 'watering' ? '💧 Water' :
+                                      alert.type === 'fertilizing' ? '🌱 Fertilize' :
+                                      '✂️ Prune'}
+                                   </button>
+                                   <button
+                                     onClick={() => snoozeAlert(alert.id, 24)}
+                                     className="px-4 py-2 text-sm font-medium bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                                   >
+                                     <Clock className="w-4 h-4 inline mr-1" />
+                                     Snooze
+                                   </button>
+                                 </div>
+                               )}
                             </div>
-                             {alert.status !== 'completed' && (
-                               <div className="flex space-x-1">
-                                 <button
-                                   onClick={() => {
-                                     const actionMap = {
-                                       'watering': 'water',
-                                       'fertilizing': 'fertilize',
-                                       'pruning': 'prune'
-                                     }
-                                     markAlertCompleted(alert.id, actionMap[alert.type])
-                                   }}
-                                   className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                                 >
-                                   <CheckCircle className="w-3 h-3 inline mr-1" />
-                                   Done
-                                 </button>
-                                 <button
-                                   onClick={() => snoozeAlert(alert.id, 24)}
-                                   className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                                 >
-                                   <Clock className="w-3 h-3 inline mr-1" />
-                                   Snooze
-                                 </button>
-                               </div>
-                             )}
                              {alert.status === 'completed' && (
                                <div className="flex items-center text-green-600">
                                  <CheckCircle className="w-4 h-4 mr-1" />
@@ -927,23 +1220,82 @@ const Garden = () => {
                         </div>
                       ))}
                       
-                      {gardenAlerts.length > 3 && !showAlerts && (
+                      {getFilteredAlerts().length > 3 && !showAlerts && (
                         <div className="text-center">
                           <button
                                 onClick={() => setShowAlerts(true)}
                                 className="text-sm text-blue-600 hover:text-blue-800"
                               >
-                                +{gardenAlerts.length - 3} more alerts
+                                +{getFilteredAlerts().length - 3} more alerts
                               </button>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="text-center py-4 text-gray-500">
-                      <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                      <p className="text-sm">No alerts for this garden</p>
+                    <div className="text-center py-8 text-gray-500">
+                      <Bell className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                      <p className="text-sm">
+                        <span className="text-blue-600 font-medium">No</span> alerts for this garden
+                      </p>
                     </div>
                   )}
+                </div>
+              )}
+              
+              {/* Completed Actions Section */}
+              {selectedGarden && completedActions.length > 0 && (
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                      <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                      Recent Completed Actions
+                    </h3>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {completedActions.slice(0, 5).map((action, index) => (
+                      <div key={action.id} className="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              action.type === 'water' ? 'bg-blue-100' :
+                              action.type === 'fertilize' ? 'bg-yellow-100' :
+                              'bg-pink-100'
+                            }`}>
+                              {action.type === 'water' ? '💧' :
+                               action.type === 'fertilize' ? '🌱' :
+                               '✂️'}
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {action.plant_name}
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                {action.type === 'water' ? 'Watered' :
+                                 action.type === 'fertilize' ? 'Fertilized' :
+                                 'Pruned'} • {new Date(action.action_date).toLocaleDateString()}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center text-green-600">
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            <span className="text-sm font-medium">Done</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {completedActions.length > 5 && (
+                      <div className="text-center">
+                        <button
+                          onClick={() => navigate('/smart-alerts')}
+                          className="text-sm text-green-600 hover:text-green-800"
+                        >
+                          View all {completedActions.length} completed actions
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
               
@@ -951,7 +1303,7 @@ const Garden = () => {
                 ref={gridPlannerRef}
                 selectedGarden={selectedGarden} 
                 onGardenUpdate={fetchGardens}
-                onPlantUpdate={gridPlannerRef}
+                onPlantUpdate={refreshAlerts}
               />
             </div>
           </div>

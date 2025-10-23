@@ -2895,8 +2895,12 @@ def upload_plant_image():
         
         # Store care suggestions in grid space
         grid_space.care_suggestions = json.dumps(care_suggestions)
+        grid_space.ai_analyzed = True
+        grid_space.ai_analysis_date = datetime.now(timezone.utc)
+        grid_space.ai_analysis_result = json.dumps(care_suggestions)
         grid_space.last_updated = datetime.now(timezone.utc)
         print(f"🗄️ Stored care suggestions: {care_suggestions}")
+        print(f"🤖 Marked as AI analyzed: {grid_space.ai_analyzed}")
         print(f"📅 Updated last_updated timestamp")
         
         print("💾 Committing to database...")
@@ -3043,7 +3047,7 @@ def get_pruning_recommendation(plant, days_since_pruned):
     
     return " | ".join(recommendations)
 
-@views.route('/smart-alerts')
+@views.route('/api/smart-alerts')
 @login_required
 def smart_alerts():
     """Generate smart alerts for user's plants based on care schedules"""
@@ -3054,8 +3058,11 @@ def smart_alerts():
     user_gardens = Garden.query.filter_by(user_id=current_user.id).all()
     
     for garden in user_gardens:
-        # Check GridSpace plants (from GridPlanner)
-        grid_spaces = GridSpace.query.filter_by(garden_id=garden.id).filter(GridSpace.plant_id.isnot(None)).all()
+        # Check GridSpace plants (from GridPlanner) - only AI-analyzed plants
+        grid_spaces = GridSpace.query.filter_by(garden_id=garden.id).filter(
+            GridSpace.plant_id.isnot(None),
+            GridSpace.ai_analyzed == True
+        ).all()
         
         for space in grid_spaces:
             if space.plant_id:
@@ -3063,8 +3070,70 @@ def smart_alerts():
                 if not plant:
                     continue
                 
-                # Check watering schedule for grid plants
-                if space.last_watered:
+                # Check AI analysis results first
+                ai_analysis = None
+                if space.ai_analysis_result:
+                    try:
+                        ai_analysis = json.loads(space.ai_analysis_result)
+                    except:
+                        ai_analysis = None
+                
+                # Check if AI analysis indicates plant is healthy (no care needed)
+                is_healthy = False
+                if ai_analysis:
+                    reasoning = ai_analysis.get('reasoning', '').lower()
+                    # Check for healthy indicators in AI reasoning
+                    healthy_indicators = [
+                        'healthy', 'no care needed', 'no issues', 'looks good', 
+                        'appears healthy', 'no problems', 'no signs of', 'no visible',
+                        'plant looks healthy', 'no care required', 'in good condition'
+                    ]
+                    is_healthy = any(indicator in reasoning for indicator in healthy_indicators)
+                    
+                    # Also check if all care needs are False
+                    if not is_healthy:
+                        needs_water = ai_analysis.get('needs_water', False)
+                        needs_fertilize = ai_analysis.get('needs_fertilize', False)
+                        needs_prune = ai_analysis.get('needs_prune', False)
+                        is_healthy = not (needs_water or needs_fertilize or needs_prune)
+                
+                # Skip generating alerts for healthy plants
+                if is_healthy:
+                    continue
+                
+                # Generate alerts based on AI analysis (only if plant needs care and wasn't recently watered)
+                if ai_analysis and ai_analysis.get('needs_water', False):
+                    # Check if plant was watered recently (within last 24 hours)
+                    recently_watered = False
+                    if space.last_watered:
+                        hours_since_watered = (datetime.now() - datetime.combine(space.last_watered, datetime.min.time())).total_seconds() / 3600
+                        recently_watered = hours_since_watered < 24
+                    
+                    # Only generate alert if not recently watered
+                    if not recently_watered:
+                        # AI detected that plant needs water
+                        confidence = ai_analysis.get('confidence', 0.5)
+                        reasoning = ai_analysis.get('reasoning', 'AI analysis suggests watering needed')
+                        
+                        alerts.append({
+                            'id': f"ai_water_{space.id}",
+                            'type': 'watering',
+                            'plant_name': plant.name,
+                            'garden_name': garden.name,
+                            'message': f'Your {plant.name} needs watering based on AI analysis',
+                            'due_date': today.isoformat(),
+                            'priority': 'high' if confidence > 0.7 else 'medium',
+                            'status': 'pending',
+                            'space_id': space.id,
+                            'garden_id': garden.id,
+                            'recommendation': f"AI Analysis: {reasoning}",
+                            'grid_position': space.grid_position,
+                            'ai_confidence': confidence
+                        })
+                    else:
+                        print(f"🎯 SKIPPING ALERT: {plant.name} was watered recently (within 24 hours)")
+                # Only check traditional schedule if AI analysis doesn't indicate watering needed
+                elif space.last_watered:
                     days_since_watered = (today - space.last_watered).days
                     # Default watering frequency if not set in plant
                     watering_freq = getattr(plant, 'watering_frequency', 3) or 3
@@ -3085,7 +3154,7 @@ def smart_alerts():
                             'space_id': space.id,
                             'garden_id': garden.id,
                             'recommendation': watering_recommendation,
-                            'grid_position': f"Row {space.row}, Col {space.column}" if hasattr(space, 'row') and hasattr(space, 'column') else None
+                            'grid_position': space.grid_position
                         })
                 else:
                     # New plant that hasn't been watered yet
@@ -3106,8 +3175,28 @@ def smart_alerts():
                         'grid_position': f"Row {space.row}, Col {space.column}" if hasattr(space, 'row') and hasattr(space, 'column') else None
                     })
                 
-                # Check fertilizing schedule for grid plants
-                if space.last_fertilized:
+                # Check AI analysis for fertilizing needs (only if plant needs care)
+                if ai_analysis and ai_analysis.get('needs_fertilize', False):
+                    confidence = ai_analysis.get('confidence', 0.5)
+                    reasoning = ai_analysis.get('reasoning', 'AI analysis suggests fertilizing needed')
+                    
+                    alerts.append({
+                        'id': f"ai_fertilize_{space.id}",
+                        'type': 'fertilizing',
+                        'plant_name': plant.name,
+                        'garden_name': garden.name,
+                        'message': f'Your {plant.name} needs fertilizer based on AI analysis',
+                        'due_date': today.isoformat(),
+                        'priority': 'high' if confidence > 0.7 else 'medium',
+                        'status': 'pending',
+                        'space_id': space.id,
+                        'garden_id': garden.id,
+                        'recommendation': f"AI Analysis: {reasoning}",
+                        'grid_position': space.grid_position,
+                        'ai_confidence': confidence
+                    })
+                # Only check traditional schedule if AI analysis doesn't indicate fertilizing needed
+                elif space.last_fertilized:
                     days_since_fertilized = (today - space.last_fertilized).days
                     fertilizing_freq = getattr(plant, 'fertilizing_frequency', 14) or 14
                     
@@ -3126,11 +3215,31 @@ def smart_alerts():
                             'space_id': space.id,
                             'garden_id': garden.id,
                             'recommendation': fertilizing_recommendation,
-                            'grid_position': f"Row {space.row}, Col {space.column}" if hasattr(space, 'row') and hasattr(space, 'column') else None
+                            'grid_position': space.grid_position
                         })
                 
-                # Check pruning schedule for grid plants
-                if space.last_pruned:
+                # Check AI analysis for pruning needs (only if plant needs care)
+                if ai_analysis and ai_analysis.get('needs_prune', False):
+                    confidence = ai_analysis.get('confidence', 0.5)
+                    reasoning = ai_analysis.get('reasoning', 'AI analysis suggests pruning needed')
+                    
+                    alerts.append({
+                        'id': f"ai_prune_{space.id}",
+                        'type': 'pruning',
+                        'plant_name': plant.name,
+                        'garden_name': garden.name,
+                        'message': f'Your {plant.name} needs pruning based on AI analysis',
+                        'due_date': today.isoformat(),
+                        'priority': 'high' if confidence > 0.7 else 'medium',
+                        'status': 'pending',
+                        'space_id': space.id,
+                        'garden_id': garden.id,
+                        'recommendation': f"AI Analysis: {reasoning}",
+                        'grid_position': space.grid_position,
+                        'ai_confidence': confidence
+                    })
+                # Only check traditional schedule if AI analysis doesn't indicate pruning needed
+                elif space.last_pruned:
                     days_since_pruned = (today - space.last_pruned).days
                     pruning_freq = getattr(plant, 'pruning_frequency', 30) or 30
                     
@@ -3149,7 +3258,7 @@ def smart_alerts():
                             'space_id': space.id,
                             'garden_id': garden.id,
                             'recommendation': pruning_recommendation,
-                            'grid_position': f"Row {space.row}, Col {space.column}" if hasattr(space, 'row') and hasattr(space, 'column') else None
+                            'grid_position': space.grid_position
                         })
         
         # Also check traditional PlantTracking (legacy system)
@@ -3209,9 +3318,33 @@ def smart_alerts():
     priority_order = {'high': 3, 'medium': 2, 'low': 1}
     alerts.sort(key=lambda x: (priority_order.get(x['priority'], 0), x['due_date']), reverse=True)
     
-    return jsonify({"alerts": alerts})
+    # Get completed actions for the same time period
+    from website.models import ActivityLog
+    completed_actions = ActivityLog.query.filter_by(
+        user_id=current_user.id
+    ).order_by(ActivityLog.action_date.desc()).limit(10).all()
+    
+    completed_data = []
+    for action in completed_actions:
+        plant = Plant.query.get(action.plant_id) if action.plant_id else None
+        garden = Garden.query.get(action.garden_id) if action.garden_id else None
+        
+        completed_data.append({
+            'id': f"completed_{action.id}",
+            'type': action.action,
+            'plant_name': plant.name if plant else 'Unknown Plant',
+            'garden_name': garden.name if garden else 'Unknown Garden',
+            'action_date': action.action_date.isoformat(),
+            'status': 'completed',
+            'notes': action.notes
+        })
+    
+    return jsonify({
+        "alerts": alerts,
+        "completed_actions": completed_data
+    })
 
-@views.route('/alerts/mark-completed', methods=['POST'])
+@views.route('/api/alerts/mark-completed', methods=['POST'])
 @login_required
 def mark_alert_completed():
     """Mark an alert as completed when user performs the care action"""
@@ -3226,8 +3359,8 @@ def mark_alert_completed():
             return jsonify({"error": "Alert ID and action are required"}), 400
         
         # Parse alert ID to determine if it's from grid or tracking
-        if alert_id.startswith('grid_'):
-            # Handle grid space alerts
+        if alert_id.startswith('grid_') or alert_id.startswith('ai_'):
+            # Handle grid space alerts (both traditional and AI-based)
             space_id = alert_id.split('_')[-1]
             print(f"🎯 ALERT COMPLETION: Processing grid space {space_id}")
             
@@ -3256,6 +3389,19 @@ def mark_alert_completed():
             else:
                 print(f"🎯 ALERT COMPLETION: Invalid action {action}")
                 return jsonify({"error": f"Invalid action: {action}"}), 400
+            
+            # Create activity log entry for completed action
+            from website.models import ActivityLog
+            activity_log = ActivityLog(
+                user_id=current_user.id,
+                garden_id=space.garden_id,
+                space_id=space.id,
+                plant_id=space.plant_id,
+                action=action,
+                action_date=today,
+                notes=f"Completed {action}ing for {space.plant.name if space.plant else 'plant'}"
+            )
+            db.session.add(activity_log)
             
             space.last_updated = datetime.now(timezone.utc)
             db.session.commit()
@@ -3299,6 +3445,42 @@ def mark_alert_completed():
             
     except Exception as e:
         db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/completed-actions')
+@login_required
+def get_completed_actions():
+    """Get completed plant care actions for reports"""
+    try:
+        # Get user's completed actions from activity logs
+        from website.models import ActivityLog
+        
+        completed_actions = ActivityLog.query.filter_by(
+            user_id=current_user.id
+        ).order_by(ActivityLog.action_date.desc()).all()
+        
+        actions_data = []
+        for action in completed_actions:
+            # Get plant and garden info
+            plant = Plant.query.get(action.plant_id) if action.plant_id else None
+            garden = Garden.query.get(action.garden_id) if action.garden_id else None
+            
+            actions_data.append({
+                'id': action.id,
+                'action': action.action,
+                'action_date': action.action_date.isoformat(),
+                'plant_name': plant.name if plant else 'Unknown Plant',
+                'garden_name': garden.name if garden else 'Unknown Garden',
+                'notes': action.notes,
+                'space_id': action.space_id
+            })
+        
+        return jsonify({
+            "success": True,
+            "completed_actions": actions_data
+        })
+        
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @views.route('/features')
