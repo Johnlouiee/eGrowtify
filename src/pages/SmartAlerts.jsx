@@ -219,7 +219,9 @@ const SmartAlerts = () => {
       setLoading(false)
     } catch (error) {
       console.error('Error fetching alerts:', error)
-      toast.error('Error loading alerts')
+      console.error('Error response:', error.response?.data)
+      console.error('Error status:', error.response?.status)
+      toast.error(`Error loading alerts: ${error.response?.data?.error || error.message}`)
       setLoading(false)
     }
   }

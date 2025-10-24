@@ -705,6 +705,86 @@ ALTER TABLE `planttracking`
 ALTER TABLE `user_subscriptions`
   ADD CONSTRAINT `user_subscriptions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `user_subscriptions_ibfk_2` FOREIGN KEY (`plan_id`) REFERENCES `subscription_plans` (`id`);
+
+--
+-- Table structure for table `learning_path_content`
+--
+
+CREATE TABLE `learning_path_content` (
+  `id` int(11) NOT NULL,
+  `path_difficulty` varchar(20) NOT NULL,
+  `module_id` varchar(50) NOT NULL,
+  `content_type` varchar(20) NOT NULL,
+  `content_id` int(11) DEFAULT NULL,
+  `title` varchar(200) DEFAULT NULL,
+  `content` text DEFAULT NULL,
+  `media_type` varchar(20) DEFAULT NULL,
+  `media_url` varchar(500) DEFAULT NULL,
+  `media_description` text DEFAULT NULL,
+  `question_number` int(11) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `learning_path_content`
+--
+
+
+--
+-- Indexes for table `learning_path_content`
+--
+ALTER TABLE `learning_path_content`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_path_difficulty` (`path_difficulty`),
+  ADD KEY `idx_module_id` (`module_id`),
+  ADD KEY `idx_content_type` (`content_type`),
+  ADD KEY `idx_question_number` (`question_number`);
+
+--
+-- AUTO_INCREMENT for table `learning_path_content`
+--
+ALTER TABLE `learning_path_content`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `activity_logs`
+--
+
+CREATE TABLE `activity_logs` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `garden_id` int(11) NOT NULL,
+  `space_id` int(11) DEFAULT NULL,
+  `plant_id` int(11) DEFAULT NULL,
+  `action` varchar(50) NOT NULL,
+  `action_date` datetime NOT NULL,
+  `notes` text DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Indexes for table `activity_logs`
+--
+
+ALTER TABLE `activity_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_garden_id` (`garden_id`),
+  ADD KEY `idx_space_id` (`space_id`),
+  ADD KEY `idx_plant_id` (`plant_id`),
+  ADD KEY `idx_action_date` (`action_date`);
+
+--
+-- AUTO_INCREMENT for table `activity_logs`
+--
+
+ALTER TABLE `activity_logs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

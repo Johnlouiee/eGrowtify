@@ -6,6 +6,7 @@ import {
   Target, TrendingUp, Star, Users, Calendar, MapPin, Zap, Video, PlayCircle, X
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import axios from 'axios'
 import ImageDisplay from '../components/ImageDisplay'
 import { useAuth } from '../contexts/AuthContext'
 import { getModuleData } from '../utils/learningPathData'
@@ -31,12 +32,50 @@ const BeginnerLearningPath = () => {
     return `${key}_user_${user.id}`
   }
 
-  // Get modules from centralized data source
-  const modules = getModuleData('Beginner').map(module => ({
-    ...module,
-    icon: BookOpen,
-    color: 'green'
-  }))
+  // Get modules from backend API
+  const [modules, setModules] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadModules = async () => {
+      try {
+        const response = await axios.get('/api/learning-paths/Beginner')
+        
+        // Check if backend returned empty array (no content in database)
+        if (response.data && response.data.length === 0) {
+          console.log('No content in database, using fallback data')
+          // Fallback to hardcoded data
+          const fallbackModules = getModuleData('Beginner').map(module => ({
+            ...module,
+            icon: BookOpen,
+            color: 'green'
+          }))
+          setModules(fallbackModules)
+        } else {
+          // Use backend data
+          const backendModules = response.data.map(module => ({
+            ...module,
+            icon: BookOpen,
+            color: 'green'
+          }))
+          setModules(backendModules)
+        }
+      } catch (error) {
+        console.error('Error loading modules from backend:', error)
+        // Fallback to hardcoded data
+        const fallbackModules = getModuleData('Beginner').map(module => ({
+          ...module,
+          icon: BookOpen,
+          color: 'green'
+        }))
+        setModules(fallbackModules)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadModules()
+  }, [])
 
   // Clear old progress data function
   const clearOldProgressData = () => {
@@ -563,6 +602,18 @@ const BeginnerLearningPath = () => {
               </div>
             </div>
           )}
+        </div>
+      </div>
+    )
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading learning modules...</p>
         </div>
       </div>
     )

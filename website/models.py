@@ -145,9 +145,6 @@ class GridSpace(db.Model):
     notes = db.Column('NOTES', db.Text)
     image_path = db.Column('IMAGE_PATH', db.String(255))
     care_suggestions = db.Column('CARE_SUGGESTIONS', db.Text)
-    ai_analyzed = db.Column('AI_ANALYZED', db.Boolean, default=False)
-    ai_analysis_date = db.Column('AI_ANALYSIS_DATE', db.DateTime)
-    ai_analysis_result = db.Column('AI_ANALYSIS_RESULT', db.Text)
     last_updated = db.Column('LAST_UPDATED', db.DateTime, default=lambda: datetime.now(timezone.utc))
     is_active = db.Column('IS_ACTIVE', db.Boolean, default=True)
     created_at = db.Column('CREATED_AT', db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -171,20 +168,41 @@ class Feedback(db.Model):
     
     # Relationships
     user = db.relationship('User', backref='feedbacks')
+
+class LearningPathContent(db.Model):
+    __tablename__ = 'learning_path_content'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    path_difficulty = db.Column(db.String(20), nullable=False)  # 'Beginner', 'Intermediate', 'Expert'
+    module_id = db.Column(db.String(50), nullable=False)  # 'plant-basics', 'soil-fundamentals', etc.
+    content_type = db.Column(db.String(20), nullable=False)  # 'lesson', 'quiz_question'
+    content_id = db.Column(db.Integer)  # lesson ID or question ID
+    title = db.Column(db.String(200))
+    content = db.Column(db.Text)
+    media_type = db.Column(db.String(20))  # 'image', 'video'
+    media_url = db.Column(db.String(500))
+    media_description = db.Column(db.Text)
+    question_number = db.Column(db.Integer)  # For quiz questions
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     def to_dict(self):
         return {
             'id': self.id,
-            'user_id': self.user_id,
-            'user_name': self.user.full_name if self.user else 'Anonymous',
-            'user_email': self.user.email if self.user else 'N/A',
-            'subject': self.subject,
-            'message': self.message,
-            'rating': self.rating,
-            'category': self.category,
-            'status': self.status,
-            'admin_response': self.admin_response,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'path_difficulty': self.path_difficulty,
+            'module_id': self.module_id,
+            'content_type': self.content_type,
+            'content_id': self.content_id,
+            'title': self.title,
+            'content': self.content,
+            'media_type': self.media_type,
+            'media_url': self.media_url,
+            'media_description': self.media_description,
+            'question_number': self.question_number,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
     
     def __repr__(self):

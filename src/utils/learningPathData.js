@@ -57,7 +57,7 @@ export const getLearningPathModules = () => {
             {
               id: 1,
               question: '🔍 PLANT IDENTIFICATION: Look at this plant. It has bright, colorful flowers and appears to be growing vigorously in a single season. What type of plant is this?',
-              image: '/images/quiz/quiz-annual-plant.jpg',
+              image: '/uploads/learning_paths/image/learning_1761296409_63f4b9f9.jpg',
               imageDescription: 'A vibrant annual plant with bright flowers showing typical single-season growth characteristics',
               options: ['Annual (lives one season)', 'Perennial (lives many years)', 'Biennial (lives two years)', 'Houseplant'],
               correct: 0,
@@ -66,7 +66,7 @@ export const getLearningPathModules = () => {
             {
               id: 2,
               question: '🌱 BEGINNER PLANT SELECTION: This plant is known for being nearly indestructible and perfect for beginners. What is it?',
-              image: '/images/quiz/quiz-snake-plant.jpg',
+              image: '/uploads/learning_paths/image/learning_1761296412_1fd407a0.jpg',
               imageDescription: 'A snake plant (Sansevieria) showing its characteristic upright, sword-like leaves and low-maintenance appearance',
               options: ['Orchid (needs special care)', 'Snake Plant (very forgiving)', 'Fiddle Leaf Fig (finicky)', 'Succulent (needs lots of sun)'],
               correct: 1,
@@ -75,6 +75,8 @@ export const getLearningPathModules = () => {
             {
               id: 3,
               question: '📊 GARDEN PLANNING: How many plants should a beginner start with for the best success rate?',
+              image: '/uploads/learning_paths/image/learning_1761302201_2dfe938a.jpg',
+              imageDescription: 'A beginner garden setup showing the ideal number of plants for starting out',
               options: ['10-15 plants', '3-5 plants', '20+ plants', 'Just one plant'],
               correct: 1,
               explanation: '✅ CORRECT! 3-5 plants is the ideal starting number. This allows you to: Give each plant individual attention, learn their specific needs, build confidence through manageable care, and avoid overwhelm. Quality over quantity when learning!'

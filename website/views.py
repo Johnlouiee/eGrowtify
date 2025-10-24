@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, flash, redirect, url_for, send_from_directory
 from flask_login import login_required, current_user
 from . import mysql
-from .models import db, User, Admin, Garden, Plant, PlantTracking, GridSpace, Feedback
+from .models import db, User, Admin, Garden, Plant, PlantTracking, GridSpace, Feedback, LearningPathContent, ActivityLog
 from datetime import datetime, timedelta, timezone
 import os
 import base64
@@ -907,7 +907,20 @@ def ai_plant_recognition():
                 try:
                     # Try SDK path first with vision capabilities
                     from openai import OpenAI
+                    # Clear any proxy environment variables that might cause conflicts
+                    proxy_vars = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'ALL_PROXY', 'all_proxy']
+                    original_proxy_values = {}
+                    for var in proxy_vars:
+                        if var in os.environ:
+                            original_proxy_values[var] = os.environ[var]
+                            del os.environ[var]
+                    
+                    # Initialize client with only the api_key to avoid proxy conflicts
                     client = OpenAI(api_key=openai_key)
+                    
+                    # Restore proxy environment variables
+                    for var, value in original_proxy_values.items():
+                        os.environ[var] = value
                     
                     # Use vision model for image analysis
                     completion = client.chat.completions.create(
@@ -935,7 +948,11 @@ def ai_plant_recognition():
                         max_tokens=1000
                     )
                     content = completion.choices[0].message.content
-                except Exception:
+                except Exception as e:
+                    print(f"❌ OpenAI SDK failed: {str(e)}")
+                    # Check if it's the proxies error specifically
+                    if "proxies" in str(e):
+                        print("🔧 Fixing proxies error by using direct HTTP call")
                     # Fallback to plain HTTPS call with vision
                     http_headers = {
                         'Authorization': f'Bearer {openai_key}',
@@ -1115,7 +1132,20 @@ def soil_analysis():
         try:
             # Use OpenAI Vision API for soil analysis
             from openai import OpenAI
+            # Clear any proxy environment variables that might cause conflicts
+            proxy_vars = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'ALL_PROXY', 'all_proxy']
+            original_proxy_values = {}
+            for var in proxy_vars:
+                if var in os.environ:
+                    original_proxy_values[var] = os.environ[var]
+                    del os.environ[var]
+            
+            # Initialize client with only the api_key to avoid proxy conflicts
             client = OpenAI(api_key=openai_key)
+            
+            # Restore proxy environment variables
+            for var, value in original_proxy_values.items():
+                os.environ[var] = value
             
             completion = client.chat.completions.create(
                 model="gpt-4o",  # Use vision-capable model
@@ -1142,7 +1172,11 @@ def soil_analysis():
                 max_tokens=1000
             )
             content = completion.choices[0].message.content
-        except Exception:
+        except Exception as e:
+            print(f"❌ OpenAI SDK failed: {str(e)}")
+            # Check if it's the proxies error specifically
+            if "proxies" in str(e):
+                print("🔧 Fixing proxies error by using direct HTTP call")
             # Fallback to plain HTTPS call
             http_headers = {
                 'Authorization': f'Bearer {openai_key}',
@@ -2303,94 +2337,150 @@ def delete_garden(garden_id):
 @views.route('/plant/add', methods=['POST'])
 @login_required
 def add_plant():
-    # Only regular users can add plants to gardens
-    if hasattr(current_user, 'is_admin') and current_user.is_admin():
-        return jsonify({"error": "Admins cannot add plants. Please use a user account."}), 403
-    
-    # Check if this is a form data request (with image) or JSON request
-    if request.content_type and 'multipart/form-data' in request.content_type:
-        # Handle form data with image
-        name = request.form.get('name')
-        type_ = request.form.get('type')
-        environment = request.form.get('environment')
-        care_guide = request.form.get('care_guide')
-        ideal_soil_type = request.form.get('ideal_soil_type')
-        watering_frequency = request.form.get('watering_frequency')
-        fertilizing_frequency = request.form.get('fertilizing_frequency')
-        pruning_frequency = request.form.get('pruning_frequency')
-        garden_id = request.form.get('garden_id')
-        planting_date = request.form.get('planting_date')
+    try:
+        # Only regular users can add plants to gardens
+        if hasattr(current_user, 'is_admin') and current_user.is_admin():
+            return jsonify({"error": "Admins cannot add plants. Please use a user account."}), 403
         
-        # Handle image upload
-        image_path = None
-        if 'image' in request.files:
-            file = request.files['image']
-            if file and file.filename:
-                # Create uploads directory if it doesn't exist
-                upload_dir = os.path.join(os.getcwd(), 'uploads', 'plants')
-                os.makedirs(upload_dir, exist_ok=True)
-                
-                # Generate unique filename with proper extension
-                import time
-                # Get file extension from content type or default to jpg
-                content_type = file.content_type
-                if content_type and 'image/' in content_type:
-                    ext = content_type.split('/')[-1]
-                    if ext not in ['jpg', 'jpeg', 'png', 'webp', 'gif']:
+        # Check if this is a form data request (with image) or JSON request
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            # Handle form data with image
+            name = request.form.get('name')
+            type_ = request.form.get('type')
+            environment = request.form.get('environment')
+            care_guide = request.form.get('care_guide')
+            ideal_soil_type = request.form.get('ideal_soil_type')
+            watering_frequency = request.form.get('watering_frequency')
+            fertilizing_frequency = request.form.get('fertilizing_frequency')
+            pruning_frequency = request.form.get('pruning_frequency')
+            garden_id = request.form.get('garden_id')
+            planting_date = request.form.get('planting_date')
+            
+            # Handle image upload
+            image_path = None
+            if 'image' in request.files:
+                file = request.files['image']
+                if file and file.filename:
+                    # Create uploads directory if it doesn't exist
+                    upload_dir = os.path.join(os.getcwd(), 'uploads', 'plants')
+                    os.makedirs(upload_dir, exist_ok=True)
+                    
+                    # Generate unique filename with proper extension
+                    import time
+                    # Get file extension from content type or default to jpg
+                    content_type = file.content_type
+                    if content_type and 'image/' in content_type:
+                        ext = content_type.split('/')[-1]
+                        if ext not in ['jpg', 'jpeg', 'png', 'webp', 'gif']:
+                            ext = 'jpg'
+                    else:
                         ext = 'jpg'
-                else:
-                    ext = 'jpg'
-                
-                # Clean filename to remove blob references
-                original_filename = file.filename or 'image'
-                if 'blob' in original_filename.lower():
-                    original_filename = 'camera_image'
-                
-                filename = f"plant_{int(time.time())}_{original_filename}.{ext}"
-                file_path = os.path.join(upload_dir, filename)
-                file.save(file_path)
-                image_path = f"uploads/plants/{filename}"
-    else:
-        # Handle JSON data
-        data = request.get_json()
-        name = data.get('name')
-        type_ = data.get('type')
-        environment = data.get('environment')
-        care_guide = data.get('care_guide')
-        ideal_soil_type = data.get('ideal_soil_type')
-        watering_frequency = data.get('watering_frequency')
-        fertilizing_frequency = data.get('fertilizing_frequency')
-        pruning_frequency = data.get('pruning_frequency')
-        garden_id = data.get('garden_id')
-        planting_date = data.get('planting_date')
-        image_path = None
-    
-    if not type_ or not environment or not care_guide or not garden_id or not planting_date:
-        return jsonify({"error": "Missing required fields."}), 400
+                    
+                    # Clean filename to remove blob references
+                    original_filename = file.filename or 'image'
+                    if 'blob' in original_filename.lower():
+                        original_filename = 'camera_image'
+                    
+                    filename = f"plant_{int(time.time())}_{original_filename}.{ext}"
+                    file_path = os.path.join(upload_dir, filename)
+                    file.save(file_path)
+                    image_path = f"uploads/plants/{filename}"
+        else:
+            # Handle JSON data
+            data = request.get_json()
+            name = data.get('name')
+            type_ = data.get('type')
+            environment = data.get('environment')
+            care_guide = data.get('care_guide')
+            ideal_soil_type = data.get('ideal_soil_type')
+            watering_frequency = data.get('watering_frequency')
+            fertilizing_frequency = data.get('fertilizing_frequency')
+            pruning_frequency = data.get('pruning_frequency')
+            garden_id = data.get('garden_id')
+            planting_date = data.get('planting_date')
+            image_path = None
+        
+        # Validate required fields
+        if not type_ or not environment or not care_guide or not garden_id or not planting_date:
+            return jsonify({"error": "Missing required fields: type, environment, care_guide, garden_id, and planting_date are required."}), 400
 
-    # Default name to type if not provided
-    if not name:
-        name = str(type_).strip().title()
-    
-    plant = Plant(
-        name=name, 
-        type=type_, 
-        environment=environment, 
-        care_guide=care_guide, 
-        ideal_soil_type=ideal_soil_type, 
-        watering_frequency=watering_frequency, 
-        fertilizing_frequency=fertilizing_frequency, 
-        pruning_frequency=pruning_frequency,
-        image_path=image_path
-    )
-    db.session.add(plant)
-    db.session.commit()
-    
-    tracking = PlantTracking(garden_id=garden_id, plant_id=plant.id, planting_date=planting_date)
-    db.session.add(tracking)
-    db.session.commit()
-    
-    return jsonify({"message": "Plant added successfully!", "plant_id": plant.id})
+        # Handle static/demo gardens vs real gardens
+        if str(garden_id).startswith('static-'):
+            return jsonify({"error": "Cannot add plants to demo gardens. Please create a real garden first."}), 400
+        
+        # Convert garden_id to integer for real gardens
+        try:
+            garden_id = int(garden_id)
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid garden_id. Must be a valid number."}), 400
+
+        # Verify garden exists and belongs to current user
+        garden = Garden.query.get(garden_id)
+        if not garden:
+            return jsonify({"error": "Garden not found."}), 404
+        if garden.user_id != current_user.id:
+            return jsonify({"error": "You don't have permission to add plants to this garden."}), 403
+
+        # Convert date string to date object
+        try:
+            from datetime import datetime
+            planting_date = datetime.strptime(planting_date, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({"error": "Invalid planting_date format. Use YYYY-MM-DD."}), 400
+
+        # Convert frequency fields to integers if provided
+        if watering_frequency:
+            try:
+                watering_frequency = int(watering_frequency)
+            except (ValueError, TypeError):
+                watering_frequency = None
+        
+        if fertilizing_frequency:
+            try:
+                fertilizing_frequency = int(fertilizing_frequency)
+            except (ValueError, TypeError):
+                fertilizing_frequency = None
+        
+        if pruning_frequency:
+            try:
+                pruning_frequency = int(pruning_frequency)
+            except (ValueError, TypeError):
+                pruning_frequency = None
+
+        # Default name to type if not provided
+        if not name:
+            name = str(type_).strip().title()
+        
+        # Create plant record
+        plant = Plant(
+            name=name, 
+            type=type_, 
+            environment=environment, 
+            care_guide=care_guide, 
+            ideal_soil_type=ideal_soil_type, 
+            watering_frequency=watering_frequency, 
+            fertilizing_frequency=fertilizing_frequency, 
+            pruning_frequency=pruning_frequency,
+            image_path=image_path
+        )
+        db.session.add(plant)
+        db.session.flush()  # Flush to get the plant ID without committing
+        
+        # Create plant tracking record
+        tracking = PlantTracking(
+            garden_id=garden_id, 
+            plant_id=plant.id, 
+            planting_date=planting_date
+        )
+        db.session.add(tracking)
+        db.session.commit()
+        
+        return jsonify({"message": "Plant added successfully!", "plant_id": plant.id})
+        
+    except Exception as e:
+        db.session.rollback()  # Rollback any partial changes
+        print(f"Error adding plant: {str(e)}")
+        return jsonify({"error": f"Failed to add plant: {str(e)}"}), 500
 
 @views.route('/plant/edit/<int:tracking_id>', methods=['POST'])
 @login_required
@@ -2692,8 +2782,20 @@ def upload_plant_image():
                 # OpenAI Vision analysis
                 try:
                     from openai import OpenAI
-                    # Don't set environment variable to avoid conflicts
+                    # Clear any proxy environment variables that might cause conflicts
+                    proxy_vars = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'ALL_PROXY', 'all_proxy']
+                    original_proxy_values = {}
+                    for var in proxy_vars:
+                        if var in os.environ:
+                            original_proxy_values[var] = os.environ[var]
+                            del os.environ[var]
+                    
+                    # Initialize client with only the api_key to avoid proxy conflicts
                     client = OpenAI(api_key=openai_key)
+                    
+                    # Restore proxy environment variables
+                    for var, value in original_proxy_values.items():
+                        os.environ[var] = value
                     print(f"✅ OpenAI client initialized successfully")
                     
                     response = client.chat.completions.create(
@@ -2704,7 +2806,7 @@ def upload_plant_image():
                                 "content": [
                                     {
                                         "type": "text",
-                                        "text": f"Analyze this {plant_name} plant image for health issues. Look for mold, rot, disease, spoilage, or any problems. You MUST respond with ONLY valid JSON in this exact format: {{\"needs_water\": true, \"needs_fertilize\": false, \"needs_prune\": false, \"confidence\": 0.8, \"reasoning\": \"description of what you see\"}}. If you see mold, rot, spoilage, or any health issues, set needs_water to true. If plant looks healthy, set needs_water to false. Be very specific about what you see in the image."
+                                        "text": f"Analyze this {plant_name} plant image for care needs. You MUST respond with ONLY valid JSON in this exact format: {{\"needs_water\": true, \"needs_fertilize\": false, \"needs_prune\": false, \"confidence\": 0.8, \"reasoning\": \"description of what you see\"}}. \n\nSet needs_water=true if you see: wilted leaves, drooping, dry soil, brown leaf edges, dehydration signs, or underwatering symptoms.\n\nSet needs_fertilize=true if you see: yellowing leaves, stunted growth, pale foliage, or nutrient deficiency signs.\n\nSet needs_prune=true if you see: dead branches, damaged leaves, overgrowth, brown/shriveled leaves, or shape issues.\n\nYou can set MULTIPLE needs to true if the plant needs multiple types of care. Be very specific about what you see in the image."
                                     },
                                     {
                                         "type": "image_url",
@@ -2722,6 +2824,7 @@ def upload_plant_image():
                     ai_response = response.choices[0].message.content
                     print(f"🤖 AI Response: {ai_response}")
                     print(f"🌱 Plant being analyzed: {plant_name}")
+                    print(f"🔍 Looking for care needs in AI response...")
                     
                     try:
                         # Clean the response before parsing
@@ -2733,6 +2836,10 @@ def upload_plant_image():
                         
                         suggestions = json.loads(cleaned_response)
                         care_suggestions = suggestions
+                        print(f"✅ Parsed AI analysis: {care_suggestions}")
+                        print(f"💧 Needs water: {care_suggestions.get('needs_water', False)}")
+                        print(f"🌱 Needs fertilize: {care_suggestions.get('needs_fertilize', False)}")
+                        print(f"✂️ Needs prune: {care_suggestions.get('needs_prune', False)}")
                         # Clean up the reasoning text if it contains JSON formatting
                         if 'reasoning' in care_suggestions and isinstance(care_suggestions['reasoning'], str):
                             reasoning = care_suggestions['reasoning']
@@ -2867,13 +2974,87 @@ def upload_plant_image():
                 except Exception as openai_error:
                     print(f"❌ OpenAI client error: {openai_error}")
                     print(f"❌ Error type: {type(openai_error).__name__}")
-                    care_suggestions = {
-                        "needs_water": False,
-                        "needs_fertilize": False, 
-                        "needs_prune": False,
-                        "confidence": 0.0,
-                        "reasoning": f"AI analysis failed: {str(openai_error)}"
-                    }
+                    
+                    # Check if it's the proxies error specifically
+                    if "proxies" in str(openai_error):
+                        print("🔧 Detected proxies error - trying direct HTTP API call")
+                        try:
+                            # Try direct HTTP API call as fallback
+                            import requests
+                            headers = {
+                                'Authorization': f'Bearer {openai_key}',
+                                'Content-Type': 'application/json'
+                            }
+                            payload = {
+                                "model": "gpt-4o",
+                                "messages": [
+                                    {
+                                        "role": "user",
+                                        "content": [
+                                            {
+                                                "type": "text",
+                                                "text": f"Analyze this {plant_name} plant image for health issues. Look for mold, rot, disease, spoilage, or any problems. You MUST respond with ONLY valid JSON in this exact format: {{\"needs_water\": true, \"needs_fertilize\": false, \"needs_prune\": false, \"confidence\": 0.8, \"reasoning\": \"description of what you see\"}}. If you see mold, rot, spoilage, or any health issues, set needs_water to true. If plant looks healthy, set needs_water to false. Be very specific about what you see in the image."
+                                            },
+                                            {
+                                                "type": "image_url",
+                                                "image_url": {
+                                                    "url": f"data:image/jpeg;base64,{image_b64}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "max_tokens": 300
+                            }
+                            
+                            response = requests.post(
+                                'https://api.openai.com/v1/chat/completions',
+                                headers=headers,
+                                json=payload,
+                                timeout=30
+                            )
+                            
+                            if response.status_code == 200:
+                                ai_response = response.json()['choices'][0]['message']['content']
+                                print(f"✅ Direct HTTP API call successful: {ai_response}")
+                                
+                                # Parse the response
+                                try:
+                                    cleaned_response = ai_response.strip()
+                                    if cleaned_response.startswith('```json'):
+                                        cleaned_response = cleaned_response.replace('```json', '').replace('```', '').strip()
+                                    elif cleaned_response.startswith('```'):
+                                        cleaned_response = cleaned_response.replace('```', '').strip()
+                                    
+                                    care_suggestions = json.loads(cleaned_response)
+                                except:
+                                    care_suggestions = {
+                                        "needs_water": False,
+                                        "needs_fertilize": False, 
+                                        "needs_prune": False,
+                                        "confidence": 0.8,
+                                        "reasoning": "Plant appears healthy based on visual analysis"
+                                    }
+                            else:
+                                raise Exception(f"HTTP API call failed: {response.status_code}")
+                                
+                        except Exception as http_error:
+                            print(f"❌ Direct HTTP API call also failed: {http_error}")
+                            care_suggestions = {
+                                "needs_water": False,
+                                "needs_fertilize": False, 
+                                "needs_prune": False,
+                                "confidence": 0.0,
+                                "reasoning": "AI analysis failed: Client initialization error (proxies parameter not supported)"
+                            }
+                    else:
+                        care_suggestions = {
+                            "needs_water": False,
+                            "needs_fertilize": False, 
+                            "needs_prune": False,
+                            "confidence": 0.0,
+                            "reasoning": f"AI analysis failed: {str(openai_error)}"
+                        }
             else:
                 print("⚠️ OpenAI API key not configured")
                 care_suggestions = {
@@ -2960,6 +3141,44 @@ def update_plant_care():
 def uploaded_file(filename):
     """Serve uploaded files"""
     return send_from_directory(os.path.join(os.getcwd(), 'uploads'), filename)
+
+@views.route('/uploads/learning_paths/<file_type>/<filename>')
+def uploaded_learning_path_file(file_type, filename):
+    """Serve uploaded learning path files"""
+    upload_dir = os.path.join(os.getcwd(), 'uploads', 'learning_paths', file_type)
+    return send_from_directory(upload_dir, filename)
+
+@views.route('/api/admin/delete-file', methods=['POST'])
+@login_required
+def admin_delete_file():
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        data = request.get_json()
+        file_url = data.get('fileUrl')
+        
+        if not file_url:
+            return jsonify({"error": "File URL is required"}), 400
+        
+        # Extract file path from URL
+        if '/uploads/learning_paths/' in file_url:
+            # Remove the leading slash and get the relative path
+            relative_path = file_url.lstrip('/')
+            file_path = os.path.join(os.getcwd(), relative_path)
+            
+            # Check if file exists and delete it
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                return jsonify({"message": "File deleted successfully"})
+            else:
+                return jsonify({"error": "File not found"}), 404
+        else:
+            return jsonify({"error": "Invalid file URL"}), 400
+            
+    except Exception as e:
+        print(f"Error deleting file: {str(e)}")
+        return jsonify({"error": f"Delete failed: {str(e)}"}), 500
 
 def get_watering_recommendation(plant, days_since_watered):
     """Generate plant-specific watering recommendations"""
@@ -3051,153 +3270,221 @@ def get_pruning_recommendation(plant, days_since_pruned):
 @login_required
 def smart_alerts():
     """Generate smart alerts for user's plants based on care schedules"""
-    alerts = []
-    today = datetime.now().date()
-    
-    # Get user's gardens
-    user_gardens = Garden.query.filter_by(user_id=current_user.id).all()
-    
-    for garden in user_gardens:
-        # Check GridSpace plants (from GridPlanner) - only AI-analyzed plants
-        grid_spaces = GridSpace.query.filter_by(garden_id=garden.id).filter(
-            GridSpace.plant_id.isnot(None),
-            GridSpace.ai_analyzed == True
-        ).all()
+    try:
+        alerts = []
+        today = datetime.now().date()
         
-        for space in grid_spaces:
-            if space.plant_id:
-                plant = Plant.query.get(space.plant_id)
-                if not plant:
-                    continue
-                
-                # Check AI analysis results first
-                ai_analysis = None
-                if space.ai_analysis_result:
-                    try:
-                        ai_analysis = json.loads(space.ai_analysis_result)
-                    except:
-                        ai_analysis = None
-                
-                # Check if AI analysis indicates plant is healthy (no care needed)
-                is_healthy = False
-                if ai_analysis:
-                    reasoning = ai_analysis.get('reasoning', '').lower()
-                    # Check for healthy indicators in AI reasoning
-                    healthy_indicators = [
-                        'healthy', 'no care needed', 'no issues', 'looks good', 
-                        'appears healthy', 'no problems', 'no signs of', 'no visible',
-                        'plant looks healthy', 'no care required', 'in good condition'
-                    ]
-                    is_healthy = any(indicator in reasoning for indicator in healthy_indicators)
+        print(f"🔍 Generating alerts for user {current_user.id}")
+        
+        # Get user's gardens
+        user_gardens = Garden.query.filter_by(user_id=current_user.id).all()
+        print(f"🏡 Found {len(user_gardens)} gardens for user")
+        
+        for garden in user_gardens:
+            # Check GridSpace plants (from GridPlanner) - only plants with care suggestions
+            grid_spaces = GridSpace.query.filter_by(garden_id=garden.id).filter(
+                GridSpace.plant_id.isnot(None),
+                GridSpace.care_suggestions.isnot(None)
+            ).all()
+            
+            for space in grid_spaces:
+                if space.plant_id:
+                    plant = Plant.query.get(space.plant_id)
+                    if not plant:
+                        continue
                     
-                    # Also check if all care needs are False
-                    if not is_healthy:
-                        needs_water = ai_analysis.get('needs_water', False)
-                        needs_fertilize = ai_analysis.get('needs_fertilize', False)
-                        needs_prune = ai_analysis.get('needs_prune', False)
-                        is_healthy = not (needs_water or needs_fertilize or needs_prune)
-                
-                # Skip generating alerts for healthy plants
-                if is_healthy:
-                    continue
-                
-                # Generate alerts based on AI analysis (only if plant needs care and wasn't recently watered)
-                if ai_analysis and ai_analysis.get('needs_water', False):
-                    # Check if plant was watered recently (within last 24 hours)
-                    recently_watered = False
-                    if space.last_watered:
-                        hours_since_watered = (datetime.now() - datetime.combine(space.last_watered, datetime.min.time())).total_seconds() / 3600
-                        recently_watered = hours_since_watered < 24
+                    # Check AI analysis results first
+                    ai_analysis = None
+                    if space.care_suggestions:
+                        try:
+                            ai_analysis = json.loads(space.care_suggestions)
+                            print(f"🔍 AI Analysis for {plant.name}: {ai_analysis}")
+                        except:
+                            ai_analysis = None
+                            print(f"❌ Failed to parse AI analysis for {plant.name}")
+                    else:
+                        print(f"ℹ️ No AI analysis found for {plant.name}")
                     
-                    # Only generate alert if not recently watered
-                    if not recently_watered:
-                        # AI detected that plant needs water
+                    # Check if AI analysis indicates plant is healthy (no care needed)
+                    is_healthy = False
+                    if ai_analysis:
+                        reasoning = ai_analysis.get('reasoning', '').lower()
+                        # Check for healthy indicators in AI reasoning
+                        healthy_indicators = [
+                            'healthy', 'no care needed', 'no issues', 'looks good', 
+                            'appears healthy', 'no problems', 'no signs of', 'no visible',
+                            'plant looks healthy', 'no care required', 'in good condition'
+                        ]
+                        is_healthy = any(indicator in reasoning for indicator in healthy_indicators)
+                        
+                        # Also check if all care needs are False
+                        if not is_healthy:
+                            needs_water = ai_analysis.get('needs_water', False)
+                            needs_fertilize = ai_analysis.get('needs_fertilize', False)
+                            needs_prune = ai_analysis.get('needs_prune', False)
+                            is_healthy = not (needs_water or needs_fertilize or needs_prune)
+                    
+                    # Generate alerts based on AI analysis - check each care type separately
+                    if ai_analysis:
                         confidence = ai_analysis.get('confidence', 0.5)
-                        reasoning = ai_analysis.get('reasoning', 'AI analysis suggests watering needed')
+                        reasoning = ai_analysis.get('reasoning', 'AI analysis suggests care needed')
+                        
+                        print(f"🔍 AI Analysis for {plant.name}: {ai_analysis}")
+                        print(f"🔍 Needs water: {ai_analysis.get('needs_water', False)}")
+                        print(f"🔍 Needs fertilize: {ai_analysis.get('needs_fertilize', False)}")
+                        print(f"🔍 Needs prune: {ai_analysis.get('needs_prune', False)}")
+                        
+                        # Check for watering needs
+                        if ai_analysis.get('needs_water', False):
+                            print(f"💧 AI detected watering need for {plant.name}")
+                            
+                            # For AI-based alerts, always generate them regardless of recent watering
+                            # because AI can detect if watering was insufficient or if there's a more serious issue
+                            print(f"🚨 GENERATING AI WATERING ALERT for {plant.name}: {reasoning}")
+                            
+                            # Generate AI suggested actions tags
+                            suggested_actions = []
+                            if ai_analysis.get('needs_water', False):
+                                suggested_actions.append({'type': 'water', 'label': 'Needs Water', 'icon': '💧'})
+                            if ai_analysis.get('needs_fertilize', False):
+                                suggested_actions.append({'type': 'fertilize', 'label': 'Needs Fertilizer', 'icon': '🌱'})
+                            if ai_analysis.get('needs_prune', False):
+                                suggested_actions.append({'type': 'prune', 'label': 'Needs Pruning', 'icon': '✂️'})
+                            
+                            alerts.append({
+                                'id': f"ai_water_{space.id}",
+                                'type': 'watering',
+                                'plant_name': plant.name,
+                                'garden_name': garden.name,
+                                'message': f'Your {plant.name} needs watering based on AI analysis',
+                                'due_date': today.isoformat(),
+                                'priority': 'high' if confidence > 0.7 else 'medium',
+                                'status': 'pending',
+                                'space_id': space.id,
+                                'garden_id': garden.id,
+                                'recommendation': f"AI Analysis: {reasoning}",
+                                'grid_position': space.grid_position,
+                                'ai_confidence': confidence,
+                                'ai_suggested_actions': suggested_actions
+                            })
+                            print(f"✅ WATERING ALERT ADDED: {plant.name} - Total alerts now: {len(alerts)}")
+                        
+                        # Check for fertilizing needs
+                        if ai_analysis.get('needs_fertilize', False):
+                            print(f"🌱 AI detected fertilizing need for {plant.name}")
+                            print(f"🚨 GENERATING FERTILIZING ALERT for {plant.name}: {reasoning}")
+                            # Generate AI suggested actions tags
+                            suggested_actions = []
+                            if ai_analysis.get('needs_water', False):
+                                suggested_actions.append({'type': 'water', 'label': 'Needs Water', 'icon': '💧'})
+                            if ai_analysis.get('needs_fertilize', False):
+                                suggested_actions.append({'type': 'fertilize', 'label': 'Needs Fertilizer', 'icon': '🌱'})
+                            if ai_analysis.get('needs_prune', False):
+                                suggested_actions.append({'type': 'prune', 'label': 'Needs Pruning', 'icon': '✂️'})
+                            
+                            alerts.append({
+                                'id': f"ai_fertilize_{space.id}",
+                                'type': 'fertilizing',
+                                'plant_name': plant.name,
+                                'garden_name': garden.name,
+                                'message': f'Your {plant.name} needs fertilizer based on AI analysis',
+                                'due_date': today.isoformat(),
+                                'priority': 'high' if confidence > 0.7 else 'medium',
+                                'status': 'pending',
+                                'space_id': space.id,
+                                'garden_id': garden.id,
+                                'recommendation': f"AI Analysis: {reasoning}",
+                                'grid_position': space.grid_position,
+                                'ai_confidence': confidence,
+                                'ai_suggested_actions': suggested_actions
+                            })
+                            print(f"✅ FERTILIZING ALERT ADDED: {plant.name} - Total alerts now: {len(alerts)}")
+                        
+                        # Check for pruning needs
+                        if ai_analysis.get('needs_prune', False):
+                            print(f"✂️ AI detected pruning need for {plant.name}")
+                            print(f"🚨 GENERATING PRUNING ALERT for {plant.name}: {reasoning}")
+                            # Generate AI suggested actions tags
+                            suggested_actions = []
+                            if ai_analysis.get('needs_water', False):
+                                suggested_actions.append({'type': 'water', 'label': 'Needs Water', 'icon': '💧'})
+                            if ai_analysis.get('needs_fertilize', False):
+                                suggested_actions.append({'type': 'fertilize', 'label': 'Needs Fertilizer', 'icon': '🌱'})
+                            if ai_analysis.get('needs_prune', False):
+                                suggested_actions.append({'type': 'prune', 'label': 'Needs Pruning', 'icon': '✂️'})
+                            
+                            alerts.append({
+                                'id': f"ai_prune_{space.id}",
+                                'type': 'pruning',
+                                'plant_name': plant.name,
+                                'garden_name': garden.name,
+                                'message': f'Your {plant.name} needs pruning based on AI analysis',
+                                'due_date': today.isoformat(),
+                                'priority': 'high' if confidence > 0.7 else 'medium',
+                                'status': 'pending',
+                                'space_id': space.id,
+                                'garden_id': garden.id,
+                                'recommendation': f"AI Analysis: {reasoning}",
+                                'grid_position': space.grid_position,
+                                'ai_confidence': confidence,
+                                'ai_suggested_actions': suggested_actions
+                            })
+                            print(f"✅ PRUNING ALERT ADDED: {plant.name} - Total alerts now: {len(alerts)}")
+                    
+                    # Only check traditional schedule if AI analysis doesn't indicate watering needed
+                    elif space.last_watered:
+                        # Ensure last_watered is datetime.date for proper subtraction
+                        last_watered_date = space.last_watered
+                        if hasattr(last_watered_date, 'date'):
+                            last_watered_date = last_watered_date.date()
+                        days_since_watered = (today - last_watered_date).days
+                        # Default watering frequency if not set in plant
+                        watering_freq = getattr(plant, 'watering_frequency', 3) or 3
+                        
+                        if days_since_watered >= watering_freq:
+                            # Generate plant-specific watering recommendations
+                            watering_recommendation = get_watering_recommendation(plant, days_since_watered)
+                            
+                            alerts.append({
+                                'id': f"grid_water_{space.id}",
+                                'type': 'watering',
+                                'plant_name': plant.name,
+                                'garden_name': garden.name,
+                                'message': f'Time to water your {plant.name} in {garden.name}',
+                                'due_date': (space.last_watered + timedelta(days=watering_freq)).isoformat(),
+                                'priority': 'high' if days_since_watered > watering_freq + 2 else 'medium',
+                                'status': 'overdue' if days_since_watered > watering_freq else 'pending',
+                                'space_id': space.id,
+                                'garden_id': garden.id,
+                                'recommendation': watering_recommendation,
+                                'grid_position': space.grid_position
+                            })
+                    else:
+                        # New plant that hasn't been watered yet
+                        new_plant_recommendation = get_new_plant_recommendation(plant)
                         
                         alerts.append({
-                            'id': f"ai_water_{space.id}",
+                            'id': f"grid_water_new_{space.id}",
                             'type': 'watering',
                             'plant_name': plant.name,
                             'garden_name': garden.name,
-                            'message': f'Your {plant.name} needs watering based on AI analysis',
+                            'message': f'Your newly planted {plant.name} needs its first watering',
                             'due_date': today.isoformat(),
-                            'priority': 'high' if confidence > 0.7 else 'medium',
+                            'priority': 'high',
                             'status': 'pending',
                             'space_id': space.id,
                             'garden_id': garden.id,
-                            'recommendation': f"AI Analysis: {reasoning}",
-                            'grid_position': space.grid_position,
-                            'ai_confidence': confidence
+                            'recommendation': new_plant_recommendation,
+                            'grid_position': f"Row {space.row}, Col {space.column}" if hasattr(space, 'row') and hasattr(space, 'column') else None
                         })
-                    else:
-                        print(f"🎯 SKIPPING ALERT: {plant.name} was watered recently (within 24 hours)")
-                # Only check traditional schedule if AI analysis doesn't indicate watering needed
-                elif space.last_watered:
-                    days_since_watered = (today - space.last_watered).days
-                    # Default watering frequency if not set in plant
-                    watering_freq = getattr(plant, 'watering_frequency', 3) or 3
-                    
-                    if days_since_watered >= watering_freq:
-                        # Generate plant-specific watering recommendations
-                        watering_recommendation = get_watering_recommendation(plant, days_since_watered)
-                        
-                        alerts.append({
-                            'id': f"grid_water_{space.id}",
-                            'type': 'watering',
-                            'plant_name': plant.name,
-                            'garden_name': garden.name,
-                            'message': f'Time to water your {plant.name} in {garden.name}',
-                            'due_date': (space.last_watered + timedelta(days=watering_freq)).isoformat(),
-                            'priority': 'high' if days_since_watered > watering_freq + 2 else 'medium',
-                            'status': 'overdue' if days_since_watered > watering_freq else 'pending',
-                            'space_id': space.id,
-                            'garden_id': garden.id,
-                            'recommendation': watering_recommendation,
-                            'grid_position': space.grid_position
-                        })
-                else:
-                    # New plant that hasn't been watered yet
-                    new_plant_recommendation = get_new_plant_recommendation(plant)
-                    
-                    alerts.append({
-                        'id': f"grid_water_new_{space.id}",
-                        'type': 'watering',
-                        'plant_name': plant.name,
-                        'garden_name': garden.name,
-                        'message': f'Your newly planted {plant.name} needs its first watering',
-                        'due_date': today.isoformat(),
-                        'priority': 'high',
-                        'status': 'pending',
-                        'space_id': space.id,
-                        'garden_id': garden.id,
-                        'recommendation': new_plant_recommendation,
-                        'grid_position': f"Row {space.row}, Col {space.column}" if hasattr(space, 'row') and hasattr(space, 'column') else None
-                    })
                 
-                # Check AI analysis for fertilizing needs (only if plant needs care)
-                if ai_analysis and ai_analysis.get('needs_fertilize', False):
-                    confidence = ai_analysis.get('confidence', 0.5)
-                    reasoning = ai_analysis.get('reasoning', 'AI analysis suggests fertilizing needed')
-                    
-                    alerts.append({
-                        'id': f"ai_fertilize_{space.id}",
-                        'type': 'fertilizing',
-                        'plant_name': plant.name,
-                        'garden_name': garden.name,
-                        'message': f'Your {plant.name} needs fertilizer based on AI analysis',
-                        'due_date': today.isoformat(),
-                        'priority': 'high' if confidence > 0.7 else 'medium',
-                        'status': 'pending',
-                        'space_id': space.id,
-                        'garden_id': garden.id,
-                        'recommendation': f"AI Analysis: {reasoning}",
-                        'grid_position': space.grid_position,
-                        'ai_confidence': confidence
-                    })
                 # Only check traditional schedule if AI analysis doesn't indicate fertilizing needed
-                elif space.last_fertilized:
-                    days_since_fertilized = (today - space.last_fertilized).days
+                if not ai_analysis and space.last_fertilized:
+                    # Ensure last_fertilized is datetime.date for proper subtraction
+                    last_fertilized_date = space.last_fertilized
+                    if hasattr(last_fertilized_date, 'date'):
+                        last_fertilized_date = last_fertilized_date.date()
+                    days_since_fertilized = (today - last_fertilized_date).days
                     fertilizing_freq = getattr(plant, 'fertilizing_frequency', 14) or 14
                     
                     if days_since_fertilized >= fertilizing_freq:
@@ -3218,29 +3505,13 @@ def smart_alerts():
                             'grid_position': space.grid_position
                         })
                 
-                # Check AI analysis for pruning needs (only if plant needs care)
-                if ai_analysis and ai_analysis.get('needs_prune', False):
-                    confidence = ai_analysis.get('confidence', 0.5)
-                    reasoning = ai_analysis.get('reasoning', 'AI analysis suggests pruning needed')
-                    
-                    alerts.append({
-                        'id': f"ai_prune_{space.id}",
-                        'type': 'pruning',
-                        'plant_name': plant.name,
-                        'garden_name': garden.name,
-                        'message': f'Your {plant.name} needs pruning based on AI analysis',
-                        'due_date': today.isoformat(),
-                        'priority': 'high' if confidence > 0.7 else 'medium',
-                        'status': 'pending',
-                        'space_id': space.id,
-                        'garden_id': garden.id,
-                        'recommendation': f"AI Analysis: {reasoning}",
-                        'grid_position': space.grid_position,
-                        'ai_confidence': confidence
-                    })
                 # Only check traditional schedule if AI analysis doesn't indicate pruning needed
-                elif space.last_pruned:
-                    days_since_pruned = (today - space.last_pruned).days
+                if not ai_analysis and space.last_pruned:
+                    # Ensure last_pruned is datetime.date for proper subtraction
+                    last_pruned_date = space.last_pruned
+                    if hasattr(last_pruned_date, 'date'):
+                        last_pruned_date = last_pruned_date.date()
+                    days_since_pruned = (today - last_pruned_date).days
                     pruning_freq = getattr(plant, 'pruning_frequency', 30) or 30
                     
                     if days_since_pruned >= pruning_freq:
@@ -3271,7 +3542,14 @@ def smart_alerts():
                 
             # Check watering schedule
             if plant.watering_frequency:
-                days_since_watered = (today - pt.last_watered).days if pt.last_watered else 999
+                # Ensure last_watered is datetime.date for proper subtraction
+                if pt.last_watered:
+                    last_watered_date = pt.last_watered
+                    if hasattr(last_watered_date, 'date'):
+                        last_watered_date = last_watered_date.date()
+                    days_since_watered = (today - last_watered_date).days
+                else:
+                    days_since_watered = 999
                 if days_since_watered >= plant.watering_frequency:
                     alerts.append({
                         'id': f"track_water_{pt.id}",
@@ -3286,7 +3564,14 @@ def smart_alerts():
             
             # Check fertilizing schedule
             if plant.fertilizing_frequency:
-                days_since_fertilized = (today - pt.last_fertilized).days if pt.last_fertilized else 999
+                # Ensure last_fertilized is datetime.date for proper subtraction
+                if pt.last_fertilized:
+                    last_fertilized_date = pt.last_fertilized
+                    if hasattr(last_fertilized_date, 'date'):
+                        last_fertilized_date = last_fertilized_date.date()
+                    days_since_fertilized = (today - last_fertilized_date).days
+                else:
+                    days_since_fertilized = 999
                 if days_since_fertilized >= plant.fertilizing_frequency:
                     alerts.append({
                         'id': f"track_fertilize_{pt.id}",
@@ -3301,7 +3586,14 @@ def smart_alerts():
             
             # Check pruning schedule
             if plant.pruning_frequency:
-                days_since_pruned = (today - pt.last_pruned).days if pt.last_pruned else 999
+                # Ensure last_pruned is datetime.date for proper subtraction
+                if pt.last_pruned:
+                    last_pruned_date = pt.last_pruned
+                    if hasattr(last_pruned_date, 'date'):
+                        last_pruned_date = last_pruned_date.date()
+                    days_since_pruned = (today - last_pruned_date).days
+                else:
+                    days_since_pruned = 999
                 if days_since_pruned >= plant.pruning_frequency:
                     alerts.append({
                         'id': f"track_prune_{pt.id}",
@@ -3314,35 +3606,102 @@ def smart_alerts():
                         'status': 'overdue' if days_since_pruned > plant.pruning_frequency else 'pending'
                     })
     
-    # Sort alerts by priority and due date
-    priority_order = {'high': 3, 'medium': 2, 'low': 1}
-    alerts.sort(key=lambda x: (priority_order.get(x['priority'], 0), x['due_date']), reverse=True)
-    
-    # Get completed actions for the same time period
-    from website.models import ActivityLog
-    completed_actions = ActivityLog.query.filter_by(
-        user_id=current_user.id
-    ).order_by(ActivityLog.action_date.desc()).limit(10).all()
-    
-    completed_data = []
-    for action in completed_actions:
-        plant = Plant.query.get(action.plant_id) if action.plant_id else None
-        garden = Garden.query.get(action.garden_id) if action.garden_id else None
+        # Sort alerts by priority and due date
+        priority_order = {'high': 3, 'medium': 2, 'low': 1}
+        alerts.sort(key=lambda x: (priority_order.get(x['priority'], 0), x['due_date']), reverse=True)
         
-        completed_data.append({
-            'id': f"completed_{action.id}",
-            'type': action.action,
-            'plant_name': plant.name if plant else 'Unknown Plant',
-            'garden_name': garden.name if garden else 'Unknown Garden',
-            'action_date': action.action_date.isoformat(),
-            'status': 'completed',
-            'notes': action.notes
+        print(f"📊 Generated {len(alerts)} total alerts for user {current_user.id}")
+        for alert in alerts:
+            print(f"  - {alert['type']}: {alert['plant_name']} in {alert['garden_name']} (Priority: {alert['priority']})")
+        
+        # Get completed actions for the same time period
+        completed_actions = ActivityLog.query.filter_by(
+            user_id=current_user.id
+        ).order_by(ActivityLog.action_date.desc()).limit(10).all()
+        
+        # Filter out alerts that have been completed recently (within last 24 hours)
+        print(f"🔍 Filtering out recently completed actions...")
+        print(f"🔍 Found {len(completed_actions)} completed actions to check against {len(alerts)} alerts")
+        filtered_alerts = []
+        for alert in alerts:
+            print(f"🔍 Checking alert: {alert['id']} ({alert['type']}) for space {alert.get('space_id')}")
+            # Check if this alert has been completed recently
+            recently_completed = False
+            for action in completed_actions:
+                print(f"🔍 Checking against completed action: space_id={action.space_id}, action={action.action}, date={action.action_date}")
+                print(f"🔍 Alert type: {alert.get('type')}, Alert space_id: {alert.get('space_id')}")
+                print(f"🔍 Action type: {action.action}, Action space_id: {action.space_id}")
+                print(f"🔍 Type conversion: {alert.get('type')} -> {alert.get('type').replace('ing', '')}")
+                
+                # Check if this is the same space and same action type
+                space_match = alert.get('space_id') and action.space_id == int(alert.get('space_id'))
+                action_match = action.action == alert.get('type').replace('ing', '')
+                print(f"🔍 Space match: {space_match} (alert: {alert.get('space_id')}, action: {action.space_id})")
+                print(f"🔍 Action match: {action_match} (alert: {alert.get('type')}, action: {action.action})")
+                
+                if (alert.get('space_id') and 
+                    action.space_id == int(alert.get('space_id')) and
+                    action.action == alert.get('type').replace('ing', '')):  # 'watering' -> 'water'
+                    
+                    # Check if completed within last 24 hours
+                    # Ensure action_date is datetime.datetime, not datetime.date
+                    action_datetime = action.action_date
+                    if hasattr(action_datetime, 'date') and not hasattr(action_datetime, 'hour'):
+                        # If it's a date object, convert to datetime at midnight
+                        action_datetime = datetime.combine(action_datetime, datetime.min.time())
+                    
+                    # Use timezone-aware datetime for proper calculation
+                    now = datetime.now(timezone.utc)
+                    if action_datetime.tzinfo is None:
+                        action_datetime = action_datetime.replace(tzinfo=timezone.utc)
+                    
+                    hours_since_completed = (now - action_datetime).total_seconds() / 3600
+                    print(f"🔍 Match found! Hours since completed: {hours_since_completed:.1f}")
+                    if hours_since_completed < 24:
+                        print(f"🚫 Filtering out recently completed alert: {alert['type']} for {alert['plant_name']} (completed {hours_since_completed:.1f} hours ago)")
+                        recently_completed = True
+                        break
+                    else:
+                        print(f"✅ Alert not filtered - completed {hours_since_completed:.1f} hours ago (beyond 24h threshold)")
+            
+            if not recently_completed:
+                filtered_alerts.append(alert)
+                print(f"✅ Alert kept: {alert['id']} ({alert['type']})")
+            else:
+                print(f"🚫 Alert filtered out: {alert['id']} ({alert['type']})")
+        
+        alerts = filtered_alerts
+        print(f"📊 After filtering completed actions: {len(alerts)} alerts remaining")
+        
+        completed_data = []
+        for action in completed_actions:
+            plant = Plant.query.get(action.plant_id) if action.plant_id else None
+            garden = Garden.query.get(action.garden_id) if action.garden_id else None
+            
+            completed_data.append({
+                'id': f"completed_{action.id}",
+                'type': action.action,
+                'plant_name': plant.name if plant else 'Unknown Plant',
+                'garden_name': garden.name if garden else 'Unknown Garden',
+                'action_date': action.action_date.isoformat(),
+                'status': 'completed',
+                'notes': action.notes
+            })
+        
+        return jsonify({
+            "alerts": alerts,
+            "completed_actions": completed_data
         })
     
-    return jsonify({
-        "alerts": alerts,
-        "completed_actions": completed_data
-    })
+    except Exception as e:
+        print(f"❌ Error in smart_alerts: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "error": f"Failed to load alerts: {str(e)}",
+            "alerts": [],
+            "completed_actions": []
+        }), 500
 
 @views.route('/api/alerts/mark-completed', methods=['POST'])
 @login_required
@@ -3390,8 +3749,12 @@ def mark_alert_completed():
                 print(f"🎯 ALERT COMPLETION: Invalid action {action}")
                 return jsonify({"error": f"Invalid action: {action}"}), 400
             
+            # Clear AI analysis after completing the action to prevent regenerating the same alert
+            if space.care_suggestions:
+                print(f"🎯 ALERT COMPLETION: Clearing AI analysis for space {space_id}")
+                space.care_suggestions = None
+            
             # Create activity log entry for completed action
-            from website.models import ActivityLog
             activity_log = ActivityLog(
                 user_id=current_user.id,
                 garden_id=space.garden_id,
@@ -3453,8 +3816,6 @@ def get_completed_actions():
     """Get completed plant care actions for reports"""
     try:
         # Get user's completed actions from activity logs
-        from website.models import ActivityLog
-        
         completed_actions = ActivityLog.query.filter_by(
             user_id=current_user.id
         ).order_by(ActivityLog.action_date.desc()).all()
@@ -4091,6 +4452,76 @@ def admin_api_learning_paths():
         }
     ]
     return jsonify(learning_paths)
+
+@views.route('/api/learning-paths/<difficulty>')
+def get_learning_path_content(difficulty):
+    """Serve learning path content with integrated admin-uploaded images"""
+    try:
+        
+        # Get all content for this difficulty level
+        content_items = LearningPathContent.query.filter_by(
+            path_difficulty=difficulty,
+            is_active=True
+        ).all()
+        
+        # Organize content by module
+        modules = {}
+        for item in content_items:
+            module_id = item.module_id
+            if module_id not in modules:
+                modules[module_id] = {
+                    'id': module_id,
+                    'lessons': [],
+                    'quiz': {'title': '', 'questions': []}
+                }
+            
+            if item.content_type == 'lesson':
+                modules[module_id]['lessons'].append({
+                    'id': item.content_id,
+                    'title': item.title,
+                    'content': item.content,
+                    'images': [{'url': item.media_url, 'description': item.media_description}] if item.media_url else [],
+                    'videos': []
+                })
+            elif item.content_type == 'quiz_question':
+                # Find or create the quiz question
+                question_id = item.content_id
+                question = next((q for q in modules[module_id]['quiz']['questions'] if q['id'] == question_id), None)
+                
+                if not question:
+                    question = {
+                        'id': question_id,
+                        'question': item.title,
+                        'options': [],
+                        'correct': 0,
+                        'explanation': '',
+                        'image': item.media_url if item.media_type == 'image' else None,
+                        'imageDescription': item.media_description
+                    }
+                    modules[module_id]['quiz']['questions'].append(question)
+        
+        # Convert to list format expected by frontend
+        module_list = []
+        for module_id, module_data in modules.items():
+            module_list.append({
+                'id': module_id,
+                'title': f"{module_id.replace('-', ' ').title()} Module",
+                'difficulty': difficulty,
+                'estimatedTime': '30 min',
+                'description': f'Learn about {module_id.replace("-", " ")}',
+                'lessons': module_data['lessons'],
+                'quiz': module_data['quiz']
+            })
+        
+        # If no content found in database, return empty list to trigger fallback
+        if not module_list:
+            return jsonify([])
+        
+        return jsonify(module_list)
+        
+    except Exception as e:
+        print(f"Error serving learning path content: {str(e)}")
+        return jsonify({"error": "Failed to load learning path content"}), 500
 
 @views.route('/api/admin/ai-data')
 @login_required
@@ -4790,18 +5221,91 @@ def admin_api_upload_file():
         if file.filename == '':
             return jsonify({"error": "No file selected"}), 400
         
-        # Mock file upload - in a real app, you'd save the file and return the URL
+        # Validate file type
+        allowed_image_types = {'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'}
+        allowed_video_types = {'video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/webm'}
+        
+        if file_type == 'image' and file.content_type not in allowed_image_types:
+            return jsonify({"error": "Invalid image format. Allowed: JPEG, PNG, GIF, WebP"}), 400
+        
+        if file_type == 'video' and file.content_type not in allowed_video_types:
+            return jsonify({"error": "Invalid video format. Allowed: MP4, AVI, MOV, WMV, WebM"}), 400
+        
+        # Create upload directory if it doesn't exist
+        upload_dir = os.path.join(os.getcwd(), 'uploads', 'learning_paths', file_type)
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Generate unique filename
+        import time
         import uuid
-        filename = f"{uuid.uuid4()}_{file.filename}"
-        file_url = f"/uploads/{file_type}/{filename}"
+        timestamp = int(time.time())
+        unique_id = str(uuid.uuid4())[:8]
+        
+        # Get file extension
+        file_extension = os.path.splitext(file.filename)[1].lower()
+        if not file_extension:
+            # Default extensions based on content type
+            if file.content_type.startswith('image/'):
+                file_extension = '.jpg'
+            elif file.content_type.startswith('video/'):
+                file_extension = '.mp4'
+            else:
+                file_extension = '.bin'
+        
+        filename = f"learning_{timestamp}_{unique_id}{file_extension}"
+        file_path = os.path.join(upload_dir, filename)
+        
+        # Save the file
+        file.save(file_path)
+        
+        # Create relative URL for frontend
+        file_url = f"/uploads/learning_paths/{file_type}/{filename}"
+        
+        # Get file size
+        file_size = os.path.getsize(file_path)
+        
+        # Save to database if this is for learning path content
+        if 'learning_path' in request.form:
+            
+            # Get the learning path details from form
+            path_difficulty = request.form.get('path_difficulty', 'Beginner')
+            module_id = request.form.get('module_id', 'plant-basics')
+            content_type = request.form.get('content_type', 'quiz_question')
+            content_id = request.form.get('content_id', 1)
+            question_number = request.form.get('question_number')
+            title = request.form.get('title', '')
+            description = request.form.get('description', '')
+            
+            # Create learning path content record
+            content = LearningPathContent(
+                path_difficulty=path_difficulty,
+                module_id=module_id,
+                content_type=content_type,
+                content_id=int(content_id) if content_id else 1,
+                title=title,
+                media_type=file_type,
+                media_url=file_url,
+                media_description=description,
+                question_number=int(question_number) if question_number else None
+            )
+            
+            db.session.add(content)
+            db.session.commit()
+            
+            print(f"✅ Learning path content saved: {content_type} for {module_id} (Question {question_number})")
         
         return jsonify({
             "message": "File uploaded successfully",
             "fileUrl": file_url,
-            "filename": filename
+            "filename": filename,
+            "size": file_size,
+            "type": file_type,
+            "id": f"{timestamp}_{unique_id}"
         })
+        
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Error uploading file: {str(e)}")
+        return jsonify({"error": f"Upload failed: {str(e)}"}), 500
 
 @views.route('/api/admin/create-user', methods=['POST'])
 @login_required

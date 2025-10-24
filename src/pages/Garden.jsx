@@ -121,7 +121,7 @@ const Garden = () => {
     care_guide: '',
     ideal_soil_type: '',
     garden_id: '',
-    planting_date: ''
+    planting_date: new Date().toISOString().split('T')[0] // Default to today's date
   })
   
   const [plantImage, setPlantImage] = useState(null)
@@ -330,6 +330,8 @@ const Garden = () => {
       setCompletedActions(gardenCompletedActions)
     } catch (error) {
       console.error('Error fetching garden alerts:', error)
+      console.error('Error response:', error.response?.data)
+      console.error('Error status:', error.response?.status)
       setGardenAlerts([])
       setCompletedActions([])
     } finally {
@@ -411,6 +413,7 @@ const Garden = () => {
   const markAlertCompleted = async (alertId, action) => {
     try {
       console.log('🎯 Marking alert as completed:', { alertId, action })
+      console.log('🎯 Current garden alerts before completion:', gardenAlerts)
       
       const response = await axios.post('/api/alerts/mark-completed', {
         alert_id: alertId,
@@ -423,26 +426,19 @@ const Garden = () => {
         // Show success message immediately
         toast.success(`Plant ${action}ed successfully!`)
         
-        // Update local state to show "completed" status immediately
-        setGardenAlerts(prevAlerts => 
-          prevAlerts.map(alert => 
-            alert.id === alertId 
-              ? { ...alert, status: 'completed' }
-              : alert
-          )
-        )
+        // Remove the alert from display immediately
+        console.log('🎯 Removing alert from display immediately:', alertId)
+        setGardenAlerts(prevAlerts => {
+          const filteredAlerts = prevAlerts.filter(alert => alert.id !== alertId)
+          console.log('🎯 Alerts after immediate removal:', filteredAlerts)
+          return filteredAlerts
+        })
         
-        // Remove the alert from display after 2 seconds
-        setTimeout(() => {
-          setGardenAlerts(prevAlerts => 
-            prevAlerts.filter(alert => alert.id !== alertId)
-          )
-          
-          // Refresh garden alerts to get updated data
-          if (selectedGarden) {
-            fetchGardenAlerts(selectedGarden.id)
-          }
-        }, 2000) // 2-second delay before removing the alert
+        // Refresh garden alerts to get updated data from backend
+        if (selectedGarden) {
+          console.log('🎯 Refreshing garden alerts for garden:', selectedGarden.id)
+          fetchGardenAlerts(selectedGarden.id)
+        }
       } else {
         throw new Error(response.data.error || 'Failed to mark alert as completed')
       }
@@ -580,7 +576,7 @@ const Garden = () => {
       
       setPlantForm({
         name: '', type: '', environment: '', care_guide: '', ideal_soil_type: '',
-        garden_id: '', planting_date: ''
+        garden_id: '', planting_date: new Date().toISOString().split('T')[0]
       })
       setPlantImage(null)
       setIsRecognizing(false)
@@ -1140,6 +1136,28 @@ const Garden = () => {
                               </div>
                                <p className="text-sm text-gray-600 mb-2">{alert.message}</p>
                                
+                               {/* AI Suggested Actions */}
+                               {alert.ai_suggested_actions && alert.ai_suggested_actions.length > 0 && (
+                                 <div className="mb-3">
+                                   <p className="text-sm font-medium text-gray-700 mb-2">AI Suggested Actions:</p>
+                                   <div className="flex flex-wrap gap-2">
+                                     {alert.ai_suggested_actions.map((action, index) => (
+                                       <span
+                                         key={index}
+                                         className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                                           action.type === 'water' ? 'bg-blue-100 text-blue-800' :
+                                           action.type === 'fertilize' ? 'bg-yellow-100 text-yellow-800' :
+                                           'bg-red-100 text-red-800'
+                                         }`}
+                                       >
+                                         <span className="mr-1">{action.icon}</span>
+                                         {action.label}
+                                       </span>
+                                     ))}
+                                   </div>
+                                 </div>
+                               )}
+                               
                                {/* Combined AI Analysis and Recommendation Card */}
                                {alert.recommendation && (
                                  <div className="bg-purple-50 border-l-2 border-purple-400 p-3 mb-3 rounded">
@@ -1183,6 +1201,7 @@ const Garden = () => {
                                  <div className="flex space-x-2">
                                    <button
                                      onClick={() => {
+                                       console.log('🎯 Prune button clicked for alert:', alert.id, 'Status:', alert.status)
                                        const actionMap = {
                                          'watering': 'water',
                                          'fertilizing': 'fertilize',
@@ -1213,7 +1232,7 @@ const Garden = () => {
                              {alert.status === 'completed' && (
                                <div className="flex items-center text-green-600">
                                  <CheckCircle className="w-4 h-4 mr-1" />
-                                 <span className="text-sm font-medium">Completed</span>
+                                 <span className="text-sm font-medium">Completed - Removing in 2 seconds...</span>
                                </div>
                              )}
                           </div>
@@ -1529,9 +1548,30 @@ const Garden = () => {
                   >
                     <option value="">Select Garden</option>
                     {gardens.map((garden) => (
-                      <option key={garden.id} value={garden.id}>{garden.name}</option>
+                      <option key={garden.id} value={garden.id}>
+                        {garden.name} {garden.id.toString().startsWith('static-') ? '(Demo)' : ''}
+                      </option>
                     ))}
                   </select>
+                  {plantForm.garden_id && plantForm.garden_id.toString().startsWith('static-') && (
+                    <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0">
+                          <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <h3 className="text-sm font-medium text-yellow-800">
+                            Demo Garden Selected
+                          </h3>
+                          <div className="mt-1 text-sm text-yellow-700">
+                            <p>You cannot add real plants to demo gardens. Please create a real garden first by clicking "Add Garden" above.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Planting Date</label>
@@ -1554,7 +1594,13 @@ const Garden = () => {
                   />
                 </div>
                 <div className="flex space-x-4">
-                  <button type="submit" className="btn-primary flex-1">
+                  <button 
+                    type="submit" 
+                    className={`flex-1 ${plantForm.garden_id && plantForm.garden_id.toString().startsWith('static-') 
+                      ? 'btn-disabled cursor-not-allowed opacity-50' 
+                      : 'btn-primary'}`}
+                    disabled={plantForm.garden_id && plantForm.garden_id.toString().startsWith('static-')}
+                  >
                     {editingPlant ? 'Update Plant' : 'Add Plant'}
                   </button>
                   <button
@@ -1564,7 +1610,7 @@ const Garden = () => {
                       setEditingPlant(null)
                       setPlantForm({
                         name: '', type: '', environment: '', care_guide: '', ideal_soil_type: '',
-                        garden_id: '', planting_date: ''
+                        garden_id: '', planting_date: new Date().toISOString().split('T')[0]
                       })
                       setPlantImage(null)
                       setIsRecognizing(false)

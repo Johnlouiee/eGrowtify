@@ -26,6 +26,9 @@ const ManageLearningPaths = () => {
   const [showPathDetails, setShowPathDetails] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingPath, setEditingPath] = useState(null)
+  const [isEditingPath, setIsEditingPath] = useState(false)
+  const [isAddingPath, setIsAddingPath] = useState(false)
+  const [selectedModuleForAction, setSelectedModuleForAction] = useState(null)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -47,6 +50,7 @@ const ManageLearningPaths = () => {
   const [showAddQuizModal, setShowAddQuizModal] = useState(false)
   const [showEditQuizModal, setShowEditQuizModal] = useState(false)
   const [editingQuiz, setEditingQuiz] = useState(null)
+  const [activeModuleTab, setActiveModuleTab] = useState('basic') // 'basic', 'lessons', 'quizzes'
   const [viewMode, setViewMode] = useState('grid') // grid or list
   const [expandedModules, setExpandedModules] = useState({})
   const [moduleFormData, setModuleFormData] = useState({
@@ -62,11 +66,14 @@ const ManageLearningPaths = () => {
   const [lessonFormData, setLessonFormData] = useState({
     title: '',
     content: '',
-    points: []
+    points: [],
+    images: [],
+    videos: []
   })
   const [quizFormData, setQuizFormData] = useState({
     title: '',
-    questions: []
+    questions: [],
+    images: []
   })
   const [questionFormData, setQuestionFormData] = useState({
     question: '',
@@ -164,13 +171,37 @@ const ManageLearningPaths = () => {
   }
 
 
+  const handleAddPath = async (e) => {
+    e.preventDefault()
+    try {
+      const newPath = {
+        id: Date.now(), // Simple ID generation for demo
+        title: formData.title,
+        description: formData.description,
+        difficulty: formData.difficulty,
+        duration: formData.duration,
+        is_active: formData.is_active,
+        modules_count: 0,
+        modules: []
+      }
+      
+      setLearningPaths(prevPaths => [...prevPaths, newPath])
+      toast.success('Learning path added successfully!')
+      setIsAddingPath(false)
+      resetForm()
+    } catch (error) {
+      console.error('Error adding learning path:', error)
+      toast.error('Failed to add learning path')
+    }
+  }
+
   const handleEditPath = async (e) => {
     e.preventDefault()
     try {
       // Update the local state instead of making API calls
       setLearningPaths(prevPaths => 
         prevPaths.map(path => 
-          path.id === editingPath.id 
+          path.id === selectedPath.id 
             ? { 
                 ...path, 
                 title: formData.title,
@@ -183,8 +214,7 @@ const ManageLearningPaths = () => {
         )
       )
       toast.success('Learning path updated successfully')
-      setShowEditModal(false)
-      setEditingPath(null)
+      setIsEditingPath(false)
       resetForm()
     } catch (error) {
       console.error('Error updating learning path:', error)
@@ -365,9 +395,12 @@ const ManageLearningPaths = () => {
     setLessonFormData({
       title: '',
       content: '',
-      points: ['']
+      points: [''],
+      images: [],
+      videos: []
     })
-    setShowAddLessonModal(true)
+    setActiveModuleTab('lessons')
+    // The lesson form will be shown in the main modal's lessons tab
   }
 
   const openEditLessonModal = (lesson) => {
@@ -375,7 +408,9 @@ const ManageLearningPaths = () => {
     setLessonFormData({
       title: lesson.title,
       content: lesson.content,
-      points: lesson.points || ['']
+      points: lesson.points || [''],
+      images: lesson.images || [],
+      videos: lesson.videos || []
     })
     setShowEditLessonModal(true)
   }
@@ -426,16 +461,19 @@ const ManageLearningPaths = () => {
   const openAddQuizModal = () => {
     setQuizFormData({
       title: '',
-      questions: []
+      questions: [],
+      images: []
     })
-    setShowAddQuizModal(true)
+    setActiveModuleTab('quizzes')
+    // The quiz form will be shown in the main modal's quizzes tab
   }
 
   const openEditQuizModal = (quiz) => {
     setEditingQuiz(quiz)
     setQuizFormData({
       title: quiz.title,
-      questions: quiz.questions || []
+      questions: quiz.questions || [],
+      images: quiz.images || []
     })
     setShowEditQuizModal(true)
   }
@@ -619,10 +657,10 @@ const ManageLearningPaths = () => {
       setModuleFormData(prev => ({
         ...prev,
         images: [...prev.images, {
-          id: Date.now(),
+          id: response.data.id,
           url: response.data.fileUrl,
           name: file.name,
-          size: file.size,
+          size: response.data.size || file.size,
           type: file.type
         }]
       }))
@@ -652,10 +690,10 @@ const ManageLearningPaths = () => {
       setModuleFormData(prev => ({
         ...prev,
         videos: [...prev.videos, {
-          id: Date.now(),
+          id: response.data.id,
           url: response.data.fileUrl,
           name: file.name,
-          size: file.size,
+          size: response.data.size || file.size,
           type: file.type
         }]
       }))
@@ -669,20 +707,244 @@ const ManageLearningPaths = () => {
     }
   }
 
-  const removeImage = (imageId) => {
-    setModuleFormData(prev => ({
-      ...prev,
-      images: prev.images.filter(img => img.id !== imageId)
-    }))
-    toast.success('Image removed!')
+  const removeImage = async (imageId) => {
+    try {
+      const imageToRemove = moduleFormData.images.find(img => img.id === imageId)
+      if (imageToRemove) {
+        // Delete file from server
+        await axios.post('/api/admin/delete-file', {
+          fileUrl: imageToRemove.url
+        })
+      }
+      
+      setModuleFormData(prev => ({
+        ...prev,
+        images: prev.images.filter(img => img.id !== imageId)
+      }))
+      toast.success('Image removed!')
+    } catch (error) {
+      console.error('Error removing image:', error)
+      // Still remove from UI even if server deletion fails
+      setModuleFormData(prev => ({
+        ...prev,
+        images: prev.images.filter(img => img.id !== imageId)
+      }))
+      toast.success('Image removed from module!')
+    }
   }
 
-  const removeVideo = (videoId) => {
-    setModuleFormData(prev => ({
-      ...prev,
-      videos: prev.videos.filter(vid => vid.id !== videoId)
-    }))
-    toast.success('Video removed!')
+  const removeVideo = async (videoId) => {
+    try {
+      const videoToRemove = moduleFormData.videos.find(vid => vid.id === videoId)
+      if (videoToRemove) {
+        // Delete file from server
+        await axios.post('/api/admin/delete-file', {
+          fileUrl: videoToRemove.url
+        })
+      }
+      
+      setModuleFormData(prev => ({
+        ...prev,
+        videos: prev.videos.filter(vid => vid.id !== videoId)
+      }))
+      toast.success('Video removed!')
+    } catch (error) {
+      console.error('Error removing video:', error)
+      // Still remove from UI even if server deletion fails
+      setModuleFormData(prev => ({
+        ...prev,
+        videos: prev.videos.filter(vid => vid.id !== videoId)
+      }))
+      toast.success('Video removed from module!')
+    }
+  }
+
+  // Lesson Media Upload Functions
+  const handleLessonImageUpload = async (file) => {
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', 'image')
+      
+      const response = await axios.post('/api/admin/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      setLessonFormData(prev => ({
+        ...prev,
+        images: [...prev.images, {
+          id: response.data.id,
+          url: response.data.fileUrl,
+          name: file.name,
+          size: response.data.size || file.size,
+          type: file.type
+        }]
+      }))
+      
+      toast.success('Image uploaded successfully!')
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      toast.error('Failed to upload image')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleLessonVideoUpload = async (file) => {
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', 'video')
+      
+      const response = await axios.post('/api/admin/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      setLessonFormData(prev => ({
+        ...prev,
+        videos: [...prev.videos, {
+          id: response.data.id,
+          url: response.data.fileUrl,
+          name: file.name,
+          size: response.data.size || file.size,
+          type: file.type
+        }]
+      }))
+      
+      toast.success('Video uploaded successfully!')
+    } catch (error) {
+      console.error('Error uploading video:', error)
+      toast.error('Failed to upload video')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const removeLessonImage = async (imageId) => {
+    try {
+      const imageToRemove = lessonFormData.images.find(img => img.id === imageId)
+      if (imageToRemove) {
+        // Delete file from server
+        await axios.post('/api/admin/delete-file', {
+          fileUrl: imageToRemove.url
+        })
+      }
+      
+      setLessonFormData(prev => ({
+        ...prev,
+        images: prev.images.filter(img => img.id !== imageId)
+      }))
+      toast.success('Image removed!')
+    } catch (error) {
+      console.error('Error removing image:', error)
+      // Still remove from UI even if server deletion fails
+      setLessonFormData(prev => ({
+        ...prev,
+        images: prev.images.filter(img => img.id !== imageId)
+      }))
+      toast.success('Image removed from lesson!')
+    }
+  }
+
+  const removeLessonVideo = async (videoId) => {
+    try {
+      const videoToRemove = lessonFormData.videos.find(vid => vid.id === videoId)
+      if (videoToRemove) {
+        // Delete file from server
+        await axios.post('/api/admin/delete-file', {
+          fileUrl: videoToRemove.url
+        })
+      }
+      
+      setLessonFormData(prev => ({
+        ...prev,
+        videos: prev.videos.filter(vid => vid.id !== videoId)
+      }))
+      toast.success('Video removed!')
+    } catch (error) {
+      console.error('Error removing video:', error)
+      // Still remove from UI even if server deletion fails
+      setLessonFormData(prev => ({
+        ...prev,
+        videos: prev.videos.filter(vid => vid.id !== videoId)
+      }))
+      toast.success('Video removed from lesson!')
+    }
+  }
+
+  // Quiz Media Upload Functions
+  const handleQuizImageUpload = async (file, questionNumber) => {
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', 'image')
+      formData.append('learning_path', 'true')
+      formData.append('path_difficulty', 'Beginner')
+      formData.append('module_id', 'plant-basics')
+      formData.append('content_type', 'quiz_question')
+      formData.append('content_id', questionNumber)
+      formData.append('question_number', questionNumber)
+      formData.append('title', `Quiz Question ${questionNumber}`)
+      formData.append('description', `Image for quiz question ${questionNumber}`)
+      
+      const response = await axios.post('/api/admin/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      setQuizFormData(prev => ({
+        ...prev,
+        images: [...prev.images, {
+          id: response.data.id,
+          url: response.data.fileUrl,
+          name: file.name,
+          size: response.data.size || file.size,
+          type: file.type,
+          questionNumber: questionNumber
+        }]
+      }))
+      
+      toast.success(`Image uploaded successfully for Question ${questionNumber}!`)
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      toast.error('Failed to upload image')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const removeQuizImage = async (imageId) => {
+    try {
+      const imageToRemove = quizFormData.images.find(img => img.id === imageId)
+      if (imageToRemove) {
+        // Delete file from server
+        await axios.post('/api/admin/delete-file', {
+          fileUrl: imageToRemove.url
+        })
+      }
+      
+      setQuizFormData(prev => ({
+        ...prev,
+        images: prev.images.filter(img => img.id !== imageId)
+      }))
+      toast.success('Image removed!')
+    } catch (error) {
+      console.error('Error removing image:', error)
+      // Still remove from UI even if server deletion fails
+      setQuizFormData(prev => ({
+        ...prev,
+        images: prev.images.filter(img => img.id !== imageId)
+      }))
+      toast.success('Image removed from quiz!')
+    }
   }
 
   const filteredPaths = learningPaths.filter(path => {
@@ -757,6 +1019,8 @@ const ManageLearningPaths = () => {
           onViewModeChange={setViewMode}
         />
 
+
+
         {/* Learning Paths Grid */}
         <AdminCardGrid columns={3}>
           {filteredPaths.map((path) => (
@@ -778,18 +1042,6 @@ const ManageLearningPaths = () => {
                         setSelectedPath(path)
                         setShowPathDetails(true)
                   },
-                  className: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'
-                },
-                {
-                  text: "Edit",
-                  icon: Edit,
-                  onClick: () => openEditModal(path),
-                  className: 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'
-                },
-                {
-                  text: "Add Module",
-                  icon: Plus,
-                  onClick: () => openAddModuleModal(path),
                   className: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'
                 }
               ]}
@@ -842,7 +1094,10 @@ const ManageLearningPaths = () => {
                     </div>
                   </div>
                   <button
-                    onClick={() => setShowPathDetails(false)}
+                    onClick={() => {
+                      setShowPathDetails(false)
+                      setSelectedModuleForAction(null)
+                    }}
                     className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all duration-200"
                   >
                     <X className="h-6 w-6" />
@@ -878,6 +1133,7 @@ const ManageLearningPaths = () => {
                       </p>
                     </div>
                   </div>
+
 
                   {/* Enhanced Modules Section */}
                   <div className="border-t border-slate-200/60 pt-8">
@@ -935,15 +1191,27 @@ const ManageLearningPaths = () => {
                     {viewMode === 'grid' ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {selectedPath.modules.map((module) => (
-                          <div key={module.id} className="group relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-blue-300/50 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 transform hover:scale-105">
+                          <div 
+                            key={module.id} 
+                            onClick={() => setSelectedModuleForAction(selectedModuleForAction === module.id ? null : module.id)}
+                            className={`group relative overflow-hidden backdrop-blur-sm rounded-2xl border transition-all duration-300 transform cursor-pointer ${
+                              selectedModuleForAction === module.id 
+                                ? 'bg-blue-50 border-blue-300 shadow-2xl shadow-blue-500/20 scale-105' 
+                                : 'bg-white/80 border-slate-200/50 hover:border-blue-300/50 hover:shadow-2xl hover:shadow-blue-500/10 hover:scale-105'
+                            }`}
+                          >
                             {/* Enhanced Module Header */}
                             <div className="p-6 border-b border-slate-200/60">
                               <div className="flex items-start justify-between mb-4">
                                 <div className="flex-1">
                                   <div className="flex items-center space-x-3 mb-3">
-                                    <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg shadow-lg">
+                                    <div className={`p-2 rounded-lg shadow-lg ${
+                                      selectedModuleForAction === module.id 
+                                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600' 
+                                        : 'bg-gradient-to-r from-blue-500 to-indigo-500'
+                                    }`}>
                                       <BookOpen className="h-5 w-5 text-white" />
-                                </div>
+                                    </div>
                                     <div>
                                       <h6 className="font-bold text-slate-900 text-xl">{module.title}</h6>
                                       <div className="flex items-center text-sm text-slate-500 mt-1">
@@ -954,22 +1222,32 @@ const ManageLearningPaths = () => {
                                   </div>
                                   <p className="text-slate-600 leading-relaxed line-clamp-3">{module.description}</p>
                                 </div>
-                                <div className="flex items-center space-x-2 ml-4">
-                                  <button
-                                    onClick={() => openEditModuleModal(module)}
-                                    className="p-3 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200 transition-all duration-200 shadow-lg hover:shadow-xl"
-                                    title="Edit Module"
-                                  >
-                                    <Edit className="h-5 w-5" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteModule(module.id)}
-                                    className="p-3 bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition-all duration-200 shadow-lg hover:shadow-xl"
-                                    title="Delete Module"
-                                  >
-                                    <Trash2 className="h-5 w-5" />
-                                  </button>
-                                </div>
+                                
+                                {/* Action Buttons - Show when selected */}
+                                {selectedModuleForAction === module.id && (
+                                  <div className="flex items-center space-x-2 ml-4">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        openEditModuleModal(module)
+                                      }}
+                                      className="p-3 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200 transition-all duration-200 shadow-lg hover:shadow-xl"
+                                      title="Edit Module"
+                                    >
+                                      <Edit className="h-5 w-5" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleDeleteModule(module.id)
+                                      }}
+                                      className="p-3 bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition-all duration-200 shadow-lg hover:shadow-xl"
+                                      title="Delete Module"
+                                    >
+                                      <Trash2 className="h-5 w-5" />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                               
                               <div className="flex items-center justify-between">
@@ -983,13 +1261,22 @@ const ManageLearningPaths = () => {
                                     {module.quiz?.questions?.length || 0} quiz
                                   </div>
                                 </div>
-                                <button
-                                  onClick={() => toggleModuleExpansion(module.id)}
-                                  className="flex items-center px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
-                                >
-                                  {expandedModules[module.id] ? 'Less' : 'More'}
-                                  {expandedModules[module.id] ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
-                                </button>
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={() => openModuleDetails(module)}
+                                    className="flex items-center px-4 py-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                                  >
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Details
+                                  </button>
+                                  <button
+                                    onClick={() => toggleModuleExpansion(module.id)}
+                                    className="flex items-center px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                                  >
+                                    {expandedModules[module.id] ? 'Less' : 'More'}
+                                    {expandedModules[module.id] ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
+                                  </button>
+                                </div>
                               </div>
                             </div>
                             
@@ -1092,17 +1379,33 @@ const ManageLearningPaths = () => {
                     ) : (
                       <div className="space-y-4">
                         {selectedPath.modules.map((module) => (
-                          <div key={module.id} className="bg-white border border-gray-200 rounded-lg shadow-sm">
+                          <div 
+                            key={module.id} 
+                            onClick={() => setSelectedModuleForAction(selectedModuleForAction === module.id ? null : module.id)}
+                            className={`border rounded-lg shadow-sm transition-all duration-300 cursor-pointer ${
+                              selectedModuleForAction === module.id 
+                                ? 'bg-blue-50 border-blue-300 shadow-lg' 
+                                : 'bg-white border-gray-200 hover:border-blue-300'
+                            }`}
+                          >
                             <div className="p-4">
                               <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                   <div className="flex items-center space-x-4">
-                                    <h6 className="font-semibold text-gray-900">{module.title}</h6>
-                                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                    <h6 className={`font-semibold ${
+                                      selectedModuleForAction === module.id ? 'text-blue-900' : 'text-gray-900'
+                                    }`}>{module.title}</h6>
+                                    <span className={`text-xs px-2 py-1 rounded ${
+                                      selectedModuleForAction === module.id 
+                                        ? 'text-blue-600 bg-blue-100' 
+                                        : 'text-gray-500 bg-gray-100'
+                                    }`}>
                                       {module.estimatedTime}
                                     </span>
                                   </div>
-                                  <p className="text-sm text-gray-600 mt-1">{module.description}</p>
+                                  <p className={`text-sm mt-1 ${
+                                    selectedModuleForAction === module.id ? 'text-blue-700' : 'text-gray-600'
+                                  }`}>{module.description}</p>
                                   
                                   <div className="flex items-center space-x-6 mt-3 text-xs text-gray-500">
                                     <div className="flex items-center">
@@ -1116,22 +1419,44 @@ const ManageLearningPaths = () => {
                                   </div>
                                 </div>
                                 
-                                <div className="flex items-center space-x-2">
-                                  <button
-                                    onClick={() => openEditModuleModal(module)}
-                                    className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 flex items-center"
-                                  >
-                                    <Edit className="h-3 w-3 mr-1" />
-                                    Edit
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteModule(module.id)}
-                                    className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 flex items-center"
-                                  >
-                                    <Trash2 className="h-3 w-3 mr-1" />
-                                    Delete
-                                  </button>
-                                </div>
+                                {/* Action Buttons - Show when selected */}
+                                {selectedModuleForAction === module.id ? (
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        openEditModuleModal(module)
+                                      }}
+                                      className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 flex items-center"
+                                    >
+                                      <Edit className="h-3 w-3 mr-1" />
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleDeleteModule(module.id)
+                                      }}
+                                      className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 flex items-center"
+                                    >
+                                      <Trash2 className="h-3 w-3 mr-1" />
+                                      Delete
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        openModuleDetails(module)
+                                      }}
+                                      className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200 flex items-center"
+                                    >
+                                      <Eye className="h-3 w-3 mr-1" />
+                                      View Details
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1140,16 +1465,13 @@ const ManageLearningPaths = () => {
                     )}
                   </div>
                   
-                  <div className="flex space-x-3">
-                    <button 
-                      onClick={() => openEditModal(selectedPath)}
-                      className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700"
-                    >
-                      Edit Path
-                    </button>
+                  <div className="flex justify-end">
                     <button
-                      onClick={() => setShowPathDetails(false)}
-                      className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700"
+                      onClick={() => {
+                        setShowPathDetails(false)
+                        setSelectedModuleForAction(null)
+                      }}
+                      className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
                     >
                       Close
                     </button>
@@ -1161,191 +1483,6 @@ const ManageLearningPaths = () => {
         )}
 
 
-        {/* Edit Learning Path Modal */}
-        {showEditModal && editingPath && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Edit Learning Path</h3>
-                  <button
-                    onClick={() => {
-                      setShowEditModal(false)
-                      setEditingPath(null)
-                      resetForm()
-                    }}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
-                </div>
-                
-                <form onSubmit={handleEditPath} className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                    <input
-                      type="text"
-                      name="title"
-                      value={formData.title}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                    <textarea
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      rows="3"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
-                      <select
-                        name="difficulty"
-                        value={formData.difficulty}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="Beginner">Beginner</option>
-                        <option value="Intermediate">Intermediate</option>
-                        <option value="Expert">Expert</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Duration</label>
-                      <select
-                        name="duration"
-                        value={formData.duration}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="1 week">1 Week</option>
-                        <option value="2 weeks">2 Weeks</option>
-                        <option value="1 month">1 Month</option>
-                        <option value="2 months">2 Months</option>
-                        <option value="3 months">3 Months</option>
-                        <option value="6 months">6 Months</option>
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Number of Modules</label>
-                      <select
-                        name="modules_count"
-                        value={formData.modules_count}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="3">3 Modules</option>
-                        <option value="4">4 Modules</option>
-                        <option value="5">5 Modules</option>
-                        <option value="6">6 Modules</option>
-                        <option value="7">7 Modules</option>
-                        <option value="8">8 Modules</option>
-                      </select>
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        name="is_active"
-                        checked={formData.is_active}
-                        onChange={handleInputChange}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <label className="ml-2 block text-sm text-gray-700">Active</label>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Learning Path Intro Video (Optional)</label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                      {formData.video ? (
-                        <div className="space-y-2">
-                          <Video className="mx-auto h-12 w-12 text-green-500" />
-                          <p className="text-sm text-gray-600">Video uploaded</p>
-                        </div>
-                      ) : (
-                        <div>
-                          <Video className="mx-auto h-12 w-12 text-gray-400" />
-                          <p className="mt-2 text-sm text-gray-600">Upload a learning path intro video</p>
-                        </div>
-                      )}
-                      <input
-                        type="file"
-                        accept="video/*"
-                        onChange={(e) => {
-                          if (e.target.files[0]) {
-                            handleFileUpload(e.target.files[0], 'video')
-                          }
-                        }}
-                        className="mt-2"
-                        disabled={uploading}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0">
-                        <FileImage className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <div className="ml-3">
-                        <h4 className="text-sm font-medium text-blue-800">Module Media Management</h4>
-                        <p className="text-sm text-blue-700 mt-1">
-                          Images and videos for individual modules are managed within each module. 
-                          Use the "View Details" button on modules to add or edit module-specific media content.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-end space-x-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowEditModal(false)
-                        setEditingPath(null)
-                        resetForm()
-                      }}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={uploading}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
-                    >
-                      {uploading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Updating...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4 mr-2" />
-                          Update Path
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Enhanced Add Module Modal */}
         {showAddModuleModal && (
@@ -1587,96 +1724,179 @@ const ManageLearningPaths = () => {
                     </div>
                   </div>
 
-                  {/* Enhanced Lessons Section */}
-                  <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6 border border-orange-200/50">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg shadow-lg">
-                          <BookOpen className="h-5 w-5 text-white" />
-                        </div>
-                        <h4 className="text-xl font-bold text-slate-900">Lessons ({moduleFormData.lessons.length})</h4>
+                  {/* Enhanced Content Management Section */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
+                    <div className="flex items-center space-x-3 mb-6">
+                      <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg shadow-lg">
+                        <BookOpen className="h-5 w-5 text-white" />
                       </div>
-                      <button
-                        type="button"
-                        onClick={openAddLessonModal}
-                        className="px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl hover:from-orange-700 hover:to-red-700 flex items-center text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-                      >
-                        <Plus className="h-5 w-5 mr-2" />
-                        Add Lesson
-                      </button>
+                      <h4 className="text-xl font-bold text-slate-900">Content Management</h4>
                     </div>
                     
-                    <div className="space-y-4">
-                      {moduleFormData.lessons.map((lesson, index) => (
-                        <div key={lesson.id} className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
-                                {index + 1}
-                            </div>
-                              <div>
-                                <span className="text-lg font-semibold text-slate-900">{lesson.title}</span>
-                                <p className="text-sm text-slate-500 mt-1 line-clamp-2">{lesson.content}</p>
+                    {/* Tab Navigation */}
+                    <div className="flex space-x-1 mb-6 bg-white rounded-xl p-1 shadow-lg border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => setActiveModuleTab('basic')}
+                        className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                          activeModuleTab === 'basic'
+                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                        }`}
+                      >
+                        <div className="flex items-center justify-center space-x-2">
+                          <BookOpen className="h-4 w-4" />
+                          <span>Basic Info</span>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModuleTab('lessons')}
+                        className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                          activeModuleTab === 'lessons'
+                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                        }`}
+                      >
+                        <div className="flex items-center justify-center space-x-2">
+                          <BookOpen className="h-4 w-4" />
+                          <span>Lessons ({moduleFormData.lessons.length})</span>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModuleTab('quizzes')}
+                        className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                          activeModuleTab === 'quizzes'
+                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                        }`}
+                      >
+                        <div className="flex items-center justify-center space-x-2">
+                          <FileText className="h-4 w-4" />
+                          <span>Quiz</span>
+                        </div>
+                      </button>
+                    </div>
+
+                    {/* Tab Content */}
+                    {activeModuleTab === 'lessons' && (
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h5 className="text-lg font-semibold text-slate-900">Module Lessons</h5>
+                          <button
+                            type="button"
+                            onClick={openAddLessonModal}
+                            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Lesson
+                          </button>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          {moduleFormData.lessons.map((lesson, index) => (
+                            <div key={lesson.id} className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-4">
+                                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                                    {index + 1}
+                                  </div>
+                                  <div>
+                                    <span className="text-lg font-semibold text-slate-900">{lesson.title}</span>
+                                    <p className="text-sm text-slate-500 mt-1 line-clamp-2">{lesson.content}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditLessonModal(lesson)}
+                                    className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                                    title="Edit Lesson"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteLesson(lesson.id)}
+                                    className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200"
+                                    title="Delete Lesson"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-2">
-                              <button
-                                type="button"
-                                onClick={() => openEditLessonModal(lesson)}
-                                className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
-                                title="Edit Lesson"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteLesson(lesson.id)}
-                                className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200"
-                                title="Delete Lesson"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
+                    )}
 
-                  {/* Enhanced Quiz Section */}
-                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200/50">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow-lg">
-                          <FileText className="h-5 w-5 text-white" />
+                    {activeModuleTab === 'quizzes' && (
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h5 className="text-lg font-semibold text-slate-900">Module Quiz</h5>
+                          <button
+                            type="button"
+                            onClick={openAddQuizModal}
+                            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Quiz
+                          </button>
                         </div>
-                        <h4 className="text-xl font-bold text-slate-900">Quiz</h4>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={openAddQuizModal}
-                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 flex items-center text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-                      >
-                        <Plus className="h-5 w-5 mr-2" />
-                        Add Quiz
-                      </button>
-                    </div>
-                    
-                    <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200">
-                      <div className="text-lg font-semibold text-slate-900 mb-2">
-                        {moduleFormData.quiz.title || 'No quiz added'}
-                      </div>
-                      {moduleFormData.quiz.questions && moduleFormData.quiz.questions.length > 0 && (
-                        <div className="flex items-center space-x-4 mt-4">
-                          <div className="text-sm text-slate-500 bg-blue-100 px-3 py-1 rounded-full">
-                            {moduleFormData.quiz.questions.length} questions
-                          </div>
-                          <div className="text-sm text-slate-500 bg-green-100 px-3 py-1 rounded-full">
-                            Ready to use
+                        
+                        <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="text-lg font-semibold text-slate-900 mb-2">
+                                {moduleFormData.quiz.title || 'No quiz added'}
+                              </div>
+                              {moduleFormData.quiz.questions && moduleFormData.quiz.questions.length > 0 && (
+                                <div className="flex items-center space-x-4">
+                                  <div className="text-sm text-slate-500 bg-blue-100 px-3 py-1 rounded-full">
+                                    {moduleFormData.quiz.questions.length} questions
+                                  </div>
+                                  <div className="text-sm text-slate-500 bg-green-100 px-3 py-1 rounded-full">
+                                    Ready to use
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Quiz Action Buttons */}
+                            {moduleFormData.quiz.title && (
+                              <div className="flex items-center space-x-2 ml-4">
+                                <button
+                                  type="button"
+                                  onClick={() => openEditQuizModal(moduleFormData.quiz)}
+                                  className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                                  title="Edit Quiz"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (window.confirm('Are you sure you want to delete this quiz?')) {
+                                      setModuleFormData(prev => ({
+                                        ...prev,
+                                        quiz: { title: '', questions: [], images: [] }
+                                      }))
+                                      toast.success('Quiz deleted successfully!')
+                                    }
+                                  }}
+                                  className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200"
+                                  title="Delete Quiz"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex justify-end space-x-3">
@@ -1945,96 +2165,179 @@ const ManageLearningPaths = () => {
                     </div>
                   </div>
 
-                  {/* Enhanced Lessons Section */}
-                  <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6 border border-orange-200/50">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg shadow-lg">
-                          <BookOpen className="h-5 w-5 text-white" />
-                        </div>
-                        <h4 className="text-xl font-bold text-slate-900">Lessons ({moduleFormData.lessons.length})</h4>
+                  {/* Enhanced Content Management Section */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
+                    <div className="flex items-center space-x-3 mb-6">
+                      <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg shadow-lg">
+                        <BookOpen className="h-5 w-5 text-white" />
                       </div>
-                      <button
-                        type="button"
-                        onClick={openAddLessonModal}
-                        className="px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl hover:from-orange-700 hover:to-red-700 flex items-center text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-                      >
-                        <Plus className="h-5 w-5 mr-2" />
-                        Add Lesson
-                      </button>
+                      <h4 className="text-xl font-bold text-slate-900">Content Management</h4>
                     </div>
                     
-                    <div className="space-y-4">
-                      {moduleFormData.lessons.map((lesson, index) => (
-                        <div key={lesson.id} className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
+                    {/* Tab Navigation */}
+                    <div className="flex space-x-1 mb-6 bg-white rounded-xl p-1 shadow-lg border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => setActiveModuleTab('basic')}
+                        className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                          activeModuleTab === 'basic'
+                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                        }`}
+                      >
+                        <div className="flex items-center justify-center space-x-2">
+                          <BookOpen className="h-4 w-4" />
+                          <span>Basic Info</span>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModuleTab('lessons')}
+                        className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                          activeModuleTab === 'lessons'
+                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                        }`}
+                      >
+                        <div className="flex items-center justify-center space-x-2">
+                          <BookOpen className="h-4 w-4" />
+                          <span>Lessons ({moduleFormData.lessons.length})</span>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModuleTab('quizzes')}
+                        className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                          activeModuleTab === 'quizzes'
+                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                        }`}
+                      >
+                        <div className="flex items-center justify-center space-x-2">
+                          <FileText className="h-4 w-4" />
+                          <span>Quiz</span>
+                        </div>
+                      </button>
+                    </div>
+
+                    {/* Tab Content */}
+                    {activeModuleTab === 'lessons' && (
+                      <div className="space-y-6">
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
-                                {index + 1}
-                              </div>
-                          <div>
-                                <span className="text-lg font-semibold text-slate-900">{lesson.title}</span>
-                                <p className="text-sm text-slate-500 mt-1 line-clamp-2">{lesson.content}</p>
-                            </div>
-                          </div>
-                            <div className="flex items-center space-x-2">
+                          <h5 className="text-lg font-semibold text-slate-900">Module Lessons</h5>
                           <button
                             type="button"
-                                onClick={() => openEditLessonModal(lesson)}
-                                className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
-                                title="Edit Lesson"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteLesson(lesson.id)}
-                                className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200"
-                                title="Delete Lesson"
-                              >
-                                <Trash2 className="h-4 w-4" />
+                            onClick={openAddLessonModal}
+                            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Lesson
                           </button>
                         </div>
-                      </div>
+                        
+                        <div className="space-y-4">
+                          {moduleFormData.lessons.map((lesson, index) => (
+                            <div key={lesson.id} className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-4">
+                                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                                    {index + 1}
+                                  </div>
+                                  <div>
+                                    <span className="text-lg font-semibold text-slate-900">{lesson.title}</span>
+                                    <p className="text-sm text-slate-500 mt-1 line-clamp-2">{lesson.content}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditLessonModal(lesson)}
+                                    className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                                    title="Edit Lesson"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteLesson(lesson.id)}
+                                    className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200"
+                                    title="Delete Lesson"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
+                    )}
 
-                  {/* Enhanced Quiz Section */}
-                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200/50">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow-lg">
-                          <FileText className="h-5 w-5 text-white" />
+                    {activeModuleTab === 'quizzes' && (
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h5 className="text-lg font-semibold text-slate-900">Module Quiz</h5>
+                          <button
+                            type="button"
+                            onClick={openAddQuizModal}
+                            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Quiz
+                          </button>
                         </div>
-                        <h4 className="text-xl font-bold text-slate-900">Quiz</h4>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={openAddQuizModal}
-                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 flex items-center text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-                      >
-                        <Plus className="h-5 w-5 mr-2" />
-                        Add Quiz
-                      </button>
-                    </div>
-                    
-                    <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200">
-                      <div className="text-lg font-semibold text-slate-900 mb-2">
-                        {moduleFormData.quiz.title || 'No quiz added'}
-                      </div>
-                      {moduleFormData.quiz.questions && moduleFormData.quiz.questions.length > 0 && (
-                        <div className="flex items-center space-x-4 mt-4">
-                          <div className="text-sm text-slate-500 bg-blue-100 px-3 py-1 rounded-full">
-                            {moduleFormData.quiz.questions.length} questions
-                          </div>
-                          <div className="text-sm text-slate-500 bg-green-100 px-3 py-1 rounded-full">
-                            Ready to use
+                        
+                        <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="text-lg font-semibold text-slate-900 mb-2">
+                                {moduleFormData.quiz.title || 'No quiz added'}
+                              </div>
+                              {moduleFormData.quiz.questions && moduleFormData.quiz.questions.length > 0 && (
+                                <div className="flex items-center space-x-4">
+                                  <div className="text-sm text-slate-500 bg-blue-100 px-3 py-1 rounded-full">
+                                    {moduleFormData.quiz.questions.length} questions
+                                  </div>
+                                  <div className="text-sm text-slate-500 bg-green-100 px-3 py-1 rounded-full">
+                                    Ready to use
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Quiz Action Buttons */}
+                            {moduleFormData.quiz.title && (
+                              <div className="flex items-center space-x-2 ml-4">
+                                <button
+                                  type="button"
+                                  onClick={() => openEditQuizModal(moduleFormData.quiz)}
+                                  className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                                  title="Edit Quiz"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (window.confirm('Are you sure you want to delete this quiz?')) {
+                                      setModuleFormData(prev => ({
+                                        ...prev,
+                                        quiz: { title: '', questions: [], images: [] }
+                                      }))
+                                      toast.success('Quiz deleted successfully!')
+                                    }
+                                  }}
+                                  className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200"
+                                  title="Delete Quiz"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex justify-end space-x-3">
@@ -2062,78 +2365,239 @@ const ManageLearningPaths = () => {
           </div>
         )}
 
-        {/* Add Lesson Modal */}
-        {showAddLessonModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Add New Lesson</h3>
+        {/* Add/Edit Lesson Modal */}
+        {(showAddLessonModal || showEditLessonModal) && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
+            <div className="bg-white/95 backdrop-blur-sm rounded-3xl max-w-4xl w-full max-h-[95vh] overflow-y-auto border border-slate-200/50 shadow-2xl">
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl shadow-lg">
+                      <BookOpen className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-slate-900">
+                        {showEditLessonModal ? 'Edit Lesson' : 'Add New Lesson'}
+                      </h3>
+                      <p className="text-slate-600 mt-1">
+                        {showEditLessonModal ? 'Update lesson information and media' : 'Create a new lesson with content and media'}
+                      </p>
+                    </div>
+                  </div>
                   <button
                     onClick={() => {
                       setShowAddLessonModal(false)
-                      resetLessonForm()
+                      setShowEditLessonModal(false)
+                      setEditingLesson(null)
+                      setLessonFormData({
+                        title: '',
+                        content: '',
+                        points: [''],
+                        images: [],
+                        videos: []
+                      })
                     }}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all duration-200"
                   >
                     <X className="h-6 w-6" />
                   </button>
                 </div>
                 
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Lesson Title</label>
-                    <input
-                      type="text"
-                      value={lessonFormData.title}
-                      onChange={(e) => setLessonFormData(prev => ({ ...prev, title: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Lesson Content</label>
-                    <textarea
-                      value={lessonFormData.content}
-                      onChange={(e) => setLessonFormData(prev => ({ ...prev, content: e.target.value }))}
-                      rows="4"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
+                <form onSubmit={showEditLessonModal ? handleEditLesson : handleAddLesson} className="space-y-8">
+                  {/* Basic Information */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
+                    <h4 className="text-xl font-bold text-slate-900 mb-6">Lesson Information</h4>
+                    
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Lesson Title</label>
+                        <input
+                          type="text"
+                          value={lessonFormData.title}
+                          onChange={(e) => setLessonFormData(prev => ({ ...prev, title: e.target.value }))}
+                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Enter lesson title"
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Lesson Content</label>
+                        <textarea
+                          value={lessonFormData.content}
+                          onChange={(e) => setLessonFormData(prev => ({ ...prev, content: e.target.value }))}
+                          rows="4"
+                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Enter lesson content"
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Key Points</label>
-                    <div className="space-y-2">
-                      {lessonFormData.points.map((point, index) => (
-                        <div key={index} className="flex items-center space-x-2">
-                          <input
-                            type="text"
-                            value={point}
-                            onChange={(e) => updateLessonPoint(index, e.target.value)}
-                            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder={`Key point ${index + 1}`}
-                          />
-                          {lessonFormData.points.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeLessonPoint(index)}
-                              className="p-2 text-red-600 hover:text-red-700"
+                  {/* Lesson Media - Images */}
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200/50">
+                    <div className="flex items-center space-x-3 mb-6">
+                      <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-lg">
+                        <FileImage className="h-5 w-5 text-white" />
+                      </div>
+                      <h4 className="text-xl font-bold text-slate-900">Lesson Images</h4>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      <div className="border-2 border-dashed border-green-300 rounded-2xl p-8 text-center bg-white/50">
+                        <div className="flex flex-col items-center space-y-4">
+                          <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl shadow-lg">
+                            <FileImage className="h-8 w-8 text-white" />
+                          </div>
+                          <div>
+                            <h5 className="text-lg font-semibold text-slate-900 mb-2">Upload Lesson Images</h5>
+                            <p className="text-slate-600">Add images to make the lesson more engaging and visual</p>
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={(e) => {
+                                Array.from(e.target.files).forEach(file => {
+                                  handleLessonImageUpload(file)
+                                })
+                              }}
+                              className="hidden"
+                              id="lesson-image-upload"
+                              disabled={uploading}
+                            />
+                            <label
+                              htmlFor="lesson-image-upload"
+                              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 cursor-pointer disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl text-lg font-semibold"
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          )}
+                              <Upload className="h-5 w-5 mr-2" />
+                              {uploading ? 'Uploading...' : 'Choose Images'}
+                            </label>
+                          </div>
                         </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={addLessonPoint}
-                        className="flex items-center text-blue-600 hover:text-blue-700 text-sm"
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add Key Point
-                      </button>
+                      </div>
+
+                      {/* Display Uploaded Images */}
+                      {lessonFormData.images.length > 0 && (
+                        <div className="space-y-4">
+                          {lessonFormData.images.map((image) => (
+                            <div key={image.id} className="relative group bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
+                              <div className="flex items-center space-x-6">
+                                <div className="flex-shrink-0">
+                                  <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-lg">
+                                    <FileImage className="h-8 w-8 text-white" />
+                                  </div>
+                                </div>
+                                <div className="flex-1">
+                                  <h6 className="text-lg font-semibold text-slate-900 mb-1">{image.name}</h6>
+                                  <p className="text-sm text-slate-500 mb-2">
+                                    {(image.size / (1024 * 1024)).toFixed(2)} MB
+                                  </p>
+                                  <div className="flex items-center space-x-4">
+                                    <span className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                                      Image File
+                                    </span>
+                                    <span className="text-xs text-slate-500 bg-green-100 px-3 py-1 rounded-full">
+                                      Ready to use
+                                    </span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => removeLessonImage(image.id)}
+                                  className="p-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Lesson Media - Videos */}
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200/50">
+                    <div className="flex items-center space-x-3 mb-6">
+                      <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow-lg">
+                        <Video className="h-5 w-5 text-white" />
+                      </div>
+                      <h4 className="text-xl font-bold text-slate-900">Lesson Videos</h4>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      <div className="border-2 border-dashed border-purple-300 rounded-2xl p-8 text-center bg-white/50">
+                        <div className="flex flex-col items-center space-y-4">
+                          <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-lg">
+                            <Video className="h-8 w-8 text-white" />
+                          </div>
+                          <div>
+                            <h5 className="text-lg font-semibold text-slate-900 mb-2">Upload Lesson Videos</h5>
+                            <p className="text-slate-600">Add videos to enhance the learning experience</p>
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <input
+                              type="file"
+                              accept="video/*"
+                              multiple
+                              onChange={(e) => {
+                                Array.from(e.target.files).forEach(file => {
+                                  handleLessonVideoUpload(file)
+                                })
+                              }}
+                              className="hidden"
+                              id="lesson-video-upload"
+                              disabled={uploading}
+                            />
+                            <label
+                              htmlFor="lesson-video-upload"
+                              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 cursor-pointer disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl text-lg font-semibold"
+                            >
+                              <Upload className="h-5 w-5 mr-2" />
+                              {uploading ? 'Uploading...' : 'Choose Videos'}
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Display Uploaded Videos */}
+                      {lessonFormData.videos.length > 0 && (
+                        <div className="space-y-4">
+                          {lessonFormData.videos.map((video) => (
+                            <div key={video.id} className="relative group bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
+                              <div className="flex items-center space-x-6">
+                                <div className="flex-shrink-0">
+                                  <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg">
+                                    <Video className="h-8 w-8 text-white" />
+                                  </div>
+                                </div>
+                                <div className="flex-1">
+                                  <h6 className="text-lg font-semibold text-slate-900 mb-1">{video.name}</h6>
+                                  <p className="text-sm text-slate-500 mb-2">
+                                    {(video.size / (1024 * 1024)).toFixed(2)} MB
+                                  </p>
+                                  <div className="flex items-center space-x-4">
+                                    <span className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                                      Video File
+                                    </span>
+                                    <span className="text-xs text-slate-500 bg-purple-100 px-3 py-1 rounded-full">
+                                      Ready to use
+                                    </span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => removeLessonVideo(video.id)}
+                                  className="p-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -2142,110 +2606,208 @@ const ManageLearningPaths = () => {
                       type="button"
                       onClick={() => {
                         setShowAddLessonModal(false)
-                        resetLessonForm()
+                        setShowEditLessonModal(false)
+                        setEditingLesson(null)
+                        setLessonFormData({
+                          title: '',
+                          content: '',
+                          points: [''],
+                          images: [],
+                          videos: []
+                        })
                       }}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                      className="px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                     >
                       Cancel
                     </button>
                     <button
-                      type="button"
-                      onClick={handleAddLesson}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                      type="submit"
+                      className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 flex items-center text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                     >
-                      <Save className="h-4 w-4 mr-2" />
-                      Add Lesson
+                      <Save className="h-5 w-5 mr-2" />
+                      {showEditLessonModal ? 'Update Lesson' : 'Add Lesson'}
                     </button>
                   </div>
-                </div>
+                </form>
               </div>
             </div>
           </div>
         )}
 
-        {/* Add Quiz Modal */}
-        {showAddQuizModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Add New Quiz</h3>
+        {/* Add/Edit Quiz Modal */}
+        {(showAddQuizModal || showEditQuizModal) && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
+            <div className="bg-white/95 backdrop-blur-sm rounded-3xl max-w-4xl w-full max-h-[95vh] overflow-y-auto border border-slate-200/50 shadow-2xl">
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg">
+                      <FileText className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-slate-900">
+                        {showEditQuizModal ? 'Edit Quiz' : 'Add New Quiz'}
+                      </h3>
+                      <p className="text-slate-600 mt-1">
+                        {showEditQuizModal ? 'Update quiz information and media' : 'Create a new quiz with questions and media'}
+                      </p>
+                    </div>
+                  </div>
                   <button
                     onClick={() => {
                       setShowAddQuizModal(false)
-                      resetQuizForm()
+                      setShowEditQuizModal(false)
+                      setEditingQuiz(null)
+                      setQuizFormData({
+                        title: '',
+                        questions: [],
+                        images: []
+                      })
                     }}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all duration-200"
                   >
                     <X className="h-6 w-6" />
                   </button>
                 </div>
                 
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Quiz Title</label>
-                    <input
-                      type="text"
-                      value={quizFormData.title}
-                      onChange={(e) => setQuizFormData(prev => ({ ...prev, title: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
+                <form onSubmit={showEditQuizModal ? handleEditQuiz : handleAddQuiz} className="space-y-8">
+                  {/* Basic Information */}
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200/50">
+                    <h4 className="text-xl font-bold text-slate-900 mb-6">Quiz Information</h4>
+                    
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Quiz Title</label>
+                        <input
+                          type="text"
+                          value={quizFormData.title}
+                          onChange={(e) => setQuizFormData(prev => ({ ...prev, title: e.target.value }))}
+                          className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          placeholder="Enter quiz title"
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Questions Section */}
-                  <div className="border-t pt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-md font-medium text-gray-900">Questions ({quizFormData.questions.length})</h4>
-                      <button
-                        type="button"
-                        onClick={openAddQuestionModal}
-                        className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center text-sm"
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add Question
-                      </button>
+                  {/* Quiz Images by Question */}
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200/50">
+                    <div className="flex items-center space-x-3 mb-6">
+                      <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-lg">
+                        <FileImage className="h-5 w-5 text-white" />
+                      </div>
+                      <h4 className="text-xl font-bold text-slate-900">Quiz Images by Question</h4>
                     </div>
                     
-                    <div className="space-y-4">
-                      {quizFormData.questions.map((question, index) => (
-                        <div key={question.id} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <h5 className="text-sm font-medium text-gray-900">Question {index + 1}</h5>
-                            <div className="flex items-center space-x-1">
-                              <button
-                                type="button"
-                                onClick={() => handleEditQuestion(question.id)}
-                                className="p-1 text-gray-400 hover:text-blue-600"
-                              >
-                                <Edit className="h-3 w-3" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteQuestion(question.id)}
-                                className="p-1 text-gray-400 hover:text-red-600"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
-                            </div>
+                    <div className="space-y-6">
+                      {/* Question Number Selection and Upload */}
+                      <div className="bg-white rounded-2xl p-6 border border-slate-200">
+                        <h5 className="text-lg font-semibold text-slate-900 mb-4">Add Image to Question</h5>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Select Question Number</label>
+                            <select
+                              id="question-number-select"
+                              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            >
+                              <option value="">Choose question number...</option>
+                              {Array.from({ length: 10 }, (_, i) => i + 1).map(num => (
+                                <option key={num} value={num}>Question {num}</option>
+                              ))}
+                            </select>
                           </div>
-                          <p className="text-sm text-gray-700 mb-2">{question.question}</p>
-                          <div className="space-y-1">
-                            {question.options.map((option, optionIndex) => (
-                              <div key={optionIndex} className="flex items-center">
-                                <span className={`w-2 h-2 rounded-full mr-2 ${
-                                  optionIndex === question.correct ? 'bg-green-500' : 'bg-gray-300'
-                                }`}></span>
-                                <span className={`text-sm ${
-                                  optionIndex === question.correct ? 'text-green-700 font-medium' : 'text-gray-600'
-                                }`}>
-                                  {option}
-                                </span>
-                              </div>
-                            ))}
+                          
+                          <div className="flex items-end">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const questionNumber = document.getElementById('question-number-select').value
+                                if (!questionNumber) {
+                                  toast.error('Please select a question number first!')
+                                  return
+                                }
+                                if (e.target.files[0]) {
+                                  handleQuizImageUpload(e.target.files[0], parseInt(questionNumber))
+                                  e.target.value = '' // Reset file input
+                                }
+                              }}
+                              className="hidden"
+                              id="quiz-image-upload"
+                              disabled={uploading}
+                            />
+                            <label
+                              htmlFor="quiz-image-upload"
+                              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 cursor-pointer disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl text-lg font-semibold"
+                            >
+                              <Upload className="h-5 w-5 mr-2" />
+                              {uploading ? 'Uploading...' : 'Choose Image'}
+                            </label>
                           </div>
                         </div>
-                      ))}
+                        
+                        <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                          <div className="flex items-start space-x-3">
+                            <div className="flex-shrink-0">
+                              <svg className="h-5 w-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <div>
+                              <h6 className="text-sm font-medium text-blue-800">How to add images:</h6>
+                              <p className="text-sm text-blue-700 mt-1">
+                                1. Select the question number you want to add an image to<br/>
+                                2. Click "Choose Image" to select an image file<br/>
+                                3. The image will be associated with that specific question
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Display Uploaded Images by Question */}
+                      {quizFormData.images.length > 0 && (
+                        <div className="space-y-4">
+                          <h5 className="text-lg font-semibold text-slate-900">Uploaded Images</h5>
+                          {quizFormData.images.map((image) => (
+                            <div key={image.id} className="relative group bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
+                              <div className="flex items-center space-x-6">
+                                <div className="flex-shrink-0">
+                                  <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-lg">
+                                    <FileImage className="h-8 w-8 text-white" />
+                                  </div>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-3 mb-2">
+                                    <h6 className="text-lg font-semibold text-slate-900">{image.name}</h6>
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                      Question {image.questionNumber}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-slate-500 mb-2">
+                                    {(image.size / (1024 * 1024)).toFixed(2)} MB
+                                  </p>
+                                  <div className="flex items-center space-x-4">
+                                    <span className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                                      Image File
+                                    </span>
+                                    <span className="text-xs text-slate-500 bg-green-100 px-3 py-1 rounded-full">
+                                      Ready to use
+                                    </span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => removeQuizImage(image.id)}
+                                  className="p-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -2254,153 +2816,28 @@ const ManageLearningPaths = () => {
                       type="button"
                       onClick={() => {
                         setShowAddQuizModal(false)
-                        resetQuizForm()
+                        setShowEditQuizModal(false)
+                        setEditingQuiz(null)
+                        setQuizFormData({
+                          title: '',
+                          questions: [],
+                          images: [],
+                          videos: []
+                        })
                       }}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                      className="px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                     >
                       Cancel
                     </button>
                     <button
-                      type="button"
-                      onClick={handleAddQuiz}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
+                      type="submit"
+                      className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 flex items-center text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                     >
-                      <Save className="h-4 w-4 mr-2" />
-                      Add Quiz
+                      <Save className="h-5 w-5 mr-2" />
+                      {showEditQuizModal ? 'Update Quiz' : 'Add Quiz'}
                     </button>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Add Question Modal */}
-        {showAddQuizModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Add New Question</h3>
-                  <button
-                    onClick={resetQuestionForm}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
-                </div>
-                
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Question</label>
-                    <textarea
-                      value={questionFormData.question}
-                      onChange={(e) => setQuestionFormData(prev => ({ ...prev, question: e.target.value }))}
-                      rows="3"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  {/* Image Upload */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Question Image (Optional)</label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                      {questionFormData.image ? (
-                        <div className="space-y-2">
-                          <Image className="mx-auto h-12 w-12 text-green-500" />
-                          <p className="text-sm text-gray-600">Image uploaded</p>
-                        </div>
-                      ) : (
-                        <div>
-                          <Image className="mx-auto h-12 w-12 text-gray-400" />
-                          <p className="mt-2 text-sm text-gray-600">Upload a question image</p>
-                        </div>
-                      )}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          if (e.target.files[0]) {
-                            handleFileUpload(e.target.files[0], 'image')
-                          }
-                        }}
-                        className="mt-2"
-                        disabled={uploading}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Answer Options</label>
-                    <div className="space-y-2">
-                      {questionFormData.options.map((option, index) => (
-                        <div key={index} className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            name="correct"
-                            checked={questionFormData.correct === index}
-                            onChange={() => setQuestionFormData(prev => ({ ...prev, correct: index }))}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                          />
-                          <input
-                            type="text"
-                            value={option}
-                            onChange={(e) => updateQuestionOption(index, e.target.value)}
-                            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder={`Option ${index + 1}`}
-                          />
-                          {questionFormData.options.length > 2 && (
-                            <button
-                              type="button"
-                              onClick={() => removeQuestionOption(index)}
-                              className="p-2 text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={addQuestionOption}
-                        className="flex items-center text-blue-600 hover:text-blue-700 text-sm"
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add Option
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Explanation</label>
-                    <textarea
-                      value={questionFormData.explanation}
-                      onChange={(e) => setQuestionFormData(prev => ({ ...prev, explanation: e.target.value }))}
-                      rows="3"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Explain why this answer is correct..."
-                    />
-                  </div>
-                  
-                  <div className="flex justify-end space-x-3">
-                    <button
-                      type="button"
-                      onClick={resetQuestionForm}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleAddQuestion}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      Add Question
-                    </button>
-                  </div>
-                </div>
+                </form>
               </div>
             </div>
           </div>
@@ -2413,15 +2850,38 @@ const ManageLearningPaths = () => {
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-lg font-semibold text-gray-900">Module Details</h3>
-                  <button
-                    onClick={() => {
-                      setShowModuleDetails(false)
-                      setSelectedModule(null)
-                    }}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => {
+                        setEditingModule(selectedModule)
+                        setModuleFormData({
+                          title: selectedModule.title,
+                          description: selectedModule.description,
+                          estimatedTime: selectedModule.estimatedTime,
+                          difficulty: selectedModule.difficulty,
+                          lessons: selectedModule.lessons,
+                          quiz: selectedModule.quiz,
+                          images: selectedModule.images || [],
+                          videos: selectedModule.videos || []
+                        })
+                        setShowModuleDetails(false)
+                        setShowEditModuleModal(true)
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Module
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowModuleDetails(false)
+                        setSelectedModule(null)
+                      }}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-6 w-6" />
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="space-y-6">

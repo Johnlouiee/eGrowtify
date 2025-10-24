@@ -105,6 +105,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
   }
 
   const fetchPlants = async () => {
+    setLoading(true)
     try {
       const response = await axios.get('/garden')
       const apiPlants = response.data.plants || []
@@ -129,6 +130,14 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       })
       
       console.log('🌱 Filtered plants for selected garden:', gardenPlants)
+      
+      // Check if garden is empty
+      if (gardenPlants.length === 0) {
+        console.log('🌱 Garden is empty - no plants found')
+        setPlants([])
+        setLoading(false)
+        return
+      }
       
       // Get plant IDs that are already placed in the grid
       const placedPlantIds = gridSpaces
@@ -194,11 +203,21 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       }
       
       setPlants(transformedPlants)
+      setLoading(false)
     } catch (error) {
       console.error('Error fetching plants:', error)
       console.error('Error details:', error.response?.data)
-      toast.error('Failed to load your plants')
-      setPlants([])
+      
+      // Check if it's a 404 or empty garden vs actual error
+      if (error?.response?.status === 404 || error?.response?.status === 400) {
+        console.log('🌱 Garden appears to be empty or not found')
+        setPlants([])
+        // Don't show error toast for empty gardens
+      } else {
+        toast.error('Failed to load your plants')
+        setPlants([])
+      }
+      setLoading(false)
     }
   }
 
