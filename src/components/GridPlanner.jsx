@@ -80,9 +80,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       const spaces = response.data.grid_spaces || []
       
       // Calculate expected total spaces including purchased spaces
-      // Force basic plan for debugging - remove this after fixing
-      const forceBasic = true
-      const effectivePremium = forceBasic ? false : isPremium
+      const effectivePremium = isPremium
       const baseSpaces = effectivePremium ? 36 : 9
       const additionalSpaces = selectedGarden?.additional_spaces_purchased || 0
       const expectedTotalSpaces = baseSpaces + additionalSpaces
@@ -263,9 +261,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
 
   const createMockGridSpaces = () => {
     const spaces = []
-    // Force basic plan for debugging - remove this after fixing
-    const forceBasic = true
-    const effectivePremium = forceBasic ? false : isPremium
+    const effectivePremium = isPremium
     const baseGridSize = effectivePremium ? '6x6' : '3x3'
     const [baseRows, baseCols] = baseGridSize.split('x').map(Number)
     const additionalSpaces = selectedGarden?.additional_spaces_purchased || 0
@@ -824,7 +820,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       
       const { care_suggestions } = response.data
       
-      if (care_suggestions && care_suggestions.confidence > 0.5) {
+      if (care_suggestions && care_suggestions.confidence > 0.1) {
         let suggestions = []
         if (care_suggestions.needs_water) suggestions.push('💧 Water')
         if (care_suggestions.needs_fertilize) suggestions.push('☀️ Fertilize')
@@ -891,9 +887,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
   }
 
   const getGridDimensions = () => {
-    // Force basic plan for debugging - remove this after fixing
-    const forceBasic = true
-    const effectivePremium = forceBasic ? false : isPremium
+    const effectivePremium = isPremium
     
     // Determine base grid size based on premium status
     const baseGridSize = effectivePremium ? '6x6' : '3x3'
@@ -914,9 +908,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
   }
 
   const getTotalSpaces = () => {
-    // Force basic plan for debugging - remove this after fixing
-    const forceBasic = true
-    const effectivePremium = forceBasic ? false : isPremium
+    const effectivePremium = isPremium
     const baseSpaces = effectivePremium ? 36 : 9
     const additionalSpaces = selectedGarden?.additional_spaces_purchased || 0
     return baseSpaces + additionalSpaces
@@ -1095,36 +1087,48 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       <div className="p-4">
         {/* Main Grid Container */}
         <div className="flex flex-col items-center space-y-4">
-          {/* Base Grid (6x6 for premium, 3x3 for basic) */}
-          <div 
-            className="grid gap-1"
-            style={{ 
-              gridTemplateColumns: `repeat(${cols}, 1fr)`,
-              maxWidth: cols > 3 ? '600px' : '300px'
-            }}
-          >
-            {(() => {
-              console.log(`🌱 Rendering base grid: ${rows}x${cols}, ${gridSpaces.length} total spaces, isPremium: ${isPremium}`)
-              console.log(`🌱 Grid spaces:`, gridSpaces.slice(0, 10))
-              
-              // Filter spaces to only show those within the grid dimensions
-              const filteredSpaces = gridSpaces.filter(space => {
-                // Parse grid position (e.g., "1,1", "2,3", "4,1")
-                const [row, col] = space.grid_position.split(',').map(Number)
-                
-                // Only show spaces within the grid dimensions
-                const isWithinGrid = row >= 1 && row <= rows && col >= 1 && col <= cols
-                
-                // Also show additional purchased spaces (they have positions like "additional-1")
-                const isAdditionalSpace = space.grid_position.startsWith('additional-')
-                
-                return isWithinGrid || isAdditionalSpace
-              })
-              
-              console.log(`🌱 Filtered spaces: ${filteredSpaces.length} (from ${gridSpaces.length} total)`)
-              
-              let renderedCount = 0
-              return filteredSpaces.map((space) => {
+          {(() => {
+            console.log(`🌱 Rendering base grid: ${rows}x${cols}, ${gridSpaces.length} total spaces, isPremium: ${isPremium}`)
+            console.log(`🌱 Grid spaces:`, gridSpaces.slice(0, 10))
+            
+            // Show ALL spaces - both base grid and additional purchased spaces
+            const filteredSpaces = gridSpaces
+            const effectivePremium = isPremium
+            
+            console.log(`🌱 Filtered spaces: ${filteredSpaces.length} (from ${gridSpaces.length} total)`)
+            
+            // Calculate grid layout based on subscription and purchased spaces
+            let gridColumns, maxWidth
+            if (effectivePremium) {
+              // Premium users get 6x6 grid
+              gridColumns = 6
+              maxWidth = '600px'
+            } else {
+              // Basic users: 3x3 base grid, but if they have purchased spaces, use a flexible layout
+              const baseSpaces = 9
+              const purchasedSpaces = filteredSpaces.length - baseSpaces
+              if (purchasedSpaces > 0) {
+                // For basic users with purchased spaces, use a layout that accommodates all spaces
+                gridColumns = Math.min(4, Math.ceil(Math.sqrt(filteredSpaces.length)))
+                maxWidth = '500px'
+              } else {
+                // Basic users with no purchased spaces get 3x3
+                gridColumns = 3
+                maxWidth = '300px'
+              }
+            }
+            
+            return (
+              <div 
+                className="grid gap-1"
+                style={{ 
+                  gridTemplateColumns: `repeat(${gridColumns}, 1fr)`,
+                  maxWidth: maxWidth
+                }}
+              >
+                {(() => {
+                  let renderedCount = 0
+                  return filteredSpaces.map((space) => {
                 const isOccupied = space.plant_id
                 const plant = plants.find(p => p.id === space.plant_id)
                 
@@ -1147,7 +1151,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                     data-space-id={space.id}
                     className={`
                       aspect-square border-2 rounded-lg flex items-center justify-center cursor-pointer transition-all duration-200
-                      ${cols > 3 ? 'h-10 w-10' : 'h-16 w-16'}
+                      ${effectivePremium ? 'h-10 w-10' : 'h-16 w-16'}
                       ${isOccupied 
                         ? 'border-green-300 bg-green-50 hover:bg-green-100' 
                         : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
@@ -1194,11 +1198,11 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                         onTouchEnd={handleTouchEnd}
                         title={`Drag to move ${plant?.name || 'Plant'}`}
                       >
-                        <Leaf className={`${cols > 3 ? 'h-3 w-3' : 'h-6 w-6'} text-green-600 mx-auto mb-1`} />
-                        <div className={`${cols > 3 ? 'text-[8px]' : 'text-xs'} font-medium text-green-800 truncate px-1`}>
+                        <Leaf className={`${effectivePremium ? 'h-3 w-3' : 'h-6 w-6'} text-green-600 mx-auto mb-1`} />
+                        <div className={`${effectivePremium ? 'text-[8px]' : 'text-xs'} font-medium text-green-800 truncate px-1`}>
                           {plant?.name || 'Plant'}
                         </div>
-                        <div className={`${cols > 3 ? 'text-[6px]' : 'text-xs'} text-green-600`}>
+                        <div className={`${effectivePremium ? 'text-[6px]' : 'text-xs'} text-green-600`}>
                           {space.grid_position}
                         </div>
                       </div>
@@ -1206,17 +1210,17 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                       <div className="text-center text-gray-400">
                         {draggedPlant && !isOccupied ? (
                           <div className="flex flex-col items-center">
-                            <div className={`${cols > 3 ? 'h-3 w-3' : 'h-6 w-6'} border-2 border-dashed border-blue-400 rounded-full flex items-center justify-center mb-1`}>
-                              <Plus className={`${cols > 3 ? 'h-1 w-1' : 'h-2 w-2'} text-blue-400`} />
+                            <div className={`${effectivePremium ? 'h-3 w-3' : 'h-6 w-6'} border-2 border-dashed border-blue-400 rounded-full flex items-center justify-center mb-1`}>
+                              <Plus className={`${effectivePremium ? 'h-1 w-1' : 'h-2 w-2'} text-blue-400`} />
                             </div>
-                            <div className={`${cols > 3 ? 'text-[6px]' : 'text-xs'} text-blue-600 font-medium`}>
+                            <div className={`${effectivePremium ? 'text-[6px]' : 'text-xs'} text-blue-600 font-medium`}>
                               Drop Here
                             </div>
                           </div>
                         ) : (
                           <>
-                            <Plus className={`${cols > 3 ? 'h-2 w-2' : 'h-4 w-4'} mx-auto mb-1`} />
-                            <div className={`${cols > 3 ? 'text-[6px]' : 'text-xs'}`}>{space.grid_position}</div>
+                            <Plus className={`${effectivePremium ? 'h-2 w-2' : 'h-4 w-4'} mx-auto mb-1`} />
+                            <div className={`${effectivePremium ? 'text-[6px]' : 'text-xs'}`}>{space.grid_position}</div>
                           </>
                         )}
                       </div>
@@ -1224,9 +1228,10 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                   </div>
                 )
               }).filter(Boolean)
-            })()}
-          </div>
-
+                })()}
+              </div>
+            )
+          })()}
         </div>
 
         {/* Selected Plant Details */}
@@ -1515,7 +1520,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                         )}
                         
                         {/* Show message if no AI analysis available */}
-                        {(!space.care_suggestions || space.care_suggestions.confidence <= 0.5) && (
+                        {(!space.care_suggestions || space.care_suggestions.confidence <= 0.1) && (
                           <span className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded border border-gray-200">
                             <span className="mr-1">📷</span>
                             <span>Upload image for AI suggestions</span>
