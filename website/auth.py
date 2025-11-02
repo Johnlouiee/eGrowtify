@@ -463,4 +463,28 @@ def upload_profile_photo():
     except Exception as e:
         return jsonify({"success": False, "message": "Upload failed"}), 500
 
+@auth.route('/profile/delete', methods=['DELETE'])
+@login_required
+def delete_account():
+    """Delete the current user's account"""
+    try:
+        user_id = current_user.id
+        user_email = current_user.email
+        
+        # Delete the user - cascades will handle related data (gardens, subscriptions, etc.)
+        # For models with SET NULL, user_id will be set to NULL
+        db.session.delete(current_user)
+        db.session.commit()
+        
+        # Logout the user after deletion
+        logout_user()
+        
+        return jsonify({
+            "success": True,
+            "message": "Account deleted successfully. All your data has been removed."
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": "An error occurred while deleting your account."}), 500
+
 # Add more API endpoints as needed...

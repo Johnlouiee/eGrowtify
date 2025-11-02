@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { User, Mail, Phone, Eye, EyeOff, Lock, Save, Edit, Upload } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { User, Mail, Phone, Eye, EyeOff, Lock, Save, Edit, Upload, Trash2, AlertTriangle } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
 const Profile = () => {
-  const { user, updateProfile } = useAuth()
+  const { user, updateProfile, logout } = useAuth()
+  const navigate = useNavigate()
   const [profileData, setProfileData] = useState({
     full_name: '',
     email: '',
@@ -24,6 +26,8 @@ const Profile = () => {
   const [loading, setLoading] = useState(false)
   const [photoPreview, setPhotoPreview] = useState(null)
   const [photoFile, setPhotoFile] = useState(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -126,6 +130,34 @@ const Profile = () => {
       phone: user.phone || ''
     })
     setIsEditing(false)
+  }
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') {
+      toast.error('Please type "DELETE" to confirm account deletion')
+      return
+    }
+
+    if (!window.confirm('Are you absolutely sure? This will permanently delete your account and all associated data. This action cannot be undone.')) {
+      return
+    }
+
+    setLoading(true)
+    try {
+      const response = await axios.delete('/profile/delete')
+      if (response.data.success) {
+        toast.success('Your account has been deleted successfully')
+        // Clear local storage
+        localStorage.clear()
+        // Logout and redirect
+        await logout()
+        navigate('/')
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || 'Error deleting account'
+      toast.error(message)
+      setLoading(false)
+    }
   }
 
   if (!user) {
@@ -409,6 +441,90 @@ const Profile = () => {
                     </button>
                   </div>
                 </form>
+              )}
+            </div>
+
+            {/* Delete Account Section */}
+            <div className="card mt-6 border-red-200 bg-red-50">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-red-900 flex items-center space-x-2">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span>Delete Account</span>
+                  </h2>
+                  <p className="text-sm text-red-700 mt-1">
+                    Permanently delete your account and all associated data
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowDeleteConfirm(!showDeleteConfirm)}
+                  className="btn-secondary bg-red-600 hover:bg-red-700 text-white border-red-600 flex items-center space-x-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>Delete Account</span>
+                </button>
+              </div>
+
+              {showDeleteConfirm && (
+                <div className="border-t border-red-200 pt-6 space-y-4">
+                  <div className="bg-red-100 border border-red-300 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-red-900 mb-2">Warning: This action cannot be undone</h3>
+                        <p className="text-sm text-red-800 mb-2">
+                          Deleting your account will permanently remove:
+                        </p>
+                        <ul className="text-sm text-red-800 list-disc list-inside space-y-1 mb-3">
+                          <li>All your profile information</li>
+                          <li>All your gardens and plant tracking data</li>
+                          <li>Your subscription and payment history</li>
+                          <li>Your learning path progress</li>
+                          <li>All other account-related data</li>
+                        </ul>
+                        <p className="text-sm font-medium text-red-900">
+                          This action is irreversible. Please be certain before proceeding.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Type <span className="font-bold text-red-600">DELETE</span> to confirm:
+                    </label>
+                    <input
+                      type="text"
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      placeholder="Type DELETE to confirm"
+                      className="input-field w-full"
+                    />
+                  </div>
+
+                  <div className="flex space-x-4 pt-2">
+                    <button
+                      type="button"
+                      onClick={handleDeleteAccount}
+                      disabled={loading || deleteConfirmText !== 'DELETE'}
+                      className="btn-primary bg-red-600 hover:bg-red-700 text-white border-red-600 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span>{loading ? 'Deleting...' : 'Permanently Delete Account'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDeleteConfirm(false)
+                        setDeleteConfirmText('')
+                      }}
+                      disabled={loading}
+                      className="btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
