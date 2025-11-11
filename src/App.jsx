@@ -24,6 +24,7 @@ import About from './pages/About'
 import BeginnerLearningPath from './pages/BeginnerLearningPath'
 import IntermediateLearningPath from './pages/IntermediateLearningPath'
 import ExpertLearningPath from './pages/ExpertLearningPath'
+import ConceptHub from './pages/ConceptHub'
 
 // Admin Pages
 import UserManagement from './pages/admin/UserManagement'
@@ -117,6 +118,11 @@ function App() {
               <Route path="/seasonal-planning" element={
                 <UserRoute>
                   <SeasonalPlanning />
+                </UserRoute>
+              } />
+              <Route path="/community/concepts" element={
+                <UserRoute>
+                  <ConceptHub />
                 </UserRoute>
               } />
               

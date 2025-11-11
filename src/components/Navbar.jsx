@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Menu, X, User, LogOut, Calendar, Star, Info, Settings, Heart, ChevronDown, Bell, Users, BookOpen, BarChart3, MessageSquare } from 'lucide-react'
+import { Menu, X, User, LogOut, Calendar, Star, Info, Settings, Heart, ChevronDown, Bell, Users, BookOpen, BarChart3, MessageSquare, Share2 } from 'lucide-react'
 
 const Navbar = () => {
   const { user, logout } = useAuth()
@@ -153,6 +153,10 @@ const Navbar = () => {
                     </Link>
                     <Link to="/seasonal-planning" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                       Seasonal Planning
+                    </Link>
+                    <Link to="/community/concepts" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1">
+                      <Share2 className="h-4 w-4" />
+                      Community Hub
                     </Link>
                   </>
                 )}
@@ -352,6 +356,13 @@ const Navbar = () => {
                 >
                   Seasonal Planning
                 </Link>
+                  <Link
+                    to="/community/concepts"
+                    className="text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Community Hub
+                  </Link>
                 
                 {/* Mobile Menu Items */}
                 <div className="border-t pt-2 mt-2">
@@ -397,6 +408,14 @@ const Navbar = () => {
                   >
                     <Heart className="h-4 w-4" />
                     <span>Feedback</span>
+                  </Link>
+                  <Link
+                    to="/community/concepts"
+                    className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Share2 className="h-4 w-4" />
+                    <span>Community Hub</span>
                   </Link>
                   <button
                     onClick={() => {

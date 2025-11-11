@@ -317,3 +317,70 @@ class ActivityLog(db.Model):
     
     def __repr__(self):
         return f'<ActivityLog {self.id}: User {self.user_id} - {self.action} on {self.action_date}>'
+
+class UserPlantUpdateUsage(db.Model):
+    """Track how many plant updates a user has consumed or purchased."""
+    __tablename__ = 'user_plant_update_usage'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
+    free_updates_used = db.Column(db.Integer, default=0)
+    purchased_credits = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    user = db.relationship('User', backref=db.backref('plant_update_usage', uselist=False, cascade='all, delete-orphan'))
+    
+    def total_remaining(self, free_allocation=3):
+        free_remaining = max(0, free_allocation - (self.free_updates_used or 0))
+        credits = self.purchased_credits or 0
+        return free_remaining + credits
+    
+    def __repr__(self):
+        return f'<UserPlantUpdateUsage user={self.user_id} free_used={self.free_updates_used} purchased={self.purchased_credits}>'
+
+class UserSharedConcept(db.Model):
+    """User contributed concepts, techniques, and ideas that can be shared across the community."""
+    __tablename__ = 'user_shared_concepts'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    title = db.Column(db.String(150), nullable=False)
+    summary = db.Column(db.String(255), nullable=True)
+    technique_steps = db.Column(db.Text, nullable=True)
+    tips = db.Column(db.Text, nullable=True)
+    tags = db.Column(db.String(200), nullable=True)  # comma separated
+    is_public = db.Column(db.Boolean, default=True)
+    source = db.Column(db.String(50), default='manual')  # manual, import
+    imported_from = db.Column(db.String(150), nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    user = db.relationship('User', backref=db.backref('shared_concepts', lazy='dynamic', cascade='all, delete'))
+    
+    def to_dict(self, include_owner=False):
+        data = {
+            'id': self.id,
+            'user_id': self.user_id,
+            'title': self.title,
+            'summary': self.summary,
+            'technique_steps': self.technique_steps,
+            'tips': self.tips,
+            'tags': [tag.strip() for tag in (self.tags or '').split(',') if tag.strip()],
+            'is_public': self.is_public,
+            'source': self.source,
+            'imported_from': self.imported_from,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+        if include_owner and self.user:
+            data['owner'] = {
+                'id': self.user.id,
+                'name': self.user.full_name if hasattr(self.user, 'full_name') else self.user.email
+            }
+        return data
+    
+    def __repr__(self):
+        return f'<UserSharedConcept {self.id}: {self.title}>'

@@ -1,7 +1,20 @@
-from flask import Blueprint, jsonify, request, flash, redirect, url_for, send_from_directory
+from flask import Blueprint, jsonify, request, flash, redirect, url_for, send_from_directory, Response
 from flask_login import login_required, current_user
 from . import mysql
-from .models import db, User, Admin, Garden, Plant, PlantTracking, GridSpace, Feedback, LearningPathContent, ActivityLog
+from .models import (
+    db,
+    User,
+    Admin,
+    Garden,
+    Plant,
+    PlantTracking,
+    GridSpace,
+    Feedback,
+    LearningPathContent,
+    ActivityLog,
+    UserPlantUpdateUsage,
+    UserSharedConcept
+)
 from datetime import datetime, timedelta, timezone
 import os
 import base64
@@ -25,6 +38,27 @@ _WEATHER_CACHE_TTL_SECONDS = 10 * 60  # 10 minutes
 _ACTIVITY_LOGS = []
 _SUBSCRIPTION_LOGS = []
 _HISTORY_LOGS = []
+
+
+def _normalize_tags(raw_tags):
+    """Convert incoming tags (list or comma-separated string) into a standardized comma string."""
+    if isinstance(raw_tags, list):
+        tags_list = [str(tag).strip() for tag in raw_tags if str(tag).strip()]
+    elif isinstance(raw_tags, str):
+        tags_list = [tag.strip() for tag in raw_tags.split(',') if tag.strip()]
+    else:
+        tags_list = []
+    return ','.join(tags_list)
+
+def _get_or_create_update_usage(user_id):
+    """Ensure a UserPlantUpdateUsage record exists for the given user."""
+    usage = UserPlantUpdateUsage.query.filter_by(user_id=user_id).first()
+    if not usage:
+        usage = UserPlantUpdateUsage(user_id=user_id)
+        db.session.add(usage)
+        # Flush so the object has an ID but defer commit to caller
+        db.session.flush()
+    return usage
 
 def log_activity(user_id, user_name, action, description, ip_address=None, user_agent=None, status='success'):
     """Log user activity"""
@@ -2490,29 +2524,70 @@ def edit_plant(tracking_id):
     if garden.user_id != current_user.id:
         return jsonify({"error": "Unauthorized."}), 403
     
-    data = request.get_json()
+    data = request.get_json() or {}
     plant = Plant.query.get(tracking.plant_id)
+    
+    # Enforce update limit: 3 free total; can purchase additional credits
+    usage = _get_or_create_update_usage(current_user.id)
+    free_used = int(usage.free_updates_used or 0)
+    paid_credits = int(usage.purchased_credits or 0)
+    free_remaining = max(0, 3 - free_used)
+    total_remaining = free_remaining + paid_credits
+    
+    if total_remaining <= 0:
+        return jsonify({
+            "error": "Update limit reached. Purchase more updates to continue.",
+            "purchase_required": True,
+            "price_per_update": 20
+        }), 402
+    
+    # Track if any changes are actually being made
+    any_changes = False
     if 'name' in data and data.get('name'):
         plant.name = data.get('name')
+        any_changes = True
     if 'type' in data and data.get('type'):
         plant.type = data.get('type')
+        any_changes = True
     if 'environment' in data and data.get('environment'):
         plant.environment = data.get('environment')
+        any_changes = True
     if 'care_guide' in data and data.get('care_guide'):
         plant.care_guide = data.get('care_guide')
+        any_changes = True
     if 'ideal_soil_type' in data:
         plant.ideal_soil_type = data.get('ideal_soil_type')
+        any_changes = True
     if 'watering_frequency' in data:
         plant.watering_frequency = data.get('watering_frequency')
+        any_changes = True
     if 'fertilizing_frequency' in data:
         plant.fertilizing_frequency = data.get('fertilizing_frequency')
+        any_changes = True
     if 'pruning_frequency' in data:
         plant.pruning_frequency = data.get('pruning_frequency')
+        any_changes = True
     if 'planting_date' in data and data.get('planting_date'):
         tracking.planting_date = data.get('planting_date')
+        any_changes = True
+    
+    if not any_changes:
+        return jsonify({"message": "No changes detected. Nothing to update."})
+    
+    # Deduct from free quota first, then from paid credits
+    if free_remaining > 0:
+        usage.free_updates_used = free_used + 1
+    else:
+        usage.purchased_credits = max(0, paid_credits - 1)
+    
     db.session.commit()
     
-    return jsonify({"message": "Plant updated successfully!"})
+    remaining_after = usage.total_remaining()
+    return jsonify({
+        "message": "Plant updated successfully!",
+        "remaining_updates": remaining_after,
+        "price_per_update": 20
+    })
 
 @views.route('/plant/delete/<int:tracking_id>', methods=['POST'])
 @login_required
@@ -2591,6 +2666,50 @@ def get_grid_spaces(garden_id):
         return jsonify({"grid_spaces": spaces_data})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@views.route('/plant/purchase-updates', methods=['POST'])
+@login_required
+def purchase_plant_updates():
+    """Simulate purchase of additional plant update credits at ₱20 per update."""
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        amount = data.get('amount')  # total amount in PHP
+        quantity = data.get('quantity')  # number of update credits to purchase
+        transaction_id = data.get('transaction_id')
+        
+        # Determine quantity: prefer explicit quantity; else derive from amount
+        if quantity is None:
+            try:
+                quantity = int(float(amount) / 20) if amount is not None else 0
+            except Exception:
+                quantity = 0
+        try:
+            quantity = int(quantity)
+        except Exception:
+            quantity = 0
+        
+        if quantity <= 0:
+            return jsonify({"success": False, "error": "Invalid purchase quantity"}), 400
+        
+        # Simulate successful payment
+        print(f"💰 Plant update credits purchase by User {current_user.id}: {quantity} credits (Txn: {transaction_id})")
+        
+        usage = _get_or_create_update_usage(current_user.id)
+        usage.purchased_credits = int(usage.purchased_credits or 0) + quantity
+        db.session.commit()
+        
+        total_remaining = usage.total_remaining()
+        
+        return jsonify({
+            "success": True,
+            "message": f"Purchased {quantity} update credit(s) successfully.",
+            "credits_added": quantity,
+            "remaining_updates": total_remaining,
+            "price_per_update": 20
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": f"Purchase failed: {str(e)}"}), 500
 
 @views.route('/garden/verify-payment', methods=['POST'])
 @login_required
@@ -4185,6 +4304,187 @@ def user_feedbacks():
         return jsonify({"feedbacks": feedback_list})
     except Exception as e:
         return jsonify({"error": "Failed to fetch feedback. Please try again."}), 500
+
+
+@views.route('/concepts', methods=['GET'])
+@login_required
+def get_concepts():
+    """Fetch community-shared concepts and the current user's own submissions."""
+    try:
+        community_query = UserSharedConcept.query.filter(
+            (UserSharedConcept.is_public.is_(True)) | (UserSharedConcept.user_id == current_user.id)
+        ).order_by(UserSharedConcept.created_at.desc())
+        my_query = UserSharedConcept.query.filter_by(user_id=current_user.id).order_by(UserSharedConcept.created_at.desc())
+        
+        community = [concept.to_dict(include_owner=True) for concept in community_query]
+        mine = [concept.to_dict(include_owner=True) for concept in my_query]
+        
+        return jsonify({
+            "concepts": {
+                "community": community,
+                "mine": mine
+            }
+        })
+    except Exception as e:
+        return jsonify({"error": f"Failed to load concepts: {str(e)}"}), 500
+
+
+@views.route('/concepts', methods=['POST'])
+@login_required
+def create_concept():
+    """Create a new concept/technique shared by the user."""
+    data = request.get_json() or {}
+    title = (data.get('title') or '').strip()
+    if not title:
+        return jsonify({"error": "Title is required."}), 400
+    
+    summary = (data.get('summary') or '').strip() or None
+    technique_steps = data.get('technique_steps')
+    tips = data.get('tips')
+    tags = _normalize_tags(data.get('tags'))
+    is_public = bool(data.get('is_public', True))
+    
+    try:
+        concept = UserSharedConcept(
+            user_id=current_user.id,
+            title=title,
+            summary=summary,
+            technique_steps=technique_steps,
+            tips=tips,
+            tags=tags,
+            is_public=is_public,
+            source='manual'
+        )
+        db.session.add(concept)
+        db.session.commit()
+        
+        return jsonify({"success": True, "concept": concept.to_dict(include_owner=True)})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to save concept: {str(e)}"}), 500
+
+
+@views.route('/concepts/<int:concept_id>', methods=['PUT'])
+@login_required
+def update_concept(concept_id):
+    """Update an existing concept owned by the user."""
+    concept = UserSharedConcept.query.get_or_404(concept_id)
+    if concept.user_id != current_user.id:
+        return jsonify({"error": "Unauthorized to update this concept."}), 403
+    
+    data = request.get_json() or {}
+    title = data.get('title')
+    if title is not None:
+        title = title.strip()
+        if not title:
+            return jsonify({"error": "Title cannot be empty."}), 400
+        concept.title = title
+    
+    if 'summary' in data:
+        concept.summary = (data.get('summary') or '').strip() or None
+    if 'technique_steps' in data:
+        concept.technique_steps = data.get('technique_steps')
+    if 'tips' in data:
+        concept.tips = data.get('tips')
+    if 'tags' in data:
+        concept.tags = _normalize_tags(data.get('tags'))
+    if 'is_public' in data:
+        concept.is_public = bool(data.get('is_public'))
+    
+    try:
+        db.session.commit()
+        return jsonify({"success": True, "concept": concept.to_dict(include_owner=True)})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to update concept: {str(e)}"}), 500
+
+
+@views.route('/concepts/<int:concept_id>', methods=['DELETE'])
+@login_required
+def delete_concept(concept_id):
+    """Delete a concept owned by the user."""
+    concept = UserSharedConcept.query.get_or_404(concept_id)
+    if concept.user_id != current_user.id:
+        return jsonify({"error": "Unauthorized to delete this concept."}), 403
+    
+    try:
+        db.session.delete(concept)
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to delete concept: {str(e)}"}), 500
+
+
+@views.route('/concepts/<int:concept_id>/export', methods=['GET'])
+@login_required
+def export_concept(concept_id):
+    """Export a concept as a downloadable JSON payload."""
+    concept = UserSharedConcept.query.get_or_404(concept_id)
+    if not concept.is_public and concept.user_id != current_user.id and not current_user.is_admin():
+        return jsonify({"error": "Unauthorized to export this concept."}), 403
+    
+    concept_data = concept.to_dict(include_owner=True)
+    payload = json.dumps({"concept": concept_data}, indent=2)
+    filename = f"egrowtify_concept_{concept_id}.json"
+    
+    return Response(
+        payload,
+        mimetype='application/json',
+        headers={
+            'Content-Disposition': f'attachment; filename={filename}'
+        }
+    )
+
+
+@views.route('/concepts/import', methods=['POST'])
+@login_required
+def import_concept():
+    """Import a concept from uploaded JSON or direct payload."""
+    concept_data = None
+    source_name = 'import'
+    
+    if 'file' in request.files:
+        file = request.files['file']
+        if not file:
+            return jsonify({"error": "No file provided."}), 400
+        try:
+            payload = json.load(file)
+            concept_data = payload.get('concept', payload)
+            source_name = file.filename or 'imported_file'
+        except Exception as e:
+            return jsonify({"error": f"Invalid file format: {str(e)}"}), 400
+    else:
+        payload = request.get_json(force=True, silent=True) or {}
+        concept_data = payload.get('concept', payload)
+        source_name = payload.get('imported_from', 'import')
+    
+    if not concept_data:
+        return jsonify({"error": "No concept data provided."}), 400
+    
+    title = (concept_data.get('title') or '').strip()
+    if not title:
+        return jsonify({"error": "Concept title is required."}), 400
+    
+    try:
+        concept = UserSharedConcept(
+            user_id=current_user.id,
+            title=title,
+            summary=(concept_data.get('summary') or '').strip() or None,
+            technique_steps=concept_data.get('technique_steps'),
+            tips=concept_data.get('tips'),
+            tags=_normalize_tags(concept_data.get('tags')),
+            is_public=bool(concept_data.get('is_public', True)),
+            source='import',
+            imported_from=source_name
+        )
+        db.session.add(concept)
+        db.session.commit()
+        
+        return jsonify({"success": True, "concept": concept.to_dict(include_owner=True)})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to import concept: {str(e)}"}), 500
 
 @views.route('/api/weather')
 @login_required
