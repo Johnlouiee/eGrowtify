@@ -11,6 +11,8 @@ const SmartAlerts = () => {
   const [showProgressReports, setShowProgressReports] = useState(false)
   const [progressReports, setProgressReports] = useState([])
   const [reportsLoading, setReportsLoading] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(5) // Default to 5
   const [notificationSettings, setNotificationSettings] = useState({
     email: true,
     push: true,
@@ -490,6 +492,29 @@ ${report.recommendations.map(rec => `• ${rec}`).join('\n')}
     }
   }
 
+  // Pagination logic
+  const filteredAlerts = getFilteredAlerts()
+  const totalItems = filteredAlerts.length
+  const totalPages = itemsPerPage === 'all' ? 1 : Math.ceil(totalItems / itemsPerPage)
+  const startIndex = itemsPerPage === 'all' ? 0 : (currentPage - 1) * itemsPerPage
+  const endIndex = itemsPerPage === 'all' ? totalItems : startIndex + itemsPerPage
+  const paginatedAlerts = itemsPerPage === 'all' ? filteredAlerts : filteredAlerts.slice(startIndex, endIndex)
+
+  // Reset to page 1 when filter or itemsPerPage changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filter, itemsPerPage])
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleItemsPerPageChange = (value) => {
+    setItemsPerPage(value)
+    setCurrentPage(1)
+  }
+
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'high': return 'text-red-600 bg-red-50'
@@ -658,9 +683,31 @@ ${report.recommendations.map(rec => `• ${rec}`).join('\n')}
           ))}
         </div>
 
+        {/* Pagination Controls - Top */}
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">Show:</span>
+            <select
+              value={itemsPerPage === 'all' ? 'all' : itemsPerPage.toString()}
+              onChange={(e) => handleItemsPerPageChange(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+              className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="all">All</option>
+            </select>
+          </div>
+          {totalPages > 1 && (
+            <div className="text-sm text-gray-600">
+              Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} alerts
+            </div>
+          )}
+        </div>
+
         {/* Alerts List */}
         <div className="space-y-4">
-          {getFilteredAlerts().map((alert) => {
+          {paginatedAlerts.map((alert) => {
             const IconComponent = alert.icon
             return (
               <div key={alert.id} className="card">
@@ -725,7 +772,7 @@ ${report.recommendations.map(rec => `• ${rec}`).join('\n')}
             )
           })}
           
-          {getFilteredAlerts().length === 0 && (
+          {paginatedAlerts.length === 0 && (
             <div className="card text-center py-12">
               <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600">
@@ -737,6 +784,56 @@ ${report.recommendations.map(rec => `• ${rec}`).join('\n')}
             </div>
           )}
         </div>
+
+        {/* Pagination Controls - Bottom */}
+        {totalPages > 1 && (
+          <div className="mt-6 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  currentPage === 1
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                }`}
+              >
+                Previous
+              </button>
+              
+              <span className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </span>
+              
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  currentPage === totalPages
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                }`}
+              >
+                Next
+              </button>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">Go to page:</span>
+              <select
+                value={currentPage}
+                onChange={(e) => handlePageChange(parseInt(e.target.value))}
+                className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <option key={page} value={page}>
+                    {page}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
 
         {/* Progress Reports Modal */}
         {showProgressReports && (

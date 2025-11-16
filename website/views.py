@@ -3424,306 +3424,403 @@ def smart_alerts():
                     else:
                         print(f"ℹ️ No AI analysis found for {plant.name}")
                     
-                    # Check if AI analysis indicates plant is healthy (no care needed)
-                    is_healthy = False
-                    if ai_analysis:
-                        reasoning = ai_analysis.get('reasoning', '').lower()
-                        # Check for healthy indicators in AI reasoning
-                        healthy_indicators = [
-                            'healthy', 'no care needed', 'no issues', 'looks good', 
-                            'appears healthy', 'no problems', 'no signs of', 'no visible',
-                            'plant looks healthy', 'no care required', 'in good condition'
-                        ]
-                        is_healthy = any(indicator in reasoning for indicator in healthy_indicators)
-                        
-                        # Also check if all care needs are False
-                        if not is_healthy:
-                            needs_water = ai_analysis.get('needs_water', False)
-                            needs_fertilize = ai_analysis.get('needs_fertilize', False)
-                            needs_prune = ai_analysis.get('needs_prune', False)
-                            is_healthy = not (needs_water or needs_fertilize or needs_prune)
-                    
                     # Generate alerts based on AI analysis - check each care type separately
+                    # Only process if AI analysis exists and indicates care needs
                     if ai_analysis:
-                        confidence = ai_analysis.get('confidence', 0.5)
-                        reasoning = ai_analysis.get('reasoning', 'AI analysis suggests care needed')
+                        # Check if plant actually needs care
+                        needs_water = ai_analysis.get('needs_water', False)
+                        needs_fertilize = ai_analysis.get('needs_fertilize', False)
+                        needs_prune = ai_analysis.get('needs_prune', False)
+                        has_care_needs = needs_water or needs_fertilize or needs_prune
                         
-                        print(f"🔍 AI Analysis for {plant.name}: {ai_analysis}")
-                        print(f"🔍 Needs water: {ai_analysis.get('needs_water', False)}")
-                        print(f"🔍 Needs fertilize: {ai_analysis.get('needs_fertilize', False)}")
-                        print(f"🔍 Needs prune: {ai_analysis.get('needs_prune', False)}")
-                        
-                        # Check for watering needs
-                        if ai_analysis.get('needs_water', False):
-                            print(f"💧 AI detected watering need for {plant.name}")
+                        # Only proceed if plant needs care
+                        if has_care_needs:
+                            # Check if this is a newly added plant (to skip initial alerts)
+                            # Only skip if: planted today AND no care history AND analyzed within last 10 seconds
+                            is_newly_added = False
+                            has_care_history = space.last_watered or space.last_fertilized or space.last_pruned
                             
-                            # For AI-based alerts, always generate them regardless of recent watering
-                            # because AI can detect if watering was insufficient or if there's a more serious issue
-                            print(f"🚨 GENERATING AI WATERING ALERT for {plant.name}: {reasoning}")
+                            # If plant has care history, it's definitely an existing plant
+                            if has_care_history:
+                                print(f"✅ Showing alerts for existing plant {plant.name} (has care history)")
+                                is_newly_added = False
+                            # Check if plant was placed today and might be newly added
+                            elif space.planting_date:
+                                planting_date = space.planting_date
+                                if hasattr(planting_date, 'date'):
+                                    planting_date = planting_date.date()
+                                
+                                # Only check if planted today
+                                if isinstance(planting_date, type(today)) and (today - planting_date).days == 0:
+                                    # For plants placed today, only skip if analyzed within last 10 seconds
+                                    if space.last_updated:
+                                        try:
+                                            last_updated = space.last_updated
+                                            now = datetime.now(timezone.utc)
+                                            
+                                            # Handle timezone-aware and naive datetimes
+                                            if isinstance(last_updated, datetime):
+                                                if last_updated.tzinfo is None:
+                                                    last_updated_dt = last_updated.replace(tzinfo=timezone.utc)
+                                                else:
+                                                    last_updated_dt = last_updated
+                                            else:
+                                                # If it's a date, convert to datetime
+                                                last_updated_dt = datetime.combine(last_updated, datetime.min.time()).replace(tzinfo=timezone.utc)
+                                            
+                                            seconds_since_update = (now - last_updated_dt).total_seconds()
+                                            
+                                            # Only skip if analyzed within last 10 seconds (very strict - immediate first-time only)
+                                            if seconds_since_update <= 10:
+                                                is_newly_added = True
+                                                print(f"⏭️ Skipping alerts for newly added plant {plant.name} (planted today, analyzed {seconds_since_update:.0f} seconds ago)")
+                                            else:
+                                                # Analyzed more than 10 seconds ago - treat as existing (being updated)
+                                                print(f"✅ Showing alerts for existing plant {plant.name} (planted today, analyzed {seconds_since_update:.0f} seconds ago - being updated)")
+                                                is_newly_added = False
+                                        except Exception as e:
+                                            print(f"⚠️ Error checking last_updated for {plant.name}: {e}")
+                                            # On error, show alerts to be safe
+                                            is_newly_added = False
+                                    else:
+                                        # No last_updated - show alerts
+                                        print(f"✅ Showing alerts for plant {plant.name} (planted today, no last_updated)")
+                                        is_newly_added = False
+                                else:
+                                    # Planted before today - definitely existing
+                                    print(f"✅ Showing alerts for existing plant {plant.name} (planted before today)")
+                                    is_newly_added = False
+                            else:
+                                # No planting_date - show alerts to be safe
+                                print(f"✅ Showing alerts for plant {plant.name} (no planting_date, treating as existing)")
+                                is_newly_added = False
                             
-                            # Generate AI suggested actions tags
-                            suggested_actions = []
-                            if ai_analysis.get('needs_water', False):
-                                suggested_actions.append({'type': 'water', 'label': 'Needs Water', 'icon': '💧'})
-                            if ai_analysis.get('needs_fertilize', False):
-                                suggested_actions.append({'type': 'fertilize', 'label': 'Needs Fertilizer', 'icon': '🌱'})
-                            if ai_analysis.get('needs_prune', False):
-                                suggested_actions.append({'type': 'prune', 'label': 'Needs Pruning', 'icon': '✂️'})
+                            # Only create alerts if this is not a newly added plant
+                            if not is_newly_added:
+                                confidence = ai_analysis.get('confidence', 0.5)
+                                reasoning = ai_analysis.get('reasoning', 'AI analysis suggests care needed')
+                                
+                                print(f"🔍 AI Analysis for {plant.name}: {ai_analysis}")
+                                print(f"🔍 Needs water: {needs_water}")
+                                print(f"🔍 Needs fertilize: {needs_fertilize}")
+                                print(f"🔍 Needs prune: {needs_prune}")
+                                
+                                # Generate AI suggested actions tags
+                                suggested_actions = []
+                                if needs_water:
+                                    suggested_actions.append({'type': 'water', 'label': 'Needs Water', 'icon': '💧'})
+                                if needs_fertilize:
+                                    suggested_actions.append({'type': 'fertilize', 'label': 'Needs Fertilizer', 'icon': '🌱'})
+                                if needs_prune:
+                                    suggested_actions.append({'type': 'prune', 'label': 'Needs Pruning', 'icon': '✂️'})
+                                
+                                # Check for watering needs
+                                if needs_water:
+                                    # Skip if plant was watered today (already completed)
+                                    was_watered_today = False
+                                    if space.last_watered:
+                                        last_watered_date = space.last_watered
+                                        if hasattr(last_watered_date, 'date'):
+                                            last_watered_date = last_watered_date.date()
+                                        if isinstance(last_watered_date, type(today)) and (today - last_watered_date).days == 0:
+                                            was_watered_today = True
+                                            print(f"⏭️ Skipping watering alert for {plant.name} - already watered today")
+                                    
+                                    if not was_watered_today:
+                                        print(f"💧 AI detected watering need for {plant.name}")
+                                        print(f"🚨 GENERATING AI WATERING ALERT for {plant.name}: {reasoning}")
+                                        
+                                        alerts.append({
+                                            'id': f"ai_water_{space.id}",
+                                            'type': 'watering',
+                                            'plant_name': plant.name,
+                                            'garden_name': garden.name,
+                                            'message': f'Your {plant.name} needs watering based on AI analysis',
+                                            'due_date': today.isoformat(),
+                                            'priority': 'high' if confidence > 0.7 else 'medium',
+                                            'status': 'pending',
+                                            'space_id': space.id,
+                                            'garden_id': garden.id,
+                                            'recommendation': f"AI Analysis: {reasoning}",
+                                            'grid_position': space.grid_position,
+                                            'ai_confidence': confidence,
+                                            'ai_suggested_actions': suggested_actions
+                                        })
+                                        print(f"✅ WATERING ALERT ADDED: {plant.name} - Total alerts now: {len(alerts)}")
+                                
+                                # Check for fertilizing needs
+                                if needs_fertilize:
+                                    # Skip if plant was fertilized today (already completed)
+                                    was_fertilized_today = False
+                                    if space.last_fertilized:
+                                        last_fertilized_date = space.last_fertilized
+                                        if hasattr(last_fertilized_date, 'date'):
+                                            last_fertilized_date = last_fertilized_date.date()
+                                        if isinstance(last_fertilized_date, type(today)) and (today - last_fertilized_date).days == 0:
+                                            was_fertilized_today = True
+                                            print(f"⏭️ Skipping fertilizing alert for {plant.name} - already fertilized today")
+                                    
+                                    if not was_fertilized_today:
+                                        print(f"🌱 AI detected fertilizing need for {plant.name}")
+                                        print(f"🚨 GENERATING FERTILIZING ALERT for {plant.name}: {reasoning}")
+                                        
+                                        alerts.append({
+                                            'id': f"ai_fertilize_{space.id}",
+                                            'type': 'fertilizing',
+                                            'plant_name': plant.name,
+                                            'garden_name': garden.name,
+                                            'message': f'Your {plant.name} needs fertilizer based on AI analysis',
+                                            'due_date': today.isoformat(),
+                                            'priority': 'high' if confidence > 0.7 else 'medium',
+                                            'status': 'pending',
+                                            'space_id': space.id,
+                                            'garden_id': garden.id,
+                                            'recommendation': f"AI Analysis: {reasoning}",
+                                            'grid_position': space.grid_position,
+                                            'ai_confidence': confidence,
+                                            'ai_suggested_actions': suggested_actions
+                                        })
+                                        print(f"✅ FERTILIZING ALERT ADDED: {plant.name} - Total alerts now: {len(alerts)}")
+                                
+                                # Check for pruning needs
+                                if needs_prune:
+                                    # Skip if plant was pruned today (already completed)
+                                    was_pruned_today = False
+                                    if space.last_pruned:
+                                        last_pruned_date = space.last_pruned
+                                        if hasattr(last_pruned_date, 'date'):
+                                            last_pruned_date = last_pruned_date.date()
+                                        if isinstance(last_pruned_date, type(today)) and (today - last_pruned_date).days == 0:
+                                            was_pruned_today = True
+                                            print(f"⏭️ Skipping pruning alert for {plant.name} - already pruned today")
+                                    
+                                    if not was_pruned_today:
+                                        print(f"✂️ AI detected pruning need for {plant.name}")
+                                        print(f"🚨 GENERATING PRUNING ALERT for {plant.name}: {reasoning}")
+                                        
+                                        alerts.append({
+                                            'id': f"ai_prune_{space.id}",
+                                            'type': 'pruning',
+                                            'plant_name': plant.name,
+                                            'garden_name': garden.name,
+                                            'message': f'Your {plant.name} needs pruning based on AI analysis',
+                                            'due_date': today.isoformat(),
+                                            'priority': 'high' if confidence > 0.7 else 'medium',
+                                            'status': 'pending',
+                                            'space_id': space.id,
+                                            'garden_id': garden.id,
+                                            'recommendation': f"AI Analysis: {reasoning}",
+                                            'grid_position': space.grid_position,
+                                            'ai_confidence': confidence,
+                                            'ai_suggested_actions': suggested_actions
+                                        })
+                                        print(f"✅ PRUNING ALERT ADDED: {plant.name} - Total alerts now: {len(alerts)}")
+                            else:
+                                print(f"⏭️ Skipping alerts for {plant.name} - plant was just added via AI recognition")
+                    
+                    # Only check traditional schedule if AI analysis doesn't exist
+                    # If AI analysis exists, we rely on it exclusively to avoid duplicates
+                    if not ai_analysis:
+                        if space.last_watered:
+                            # Ensure last_watered is datetime.date for proper subtraction
+                            last_watered_date = space.last_watered
+                            if hasattr(last_watered_date, 'date'):
+                                last_watered_date = last_watered_date.date()
+                            days_since_watered = (today - last_watered_date).days
+                            # Default watering frequency if not set in plant
+                            watering_freq = getattr(plant, 'watering_frequency', 3) or 3
+                            
+                            if days_since_watered >= watering_freq:
+                                # Generate plant-specific watering recommendations
+                                watering_recommendation = get_watering_recommendation(plant, days_since_watered)
+                                
+                                alerts.append({
+                                    'id': f"grid_water_{space.id}",
+                                    'type': 'watering',
+                                    'plant_name': plant.name,
+                                    'garden_name': garden.name,
+                                    'message': f'Time to water your {plant.name} in {garden.name}',
+                                    'due_date': (space.last_watered + timedelta(days=watering_freq)).isoformat(),
+                                    'priority': 'high' if days_since_watered > watering_freq + 2 else 'medium',
+                                    'status': 'overdue' if days_since_watered > watering_freq else 'pending',
+                                    'space_id': space.id,
+                                    'garden_id': garden.id,
+                                    'recommendation': watering_recommendation,
+                                    'grid_position': space.grid_position
+                                })
+                        else:
+                            # New plant that hasn't been watered yet
+                            new_plant_recommendation = get_new_plant_recommendation(plant)
                             
                             alerts.append({
-                                'id': f"ai_water_{space.id}",
+                                'id': f"grid_water_new_{space.id}",
                                 'type': 'watering',
                                 'plant_name': plant.name,
                                 'garden_name': garden.name,
-                                'message': f'Your {plant.name} needs watering based on AI analysis',
+                                'message': f'Your newly planted {plant.name} needs its first watering',
                                 'due_date': today.isoformat(),
-                                'priority': 'high' if confidence > 0.7 else 'medium',
+                                'priority': 'high',
                                 'status': 'pending',
                                 'space_id': space.id,
                                 'garden_id': garden.id,
-                                'recommendation': f"AI Analysis: {reasoning}",
-                                'grid_position': space.grid_position,
-                                'ai_confidence': confidence,
-                                'ai_suggested_actions': suggested_actions
+                                'recommendation': new_plant_recommendation,
+                                'grid_position': f"Row {space.row}, Col {space.column}" if hasattr(space, 'row') and hasattr(space, 'column') else None
                             })
-                            print(f"✅ WATERING ALERT ADDED: {plant.name} - Total alerts now: {len(alerts)}")
+                
+                # Only check traditional schedule if AI analysis doesn't exist
+                # If AI analysis exists, we rely on it exclusively to avoid duplicates
+                if not ai_analysis:
+                    if space.last_fertilized:
+                        # Ensure last_fertilized is datetime.date for proper subtraction
+                        last_fertilized_date = space.last_fertilized
+                        if hasattr(last_fertilized_date, 'date'):
+                            last_fertilized_date = last_fertilized_date.date()
+                        days_since_fertilized = (today - last_fertilized_date).days
+                        fertilizing_freq = getattr(plant, 'fertilizing_frequency', 14) or 14
                         
-                        # Check for fertilizing needs
-                        if ai_analysis.get('needs_fertilize', False):
-                            print(f"🌱 AI detected fertilizing need for {plant.name}")
-                            print(f"🚨 GENERATING FERTILIZING ALERT for {plant.name}: {reasoning}")
-                            # Generate AI suggested actions tags
-                            suggested_actions = []
-                            if ai_analysis.get('needs_water', False):
-                                suggested_actions.append({'type': 'water', 'label': 'Needs Water', 'icon': '💧'})
-                            if ai_analysis.get('needs_fertilize', False):
-                                suggested_actions.append({'type': 'fertilize', 'label': 'Needs Fertilizer', 'icon': '🌱'})
-                            if ai_analysis.get('needs_prune', False):
-                                suggested_actions.append({'type': 'prune', 'label': 'Needs Pruning', 'icon': '✂️'})
+                        if days_since_fertilized >= fertilizing_freq:
+                            fertilizing_recommendation = get_fertilizing_recommendation(plant, days_since_fertilized)
                             
                             alerts.append({
-                                'id': f"ai_fertilize_{space.id}",
+                                'id': f"grid_fertilize_{space.id}",
                                 'type': 'fertilizing',
                                 'plant_name': plant.name,
                                 'garden_name': garden.name,
-                                'message': f'Your {plant.name} needs fertilizer based on AI analysis',
-                                'due_date': today.isoformat(),
-                                'priority': 'high' if confidence > 0.7 else 'medium',
-                                'status': 'pending',
+                                'message': f'Your {plant.name} needs fertilizer',
+                                'due_date': (space.last_fertilized + timedelta(days=fertilizing_freq)).isoformat(),
+                                'priority': 'medium',
+                                'status': 'overdue' if days_since_fertilized > fertilizing_freq else 'pending',
                                 'space_id': space.id,
                                 'garden_id': garden.id,
-                                'recommendation': f"AI Analysis: {reasoning}",
-                                'grid_position': space.grid_position,
-                                'ai_confidence': confidence,
-                                'ai_suggested_actions': suggested_actions
+                                'recommendation': fertilizing_recommendation,
+                                'grid_position': space.grid_position
                             })
-                            print(f"✅ FERTILIZING ALERT ADDED: {plant.name} - Total alerts now: {len(alerts)}")
+                
+                # Only check traditional schedule if AI analysis doesn't exist
+                # If AI analysis exists, we rely on it exclusively to avoid duplicates
+                if not ai_analysis:
+                    if space.last_pruned:
+                        # Ensure last_pruned is datetime.date for proper subtraction
+                        last_pruned_date = space.last_pruned
+                        if hasattr(last_pruned_date, 'date'):
+                            last_pruned_date = last_pruned_date.date()
+                        days_since_pruned = (today - last_pruned_date).days
+                        pruning_freq = getattr(plant, 'pruning_frequency', 30) or 30
                         
-                        # Check for pruning needs
-                        if ai_analysis.get('needs_prune', False):
-                            print(f"✂️ AI detected pruning need for {plant.name}")
-                            print(f"🚨 GENERATING PRUNING ALERT for {plant.name}: {reasoning}")
-                            # Generate AI suggested actions tags
-                            suggested_actions = []
-                            if ai_analysis.get('needs_water', False):
-                                suggested_actions.append({'type': 'water', 'label': 'Needs Water', 'icon': '💧'})
-                            if ai_analysis.get('needs_fertilize', False):
-                                suggested_actions.append({'type': 'fertilize', 'label': 'Needs Fertilizer', 'icon': '🌱'})
-                            if ai_analysis.get('needs_prune', False):
-                                suggested_actions.append({'type': 'prune', 'label': 'Needs Pruning', 'icon': '✂️'})
+                        if days_since_pruned >= pruning_freq:
+                            pruning_recommendation = get_pruning_recommendation(plant, days_since_pruned)
                             
                             alerts.append({
-                                'id': f"ai_prune_{space.id}",
+                                'id': f"grid_prune_{space.id}",
                                 'type': 'pruning',
                                 'plant_name': plant.name,
                                 'garden_name': garden.name,
-                                'message': f'Your {plant.name} needs pruning based on AI analysis',
-                                'due_date': today.isoformat(),
-                                'priority': 'high' if confidence > 0.7 else 'medium',
-                                'status': 'pending',
+                                'message': f'Time to prune your {plant.name}',
+                                'due_date': (space.last_pruned + timedelta(days=pruning_freq)).isoformat(),
+                                'priority': 'low',
+                                'status': 'overdue' if days_since_pruned > pruning_freq else 'pending',
                                 'space_id': space.id,
                                 'garden_id': garden.id,
-                                'recommendation': f"AI Analysis: {reasoning}",
-                                'grid_position': space.grid_position,
-                                'ai_confidence': confidence,
-                                'ai_suggested_actions': suggested_actions
+                                'recommendation': pruning_recommendation,
+                                'grid_position': space.grid_position
                             })
-                            print(f"✅ PRUNING ALERT ADDED: {plant.name} - Total alerts now: {len(alerts)}")
+        
+        # Also check traditional PlantTracking (legacy system)
+        for garden in user_gardens:
+            plant_trackings = PlantTracking.query.filter_by(garden_id=garden.id).all()
+            
+            for pt in plant_trackings:
+                plant = Plant.query.get(pt.plant_id)
+                if not plant:
+                    continue
+                
+                # Skip alerts for newly added plants (added within last 48 hours via AI recognition)
+                # Check if this is a newly added plant with no care history
+                has_care_history = pt.last_watered or pt.last_fertilized or pt.last_pruned
+                
+                # Check if plant was added recently (within 48 hours)
+                is_newly_added = False
+                if pt.planting_date and not has_care_history:
+                    planting_date = pt.planting_date
+                    if hasattr(planting_date, 'date'):
+                        planting_date = planting_date.date()
                     
-                    # Only check traditional schedule if AI analysis doesn't indicate watering needed
-                    elif space.last_watered:
-                        # Ensure last_watered is datetime.date for proper subtraction
-                        last_watered_date = space.last_watered
+                    # Check if plant was added within last 48 hours
+                    if isinstance(planting_date, type(today)):
+                        days_since_planted = (today - planting_date).days
+                        if days_since_planted < 2:  # Less than 2 days old
+                            is_newly_added = True
+                            print(f"⏭️ Skipping PlantTracking alerts for newly added plant {plant.name} (planted {days_since_planted} days ago, no care history)")
+                
+                # Skip all alerts for newly added plants
+                if is_newly_added:
+                    continue
+                    
+                # Check watering schedule
+                if plant.watering_frequency:
+                    # Ensure last_watered is datetime.date for proper subtraction
+                    if pt.last_watered:
+                        last_watered_date = pt.last_watered
                         if hasattr(last_watered_date, 'date'):
                             last_watered_date = last_watered_date.date()
                         days_since_watered = (today - last_watered_date).days
-                        # Default watering frequency if not set in plant
-                        watering_freq = getattr(plant, 'watering_frequency', 3) or 3
-                        
-                        if days_since_watered >= watering_freq:
-                            # Generate plant-specific watering recommendations
-                            watering_recommendation = get_watering_recommendation(plant, days_since_watered)
-                            
-                            alerts.append({
-                                'id': f"grid_water_{space.id}",
-                                'type': 'watering',
-                                'plant_name': plant.name,
-                                'garden_name': garden.name,
-                                'message': f'Time to water your {plant.name} in {garden.name}',
-                                'due_date': (space.last_watered + timedelta(days=watering_freq)).isoformat(),
-                                'priority': 'high' if days_since_watered > watering_freq + 2 else 'medium',
-                                'status': 'overdue' if days_since_watered > watering_freq else 'pending',
-                                'space_id': space.id,
-                                'garden_id': garden.id,
-                                'recommendation': watering_recommendation,
-                                'grid_position': space.grid_position
-                            })
                     else:
-                        # New plant that hasn't been watered yet
-                        new_plant_recommendation = get_new_plant_recommendation(plant)
-                        
+                        days_since_watered = 999
+                    if days_since_watered >= plant.watering_frequency:
                         alerts.append({
-                            'id': f"grid_water_new_{space.id}",
+                            'id': f"track_water_{pt.id}",
                             'type': 'watering',
                             'plant_name': plant.name,
                             'garden_name': garden.name,
-                            'message': f'Your newly planted {plant.name} needs its first watering',
-                            'due_date': today.isoformat(),
-                            'priority': 'high',
-                            'status': 'pending',
-                            'space_id': space.id,
-                            'garden_id': garden.id,
-                            'recommendation': new_plant_recommendation,
-                            'grid_position': f"Row {space.row}, Col {space.column}" if hasattr(space, 'row') and hasattr(space, 'column') else None
+                            'message': f'Time to water your {plant.name}',
+                            'due_date': (pt.last_watered + timedelta(days=plant.watering_frequency)).isoformat() if pt.last_watered else today.isoformat(),
+                            'priority': 'high' if days_since_watered > plant.watering_frequency + 2 else 'medium',
+                            'status': 'overdue' if days_since_watered > plant.watering_frequency else 'pending'
                         })
                 
-                # Only check traditional schedule if AI analysis doesn't indicate fertilizing needed
-                if not ai_analysis and space.last_fertilized:
+                # Check fertilizing schedule
+                if plant.fertilizing_frequency:
                     # Ensure last_fertilized is datetime.date for proper subtraction
-                    last_fertilized_date = space.last_fertilized
-                    if hasattr(last_fertilized_date, 'date'):
-                        last_fertilized_date = last_fertilized_date.date()
-                    days_since_fertilized = (today - last_fertilized_date).days
-                    fertilizing_freq = getattr(plant, 'fertilizing_frequency', 14) or 14
-                    
-                    if days_since_fertilized >= fertilizing_freq:
-                        fertilizing_recommendation = get_fertilizing_recommendation(plant, days_since_fertilized)
-                        
+                    if pt.last_fertilized:
+                        last_fertilized_date = pt.last_fertilized
+                        if hasattr(last_fertilized_date, 'date'):
+                            last_fertilized_date = last_fertilized_date.date()
+                        days_since_fertilized = (today - last_fertilized_date).days
+                    else:
+                        days_since_fertilized = 999
+                    if days_since_fertilized >= plant.fertilizing_frequency:
                         alerts.append({
-                            'id': f"grid_fertilize_{space.id}",
+                            'id': f"track_fertilize_{pt.id}",
                             'type': 'fertilizing',
                             'plant_name': plant.name,
                             'garden_name': garden.name,
                             'message': f'Your {plant.name} needs fertilizer',
-                            'due_date': (space.last_fertilized + timedelta(days=fertilizing_freq)).isoformat(),
+                            'due_date': (pt.last_fertilized + timedelta(days=plant.fertilizing_frequency)).isoformat() if pt.last_fertilized else today.isoformat(),
                             'priority': 'medium',
-                            'status': 'overdue' if days_since_fertilized > fertilizing_freq else 'pending',
-                            'space_id': space.id,
-                            'garden_id': garden.id,
-                            'recommendation': fertilizing_recommendation,
-                            'grid_position': space.grid_position
+                            'status': 'overdue' if days_since_fertilized > plant.fertilizing_frequency else 'pending'
                         })
                 
-                # Only check traditional schedule if AI analysis doesn't indicate pruning needed
-                if not ai_analysis and space.last_pruned:
+                # Check pruning schedule
+                if plant.pruning_frequency:
                     # Ensure last_pruned is datetime.date for proper subtraction
-                    last_pruned_date = space.last_pruned
-                    if hasattr(last_pruned_date, 'date'):
-                        last_pruned_date = last_pruned_date.date()
-                    days_since_pruned = (today - last_pruned_date).days
-                    pruning_freq = getattr(plant, 'pruning_frequency', 30) or 30
-                    
-                    if days_since_pruned >= pruning_freq:
-                        pruning_recommendation = get_pruning_recommendation(plant, days_since_pruned)
-                        
+                    if pt.last_pruned:
+                        last_pruned_date = pt.last_pruned
+                        if hasattr(last_pruned_date, 'date'):
+                            last_pruned_date = last_pruned_date.date()
+                        days_since_pruned = (today - last_pruned_date).days
+                    else:
+                        days_since_pruned = 999
+                    if days_since_pruned >= plant.pruning_frequency:
                         alerts.append({
-                            'id': f"grid_prune_{space.id}",
+                            'id': f"track_prune_{pt.id}",
                             'type': 'pruning',
                             'plant_name': plant.name,
                             'garden_name': garden.name,
                             'message': f'Time to prune your {plant.name}',
-                            'due_date': (space.last_pruned + timedelta(days=pruning_freq)).isoformat(),
+                            'due_date': (pt.last_pruned + timedelta(days=plant.pruning_frequency)).isoformat() if pt.last_pruned else today.isoformat(),
                             'priority': 'low',
-                            'status': 'overdue' if days_since_pruned > pruning_freq else 'pending',
-                            'space_id': space.id,
-                            'garden_id': garden.id,
-                            'recommendation': pruning_recommendation,
-                            'grid_position': space.grid_position
+                            'status': 'overdue' if days_since_pruned > plant.pruning_frequency else 'pending'
                         })
-        
-        # Also check traditional PlantTracking (legacy system)
-        plant_trackings = PlantTracking.query.filter_by(garden_id=garden.id).all()
-        
-        for pt in plant_trackings:
-            plant = Plant.query.get(pt.plant_id)
-            if not plant:
-                continue
-                
-            # Check watering schedule
-            if plant.watering_frequency:
-                # Ensure last_watered is datetime.date for proper subtraction
-                if pt.last_watered:
-                    last_watered_date = pt.last_watered
-                    if hasattr(last_watered_date, 'date'):
-                        last_watered_date = last_watered_date.date()
-                    days_since_watered = (today - last_watered_date).days
-                else:
-                    days_since_watered = 999
-                if days_since_watered >= plant.watering_frequency:
-                    alerts.append({
-                        'id': f"track_water_{pt.id}",
-                        'type': 'watering',
-                        'plant_name': plant.name,
-                        'garden_name': garden.name,
-                        'message': f'Time to water your {plant.name}',
-                        'due_date': (pt.last_watered + timedelta(days=plant.watering_frequency)).isoformat() if pt.last_watered else today.isoformat(),
-                        'priority': 'high' if days_since_watered > plant.watering_frequency + 2 else 'medium',
-                        'status': 'overdue' if days_since_watered > plant.watering_frequency else 'pending'
-                    })
-            
-            # Check fertilizing schedule
-            if plant.fertilizing_frequency:
-                # Ensure last_fertilized is datetime.date for proper subtraction
-                if pt.last_fertilized:
-                    last_fertilized_date = pt.last_fertilized
-                    if hasattr(last_fertilized_date, 'date'):
-                        last_fertilized_date = last_fertilized_date.date()
-                    days_since_fertilized = (today - last_fertilized_date).days
-                else:
-                    days_since_fertilized = 999
-                if days_since_fertilized >= plant.fertilizing_frequency:
-                    alerts.append({
-                        'id': f"track_fertilize_{pt.id}",
-                        'type': 'fertilizing',
-                        'plant_name': plant.name,
-                        'garden_name': garden.name,
-                        'message': f'Your {plant.name} needs fertilizer',
-                        'due_date': (pt.last_fertilized + timedelta(days=plant.fertilizing_frequency)).isoformat() if pt.last_fertilized else today.isoformat(),
-                        'priority': 'medium',
-                        'status': 'overdue' if days_since_fertilized > plant.fertilizing_frequency else 'pending'
-                    })
-            
-            # Check pruning schedule
-            if plant.pruning_frequency:
-                # Ensure last_pruned is datetime.date for proper subtraction
-                if pt.last_pruned:
-                    last_pruned_date = pt.last_pruned
-                    if hasattr(last_pruned_date, 'date'):
-                        last_pruned_date = last_pruned_date.date()
-                    days_since_pruned = (today - last_pruned_date).days
-                else:
-                    days_since_pruned = 999
-                if days_since_pruned >= plant.pruning_frequency:
-                    alerts.append({
-                        'id': f"track_prune_{pt.id}",
-                        'type': 'pruning',
-                        'plant_name': plant.name,
-                        'garden_name': garden.name,
-                        'message': f'Time to prune your {plant.name}',
-                        'due_date': (pt.last_pruned + timedelta(days=plant.pruning_frequency)).isoformat() if pt.last_pruned else today.isoformat(),
-                        'priority': 'low',
-                        'status': 'overdue' if days_since_pruned > plant.pruning_frequency else 'pending'
-                    })
     
         # Sort alerts by priority and due date
         priority_order = {'high': 3, 'medium': 2, 'low': 1}
@@ -3733,10 +3830,10 @@ def smart_alerts():
         for alert in alerts:
             print(f"  - {alert['type']}: {alert['plant_name']} in {alert['garden_name']} (Priority: {alert['priority']})")
         
-        # Get completed actions for the same time period
+        # Get completed actions for the same time period (no limit - show all completed actions)
         completed_actions = ActivityLog.query.filter_by(
             user_id=current_user.id
-        ).order_by(ActivityLog.action_date.desc()).limit(10).all()
+        ).order_by(ActivityLog.action_date.desc()).all()
         
         # Filter out alerts that have been completed recently (within last 24 hours)
         print(f"🔍 Filtering out recently completed actions...")
@@ -3868,10 +3965,9 @@ def mark_alert_completed():
                 print(f"🎯 ALERT COMPLETION: Invalid action {action}")
                 return jsonify({"error": f"Invalid action: {action}"}), 400
             
-            # Clear AI analysis after completing the action to prevent regenerating the same alert
-            if space.care_suggestions:
-                print(f"🎯 ALERT COMPLETION: Clearing AI analysis for space {space_id}")
-                space.care_suggestions = None
+            # Don't clear AI analysis - keep it so other care needs can still show alerts
+            # The filtering logic will prevent duplicate alerts for the completed action
+            # Only the specific action type that was completed will be filtered out
             
             # Create activity log entry for completed action
             activity_log = ActivityLog(
