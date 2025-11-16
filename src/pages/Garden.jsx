@@ -246,14 +246,8 @@ const Garden = () => {
         total_grid_spaces: getGridSpacesForPlan(isPremium)
       }))
       
-      // If we have real gardens from API, use them
-      if (updatedApiGardens.length > 0) {
-        setGardens(updatedApiGardens)
-      } else {
-        // If no real gardens, show demo data for demonstration
-        console.log('🌱 No real gardens found, showing demo data')
-        setGardens(staticGardens)
-      }
+      // Always use real gardens from API (even if empty array for new users)
+      setGardens(updatedApiGardens)
       
       // Update selected garden if it exists in the new data
       if (selectedGarden) {
@@ -270,9 +264,15 @@ const Garden = () => {
         return
       }
       console.error('Error fetching gardens:', error)
-      // If API fails, show demo data for demonstration
-      console.log('🌱 API failed, showing demo gardens')
-      setGardens(staticGardens)
+      // If user is logged in but API fails, show empty state
+      if (user) {
+        console.log('🌱 API failed for logged-in user, showing empty state')
+        setGardens([])
+      } else {
+        // If user is not logged in and API fails, show demo data
+        console.log('🌱 API failed, showing demo gardens')
+        setGardens(staticGardens)
+      }
     }
   }
 
@@ -282,14 +282,8 @@ const Garden = () => {
       const apiPlants = response.data.plants || []
       console.log('🌱 Fetched plants:', apiPlants)
       
-      // If we have real plants from API, use them
-      if (apiPlants.length > 0) {
-        setPlants(apiPlants)
-      } else {
-        // If no real plants, show demo data for demonstration
-        console.log('🌱 No real plants found, showing demo data')
-        setPlants(staticPlants)
-      }
+      // Always use real plants from API (even if empty array for new users)
+      setPlants(apiPlants)
       setLoading(false)
     } catch (error) {
       if (error?.response?.status === 401) {
@@ -300,9 +294,15 @@ const Garden = () => {
         return
       }
       console.error('Error fetching plants:', error)
-      // If API fails, show demo data for demonstration
-      console.log('🌱 API failed, showing demo data')
-      setPlants(staticPlants)
+      // If user is logged in but API fails, show empty state
+      if (user) {
+        console.log('🌱 API failed for logged-in user, showing empty state')
+        setPlants([])
+      } else {
+        // If user is not logged in and API fails, show demo data
+        console.log('🌱 API failed, showing demo data')
+        setPlants(staticPlants)
+      }
       setLoading(false)
     }
   }
@@ -1585,13 +1585,26 @@ const Garden = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Care Guide</label>
-                  <textarea
-                    value={plantForm.care_guide}
-                    onChange={(e) => setPlantForm({...plantForm, care_guide: e.target.value})}
-                    className="input-field"
-                    rows="3"
-                    required
-                  />
+                  {plantForm.care_guide ? (
+                    <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 max-h-48 overflow-y-auto">
+                      <ul className="list-disc list-inside space-y-2 text-sm text-gray-700">
+                        {plantForm.care_guide
+                          .split('\n')
+                          .filter(line => line.trim())
+                          .map((line, index) => {
+                            // Remove existing bullet points, dashes, or numbers if present
+                            const cleanedLine = line.trim().replace(/^[•\-\*\d+\.\)]\s*/, '')
+                            return (
+                              <li key={index} className="leading-relaxed">{cleanedLine}</li>
+                            )
+                          })}
+                      </ul>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 text-sm text-gray-500 italic">
+                      No care guide provided. Care guide will be auto-generated from AI recognition or can be added later.
+                    </div>
+                  )}
                 </div>
                 <div className="flex space-x-4">
                   <button 
