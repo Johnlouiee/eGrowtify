@@ -957,7 +957,7 @@ const ManageLearningPaths = () => {
   const getDifficultyColor = (difficulty) => {
     switch (difficulty.toLowerCase()) {
       case 'beginner': return 'bg-green-100 text-green-800'
-      case 'intermediate': return 'bg-blue-100 text-blue-800'
+      case 'intermediate': return 'bg-green-100 text-green-800'
       case 'expert': return 'bg-red-100 text-red-800'
       default: return 'bg-gray-100 text-gray-800'
     }
@@ -965,9 +965,9 @@ const ManageLearningPaths = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading learning paths...</p>
         </div>
       </div>
@@ -975,7 +975,7 @@ const ManageLearningPaths = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
       {/* Header */}
       <AdminHeader
         title="Manage Learning Paths"
@@ -1042,7 +1042,7 @@ const ManageLearningPaths = () => {
                         setSelectedPath(path)
                         setShowPathDetails(true)
                   },
-                  className: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'
+                  className: 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105'
                 }
               ]}
             >
@@ -1083,8 +1083,8 @@ const ManageLearningPaths = () => {
                 <div className="flex justify-between items-center mb-8">
                   <div className="flex items-center space-x-4">
                     <div className="relative">
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur-sm opacity-75"></div>
-                      <div className="relative p-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl">
+                      <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl blur-sm opacity-75"></div>
+                      <div className="relative p-4 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl">
                         <BookOpen className="h-8 w-8 text-white" />
                       </div>
                     </div>
@@ -1151,7 +1151,7 @@ const ManageLearningPaths = () => {
                             <span className="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
                             {selectedPath.modules.length} modules
                           </span>
-                            <span className="text-sm text-slate-500 bg-blue-100 px-3 py-1 rounded-full">
+                            <span className="text-sm text-slate-500 bg-green-100 px-3 py-1 rounded-full">
                               {selectedPath.modules.reduce((total, module) => total + (module.lessons?.length || 0), 0)} lessons
                           </span>
                           </div>
@@ -1163,14 +1163,14 @@ const ManageLearningPaths = () => {
                         <div className="flex items-center bg-slate-100 rounded-xl p-1 shadow-inner">
                           <button
                             onClick={() => setViewMode('grid')}
-                            className={`p-3 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`p-3 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-white text-green-600 shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
                             title="Grid View"
                           >
                             <Grid className="h-5 w-5" />
                           </button>
                           <button
                             onClick={() => setViewMode('list')}
-                            className={`p-3 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`p-3 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-white text-green-600 shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
                             title="List View"
                           >
                             <List className="h-5 w-5" />
@@ -1196,8 +1196,8 @@ const ManageLearningPaths = () => {
                             onClick={() => setSelectedModuleForAction(selectedModuleForAction === module.id ? null : module.id)}
                             className={`group relative overflow-hidden backdrop-blur-sm rounded-2xl border transition-all duration-300 transform cursor-pointer ${
                               selectedModuleForAction === module.id 
-                                ? 'bg-blue-50 border-blue-300 shadow-2xl shadow-blue-500/20 scale-105' 
-                                : 'bg-white/80 border-slate-200/50 hover:border-blue-300/50 hover:shadow-2xl hover:shadow-blue-500/10 hover:scale-105'
+                                ? 'bg-green-50 border-green-300 shadow-2xl shadow-green-500/20 scale-105' 
+                                : 'bg-white/80 border-slate-200/50 hover:border-green-300/50 hover:shadow-2xl hover:shadow-green-500/10 hover:scale-105'
                             }`}
                           >
                             {/* Enhanced Module Header */}
@@ -1207,8 +1207,8 @@ const ManageLearningPaths = () => {
                                   <div className="flex items-center space-x-3 mb-3">
                                     <div className={`p-2 rounded-lg shadow-lg ${
                                       selectedModuleForAction === module.id 
-                                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600' 
-                                        : 'bg-gradient-to-r from-blue-500 to-indigo-500'
+                                        ? 'bg-gradient-to-r from-green-600 to-emerald-600' 
+                                        : 'bg-gradient-to-r from-green-500 to-emerald-500'
                                     }`}>
                                       <BookOpen className="h-5 w-5 text-white" />
                                     </div>
@@ -1231,7 +1231,7 @@ const ManageLearningPaths = () => {
                                         e.stopPropagation()
                                         openEditModuleModal(module)
                                       }}
-                                      className="p-3 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200 transition-all duration-200 shadow-lg hover:shadow-xl"
+                                      className="px-4 py-2.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
                                       title="Edit Module"
                                     >
                                       <Edit className="h-5 w-5" />
@@ -1271,7 +1271,7 @@ const ManageLearningPaths = () => {
                                   </button>
                                   <button
                                     onClick={() => toggleModuleExpansion(module.id)}
-                                    className="flex items-center px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                                    className="px-4 py-2.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
                                   >
                                     {expandedModules[module.id] ? 'Less' : 'More'}
                                     {expandedModules[module.id] ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
@@ -1304,7 +1304,7 @@ const ManageLearningPaths = () => {
                                     {module.lessons.map((lesson, index) => (
                                       <div key={lesson.id} className="flex items-center justify-between bg-slate-50 rounded-xl p-4 hover:bg-slate-100 transition-all duration-200 shadow-sm hover:shadow-md">
                                         <div className="flex items-center space-x-3">
-                                          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                                          <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
                                             {index + 1}
                                         </div>
                                           <div>
@@ -1315,7 +1315,7 @@ const ManageLearningPaths = () => {
                                         <div className="flex items-center space-x-2">
                                           <button
                                             onClick={() => openEditLessonModal(lesson)}
-                                            className="p-2 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200 transition-all duration-200 shadow-lg hover:shadow-xl"
+                                            className="px-4 py-2.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
                                             title="Edit Lesson"
                                           >
                                             <Edit className="h-4 w-4" />
@@ -1362,7 +1362,7 @@ const ManageLearningPaths = () => {
                                 </div>
                                 {module.quiz.questions && module.quiz.questions.length > 0 && (
                                     <div className="flex items-center space-x-4">
-                                      <div className="text-sm text-slate-500 bg-blue-100 px-3 py-1 rounded-full">
+                                      <div className="text-sm text-slate-500 bg-green-100 px-3 py-1 rounded-full">
                                     {module.quiz.questions.length} questions
                                       </div>
                                       <div className="text-sm text-slate-500 bg-green-100 px-3 py-1 rounded-full">
@@ -1384,8 +1384,8 @@ const ManageLearningPaths = () => {
                             onClick={() => setSelectedModuleForAction(selectedModuleForAction === module.id ? null : module.id)}
                             className={`border rounded-lg shadow-sm transition-all duration-300 cursor-pointer ${
                               selectedModuleForAction === module.id 
-                                ? 'bg-blue-50 border-blue-300 shadow-lg' 
-                                : 'bg-white border-gray-200 hover:border-blue-300'
+                                ? 'bg-green-50 border-green-300 shadow-lg' 
+                                : 'bg-white border-gray-200 hover:border-green-300'
                             }`}
                           >
                             <div className="p-4">
@@ -1517,7 +1517,7 @@ const ManageLearningPaths = () => {
                   {/* Enhanced Basic Information */}
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
                     <div className="flex items-center space-x-3 mb-6">
-                      <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg shadow-lg">
+                      <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-lg">
                         <BookOpen className="h-5 w-5 text-white" />
                       </div>
                       <h4 className="text-xl font-bold text-slate-900">Basic Information</h4>
@@ -1727,7 +1727,7 @@ const ManageLearningPaths = () => {
                   {/* Enhanced Content Management Section */}
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
                     <div className="flex items-center space-x-3 mb-6">
-                      <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg shadow-lg">
+                      <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-lg">
                         <BookOpen className="h-5 w-5 text-white" />
                       </div>
                       <h4 className="text-xl font-bold text-slate-900">Content Management</h4>
@@ -1740,7 +1740,7 @@ const ManageLearningPaths = () => {
                         onClick={() => setActiveModuleTab('basic')}
                         className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all duration-200 ${
                           activeModuleTab === 'basic'
-                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg'
                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                       >
@@ -1754,7 +1754,7 @@ const ManageLearningPaths = () => {
                         onClick={() => setActiveModuleTab('lessons')}
                         className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all duration-200 ${
                           activeModuleTab === 'lessons'
-                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg'
                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                       >
@@ -1768,7 +1768,7 @@ const ManageLearningPaths = () => {
                         onClick={() => setActiveModuleTab('quizzes')}
                         className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all duration-200 ${
                           activeModuleTab === 'quizzes'
-                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg'
                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                       >
@@ -1787,7 +1787,7 @@ const ManageLearningPaths = () => {
                           <button
                             type="button"
                             onClick={openAddLessonModal}
-                            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                            className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 flex items-center text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                           >
                             <Plus className="h-4 w-4 mr-2" />
                             Add Lesson
@@ -1799,7 +1799,7 @@ const ManageLearningPaths = () => {
                             <div key={lesson.id} className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-4">
-                                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                                  <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
                                     {index + 1}
                                   </div>
                                   <div>
@@ -1839,7 +1839,7 @@ const ManageLearningPaths = () => {
                           <button
                             type="button"
                             onClick={openAddQuizModal}
-                            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                            className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 flex items-center text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                           >
                             <Plus className="h-4 w-4 mr-2" />
                             Add Quiz
@@ -1932,8 +1932,8 @@ const ManageLearningPaths = () => {
                 <div className="flex justify-between items-center mb-8">
                   <div className="flex items-center space-x-4">
                     <div className="relative">
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur-sm opacity-75"></div>
-                      <div className="relative p-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl">
+                      <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl blur-sm opacity-75"></div>
+                      <div className="relative p-4 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl">
                         <Edit className="h-8 w-8 text-white" />
                       </div>
                     </div>
@@ -1958,7 +1958,7 @@ const ManageLearningPaths = () => {
                   {/* Enhanced Basic Information */}
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
                     <div className="flex items-center space-x-3 mb-6">
-                      <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg shadow-lg">
+                      <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-lg">
                         <BookOpen className="h-5 w-5 text-white" />
                       </div>
                       <h4 className="text-xl font-bold text-slate-900">Basic Information</h4>
@@ -2168,7 +2168,7 @@ const ManageLearningPaths = () => {
                   {/* Enhanced Content Management Section */}
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
                     <div className="flex items-center space-x-3 mb-6">
-                      <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg shadow-lg">
+                      <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-lg">
                         <BookOpen className="h-5 w-5 text-white" />
                       </div>
                       <h4 className="text-xl font-bold text-slate-900">Content Management</h4>
@@ -2181,7 +2181,7 @@ const ManageLearningPaths = () => {
                         onClick={() => setActiveModuleTab('basic')}
                         className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all duration-200 ${
                           activeModuleTab === 'basic'
-                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg'
                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                       >
@@ -2195,7 +2195,7 @@ const ManageLearningPaths = () => {
                         onClick={() => setActiveModuleTab('lessons')}
                         className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all duration-200 ${
                           activeModuleTab === 'lessons'
-                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg'
                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                       >
@@ -2209,7 +2209,7 @@ const ManageLearningPaths = () => {
                         onClick={() => setActiveModuleTab('quizzes')}
                         className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all duration-200 ${
                           activeModuleTab === 'quizzes'
-                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg'
                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                       >
@@ -2228,7 +2228,7 @@ const ManageLearningPaths = () => {
                           <button
                             type="button"
                             onClick={openAddLessonModal}
-                            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                            className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 flex items-center text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                           >
                             <Plus className="h-4 w-4 mr-2" />
                             Add Lesson
@@ -2240,7 +2240,7 @@ const ManageLearningPaths = () => {
                             <div key={lesson.id} className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-4">
-                                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                                  <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
                                     {index + 1}
                                   </div>
                                   <div>
@@ -2280,7 +2280,7 @@ const ManageLearningPaths = () => {
                           <button
                             type="button"
                             onClick={openAddQuizModal}
-                            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                            className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 flex items-center text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                           >
                             <Plus className="h-4 w-4 mr-2" />
                             Add Quiz
@@ -2354,7 +2354,7 @@ const ManageLearningPaths = () => {
                     </button>
                     <button
                       type="submit"
-                      className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                      className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                     >
                       Update Module
                     </button>
@@ -2372,7 +2372,7 @@ const ManageLearningPaths = () => {
               <div className="p-8">
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex items-center space-x-4">
-                    <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl shadow-lg">
+                    <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-lg">
                       <BookOpen className="h-6 w-6 text-white" />
                     </div>
                     <div>
@@ -2622,7 +2622,7 @@ const ManageLearningPaths = () => {
                     </button>
                     <button
                       type="submit"
-                      className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 flex items-center text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                      className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 flex items-center text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                     >
                       <Save className="h-5 w-5 mr-2" />
                       {showEditLessonModal ? 'Update Lesson' : 'Add Lesson'}

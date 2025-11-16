@@ -110,9 +110,9 @@ const ManageSeasonalContent = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading seasonal content...</p>
         </div>
       </div>
@@ -120,13 +120,13 @@ const ManageSeasonalContent = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
       {/* Header */}
       <AdminHeader
         title="Seasonal Content Hub"
         subtitle="Manage seasonal planning guides and tips"
         icon={Calendar}
-        iconColor="from-blue-600 to-indigo-600"
+        iconColor="from-green-600 to-emerald-600"
         showBackButton={true}
         onRefresh={fetchSeasonalContent}
         actions={[
@@ -134,7 +134,7 @@ const ManageSeasonalContent = () => {
             text: "Add Content",
             icon: Plus,
             onClick: () => setShowCreateModal(true),
-            className: 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700'
+            className: 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700'
           }
         ]}
       />
@@ -226,8 +226,8 @@ const ManageSeasonalContent = () => {
         {viewMode === 'cards' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredContent.map((content) => (
-              <div key={content.id} className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-blue-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div key={content.id} className="group relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:border-green-300/50 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="relative p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
@@ -268,13 +268,13 @@ const ManageSeasonalContent = () => {
                           setSelectedContent(content)
                           setShowContentDetails(true)
                         }}
-                        className="flex items-center px-3 py-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                        className="px-4 py-2.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         <span className="text-sm font-medium">View</span>
                       </button>
-                      <button className="flex items-center px-3 py-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-xl transition-all duration-200">
-                        <Edit className="h-4 w-4 mr-1" />
+                      <button className="px-4 py-2.5 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md">
+                        <Edit className="h-5 w-5" />
                         <span className="text-sm font-medium">Edit</span>
                       </button>
                     </div>
@@ -292,10 +292,10 @@ const ManageSeasonalContent = () => {
           </div>
         ) : viewMode === 'table' ? (
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
-            <div className="px-6 py-4 border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50">
+            <div className="px-6 py-4 border-b border-slate-200/60 bg-gradient-to-r from-green-50 to-emerald-50">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Calendar className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Calendar className="h-5 w-5 text-green-600" />
                 </div>
                 <h3 className="text-lg font-semibold text-slate-900">
                   Seasonal Content ({filteredContent.length})
@@ -343,14 +343,14 @@ const ManageSeasonalContent = () => {
                               setSelectedContent(content)
                               setShowContentDetails(true)
                             }}
-                            className="text-blue-600 hover:text-blue-900 flex items-center px-2 py-1 rounded-lg hover:bg-blue-50 transition-all duration-200"
+                            className="px-4 py-2.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
                           >
                             <Eye className="h-4 w-4 mr-1" />
                             View
                           </button>
-                          <button className="text-green-600 hover:text-green-900 flex items-center px-2 py-1 rounded-lg hover:bg-green-50 transition-all duration-200">
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
+                          <button className="px-4 py-2.5 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md">
+                            <Edit className="h-5 w-5" />
+                            <span className="text-sm font-medium">Edit</span>
                           </button>
                           <button
                             onClick={() => handleDeleteContent(content.id)}
@@ -370,7 +370,7 @@ const ManageSeasonalContent = () => {
         ) : (
           <div className="space-y-4">
             {filteredContent.map((content) => (
-              <div key={content.id} className="group bg-white/70 backdrop-blur-sm rounded-xl border border-slate-200/50 hover:border-blue-300/50 transition-all duration-300 hover:shadow-lg">
+              <div key={content.id} className="group bg-white/70 backdrop-blur-sm rounded-xl border border-slate-200/50 hover:border-green-300/50 transition-all duration-300 hover:shadow-lg">
                 <div className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4">
@@ -402,7 +402,7 @@ const ManageSeasonalContent = () => {
                           setSelectedContent(content)
                           setShowContentDetails(true)
                         }}
-                        className="flex items-center px-3 py-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                        className="px-4 py-2.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         View
@@ -433,8 +433,8 @@ const ManageSeasonalContent = () => {
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Calendar className="h-5 w-5 text-blue-600" />
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Calendar className="h-5 w-5 text-green-600" />
                     </div>
                     <h3 className="text-xl font-bold text-slate-900">Seasonal Content Details</h3>
                   </div>
@@ -447,7 +447,7 @@ const ManageSeasonalContent = () => {
                 </div>
                 
                 <div className="space-y-6">
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-lg font-semibold text-slate-900">{selectedContent.season} Guide</h4>
                       <div className="flex items-center space-x-2">
@@ -513,7 +513,7 @@ const ManageSeasonalContent = () => {
                     >
                       Close
                     </button>
-                    <button className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                    <button className="flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl">
                       <Edit className="h-4 w-4 mr-2" />
                       Edit Content
                     </button>

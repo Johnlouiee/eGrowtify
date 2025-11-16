@@ -4205,13 +4205,17 @@ def admin_feedbacks():
         return jsonify({"error": "Access denied. Admin privileges required."}), 403
     
     try:
-        # Get all feedback from database
-        feedbacks = Feedback.query.order_by(Feedback.created_at.desc()).all()
+        # Get all feedback from database with user relationship loaded
+        from sqlalchemy.orm import joinedload
+        feedbacks = Feedback.query.options(joinedload(Feedback.user)).order_by(Feedback.created_at.desc()).all()
         feedback_list = [feedback.to_dict() for feedback in feedbacks]
         
         return jsonify({"feedbacks": feedback_list})
     except Exception as e:
-        return jsonify({"error": "Failed to fetch feedback. Please try again."}), 500
+        import traceback
+        print(f"Error fetching feedback: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({"error": f"Failed to fetch feedback: {str(e)}"}), 500
 
 @views.route('/admin/feedbacks/<int:feedback_id>/status', methods=['PUT'])
 @login_required
@@ -4976,7 +4980,7 @@ def admin_api_subscription_stats():
     try:
         total_subscribers = User.query.filter_by(subscribed=True).count()
         active_subscriptions = User.query.filter_by(subscribed=True, is_active=True).count()
-        monthly_revenue = total_subscribers * 9.99  # Mock calculation
+        monthly_revenue = total_subscribers * 150.00  # Updated to 150 PHP
         total_users = User.query.count()
         subscription_rate = (total_subscribers / total_users * 100) if total_users > 0 else 0
         
@@ -5428,6 +5432,118 @@ def admin_api_toggle_subscription(user_id):
         return jsonify({"message": "Subscription status updated successfully"})
     except Exception as e:
         db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/subscription/plans')
+@login_required
+def admin_api_subscription_plans():
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        from website.models import SubscriptionPlan
+        plans = SubscriptionPlan.query.filter_by(is_active=True).all()
+        return jsonify([plan.to_dict() for plan in plans])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/subscription/plans/<int:plan_id>', methods=['PUT'])
+@login_required
+def admin_api_update_subscription_plan(plan_id):
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        from website.models import SubscriptionPlan
+        plan = SubscriptionPlan.query.get_or_404(plan_id)
+        data = request.get_json()
+        
+        if 'plan_name' in data:
+            plan.plan_name = data['plan_name']
+        if 'price' in data:
+            plan.price = data['price']
+        if 'currency' in data:
+            plan.currency = data['currency']
+        if 'grid_planner_size' in data:
+            plan.grid_planner_size = data['grid_planner_size']
+        if 'free_ai_analyses' in data:
+            plan.free_ai_analyses = data['free_ai_analyses']
+        if 'free_plant_analyses' in data:
+            plan.free_plant_analyses = data['free_plant_analyses']
+        if 'free_soil_analyses' in data:
+            plan.free_soil_analyses = data['free_soil_analyses']
+        if 'additional_grid_cost' in data:
+            plan.additional_grid_cost = data['additional_grid_cost']
+        if 'additional_ai_cost' in data:
+            plan.additional_ai_cost = data['additional_ai_cost']
+        
+        db.session.commit()
+        return jsonify({"message": "Plan updated successfully", "plan": plan.to_dict()})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/subscription/analytics/<plan_identifier>')
+@login_required
+def admin_api_subscription_analytics(plan_identifier):
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        from website.models import SubscriptionPlan, UserSubscription, User
+        from sqlalchemy import func
+        from datetime import datetime, timedelta
+        
+        # Try to get plan by ID first, then by plan_type
+        try:
+            plan_id = int(plan_identifier)
+            plan = SubscriptionPlan.query.get(plan_id)
+        except ValueError:
+            # If not a number, treat as plan_type
+            plan = SubscriptionPlan.query.filter_by(plan_type=plan_identifier).first()
+        
+        if not plan:
+            # Return default analytics if plan not found
+            total_subscribers = User.query.filter_by(subscribed=True).count()
+            return jsonify({
+                "totalSubscribers": total_subscribers,
+                "monthlyRevenue": total_subscribers * 150,
+                "churnRate": 3.2,
+                "conversionRate": 12.5,
+                "averageRevenuePerUser": 150,
+                "growthRate": 15.3
+            })
+        
+        # Get subscribers for this plan
+        subscriptions = UserSubscription.query.filter_by(plan_id=plan.id, status='active').all()
+        total_subscribers = len(subscriptions)
+        
+        # Calculate monthly revenue
+        monthly_revenue = total_subscribers * float(plan.price)
+        
+        # Calculate churn rate (simplified)
+        total_users = User.query.count()
+        subscribed_users = User.query.filter_by(subscribed=True).count()
+        churn_rate = 3.2  # Mock value
+        
+        # Calculate conversion rate
+        conversion_rate = (subscribed_users / total_users * 100) if total_users > 0 else 0
+        
+        # Calculate ARPU
+        arpu = float(plan.price)
+        
+        # Calculate growth rate (mock)
+        growth_rate = 15.3
+        
+        return jsonify({
+            "totalSubscribers": total_subscribers,
+            "monthlyRevenue": round(monthly_revenue, 2),
+            "churnRate": round(churn_rate, 1),
+            "conversionRate": round(conversion_rate, 1),
+            "averageRevenuePerUser": round(arpu, 2),
+            "growthRate": round(growth_rate, 1)
+        })
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 # Learning Path Management API endpoints

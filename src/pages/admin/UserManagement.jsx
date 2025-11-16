@@ -212,9 +212,9 @@ const UserManagement = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading users...</p>
         </div>
       </div>
@@ -222,13 +222,13 @@ const UserManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
       {/* Modern Header */}
       <AdminHeader
         title="User Management"
         subtitle="Manage user accounts and permissions"
         icon={Users}
-        iconColor="from-blue-600 to-indigo-600"
+        iconColor="from-green-600 to-emerald-600"
         onRefresh={fetchUsers}
         actions={[
           {
@@ -247,14 +247,14 @@ const UserManagement = () => {
             value={stats.total}
             subtitle="Total"
             icon={Users}
-            iconColor="from-blue-500 to-blue-600"
-            bgColor="from-blue-500/5 to-indigo-500/5"
-            borderColor="hover:border-blue-300/50"
-            shadowColor="hover:shadow-blue-500/10"
+            iconColor="from-green-500 to-emerald-600"
+            bgColor="from-green-500/5 to-emerald-500/5"
+            borderColor="hover:border-green-300/50"
+            shadowColor="hover:shadow-green-500/10"
             trend={true}
             trendIcon={Users}
             trendText="All registered users"
-            trendColor="text-blue-600"
+            trendColor="text-green-600"
           />
           
           <AdminStatsCard
@@ -380,11 +380,11 @@ const UserManagement = () => {
 
         {/* Modern Users Display */}
         <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
-          <div className="px-6 py-4 border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50">
+          <div className="px-6 py-4 border-b border-slate-200/60 bg-gradient-to-r from-green-50 to-emerald-50">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Users className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Users className="h-5 w-5 text-green-600" />
                 </div>
                 <h3 className="text-lg font-semibold text-slate-900">
                   Users ({filteredUsers.length})
@@ -401,7 +401,7 @@ const UserManagement = () => {
                     }
                   }}
                   checked={bulkActions.length === filteredUsers.length && filteredUsers.length > 0}
-                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-slate-300 text-green-600 focus:ring-green-500"
                 />
                 <span className="text-sm text-slate-600 font-medium">Select All</span>
               </div>
@@ -414,7 +414,7 @@ const UserManagement = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                      <input type="checkbox" className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
                     </th>
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
@@ -490,12 +490,12 @@ const UserManagement = () => {
                               setBulkActions(bulkActions.filter(id => id !== user.id))
                             }
                           }}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                         />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
                             <span className="text-sm font-medium text-white">
                               {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
                             </span>
@@ -515,7 +515,7 @@ const UserManagement = () => {
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                         user.role === 'admin' 
                           ? 'bg-purple-100 text-purple-800' 
-                          : 'bg-blue-100 text-blue-800'
+                          : 'bg-green-100 text-green-800'
                       }`}>
                         {user.role === 'admin' ? (
                           <>
@@ -569,54 +569,59 @@ const UserManagement = () => {
                       </div>
                     </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-3">
                           <button
                             onClick={() => {
                               setSelectedUser(user)
                               setShowUserDetails(true)
                             }}
-                            className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                            className="px-4 py-2.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
                             title="View Details"
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-5 w-5" />
+                            <span className="text-sm font-medium">View</span>
                           </button>
                           <Link
                             to={`/admin/users/${user.id}/edit`}
-                            className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
+                            className="px-4 py-2.5 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
                             title="Edit User"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-5 w-5" />
+                            <span className="text-sm font-medium">Edit</span>
                           </Link>
                           <button
                             onClick={() => handleToggleUserStatus(user.id, user.is_active)}
-                            className={`p-2 rounded-lg transition-colors ${
+                            className={`px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md ${
                               user.is_active 
-                                ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' 
-                                : 'bg-green-100 text-green-600 hover:bg-green-200'
+                                ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' 
+                                : 'bg-green-100 text-green-700 hover:bg-green-200'
                             }`}
                             title={user.is_active ? 'Deactivate User' : 'Activate User'}
                           >
-                            {user.is_active ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                            {user.is_active ? <Lock className="h-5 w-5" /> : <Unlock className="h-5 w-5" />}
+                            <span className="text-sm font-medium">{user.is_active ? 'Lock' : 'Unlock'}</span>
                           </button>
                           {user.role !== 'admin' && (
                             <button
                               onClick={() => handleToggleSubscription(user.id, user.subscribed)}
-                              className={`p-2 rounded-lg transition-colors ${
+                              className={`px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md ${
                                 user.subscribed 
-                                  ? 'bg-red-100 text-red-600 hover:bg-red-200' 
-                                  : 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'
+                                  ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' 
+                                  : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
                               }`}
                               title={user.subscribed ? 'Remove Premium' : 'Add Premium'}
                             >
-                              <Crown className="h-4 w-4" />
+                              <Crown className="h-5 w-5" />
+                              <span className="text-sm font-medium">{user.subscribed ? 'Premium' : 'Upgrade'}</span>
                             </button>
                           )}
                           <button
                             onClick={() => handleDeleteUser(user.id)}
-                            className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                            className="px-4 py-2.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
                             title="Delete User"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-5 w-5" />
+                            <span className="text-sm font-medium">Delete</span>
                           </button>
                         </div>
                       </td>
@@ -634,7 +639,7 @@ const UserManagement = () => {
                   <div key={user.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center">
-                        <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                        <div className="h-12 w-12 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
                           <span className="text-lg font-medium text-white">
                             {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
                           </span>
@@ -654,7 +659,7 @@ const UserManagement = () => {
                             setBulkActions(bulkActions.filter(id => id !== user.id))
                           }
                         }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
                     </div>
                     
@@ -662,7 +667,7 @@ const UserManagement = () => {
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">Role</span>
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                          user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'
                         }`}>
                           {user.role === 'admin' ? 'Admin' : 'User'}
                         </span>
@@ -695,24 +700,27 @@ const UserManagement = () => {
                             setSelectedUser(user)
                             setShowUserDetails(true)
                           }}
-                          className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                          className="px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
                           title="View Details"
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-5 w-5" />
+                          <span className="text-sm font-medium">View</span>
                         </button>
                         <Link
                           to={`/admin/users/${user.id}/edit`}
-                          className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
+                          className="px-3 py-2 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
                           title="Edit User"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-5 w-5" />
+                          <span className="text-sm font-medium">Edit</span>
                         </Link>
                         <button
                           onClick={() => handleDeleteUser(user.id)}
-                          className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                          className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
                           title="Delete User"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-5 w-5" />
+                          <span className="text-sm font-medium">Delete</span>
                         </button>
                       </div>
                     </div>
@@ -738,9 +746,9 @@ const UserManagement = () => {
                             setBulkActions(bulkActions.filter(id => id !== user.id))
                           }
                         }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
                         <span className="text-sm font-medium text-white">
                           {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
                         </span>
@@ -754,7 +762,7 @@ const UserManagement = () => {
                     <div className="flex items-center space-x-6">
                       <div className="flex items-center space-x-4">
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                          user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'
                         }`}>
                           {user.role === 'admin' ? 'Admin' : 'User'}
                         </span>
@@ -776,24 +784,27 @@ const UserManagement = () => {
                             setSelectedUser(user)
                             setShowUserDetails(true)
                           }}
-                          className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                          className="px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
                           title="View Details"
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-5 w-5" />
+                          <span className="text-sm font-medium">View</span>
                         </button>
                         <Link
                           to={`/admin/users/${user.id}/edit`}
-                          className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
+                          className="px-3 py-2 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
                           title="Edit User"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-5 w-5" />
+                          <span className="text-sm font-medium">Edit</span>
                         </Link>
                         <button
                           onClick={() => handleDeleteUser(user.id)}
-                          className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                          className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
                           title="Delete User"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-5 w-5" />
+                          <span className="text-sm font-medium">Delete</span>
                         </button>
                       </div>
                     </div>

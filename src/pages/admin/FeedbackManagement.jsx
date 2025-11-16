@@ -30,10 +30,16 @@ const FeedbackManagement = () => {
     try {
       setLoading(true)
       const response = await axios.get('/admin/feedbacks')
-      setFeedback(response.data.feedbacks || [])
+      
+      // Handle both response formats
+      const feedbackData = response.data.feedbacks || response.data.feedback_list || response.data || []
+      setFeedback(Array.isArray(feedbackData) ? feedbackData : [])
     } catch (error) {
       console.error('Error fetching feedback:', error)
-      toast.error('Failed to load feedback')
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to load feedback'
+      toast.error(errorMessage)
+      // Set empty array on error to prevent UI crashes
+      setFeedback([])
     } finally {
       setLoading(false)
     }
@@ -244,9 +250,9 @@ const FeedbackManagement = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading feedback...</p>
         </div>
       </div>
@@ -254,7 +260,7 @@ const FeedbackManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -268,10 +274,12 @@ const FeedbackManagement = () => {
                 Back to Admin Dashboard
               </Link>
               <div className="flex items-center">
-                <MessageSquare className="h-8 w-8 text-purple-600 mr-3" />
+                <div className="bg-green-100 p-2 rounded-full mr-3">
+                  <MessageSquare className="h-8 w-8 text-green-600" />
+                </div>
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">Feedback Management</h1>
-                  <p className="text-sm text-gray-600">Review and respond to user feedback</p>
+                  <p className="text-sm text-green-600">Review and respond to user feedback</p>
                 </div>
               </div>
             </div>
@@ -288,8 +296,8 @@ const FeedbackManagement = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <MessageCircle className="h-6 w-6 text-blue-600" />
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <MessageCircle className="h-6 w-6 text-green-600" />
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Total Feedback</p>
@@ -368,7 +376,7 @@ const FeedbackManagement = () => {
                   placeholder="Search feedback by subject, message, or user..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-400 transition-all"
                 />
               </div>
             </div>
@@ -378,7 +386,7 @@ const FeedbackManagement = () => {
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-400 transition-all"
                 >
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>
@@ -392,7 +400,7 @@ const FeedbackManagement = () => {
                 <select
                   value={filterCategory}
                   onChange={(e) => setFilterCategory(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-400 transition-all"
                 >
                   <option value="all">All Categories</option>
                   <option value="general">General</option>
@@ -407,7 +415,7 @@ const FeedbackManagement = () => {
                 <select
                   value={filterDateRange}
                   onChange={(e) => setFilterDateRange(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-400 transition-all"
                 >
                   <option value="all">All Time</option>
                   <option value="today">Today</option>
@@ -421,23 +429,23 @@ const FeedbackManagement = () => {
 
         {/* Bulk Actions */}
         {selectedFeedbacks.length > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <span className="text-sm font-medium text-blue-900">
+                <span className="text-sm font-medium text-green-900">
                   {selectedFeedbacks.length} feedback selected
                 </span>
               </div>
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => handleBulkStatusUpdate('in_progress')}
-                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                  className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   Mark as In Progress
                 </button>
                 <button
                   onClick={() => handleBulkStatusUpdate('resolved')}
-                  className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                  className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   Mark as Resolved
                 </button>
@@ -449,7 +457,7 @@ const FeedbackManagement = () => {
                 </button>
                 <button
                   onClick={handleBulkDelete}
-                  className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                  className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   Delete Selected
                 </button>
@@ -474,7 +482,7 @@ const FeedbackManagement = () => {
               <div className="flex items-center space-x-2">
                 <button
                   onClick={handleSelectAll}
-                  className="text-sm text-blue-600 hover:text-blue-900"
+                  className="text-sm text-green-600 hover:text-green-900 font-medium"
                 >
                   {selectedFeedbacks.length === filteredFeedback.length ? 'Deselect All' : 'Select All'}
                 </button>
@@ -491,7 +499,7 @@ const FeedbackManagement = () => {
                       type="checkbox"
                       checked={selectedFeedbacks.includes(item.id)}
                       onChange={() => handleSelectFeedback(item.id)}
-                      className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                     />
                     <div className="flex-1">
                       <div className="flex items-center mb-2">
@@ -544,25 +552,25 @@ const FeedbackManagement = () => {
                         setSelectedFeedback(item)
                         setShowFeedbackDetails(true)
                       }}
-                      className="text-blue-600 hover:text-blue-900 flex items-center text-sm"
+                      className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md text-sm font-medium"
                     >
-                      <Eye className="h-4 w-4 mr-1" />
-                      View
+                      <Eye className="h-5 w-5" />
+                      <span className="text-sm font-medium">View</span>
                     </button>
                     {item.status === 'pending' && (
                       <button
                         onClick={() => handleMarkAsRead(item.id)}
-                        className="text-green-600 hover:text-green-900 flex items-center text-sm"
+                        className="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md text-sm font-medium"
                       >
                         Mark as In Progress
                       </button>
                     )}
                     <button
                       onClick={() => handleDeleteFeedback(item.id)}
-                      className="text-red-600 hover:text-red-900 flex items-center text-sm"
+                      className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md text-sm font-medium"
                     >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Delete
+                      <Trash2 className="h-5 w-5" />
+                      <span className="text-sm font-medium">Delete</span>
                     </button>
                   </div>
                 </div>
@@ -657,7 +665,7 @@ const FeedbackManagement = () => {
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
                       placeholder="Type your reply here..."
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-400 transition-all"
                       rows="4"
                     />
                   </div>
@@ -671,7 +679,7 @@ const FeedbackManagement = () => {
                     </button>
                     <button
                       onClick={() => handleReply(selectedFeedback.id)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                      className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center"
                     >
                       <Reply className="h-4 w-4 mr-2" />
                       Send Reply

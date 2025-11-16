@@ -168,6 +168,48 @@ class Feedback(db.Model):
     
     # Relationships
     user = db.relationship('User', backref='feedbacks')
+    
+    def to_dict(self):
+        """Convert feedback to dictionary format for API responses"""
+        try:
+            user_name = 'Unknown User'
+            user_email = ''
+            if self.user:
+                # User model has full_name as a property
+                user_name = getattr(self.user, 'full_name', None) or f"{getattr(self.user, 'firstname', '')} {getattr(self.user, 'lastname', '')}".strip() or 'Unknown User'
+                user_email = getattr(self.user, 'email', '') or ''
+            
+            return {
+                'id': self.id,
+                'user_id': self.user_id,
+                'user_name': user_name,
+                'user_email': user_email,
+                'subject': self.subject or '',
+                'message': self.message or '',
+                'rating': self.rating or 0,
+                'category': self.category or 'general',
+                'status': self.status or 'pending',
+                'admin_response': self.admin_response,
+                'created_at': self.created_at.isoformat() if self.created_at else None
+            }
+        except Exception as e:
+            # Fallback if there's any error in to_dict
+            import traceback
+            print(f"Error in Feedback.to_dict(): {str(e)}")
+            print(traceback.format_exc())
+            return {
+                'id': self.id,
+                'user_id': self.user_id,
+                'user_name': 'Unknown User',
+                'user_email': '',
+                'subject': getattr(self, 'subject', '') or '',
+                'message': getattr(self, 'message', '') or '',
+                'rating': getattr(self, 'rating', 0) or 0,
+                'category': getattr(self, 'category', 'general') or 'general',
+                'status': getattr(self, 'status', 'pending') or 'pending',
+                'admin_response': getattr(self, 'admin_response', None),
+                'created_at': self.created_at.isoformat() if self.created_at else None
+            }
 
 class LearningPathContent(db.Model):
     __tablename__ = 'learning_path_content'
