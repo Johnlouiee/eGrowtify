@@ -65,13 +65,13 @@ def api_weather():
     return get_weather()
 
 if __name__ == '__main__':
-    print("🚀 Starting Flask Backend...")
-    print("📍 Backend will run on: http://127.0.0.1:5000")
-    print("🌐 API endpoints available:")
+    print("Starting Flask Backend...")
+    print("Backend will run on: http://127.0.0.1:5000")
+    print("API endpoints available:")
     print("   - GET / - Welcome message")
     print("   - GET /test - Test endpoint")
     print("")
-    print("💡 To see the UI, run 'npm run dev' in another terminal")
+    print("To see the UI, run 'npm run dev' in another terminal")
     print("   Then visit: http://localhost:3000")
     print("")
     app.run(debug=True, host='127.0.0.1', port=5000)

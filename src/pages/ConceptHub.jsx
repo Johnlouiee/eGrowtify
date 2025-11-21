@@ -123,15 +123,19 @@ const ConceptHub = () => {
       const response = await axios.get(`/concepts/${conceptId}/export`, {
         responseType: 'blob'
       })
-      const blob = new Blob([response.data], { type: 'application/json' })
+      const blob = new Blob([response.data], { 
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+      })
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `${title?.replace(/\s+/g, '_').toLowerCase() || 'concept'}.json`
+      const safeTitle = title?.replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_') || 'concept'
+      link.download = `${safeTitle}_${conceptId}.docx`
       document.body.appendChild(link)
       link.click()
       link.remove()
       window.URL.revokeObjectURL(url)
+      toast.success('Concept exported as document')
     } catch (error) {
       const message = error.response?.data?.error || 'Failed to export concept'
       toast.error(message)
@@ -240,7 +244,7 @@ const ConceptHub = () => {
           <button
             onClick={() => handleExport(concept.id, concept.title)}
             className="p-2 rounded-md border border-gray-200 hover:bg-gray-100 text-gray-600"
-            title="Export as JSON"
+            title="Export as Document"
           >
             <Download className="w-4 h-4" />
           </button>

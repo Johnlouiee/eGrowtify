@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { Calendar, MapPin, Sun, Cloud, Leaf, Droplets, Thermometer, Clock, Wind, Eye, AlertTriangle, CheckCircle, Info, RefreshCw } from 'lucide-react'
+import { Calendar, MapPin, Sun, Cloud, Leaf, Droplets, Thermometer, Clock, Wind, Eye, AlertTriangle, CheckCircle, Info, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import weatherService from '../services/weatherService'
+import WeatherCard from '../components/WeatherCard'
 
 const SeasonalPlanning = () => {
   const [currentSeason, setCurrentSeason] = useState('')
@@ -22,7 +23,6 @@ const SeasonalPlanning = () => {
   const [userCoordinates, setUserCoordinates] = useState({ lat: 10.3157, lng: 123.8854 }) // Cebu coordinates
   const [forecastData, setForecastData] = useState(null)
   const [sevenDayForecast, setSevenDayForecast] = useState([])
-  const [showForecast, setShowForecast] = useState(false)
   const [soilTemperature, setSoilTemperature] = useState(null)
   const [plantWeatherTolerance, setPlantWeatherTolerance] = useState(null)
   const [selectedPlant, setSelectedPlant] = useState('')
@@ -39,6 +39,7 @@ const SeasonalPlanning = () => {
   const [showSearchResults, setShowSearchResults] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState(null)
   const [lastWeatherFetch, setLastWeatherFetch] = useState(0)
+  const [showGrowingSeasonInfo, setShowGrowingSeasonInfo] = useState(false)
 
   // Philippines Plant Database - Common plants organized by categories
   const philippinesPlantDatabase = {
@@ -422,6 +423,8 @@ const SeasonalPlanning = () => {
   // Separate useEffect for weather data to ensure it loads properly
   useEffect(() => {
     initializeWeatherData()
+    // Also fetch 7-day forecast when city changes
+    fetchSevenDayForecast(currentCity)
   }, [currentCity])
 
   // Function to handle plant variety clicks
@@ -546,9 +549,13 @@ const SeasonalPlanning = () => {
     try {
       await fetchWeatherDataForCity(defaultCity)
       console.log('Weather data loaded successfully for:', defaultCity)
+      // Fetch 7-day forecast
+      await fetchSevenDayForecast(defaultCity)
     } catch (error) {
       console.error('Error loading weather data:', error)
       console.log('Keeping fallback weather data')
+      // Still try to fetch forecast or use mock data
+      await fetchSevenDayForecast(defaultCity)
     }
     
     // Then try geolocation for more accurate location
@@ -982,14 +989,61 @@ const SeasonalPlanning = () => {
     try {
       const response = await axios.get(`/api/weather-forecast?city=${encodeURIComponent(city)}`)
       
-      if (response.data.success) {
+      if (response.data.success && response.data.forecast && response.data.forecast.length > 0) {
         setSevenDayForecast(response.data.forecast)
       } else {
         console.error('Failed to fetch 7-day forecast:', response.data.error)
+        // Generate mock forecast data as fallback
+        generateMockForecast()
       }
     } catch (error) {
       console.error('Error fetching 7-day forecast:', error)
+      // Generate mock forecast data as fallback
+      generateMockForecast()
     }
+  }
+
+  const generateMockForecast = () => {
+    const today = new Date()
+    const mockForecast = []
+    
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today)
+      date.setDate(today.getDate() + i)
+      
+      // Generate realistic Philippines weather data
+      const baseTemp = 28 + Math.floor(Math.random() * 5) // 28-32°C
+      const high = baseTemp + Math.floor(Math.random() * 3) // 28-35°C
+      const low = baseTemp - Math.floor(Math.random() * 5) // 23-28°C
+      
+      // Planting score based on temperature (optimal: 25-30°C)
+      let score = 6
+      if (high > 33 || low < 20) score = 3
+      else if (high > 31 || low < 22) score = 4
+      else if (high > 29 || low < 24) score = 5
+      
+      const conditions = ['Sunny', 'Partly Cloudy', 'Cloudy', 'Rainy'][Math.floor(Math.random() * 4)]
+      const recommendations = [
+        'Good planting conditions',
+        'Ideal weather for planting',
+        'Moderate conditions',
+        'Consider waiting for better weather'
+      ]
+      
+      mockForecast.push({
+        date: date.toISOString(),
+        temperature: {
+          average: baseTemp,
+          high: high,
+          low: low
+        },
+        condition: conditions,
+        planting_score: score,
+        recommendation: recommendations[score >= 6 ? 0 : score >= 4 ? 1 : score >= 2 ? 2 : 3]
+      })
+    }
+    
+    setSevenDayForecast(mockForecast)
   }
 
   const fetchSoilTemperature = async (city = currentCity) => {
@@ -1219,16 +1273,17 @@ const SeasonalPlanning = () => {
 
   const getGrowingSeason = (latitude) => {
     // Calculate growing season length based on latitude
+    // Philippines is at ~5-20°N latitude, so it's always tropical (365 days)
     const lat = Math.abs(latitude)
     
     if (lat < 25) {
-      return '365 days' // Year-round growing (tropical)
+      return '365 days' // Year-round growing (tropical) - Philippines falls here
     } else if (lat < 35) {
-      return '280 days' // Long growing season
+      return '280 days' // Long growing season (subtropical, e.g., parts of USA, China)
     } else if (lat < 45) {
-      return '195 days' // Moderate growing season
+      return '195 days' // Moderate growing season (temperate, e.g., northern USA, Europe)
     } else {
-      return '120 days' // Short growing season
+      return '120 days' // Short growing season (cold temperate, e.g., Canada, northern Europe)
     }
   }
 
@@ -1947,14 +2002,14 @@ const SeasonalPlanning = () => {
       setSeasonalTips(mockSeasonalTips[season] || [])
       setRecommendedPlants(mockRecommendedPlants[season] || [])
 
-      // Mock weather data
+      // Mock weather data - Philippines is tropical, so always 365 days
       setWeatherData({
         temperature: '72°F',
         humidity: '65%',
         forecast: 'Partly cloudy with occasional showers',
-        lastFrost: 'April 15',
-        firstFrost: 'October 30',
-        growingSeason: '195 days'
+        lastFrost: 'N/A', // No frost in tropical Philippines
+        firstFrost: 'N/A', // No frost in tropical Philippines
+        growingSeason: '365 days' // Year-round growing in tropical climate
       })
 
     } catch (error) {
@@ -2035,14 +2090,78 @@ const SeasonalPlanning = () => {
           </div>
 
           <div className="card">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <Thermometer className="h-6 w-6 text-green-600" />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <Thermometer className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-600">Growing Season</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {weatherData?.growingSeason === '365 days' || !weatherData?.growingSeason ? 'Year-Round' : weatherData?.growingSeason}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">365 days (Tropical Climate)</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowGrowingSeasonInfo(!showGrowingSeasonInfo)}
+                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                  title="Learn more about growing season"
+                >
+                  <Info className="h-5 w-5" />
+                </button>
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Growing Season</p>
-                <p className="text-lg font-semibold text-gray-900">{weatherData?.growingSeason}</p>
-              </div>
+              
+              {showGrowingSeasonInfo && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-start space-x-2">
+                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-gray-900">🇵🇭 Philippines: Year-Round Growing (365 days)</p>
+                        <p className="text-gray-600 mt-1">
+                          As a tropical country, the Philippines has a <strong>year-round growing season (365 days)</strong> with no frost dates. 
+                          You can plant crops throughout the year!
+                        </p>
+                        <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">
+                          <p className="font-semibold mb-1">Why 365 days vs other values?</p>
+                          <ul className="list-disc list-inside space-y-0.5">
+                            <li><strong>365 days</strong> = Tropical (Philippines, near equator)</li>
+                            <li>280 days = Subtropical (warm temperate regions)</li>
+                            <li>195 days = Temperate (moderate climates with frost)</li>
+                            <li>120 days = Cold temperate (short growing season)</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 mt-3">
+                      <div className="bg-yellow-50 p-2 rounded border border-yellow-200">
+                        <div className="flex items-center space-x-1 mb-1">
+                          <Sun className="h-3 w-3 text-yellow-600" />
+                          <p className="text-xs font-semibold text-yellow-800">Dry Season</p>
+                        </div>
+                        <p className="text-xs text-yellow-700">Nov - May: Best for tomatoes, peppers, eggplants</p>
+                      </div>
+                      <div className="bg-blue-50 p-2 rounded border border-blue-200">
+                        <div className="flex items-center space-x-1 mb-1">
+                          <Droplets className="h-3 w-3 text-blue-600" />
+                          <p className="text-xs font-semibold text-blue-800">Wet Season</p>
+                        </div>
+                        <p className="text-xs text-blue-700">Jun - Oct: Ideal for taro, sweet potato, okra</p>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-green-50 p-2 rounded border border-green-200 mt-2">
+                      <p className="text-xs text-green-800">
+                        <strong>💡 Tip:</strong> Plan your garden around wet and dry seasons for optimal harvests. 
+                        Most vegetables can be grown year-round with proper care!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -2194,221 +2313,69 @@ const SeasonalPlanning = () => {
               {/* Weather Tab */}
               {activeTab === 'weather' && (
               <div className="space-y-4">
-                  {/* Enhanced City Search Bar */}
-                  <div className="bg-white rounded-lg p-4 border border-gray-200">
-                    <div className="space-y-3">
-                      {/* Current Location Display */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <MapPin className="w-4 h-4 mr-2 text-blue-500" />
-                          <span>Current Location: <strong>{currentCity}</strong></span>
-                          {selectedLocation && (
-                            <span className="ml-2 text-xs text-gray-500">
-                              ({selectedLocation.lat.toFixed(2)}, {selectedLocation.lng.toFixed(2)})
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => fetchWeatherDataForCity(currentCity)}
-                            disabled={weatherLoading}
-                            className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm disabled:opacity-50"
-                            title="Refresh Weather Data"
-                          >
-                            <RefreshCw className={`w-4 h-4 ${weatherLoading ? 'animate-spin' : ''}`} />
-                          </button>
-                          <button
-                            onClick={resetToCebu}
-                            className="px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
-                            title="Reset to Cebu"
-                          >
-                            🏠
-                          </button>
-                        </div>
-                      </div>
-                      
-                      {/* Search Input with Dropdown */}
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={searchCity}
-                          onChange={(e) => {
-                            setSearchCity(e.target.value)
-                            searchCities(e.target.value)
-                          }}
-                          onFocus={() => setShowSearchResults(searchResults.length > 0)}
-                          onKeyPress={handleSearchKeyPress}
-                          placeholder="Search for a city in the Philippines..."
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                        <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        
-                        {/* Search Results Dropdown */}
-                        {showSearchResults && searchResults.length > 0 && (
-                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                            {searchResults.map((city, index) => (
-                              <button
-                                key={index}
-                                onClick={() => selectCity(city)}
-                                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center justify-between border-b border-gray-100 last:border-b-0"
+                  {/* Weather Card - Same as Dashboard */}
+                  <WeatherCard />
+
+                  {/* 7-Day Forecast - Compact Horizontal */}
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-3">7-Day Forecast</h3>
+                    {sevenDayForecast.length > 0 ? (
+                      <div className="overflow-x-auto pb-2 -mx-2 px-2">
+                        <div className="flex gap-2 min-w-max">
+                          {sevenDayForecast.map((day, index) => {
+                            const date = new Date(day.date)
+                            const dayName = date.toLocaleDateString('en-US', { weekday: 'short' })
+                            const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                            const isToday = index === 0
+                            
+                            const getScoreColor = (score) => {
+                              if (score >= 6) return 'bg-green-50 border-green-300 text-green-900'
+                              if (score >= 4) return 'bg-blue-50 border-blue-300 text-blue-900'
+                              if (score >= 2) return 'bg-yellow-50 border-yellow-300 text-yellow-900'
+                              return 'bg-red-50 border-red-300 text-red-900'
+                            }
+                            
+                            return (
+                              <div 
+                                key={index} 
+                                className={`flex-shrink-0 w-24 p-2 rounded-lg border-2 ${getScoreColor(day.planting_score)} ${isToday ? 'ring-2 ring-primary-500 ring-offset-1' : ''}`}
                               >
-                                <div>
-                                  <div className="font-medium text-gray-900">{city.name}</div>
-                                  <div className="text-sm text-gray-500">{city.country}</div>
-                                </div>
-                                <MapPin className="w-4 h-4 text-gray-400" />
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Quick City Buttons */}
-                      <div className="flex flex-wrap gap-2">
-                        <span className="text-sm text-gray-500 mr-2">Quick select:</span>
-                        {['Manila', 'Cebu', 'Davao', 'Baguio', 'Iloilo'].map(city => (
-                          <button
-                            key={city}
-                            onClick={() => {
-                              const cityData = searchResults.find(c => c.name.includes(city)) || 
-                                             { name: `${city}, Philippines`, country: 'Philippines', lat: 0, lng: 0 }
-                              selectCity(cityData)
-                            }}
-                            className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
-                          >
-                            {city}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Current Weather - Enhanced */}
-                  {weatherData && (
-                    <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <h3 className="font-semibold text-gray-900">Current Weather</h3>
-                          <p className="text-sm text-gray-600 flex items-center">
-                            <MapPin className="w-4 h-4 mr-1" />
-                            {currentCity}
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          {weatherLoading && (
-                            <div className="text-xs text-gray-500">Loading...</div>
-                          )}
-                          <button
-                            onClick={() => {
-                              fetchWeatherDataForCity(currentCity)
-                              fetchSevenDayForecast(currentCity)
-                              fetchSoilTemperature(currentCity)
-                              fetchPlantWeatherTolerance(currentCity, selectedPlant)
-                            }}
-                            className="p-1 text-gray-400 hover:text-gray-600 hover:bg-white rounded-full transition-colors"
-                            title="Refresh"
-                            disabled={weatherLoading}
-                          >
-                            <RefreshCw className={`h-4 w-4 ${weatherLoading ? 'animate-spin' : ''}`} />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Temp:</span>
-                          <span className="font-medium">
-                            {weatherData.temperature ? Math.round(weatherData.temperature) : 'N/A'}°C
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Humidity:</span>
-                          <span className="font-medium">
-                            {weatherData.humidity ? weatherData.humidity : 'N/A'}%
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Wind:</span>
-                          <span className="font-medium">
-                            {weatherData.windSpeed ? Math.round(weatherData.windSpeed) : 'N/A'} km/h
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Conditions:</span>
-                          <span className="font-medium capitalize text-xs">
-                            {weatherData.conditions || 'N/A'}
-                          </span>
-                        </div>
-                      </div>
-                      {/* Debug info */}
-                      <div className="mt-2 text-xs text-gray-500 bg-gray-100 p-2 rounded">
-                        <div className="font-medium text-gray-700 mb-2">Debug Info:</div>
-                        <div className="grid grid-cols-2 gap-2 text-gray-600">
-                          <div>Current City: <strong>{currentCity}</strong></div>
-                          <div>Loading: {weatherLoading ? 'Yes' : 'No'}</div>
-                          {selectedLocation && (
-                            <>
-                              <div>Latitude: {selectedLocation.lat.toFixed(4)}</div>
-                              <div>Longitude: {selectedLocation.lng.toFixed(4)}</div>
-                            </>
-                          )}
-                          <div>Last Fetch: {new Date().toLocaleTimeString()}</div>
-                          <div>Data Source: {weatherData.mock ? 'Mock Data' : 'API'}</div>
-                        </div>
-                        <details className="mt-2">
-                          <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
-                            Raw Weather Data
-                          </summary>
-                          <pre className="mt-2 text-xs bg-white p-2 rounded border overflow-auto max-h-32">
-                            {JSON.stringify(weatherData, null, 2)}
-                          </pre>
-                        </details>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 7-Day Forecast - Compact */}
-                  {sevenDayForecast.length > 0 && (
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold text-gray-900">7-Day Forecast</h3>
-                        <button
-                          onClick={() => setShowForecast(!showForecast)}
-                          className="text-xs text-primary-600 hover:text-primary-700 font-medium"
-                        >
-                          {showForecast ? 'Hide' : 'Show All'}
-                        </button>
-                      </div>
-                      <div className="space-y-2">
-                        {sevenDayForecast.slice(0, showForecast ? 7 : 3).map((day, index) => {
-                          const date = new Date(day.date)
-                          const dayName = date.toLocaleDateString('en-US', { weekday: 'short' })
-                          const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                          
-                          const getScoreColor = (score) => {
-                            if (score >= 6) return 'bg-green-100 text-green-800 border-green-200'
-                            if (score >= 4) return 'bg-blue-100 text-blue-800 border-blue-200'
-                            if (score >= 2) return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                            return 'bg-red-100 text-red-800 border-red-200'
-                          }
-                          
-                  return (
-                            <div key={index} className={`p-2 rounded border ${getScoreColor(day.planting_score)}`}>
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className="font-medium text-sm">{dayName}, {monthDay}</div>
-                                  <div className="text-xs opacity-75">{day.recommendation}</div>
-                      </div>
-                                <div className="text-right">
-                                  <div className="font-medium text-sm">{day.temperature.average}°C</div>
-                                  <div className="text-xs opacity-75">Score: {day.planting_score}/8</div>
+                                <div className="text-center">
+                                  <div className={`text-xs font-medium mb-1 ${isToday ? 'text-primary-700' : 'text-gray-600'}`}>
+                                    {isToday ? 'Today' : dayName}
+                                  </div>
+                                  <div className="text-[10px] text-gray-500 mb-2">{monthDay}</div>
+                                  <div className="text-lg font-bold mb-1">
+                                    {day.temperature?.average || day.temperature?.high || 'N/A'}°C
+                                  </div>
+                                  {day.temperature?.low && day.temperature?.high && (
+                                    <div className="text-[10px] text-gray-600 mb-2">
+                                      {day.temperature.low}° / {day.temperature.high}°
+                                    </div>
+                                  )}
+                                  <div className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                                    day.planting_score >= 6 ? 'bg-green-200 text-green-800' :
+                                    day.planting_score >= 4 ? 'bg-blue-200 text-blue-800' :
+                                    day.planting_score >= 2 ? 'bg-yellow-200 text-yellow-800' :
+                                    'bg-red-200 text-red-800'
+                                  }`}>
+                                    {day.planting_score}/8
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          )
-                        })}
+                            )
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="flex items-center justify-center py-8 text-gray-500">
+                        <div className="text-center">
+                          <Cloud className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                          <p className="text-sm">Loading forecast...</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Weather Suggestions - Compact */}
                   {weatherSuggestions.length > 0 && (
@@ -2443,111 +2410,46 @@ const SeasonalPlanning = () => {
               {/* Plants Tab */}
               {activeTab === 'plants' && (
                 <div className="space-y-4">
-                  {/* Plant Weather Tolerance - Compact */}
-                  {plantWeatherTolerance && (
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold text-gray-900">Plant Analysis</h3>
-                        <select
-                          value={selectedPlant}
-                          onChange={(e) => {
-                            setSelectedPlant(e.target.value)
-                            fetchPlantWeatherTolerance(userLocation.split(',')[0], e.target.value)
-                          }}
-                          className="text-xs border border-gray-300 rounded px-2 py-1"
-                        >
-                          <option value="">All Plants</option>
-                          <option value="tomatoes">Tomatoes</option>
-                          <option value="peppers">Peppers</option>
-                          <option value="lettuce">Lettuce</option>
-                          <option value="cucumbers">Cucumbers</option>
-                          <option value="herbs">Herbs</option>
-                          <option value="garlic">Garlic</option>
-                        </select>
-                      </div>
-                      
+                  {/* Month-based Recommended Plants */}
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-3">
+                      Recommended Plants for {months[selectedMonth]}
+                    </h3>
+                    {plantingCalendar[selectedMonth]?.outdoor && plantingCalendar[selectedMonth].outdoor.length > 0 ? (
                       <div className="space-y-2">
-                        {plantWeatherTolerance.plant_analysis.slice(0, 3).map((plant, index) => {
-                          const statusColors = {
-                            'Good': 'bg-green-50 border-green-200 text-green-800',
-                            'Poor': 'bg-yellow-50 border-yellow-200 text-yellow-800',
-                            'Critical': 'bg-red-50 border-red-200 text-red-800'
-                          }
-                          
-                          return (
-                            <div key={index} className={`p-3 rounded border ${statusColors[plant.status]}`}>
-                              <div className="flex items-start justify-between mb-2">
-                                <h5 className="font-medium text-sm">{plant.plant_name}</h5>
-                                <span className={`px-2 py-1 rounded text-xs font-medium ${statusColors[plant.status]}`}>
-                                  {plant.status}
+                        {plantingCalendar[selectedMonth].outdoor.slice(0, 6).map((plant, index) => (
+                          <div key={index} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow">
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-1">
+                                <h4 className="font-medium text-sm text-gray-900">{plant.name}</h4>
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${getDifficultyColor(plant.difficulty)}`}>
+                                  {plant.difficulty}
                                 </span>
                               </div>
-                              
-                              {plant.warnings.length > 0 && (
-                                <div className="mb-2">
-                                  <div className="text-xs font-medium mb-1">⚠️ {plant.warnings[0]}</div>
-                                </div>
-                              )}
-                              
-                              {plant.recommendations.length > 0 && (
-                                <div className="text-xs">💡 {plant.recommendations[0]}</div>
+                              <p className="text-xs text-gray-600 mb-1">{plant.description}</p>
+                              <p className="text-xs text-gray-500">📅 {plant.timing}</p>
+                              {plant.harvest_time && (
+                                <p className="text-xs text-gray-500 mt-1">⏱️ Harvest: {plant.harvest_time}</p>
                               )}
                             </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Soil Temperature - Compact */}
-                  {soilTemperature && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3">Soil Temperature</h3>
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-                          <div>
-                            <span className="text-gray-600">Shallow:</span>
-                            <span className="font-medium ml-1">{soilTemperature.soil_temperature.shallow}°C</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Deep:</span>
-                            <span className="font-medium ml-1">{soilTemperature.soil_temperature.deep}°C</span>
-                          </div>
-                        </div>
-                        {soilTemperature.recommendations.slice(0, 2).map((rec, index) => (
-                          <div key={index} className={`p-2 rounded text-xs mb-2 ${
-                            rec.color === 'green' ? 'bg-green-50 text-green-800' :
-                            rec.color === 'yellow' ? 'bg-yellow-50 text-yellow-800' :
-                            'bg-blue-50 text-blue-800'
-                          }`}>
-                            <div className="font-medium">{rec.plant_type}</div>
-                            <div>{rec.status}</div>
                           </div>
                         ))}
+                        {plantingCalendar[selectedMonth].outdoor.length > 6 && (
+                          <button
+                            onClick={() => handleViewRecommendedPlants(plantingCalendar[selectedMonth]?.outdoor || [], 'Outdoor')}
+                            className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm mt-2"
+                          >
+                            View All {plantingCalendar[selectedMonth].outdoor.length} Plants
+                          </button>
+                        )}
                       </div>
-                    </div>
-                  )}
-
-                  {/* Recommended Plants - Compact */}
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-3">Recommended Plants</h3>
-                    <div className="space-y-2">
-                      {recommendedPlants.slice(0, 4).map((plant, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                          <div>
-                            <h4 className="font-medium text-sm text-gray-900">{plant.name}</h4>
-                            <p className="text-xs text-gray-600">{plant.type}</p>
-                    </div>
-                    <div className="text-right">
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${getDifficultyColor(plant.difficulty)}`}>
-                        {plant.difficulty}
-                      </span>
-                      <p className="text-xs text-gray-500 mt-1">{plant.harvest_time}</p>
-                    </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <Leaf className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                        <p className="text-sm">No plants available for {months[selectedMonth]}</p>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            </div>
                 </div>
               )}
 
@@ -2556,27 +2458,58 @@ const SeasonalPlanning = () => {
                 <div className="space-y-4">
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-3">
-                      {currentSeason.charAt(0).toUpperCase() + currentSeason.slice(1)} Tips
-                </h3>
-                <div className="space-y-3">
-                      {seasonalTips.map((tip, index) => {
-                        const IconComponent = tip.icon
-                    return (
-                          <div key={index} className="flex items-start space-x-3">
-                            <div className="p-2 bg-primary-100 rounded-lg flex-shrink-0">
-                              <IconComponent className="h-4 w-4 text-primary-600" />
-                          </div>
+                      Tips for {months[selectedMonth]}
+                    </h3>
+                    {plantingCalendar[selectedMonth] ? (
+                      <div className="space-y-3">
+                        {/* Monthly Tip */}
+                        {plantingCalendar[selectedMonth].tips && (
+                          <div className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                            <div className="p-2 bg-yellow-100 rounded-lg flex-shrink-0">
+                              <Clock className="h-4 w-4 text-yellow-600" />
+                            </div>
                             <div>
-                              <h4 className="font-medium text-gray-900 text-sm">{tip.title}</h4>
-                              <p className="text-sm text-gray-600">{tip.description}</p>
-                        </div>
+                              <h4 className="font-medium text-gray-900 text-sm mb-1">Monthly Tip</h4>
+                              <p className="text-sm text-gray-700">{plantingCalendar[selectedMonth].tips}</p>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Weather Considerations */}
+                        {plantingCalendar[selectedMonth].weather_considerations && (
+                          <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                              <Cloud className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900 text-sm mb-1">Weather Considerations</h4>
+                              <p className="text-sm text-gray-700">{plantingCalendar[selectedMonth].weather_considerations}</p>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Philippines Specific */}
+                        {plantingCalendar[selectedMonth].philippines_specific && (
+                          <div className="flex items-start space-x-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                            <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
+                              <MapPin className="h-4 w-4 text-green-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900 text-sm mb-1">Philippines Specific</h4>
+                              <p className="text-sm text-gray-700">{plantingCalendar[selectedMonth].philippines_specific}</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )
-                  })}
-                    </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <Info className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                        <p className="text-sm">No tips available for {months[selectedMonth]}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
             </div>
           </div>
         </div>
