@@ -3,6 +3,7 @@ import { Check, X, Star, Leaf, Droplets, Zap, Crown, ArrowRight, CreditCard, Wal
 import { useAuth } from '../contexts/AuthContext'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import authService from '../services/authService'
 
 const Subscription = () => {
   const { isPremium, refreshAuthStatus } = useAuth()
@@ -111,6 +112,9 @@ const Subscription = () => {
       if (response.data.success) {
         toast.success('Subscription upgrade successful! You now have Premium access.')
         setShowUpgradeModal(false)
+        
+        // Clear auth cache to force fresh data
+        authService.clearCache()
         
         // Refresh auth status to update isPremium
         await refreshAuthStatus()
@@ -423,19 +427,31 @@ const Subscription = () => {
                   <span className="text-sm text-gray-700">Simple soil moisture check</span>
                 </li>
               </ul>
-              <button className="btn-secondary w-full">
-                Current Plan
+              <button 
+                className={`w-full ${isPremium ? 'btn-secondary' : 'btn-secondary bg-green-600 hover:bg-green-700 text-white border-green-600'}`}
+                disabled={isPremium}
+              >
+                {isPremium ? 'Downgrade to Basic' : 'Current Plan'}
               </button>
             </div>
           </div>
 
           {/* Premium Plan */}
-          <div className="card relative border-2 border-primary-300 bg-gradient-to-br from-primary-50 to-white">
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-              <div className="bg-primary-600 text-white px-4 py-1 rounded-full text-sm font-medium">
-                Most Popular
+          <div className={`card relative ${isPremium ? 'border-2 border-yellow-400 bg-gradient-to-br from-yellow-50 to-orange-50' : 'border-2 border-primary-300 bg-gradient-to-br from-primary-50 to-white'}`}>
+            {!isPremium && (
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                <div className="bg-primary-600 text-white px-4 py-1 rounded-full text-sm font-medium">
+                  Most Popular
+                </div>
               </div>
-            </div>
+            )}
+            {isPremium && (
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                <div className="bg-yellow-500 text-white px-4 py-1 rounded-full text-sm font-medium">
+                  Current Plan
+                </div>
+              </div>
+            )}
             <div className="text-center">
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Crown className="h-8 w-8 text-primary-600" />

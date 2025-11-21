@@ -1,102 +1,110 @@
 import React, { useState, useRef } from 'react'
-import { Camera, Upload, Leaf, Info, AlertCircle, CheckCircle, Droplets, Beaker, Thermometer, Image as ImageIcon, ChevronDown, ChevronRight, Shield, Calendar, X, MapPin, Sun, Home } from 'lucide-react'
+import { Camera, Upload, Leaf, Info, AlertCircle, CheckCircle, Droplets, Beaker, Thermometer, Image as ImageIcon, ChevronDown, ChevronRight, Shield, Calendar, X, MapPin, Sun } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
-// Plant image mapping for soil analysis recommendations - UNIQUE PLANT IMAGES
+// Plant image mapping for soil analysis recommendations - PHILIPPINE COMMON PLANTS
 const plantImages = {
-  // Vegetables - Unique plant photos
-  'tomato': 'https://images.unsplash.com/photo-1546470427-5c1d0b0b0b0b?w=300&h=300&fit=crop&crop=center',
-  'carrot': 'https://images.unsplash.com/photo-1445282768818-728615cc910a?w=300&h=300&fit=crop&crop=center',
+  // Vegetables - Common Philippine Vegetables (Gulay)
+  'kangkong': 'https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=300&h=300&fit=crop&crop=center',
+  'water spinach': 'https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=300&h=300&fit=crop&crop=center',
+  'talong': 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=300&h=300&fit=crop&crop=center',
+  'eggplant': 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=300&h=300&fit=crop&crop=center',
+  'kamatis': 'https://images.unsplash.com/photo-1546094092-550e78524a30?w=300&h=300&fit=crop&crop=center',
+  'tomato': 'https://images.unsplash.com/photo-1546094092-550e78524a30?w=300&h=300&fit=crop&crop=center',
+  'sitaw': 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=300&h=300&fit=crop&crop=center',
+  'string beans': 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=300&h=300&fit=crop&crop=center',
+  'okra': 'https://images.unsplash.com/photo-1606914501445-0c2b1b0a0b0b?w=300&h=300&fit=crop&crop=center',
+  'ampalaya': 'https://images.unsplash.com/photo-1606914501445-0c2b1b0a0b0b?w=300&h=300&fit=crop&crop=center',
+  'bitter melon': 'https://images.unsplash.com/photo-1606914501445-0c2b1b0a0b0b?w=300&h=300&fit=crop&crop=center',
+  'kalabasa': 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=300&h=300&fit=crop&crop=center',
+  'squash': 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=300&h=300&fit=crop&crop=center',
+  'pechay': 'https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=300&h=300&fit=crop&crop=center',
+  'chinese cabbage': 'https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=300&h=300&fit=crop&crop=center',
+  'mustasa': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=300&fit=crop&crop=center',
+  'mustard greens': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=300&fit=crop&crop=center',
+  'upo': 'https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?w=300&h=300&fit=crop&crop=center',
+  'bottle gourd': 'https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?w=300&h=300&fit=crop&crop=center',
+  'patola': 'https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?w=300&h=300&fit=crop&crop=center',
+  'sponge gourd': 'https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?w=300&h=300&fit=crop&crop=center',
+  'pepper': 'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=300&h=300&fit=crop&crop=center',
+  'bell pepper': 'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=300&h=300&fit=crop&crop=center',
+  'sili': 'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=300&h=300&fit=crop&crop=center',
+  'chili': 'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=300&h=300&fit=crop&crop=center',
+  'onion': 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=300&h=300&fit=crop&crop=center',
+  'sibuyas': 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=300&h=300&fit=crop&crop=center',
+  'garlic': 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=300&h=300&fit=crop&crop=center',
+  'bawang': 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=300&h=300&fit=crop&crop=center',
+  'corn': 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=300&h=300&fit=crop&crop=center',
+  'mais': 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=300&h=300&fit=crop&crop=center',
+  'radish': 'https://images.unsplash.com/photo-1445282768818-728615cc910a?w=300&h=300&fit=crop&crop=center',
+  'labanos': 'https://images.unsplash.com/photo-1445282768818-728615cc910a?w=300&h=300&fit=crop&crop=center',
+  'cucumber': 'https://images.unsplash.com/photo-1604977049386-5bb1b5b3d087?w=300&h=300&fit=crop&crop=center',
+  'pipino': 'https://images.unsplash.com/photo-1604977049386-5bb1b5b3d087?w=300&h=300&fit=crop&crop=center',
+  
+  // Fruits - Common Philippine Fruits (Prutas)
+  'mango': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
+  'mangga': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
+  'banana': 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&h=300&fit=crop&crop=center',
+  'saging': 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&h=300&fit=crop&crop=center',
+  'papaya': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
+  'pineapple': 'https://images.unsplash.com/photo-1550258987-190a2d41a8ba?w=300&h=300&fit=crop&crop=center',
+  'pinya': 'https://images.unsplash.com/photo-1550258987-190a2d41a8ba?w=300&h=300&fit=crop&crop=center',
+  'guava': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
+  'bayabas': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
+  'coconut': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
+  'niyog': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
+  'calamansi': 'https://images.unsplash.com/photo-1557800634-7bf3c73be389?w=300&h=300&fit=crop&crop=center',
+  'atis': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
+  'sugar apple': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
+  'lansones': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
+  'rambutan': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
+  'durian': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
+  'jackfruit': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
+  'langka': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
+  'watermelon': 'https://images.unsplash.com/photo-1571575173700-afb9492e6a50?w=300&h=300&fit=crop&crop=center',
+  'pakwan': 'https://images.unsplash.com/photo-1571575173700-afb9492e6a50?w=300&h=300&fit=crop&crop=center',
+  
+  // Herbs - Common Philippine Herbs (Halamang Gamot)
+  'pandan': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
+  'tanglad': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
+  'lemongrass': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
+  'luya': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
+  'ginger': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
+  'turmeric': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
+  'luyang dilaw': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
+  'basil': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
+  'balanoy': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
+  'oregano': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
+  'mint': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
+  'cilantro': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
+  'wansoy': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
+  
+  // Flowers - Common Philippine Flowers (Bulaklak)
+  'sampaguita': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
+  'gumamela': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
+  'hibiscus': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
+  'santan': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
+  'bougainvillea': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
+  'kalachuchi': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
+  'plumeria': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
+  'rosal': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
+  'rose': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
+  'yellow bell': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
+  'adelfa': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
+  'oleander': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
+  'marigold': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
+  'sunflower': 'https://images.unsplash.com/photo-1597848212624-e17eb04ad490?w=300&h=300&fit=crop&crop=center',
+  
+  // Keep some common international plants for compatibility
   'lettuce': 'https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=300&h=300&fit=crop&crop=center',
   'spinach': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=300&fit=crop&crop=center',
-  'cucumber': 'https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?w=300&h=300&fit=crop&crop=center',
-  'bell pepper': 'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=300&h=300&fit=crop&crop=center',
-  'eggplant': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=300&fit=crop&crop=center',
-  'onion': 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=300&h=300&fit=crop&crop=center',
-  'garlic': 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=300&h=300&fit=crop&crop=center',
+  'carrot': 'https://images.unsplash.com/photo-1445282768818-728615cc910a?w=300&h=300&fit=crop&crop=center',
   'potato': 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=300&h=300&fit=crop&crop=center',
   'cabbage': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=300&fit=crop&crop=center',
   'broccoli': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=300&fit=crop&crop=center',
-  'cauliflower': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=300&fit=crop&crop=center',
-  'radish': 'https://images.unsplash.com/photo-1445282768818-728615cc910a?w=300&h=300&fit=crop&crop=center',
-  'beetroot': 'https://images.unsplash.com/photo-1445282768818-728615cc910a?w=300&h=300&fit=crop&crop=center',
-  'corn': 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=300&h=300&fit=crop&crop=center',
-  'green bean': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=300&fit=crop&crop=center',
-  'pea': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=300&fit=crop&crop=center',
-  'zucchini': 'https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?w=300&h=300&fit=crop&crop=center',
-  'pumpkin': 'https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?w=300&h=300&fit=crop&crop=center',
-  'turnip': 'https://images.unsplash.com/photo-1445282768818-728615cc910a?w=300&h=300&fit=crop&crop=center',
-  'celery': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=300&fit=crop&crop=center',
-  
-  // Fruits - Unique fruit photos
-  'strawberry': 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=300&h=300&fit=crop&crop=center',
-  'apple': 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=300&h=300&fit=crop&crop=center',
-  'orange': 'https://images.unsplash.com/photo-1557800634-7bf3c73be389?w=300&h=300&fit=crop&crop=center',
-  'lemon': 'https://images.unsplash.com/photo-1557800634-7bf3c73be389?w=300&h=300&fit=crop&crop=center',
-  'grape': 'https://images.unsplash.com/photo-1537640538966-79f369143b8f?w=300&h=300&fit=crop&crop=center',
-  'banana': 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&h=300&fit=crop&crop=center',
   'avocado': 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=300&h=300&fit=crop&crop=center',
-  'mango': 'https://images.unsplash.com/photo-1557800634-7bf3c73be389?w=300&h=300&fit=crop&crop=center',
-  'watermelon': 'https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?w=300&h=300&fit=crop&crop=center',
-  'cantaloupe': 'https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?w=300&h=300&fit=crop&crop=center',
-  'pineapple': 'https://images.unsplash.com/photo-1557800634-7bf3c73be389?w=300&h=300&fit=crop&crop=center',
-  'peach': 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=300&h=300&fit=crop&crop=center',
-  'cherry': 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=300&h=300&fit=crop&crop=center',
-  'raspberry': 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=300&h=300&fit=crop&crop=center',
-  'blueberry': 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=300&h=300&fit=crop&crop=center',
-  
-  // Herbs - Unique herb photos
-  'basil': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
-  'mint': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
-  'rosemary': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
-  'thyme': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
-  'oregano': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
-  'parsley': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
-  'cilantro': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
-  'chives': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
-  'sage': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
-  'lavender': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
-  'ginger': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
-  'turmeric': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
-  
-  // Flowers - Unique flower photos
-  'rose': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'sunflower': 'https://images.unsplash.com/photo-1597848212624-e17eb04ad490?w=300&h=300&fit=crop&crop=center',
-  'marigold': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'petunia': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'tulip': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'lily': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'chrysanthemum': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'gerbera daisy': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'impatiens': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'begonia': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'zinnia': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'california poppy': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'cosmos': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'daylilies': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'black-eyed susans': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  
-  // Trees - Unique tree photos
-  'oak': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&h=300&fit=crop&crop=center',
-  'maple': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&h=300&fit=crop&crop=center',
-  'birch': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&h=300&fit=crop&crop=center',
-  'pine': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&h=300&fit=crop&crop=center',
-  'spruce': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&h=300&fit=crop&crop=center',
-  'cedar': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&h=300&fit=crop&crop=center',
-  'magnolia': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&h=300&fit=crop&crop=center',
-  'japanese maple': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&h=300&fit=crop&crop=center',
-  
-  // Succulents - Unique succulent photos
-  'aloe vera': 'https://images.unsplash.com/photo-1509423350716-97f2360af5e0?w=300&h=300&fit=crop&crop=center',
-  'echeveria': 'https://images.unsplash.com/photo-1509423350716-97f2360af5e0?w=300&h=300&fit=crop&crop=center',
-  'jade plant': 'https://images.unsplash.com/photo-1509423350716-97f2360af5e0?w=300&h=300&fit=crop&crop=center',
-  'sedum': 'https://images.unsplash.com/photo-1509423350716-97f2360af5e0?w=300&h=300&fit=crop&crop=center',
-  'kalanchoe': 'https://images.unsplash.com/photo-1509423350716-97f2360af5e0?w=300&h=300&fit=crop&crop=center',
-  'haworthia': 'https://images.unsplash.com/photo-1509423350716-97f2360af5e0?w=300&h=300&fit=crop&crop=center',
-  'agave': 'https://images.unsplash.com/photo-1509423350716-97f2360af5e0?w=300&h=300&fit=crop&crop=center',
-  'cactus': 'https://images.unsplash.com/photo-1509423350716-97f2360af5e0?w=300&h=300&fit=crop&crop=center',
-  'succulent': 'https://images.unsplash.com/photo-1509423350716-97f2360af5e0?w=300&h=300&fit=crop&crop=center'
+  'strawberry': 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=300&h=300&fit=crop&crop=center'
 }
 
 // Function to get plant image
@@ -125,7 +133,7 @@ const AIPlantRecognition = () => {
   const [gardens, setGardens] = useState([])
   const [addToGardenForm, setAddToGardenForm] = useState({
     garden_id: '',
-    environment: 'outdoor',
+    environment: 'outdoor', // Only outdoor supported
     planting_date: new Date().toISOString().split('T')[0]
   })
   const fileInputRef = useRef(null)
@@ -189,7 +197,7 @@ const AIPlantRecognition = () => {
       setShowAddToGardenModal(false)
       setAddToGardenForm({
         garden_id: '',
-        environment: 'outdoor',
+        environment: 'outdoor', // Only outdoor supported
         planting_date: new Date().toISOString().split('T')[0]
       })
     } catch (error) {
@@ -1191,37 +1199,16 @@ const AIPlantRecognition = () => {
                 </select>
               </div>
 
-              {/* Environment Selection */}
+              {/* Environment Selection - Only Outdoor Supported */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="block text-sm font-medium text-gray-700 mb-2">
                   Environment
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setAddToGardenForm(prev => ({ ...prev, environment: 'outdoor' }))}
-                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border-2 transition-colors ${
-                      addToGardenForm.environment === 'outdoor'
-                        ? 'border-green-500 bg-green-50 text-green-700'
-                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Sun className="h-4 w-4" />
-                    <span className="font-medium">Outdoor</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAddToGardenForm(prev => ({ ...prev, environment: 'indoor' }))}
-                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border-2 transition-colors ${
-                      addToGardenForm.environment === 'indoor'
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Home className="h-4 w-4" />
-                    <span className="font-medium">Indoor</span>
-                  </button>
                 </div>
+                <div className="p-3 rounded-lg border-2 border-green-500 bg-green-50 text-green-700 flex items-center justify-center space-x-2">
+                  <Sun className="h-4 w-4" />
+                  <span className="font-medium">Outdoor</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Only outdoor gardening is supported</p>
               </div>
 
               {/* Planting Date */}

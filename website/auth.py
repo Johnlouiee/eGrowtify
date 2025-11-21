@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request, flash, redirect, url_for
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
-from .models import db, User, Admin
+from .models import db, User, Admin, UserSubscription, ActivityLog
 from .email_service import send_email_verification
 from datetime import datetime
 import os
@@ -182,6 +182,23 @@ def auth_status():
         
         # Create fresh auth status data
         user = current_user
+        
+        # Check for active subscription
+        from .models import UserSubscription
+        active_subscription = UserSubscription.query.filter_by(
+            user_id=user.id,
+            status='active'
+        ).first()
+        
+        # Determine subscription plan from active subscription
+        subscription_plan = 'basic'
+        if active_subscription and active_subscription.subscription_plan:
+            subscription_plan = active_subscription.subscription_plan.plan_type if hasattr(active_subscription.subscription_plan, 'plan_type') else 'premium'
+        elif getattr(user, 'subscribed', False):
+            subscription_plan = 'premium'
+        
+        is_premium = getattr(user, 'subscribed', False) or subscription_plan == 'premium'
+        
         auth_data = {
             "authenticated": True,
             "user": {
@@ -189,11 +206,13 @@ def auth_status():
                 "email": user.email,
                 "full_name": user.full_name,
                 "role": user.role,
+                "is_active": user.is_active,
+                "created_at": user.created_at.isoformat() if user.created_at else None,
                 "subscribed": getattr(user, 'subscribed', False),
-                "subscription_plan": getattr(user, 'subscription_plan', 'basic')
+                "subscription_plan": subscription_plan
             },
             "is_admin": user.is_admin(),
-            "is_premium": getattr(user, 'subscribed', False) or getattr(user, 'subscription_plan', 'basic') == 'premium'
+            "is_premium": is_premium
         }
         
         # Cache the result
@@ -389,7 +408,16 @@ def change_password():
         return jsonify({"success": True, "message": "Password changed successfully!"})
     except Exception as e:
         db.session.rollback()
-        return jsonify({"success": False, "message": "An error occurred while changing password."}), 500
+        import traceback
+        print(f"Error changing password: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({"success": False, "message": f"An error occurred while changing password: {str(e)}"}), 500
+
+@auth.route('/auth/change-password', methods=['PUT'])
+@login_required
+def change_password_alias():
+    """Alias route for change password to match frontend endpoint"""
+    return change_password()
 
 @auth.route('/profile', methods=['GET', 'PUT'])
 @login_required
@@ -471,7 +499,17 @@ def delete_account():
         user_id = current_user.id
         user_email = current_user.email
         
-        # Delete the user - cascades will handle related data (gardens, subscriptions, etc.)
+        # Manually delete records that have foreign keys to avoid SQLAlchemy ORM issues
+        # Delete UserSubscription records first (SQLAlchemy tries to update them otherwise)
+        UserSubscription.query.filter_by(user_id=user_id).delete()
+        
+        # Delete ActivityLog records (they don't have CASCADE in the model)
+        ActivityLog.query.filter_by(user_id=user_id).delete()
+        
+        # Commit the deletions before deleting the user
+        db.session.commit()
+        
+        # Now delete the user - cascades will handle other related data (gardens, etc.)
         # For models with SET NULL, user_id will be set to NULL
         db.session.delete(current_user)
         db.session.commit()
@@ -485,6 +523,13 @@ def delete_account():
         })
     except Exception as e:
         db.session.rollback()
-        return jsonify({"success": False, "message": "An error occurred while deleting your account."}), 500
+        import traceback
+        error_msg = str(e)
+        print(f"Error deleting account for user {user_id}: {error_msg}")
+        print(traceback.format_exc())
+        return jsonify({
+            "success": False, 
+            "message": f"An error occurred while deleting your account: {error_msg}"
+        }), 500
 
 # Add more API endpoints as needed...

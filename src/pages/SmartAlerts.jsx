@@ -204,7 +204,7 @@ const SmartAlerts = () => {
           id: 7,
           type: 'watering',
           plant_name: 'Succulent',
-          garden_name: 'Indoor Garden',
+          garden_name: 'Outdoor Garden',
           message: 'Water your succulent plant',
           due_date: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
           priority: 'medium',
@@ -231,86 +231,159 @@ const SmartAlerts = () => {
   const fetchProgressReports = async () => {
     try {
       setReportsLoading(true)
-      // Simulate API call - replace with actual endpoint
-      await new Promise(resolve => setTimeout(resolve, 500))
       
-      // Mock progress reports data
-      const mockProgressReports = [
-        {
-          id: 1,
-          title: 'Weekly Garden Health Report',
-          date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-          type: 'weekly',
-          summary: 'Overall garden health improved by 12% this week',
-          metrics: {
-            plantsHealthy: 15,
-            plantsNeedingAttention: 3,
-            tasksCompleted: 8,
-            growthRate: 12
-          },
-          insights: [
-            'Tomato plants showing excellent growth',
-            'Basil needs more frequent watering',
-            'Rose bush requires pruning'
-          ],
-          recommendations: [
-            'Increase watering frequency for herbs',
-            'Apply fertilizer to flowering plants',
-            'Check for pest activity on lettuce'
-          ]
-        },
-        {
-          id: 2,
-          title: 'Monthly Growth Analysis',
-          date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-          type: 'monthly',
-          summary: 'Significant growth across all plant categories',
-          metrics: {
-            plantsHealthy: 18,
-            plantsNeedingAttention: 2,
-            tasksCompleted: 35,
-            growthRate: 25
-          },
-          insights: [
-            'Pepper plants doubled in size',
-            'Herb garden thriving with new additions',
-            'Vegetable yield increased by 30%'
-          ],
-          recommendations: [
-            'Consider expanding vegetable garden',
-            'Add more herbs to maximize space',
-            'Plan for fall planting season'
-          ]
-        },
-        {
-          id: 3,
-          title: 'Seasonal Planning Report',
-          date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-          type: 'seasonal',
-          summary: 'Spring planting season preparation complete',
-          metrics: {
-            plantsHealthy: 20,
-            plantsNeedingAttention: 1,
-            tasksCompleted: 12,
-            growthRate: 18
-          },
-          insights: [
-            'Soil preparation successful',
-            'Seed starting on schedule',
-            'Weather conditions optimal'
-          ],
-          recommendations: [
-            'Begin hardening off seedlings',
-            'Prepare garden beds for transplanting',
-            'Monitor for late frost warnings'
-          ]
+      // Fetch plants and alerts data
+      const [plantsResponse, alertsResponse] = await Promise.all([
+        axios.get('/garden'),
+        axios.get('/api/smart-alerts')
+      ])
+      
+      const plantsData = plantsResponse.data.plants || []
+      // Extract plant objects from the nested structure
+      const allPlants = plantsData.map(item => item.plant || item).filter(Boolean)
+      const allAlerts = alertsResponse.data.alerts || []
+      const completedActions = alertsResponse.data.completed_actions || []
+      
+      // Calculate metrics for weekly report (last 7 days)
+      const now = new Date()
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+      
+      // Weekly completed tasks
+      const weeklyCompleted = completedActions.filter(action => {
+        const actionDate = new Date(action.action_date)
+        return actionDate >= weekAgo
+      })
+      
+      // Monthly completed tasks
+      const monthlyCompleted = completedActions.filter(action => {
+        const actionDate = new Date(action.action_date)
+        return actionDate >= monthAgo
+      })
+      
+      // Plants needing attention (have pending or overdue alerts)
+      const plantsNeedingAttention = new Set(
+        allAlerts
+          .filter(alert => alert.status === 'pending' || alert.status === 'overdue')
+          .map(alert => alert.plant_name)
+      )
+      
+      // Generate insights based on actual data
+      const generateInsights = (completedCount, needsAttentionCount, totalPlants) => {
+        const insights = []
+        
+        if (completedCount > 0) {
+          insights.push(`${completedCount} care task${completedCount > 1 ? 's' : ''} completed successfully`)
         }
-      ]
+        
+        if (needsAttentionCount > 0) {
+          const plantNames = Array.from(plantsNeedingAttention).slice(0, 3)
+          if (plantNames.length > 0) {
+            insights.push(`${plantNames.join(', ')} ${plantNames.length > 1 ? 'need' : 'needs'} attention`)
+          }
+        } else {
+          insights.push('All plants are in good health')
+        }
+        
+        if (totalPlants > 0) {
+          const healthyCount = totalPlants - needsAttentionCount
+          if (healthyCount === totalPlants) {
+            insights.push('Garden maintenance is on track')
+          } else {
+            insights.push(`${healthyCount} out of ${totalPlants} plants are thriving`)
+          }
+        }
+        
+        return insights.length > 0 ? insights : ['Garden status is being monitored']
+      }
       
-      setProgressReports(mockProgressReports)
+      // Generate recommendations based on actual data
+      const generateRecommendations = (needsAttentionCount, alerts) => {
+        const recommendations = []
+        const alertTypes = {
+          watering: 0,
+          fertilizing: 0,
+          pruning: 0
+        }
+        
+        alerts.forEach(alert => {
+          if (alert.status === 'pending' || alert.status === 'overdue') {
+            if (alert.type === 'watering') alertTypes.watering++
+            else if (alert.type === 'fertilizing') alertTypes.fertilizing++
+            else if (alert.type === 'pruning') alertTypes.pruning++
+          }
+        })
+        
+        if (alertTypes.watering > 0) {
+          recommendations.push(`Water ${alertTypes.watering} plant${alertTypes.watering > 1 ? 's' : ''} that need${alertTypes.watering === 1 ? 's' : ''} attention`)
+        }
+        
+        if (alertTypes.fertilizing > 0) {
+          recommendations.push(`Apply fertilizer to ${alertTypes.fertilizing} plant${alertTypes.fertilizing > 1 ? 's' : ''}`)
+        }
+        
+        if (alertTypes.pruning > 0) {
+          recommendations.push(`Prune ${alertTypes.pruning} plant${alertTypes.pruning > 1 ? 's' : ''} for optimal growth`)
+        }
+        
+        if (needsAttentionCount === 0) {
+          recommendations.push('Continue current care routine')
+          recommendations.push('Monitor plant growth and adjust care as needed')
+        }
+        
+        return recommendations.length > 0 ? recommendations : ['Keep up the great work with your garden care']
+      }
+      
+      // Calculate growth rate (percentage of healthy plants)
+      const totalPlants = allPlants.length
+      const needsAttentionCount = plantsNeedingAttention.size
+      const healthyCount = totalPlants - needsAttentionCount
+      const growthRate = totalPlants > 0 ? Math.round((healthyCount / totalPlants) * 100) : 0
+      
+      // Weekly Report
+      const weeklyReport = {
+        id: 1,
+        title: 'Weekly Garden Health Report',
+        date: new Date(),
+        type: 'weekly',
+        summary: weeklyCompleted.length > 0 
+          ? `Completed ${weeklyCompleted.length} care task${weeklyCompleted.length > 1 ? 's' : ''} this week`
+          : 'Weekly garden status update',
+        metrics: {
+          plantsHealthy: healthyCount,
+          plantsNeedingAttention: needsAttentionCount,
+          tasksCompleted: weeklyCompleted.length,
+          growthRate: growthRate
+        },
+        insights: generateInsights(weeklyCompleted.length, needsAttentionCount, totalPlants),
+        recommendations: generateRecommendations(needsAttentionCount, allAlerts)
+      }
+      
+      // Monthly Report
+      const monthlyReport = {
+        id: 2,
+        title: 'Monthly Growth Analysis',
+        date: new Date(),
+        type: 'monthly',
+        summary: monthlyCompleted.length > 0
+          ? `Completed ${monthlyCompleted.length} care tasks this month`
+          : 'Monthly garden health overview',
+        metrics: {
+          plantsHealthy: healthyCount,
+          plantsNeedingAttention: needsAttentionCount,
+          tasksCompleted: monthlyCompleted.length,
+          growthRate: growthRate
+        },
+        insights: generateInsights(monthlyCompleted.length, needsAttentionCount, totalPlants),
+        recommendations: generateRecommendations(needsAttentionCount, allAlerts)
+      }
+      
+      setProgressReports([weeklyReport, monthlyReport])
     } catch (error) {
       console.error('Error fetching progress reports:', error)
       toast.error('Error loading progress reports')
+      // Set empty reports on error
+      setProgressReports([])
     } finally {
       setReportsLoading(false)
     }
@@ -443,35 +516,9 @@ ${report.recommendations.map(rec => `• ${rec}`).join('\n')}
   const generateNewReport = async () => {
     try {
       setReportsLoading(true)
-      // Simulate generating a new report
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      const newReport = {
-        id: Date.now(),
-        title: 'Latest Garden Health Report',
-        date: new Date(),
-        type: 'weekly',
-        summary: 'Fresh analysis of your garden\'s current status and growth patterns',
-        metrics: {
-          plantsHealthy: Math.floor(Math.random() * 10) + 15,
-          plantsNeedingAttention: Math.floor(Math.random() * 5) + 1,
-          tasksCompleted: Math.floor(Math.random() * 10) + 8,
-          growthRate: Math.floor(Math.random() * 20) + 10
-        },
-        insights: [
-          'Recent weather conditions have been optimal for growth',
-          'Watering schedule adjustments showing positive results',
-          'New plant additions are adapting well to garden environment'
-        ],
-        recommendations: [
-          'Continue current watering routine',
-          'Consider adding more companion plants',
-          'Monitor soil pH levels for optimal nutrition'
-        ]
-      }
-      
-      setProgressReports(prev => [newReport, ...prev])
-      toast.success('New progress report generated!')
+      // Refresh reports with latest data
+      await fetchProgressReports()
+      toast.success('Progress reports refreshed with latest data!')
     } catch (error) {
       toast.error('Error generating new report')
     } finally {

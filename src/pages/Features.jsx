@@ -30,7 +30,7 @@ const Features = () => {
       description: 'Personalized planting calendars that match your local climate and seasonal changes, helping you plan the best time to plant and harvest.',
       details: [
         'Location-based planting schedules (urban or rural)',
-        'Recommendations for both indoor and outdoor planting setups',
+        'Recommendations for outdoor planting setups',
       ]
     },
     {

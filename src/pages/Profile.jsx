@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
-import { User, Mail, Phone, Eye, EyeOff, Lock, Save, Edit, Upload, Trash2, AlertTriangle } from 'lucide-react'
+import { User, Mail, Phone, Eye, EyeOff, Lock, Save, Edit, Upload, Trash2, AlertTriangle, X } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import authService from '../services/authService'
 
 const Profile = () => {
   const { user, updateProfile, logout } = useAuth()
@@ -28,6 +29,9 @@ const Profile = () => {
   const [photoFile, setPhotoFile] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [showPhotoModal, setShowPhotoModal] = useState(false)
+
+  const [profileUser, setProfileUser] = useState(null)
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -41,6 +45,8 @@ const Profile = () => {
           email: u.email ?? user.email ?? '',
           phone: u.phone ?? user.phone ?? ''
         })
+        // Store full profile user data for summary section
+        setProfileUser(u)
         // Initialize avatar preview from stored path or user data
         try {
           const stored = localStorage.getItem('profilePhotoPath')
@@ -56,6 +62,7 @@ const Profile = () => {
           email: user.email || '',
           phone: user.phone || ''
         })
+        setProfileUser(user)
         try {
           const stored = localStorage.getItem('profilePhotoPath')
           if (stored) setPhotoPreview(stored.startsWith('http') || stored.startsWith('/') ? stored : `/${stored}`)
@@ -147,11 +154,18 @@ const Profile = () => {
       const response = await axios.delete('/profile/delete')
       if (response.data.success) {
         toast.success('Your account has been deleted successfully')
-        // Clear local storage
+        
+        // Clear local storage immediately
         localStorage.clear()
-        // Logout and redirect
-        await logout()
-        navigate('/')
+        
+        // Clear auth cache
+        authService.clearCache()
+        
+        // Redirect immediately to landing page with full page reload
+        // This ensures all React state is cleared and user cannot access protected routes
+        setTimeout(() => {
+          window.location.href = '/'
+        }, 1000)
       }
     } catch (error) {
       const message = error.response?.data?.message || 'Error deleting account'
@@ -534,16 +548,27 @@ const Profile = () => {
             <div className="card">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Summary</h3>
               <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-14 h-14 bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
-                    {photoPreview ? (
-                      <img src={photoPreview} alt="Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <User className="h-7 w-7 text-gray-500" />
+                <div className="flex flex-col items-center space-y-3">
+                  <button
+                    onClick={() => photoPreview && setShowPhotoModal(true)}
+                    className={`relative ${photoPreview ? 'cursor-pointer hover:opacity-90 transition-opacity' : 'cursor-default'}`}
+                    disabled={!photoPreview}
+                  >
+                    <div className="w-32 h-32 bg-gray-200 rounded-full overflow-hidden flex items-center justify-center shadow-lg ring-4 ring-gray-100 hover:ring-primary-200 transition-all">
+                      {photoPreview ? (
+                        <img src={photoPreview} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="h-16 w-16 text-gray-500" />
+                      )}
+                    </div>
+                    {photoPreview && (
+                      <div className="absolute bottom-0 right-0 bg-primary-600 text-white rounded-full p-2 shadow-lg">
+                        <Eye className="h-4 w-4" />
+                      </div>
                     )}
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{user.full_name || 'Not set'}</p>
+                  </button>
+                  <div className="text-center">
+                    <p className="font-medium text-gray-900 text-lg">{user.full_name || 'Not set'}</p>
                     <p className="text-sm text-gray-500">{user.email}</p>
                   </div>
                 </div>
@@ -559,13 +584,27 @@ const Profile = () => {
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Member Since:</span>
                       <span className="text-sm font-medium text-gray-900">
-                        {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                        {profileUser?.created_at 
+                          ? new Date(profileUser.created_at).toLocaleDateString('en-US', { 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })
+                          : user?.created_at 
+                            ? new Date(user.created_at).toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                              })
+                            : 'N/A'}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Status:</span>
-                      <span className={`text-sm font-medium ${user.is_active ? 'text-green-600' : 'text-red-600'}`}>
-                        {user.is_active ? 'Active' : 'Inactive'}
+                      <span className={`text-sm font-medium ${
+                        (profileUser?.is_active ?? user?.is_active ?? true) ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {(profileUser?.is_active ?? user?.is_active ?? true) ? 'Active' : 'Inactive'}
                       </span>
                     </div>
                   </div>
@@ -577,6 +616,27 @@ const Profile = () => {
           </div>
         </div>
       </div>
+
+      {/* Photo Modal */}
+      {showPhotoModal && photoPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={() => setShowPhotoModal(false)}>
+          <div className="relative max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowPhotoModal(false)}
+              className="absolute top-4 right-4 bg-white rounded-full p-2 hover:bg-gray-100 transition-colors z-10 shadow-lg"
+            >
+              <X className="h-6 w-6 text-gray-700" />
+            </button>
+            <div className="bg-white rounded-lg overflow-hidden shadow-2xl">
+              <img 
+                src={photoPreview} 
+                alt="Profile Photo" 
+                className="w-full h-auto max-h-[90vh] object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
