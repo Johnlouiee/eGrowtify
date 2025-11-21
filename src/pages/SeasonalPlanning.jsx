@@ -1049,7 +1049,7 @@ const SeasonalPlanning = () => {
         icon: AlertTriangle,
         title: 'Cold Weather Alert',
         message: 'Temperatures are below optimal for most warm-season crops.',
-        action: 'Protect tender plants with row covers or bring containers indoors.'
+        action: 'Protect tender plants with row covers.'
       })
     } else if (weather.temperature < 60) {
       suggestions.push({
@@ -1141,7 +1141,7 @@ const SeasonalPlanning = () => {
         icon: CheckCircle,
         title: 'Perfect Spring Planting Weather',
         message: 'Ideal conditions for spring planting and seed starting.',
-        action: 'Start tomatoes, peppers, and herbs indoors. Plant peas, lettuce, and spinach outdoors.'
+        action: 'Start tomatoes, peppers, and herbs. Plant peas, lettuce, and spinach outdoors.'
       })
     } else if (currentSeason === 'summer' && weather.temperature > 80) {
       suggestions.push({
@@ -1184,7 +1184,7 @@ const SeasonalPlanning = () => {
         icon: Clock,
         title: 'Short Growing Season',
         message: 'Limited growing season requires careful planning.',
-        action: 'Start seeds indoors early, use season extenders, and choose quick-maturing varieties.'
+        action: 'Start seeds early, use season extenders, and choose quick-maturing varieties.'
       })
     }
 
@@ -1242,35 +1242,6 @@ const SeasonalPlanning = () => {
         {
           month: 'January',
           season: 'dry',
-          indoor: [
-            { 
-              name: 'Tomatoes', 
-              timing: 'Start seeds indoors', 
-              difficulty: 'Easy',
-              description: 'Start tomato seeds for transplanting in March',
-              care_tips: 'Keep soil warm (25-30°C), provide 14-16 hours of light daily',
-              varieties: ['Cherry', 'Roma', 'Beefsteak'],
-              harvest_time: '60-80 days from transplant'
-            },
-            { 
-              name: 'Peppers', 
-              timing: 'Start seeds indoors', 
-              difficulty: 'Medium',
-              description: 'Start pepper seeds for transplanting in March',
-              care_tips: 'Requires warm soil (25-30°C), consistent moisture',
-              varieties: ['Bell', 'Jalapeño', 'Habanero'],
-              harvest_time: '70-90 days from transplant'
-            },
-            { 
-              name: 'Herbs (Basil, Oregano)', 
-              timing: 'Year-round', 
-              difficulty: 'Easy',
-              description: 'Perfect for indoor growing in containers',
-              care_tips: 'Well-draining soil, 6-8 hours of sunlight',
-              varieties: ['Sweet Basil', 'Thai Basil', 'Oregano'],
-              harvest_time: '30-60 days'
-            }
-          ],
           outdoor: [
             { 
               name: 'Lettuce', 
@@ -1318,42 +1289,13 @@ const SeasonalPlanning = () => {
               harvest_time: '2-3 years'
             }
           ],
-          tips: 'January is perfect for starting warm-season crops indoors. The dry season provides ideal conditions for cool-season vegetables outdoors.',
+          tips: 'January is perfect for starting warm-season crops. The dry season provides ideal conditions for cool-season vegetables outdoors.',
           weather_considerations: 'Dry season conditions are ideal for most vegetables. Water early morning to avoid evaporation.',
           philippines_specific: 'Great time to plant leafy greens and start tomatoes/peppers for the upcoming wet season.'
         },
         {
           month: 'February',
           season: 'dry',
-          indoor: [
-            { 
-              name: 'Eggplant', 
-              timing: 'Start seeds indoors', 
-              difficulty: 'Medium',
-              description: 'Start eggplant seeds for transplanting in April',
-              care_tips: 'Warm soil (25-30°C), consistent moisture, transplant when 6-8 inches tall',
-              varieties: ['Long Purple', 'Black Beauty', 'Japanese'],
-              harvest_time: '80-100 days from transplant'
-            },
-            { 
-              name: 'Cucumbers', 
-              timing: 'Start seeds indoors', 
-              difficulty: 'Easy',
-              description: 'Start cucumber seeds for transplanting in March',
-              care_tips: 'Warm soil, good drainage, provide support for vines',
-              varieties: ['English', 'Pickling', 'Lemon'],
-              harvest_time: '50-70 days from transplant'
-            },
-            { 
-              name: 'Squash', 
-              timing: 'Start seeds indoors', 
-              difficulty: 'Easy',
-              description: 'Start squash seeds for transplanting in March',
-              care_tips: 'Warm soil, plenty of space for vines to spread',
-              varieties: ['Zucchini', 'Yellow Squash', 'Butternut'],
-              harvest_time: '45-55 days from transplant'
-            }
-          ],
           outdoor: [
             { 
               name: 'Kale', 
@@ -1401,33 +1343,13 @@ const SeasonalPlanning = () => {
               harvest_time: '3-4 years'
             }
           ],
-          tips: 'February is ideal for starting warm-season crops indoors. Continue planting cool-season vegetables outdoors.',
+          tips: 'February is ideal for starting warm-season crops. Continue planting cool-season vegetables outdoors.',
           weather_considerations: 'Dry season continues - maintain consistent watering schedule.',
           philippines_specific: 'Perfect time to start eggplant and other heat-loving crops for the upcoming wet season.'
         },
         {
           month: 'March',
           season: 'dry',
-          indoor: [
-            { 
-              name: 'Melons', 
-              timing: 'Start seeds indoors', 
-              difficulty: 'Medium',
-              description: 'Start melon seeds for transplanting in April',
-              care_tips: 'Warm soil (25-30°C), good drainage, provide support for vines',
-              varieties: ['Watermelon', 'Cantaloupe', 'Honeydew'],
-              harvest_time: '80-100 days from transplant'
-            },
-            { 
-              name: 'Corn', 
-              timing: 'Start seeds indoors', 
-              difficulty: 'Easy',
-              description: 'Start corn seeds for transplanting in April',
-              care_tips: 'Warm soil, plant in blocks for pollination, consistent moisture',
-              varieties: ['Sweet Corn', 'Popcorn', 'Ornamental'],
-              harvest_time: '60-90 days from transplant'
-            }
-          ],
           outdoor: [
             { 
               name: 'Beans', 
@@ -1484,33 +1406,13 @@ const SeasonalPlanning = () => {
               harvest_time: '3-5 years'
             }
           ],
-          tips: 'March is perfect for transplanting warm-season crops started indoors. The dry season provides ideal conditions.',
+          tips: 'March is perfect for transplanting warm-season crops. The dry season provides ideal conditions.',
           weather_considerations: 'Warm, dry conditions are perfect for most warm-season vegetables. Water consistently.',
           philippines_specific: 'Great time to plant heat-loving crops like corn, beans, and squash that will thrive in the dry season.'
         },
         {
           month: 'April',
           season: 'dry',
-          indoor: [
-            { 
-              name: 'Late Season Tomatoes', 
-              timing: 'Start seeds indoors', 
-              difficulty: 'Medium',
-              description: 'Start late-season tomatoes for extended harvest',
-              care_tips: 'Warm soil (25-30°C), provide support, consistent moisture',
-              varieties: ['Cherry', 'Roma', 'Beefsteak'],
-              harvest_time: '60-80 days from transplant'
-            },
-            { 
-              name: 'Herbs (Cilantro, Dill)', 
-              timing: 'Year-round', 
-              difficulty: 'Easy',
-              description: 'Cool-season herbs perfect for dry season',
-              care_tips: 'Well-draining soil, partial shade, consistent moisture',
-              varieties: ['Cilantro', 'Dill', 'Parsley'],
-              harvest_time: '30-60 days'
-            }
-          ],
           outdoor: [
             { 
               name: 'Tomatoes', 
@@ -1574,17 +1476,6 @@ const SeasonalPlanning = () => {
         {
           month: 'May',
           season: 'dry',
-          indoor: [
-            { 
-              name: 'Wet Season Prep', 
-              timing: 'Start seeds for wet season', 
-              difficulty: 'Medium',
-              description: 'Start seeds for crops that will thrive in wet season',
-              care_tips: 'Warm soil, good drainage, prepare for high humidity conditions',
-              varieties: ['Taro', 'Sweet Potato', 'Okra'],
-              harvest_time: 'Varies by crop'
-            }
-          ],
           outdoor: [
             { 
               name: 'Melons', 
@@ -1648,26 +1539,6 @@ const SeasonalPlanning = () => {
         {
           month: 'June',
           season: 'wet',
-          indoor: [
-            { 
-              name: 'Microgreens', 
-              timing: 'Year-round', 
-              difficulty: 'Easy',
-              description: 'Perfect for indoor growing during wet season',
-              care_tips: 'Shallow containers, good drainage, harvest in 7-14 days',
-              varieties: ['Arugula', 'Radish', 'Pea Shoots', 'Sunflower'],
-              harvest_time: '7-14 days'
-            },
-            { 
-              name: 'Herbs (Mint, Parsley)', 
-              timing: 'Year-round', 
-              difficulty: 'Easy',
-              description: 'Indoor herbs thrive during wet season',
-              care_tips: 'Well-draining soil, bright indirect light, avoid overwatering',
-              varieties: ['Spearmint', 'Peppermint', 'Italian Parsley'],
-              harvest_time: '30-60 days'
-            }
-          ],
           outdoor: [
             { 
               name: 'Okra', 
@@ -1731,26 +1602,6 @@ const SeasonalPlanning = () => {
         {
           month: 'July',
           season: 'wet',
-          indoor: [
-            { 
-              name: 'Microgreens', 
-              timing: 'Year-round', 
-              difficulty: 'Easy',
-              description: 'Perfect for indoor growing during wet season',
-              care_tips: 'Shallow containers, good drainage, harvest in 7-14 days',
-              varieties: ['Arugula', 'Radish', 'Pea Shoots', 'Sunflower'],
-              harvest_time: '7-14 days'
-            },
-            { 
-              name: 'Herbs (Basil, Mint)', 
-              timing: 'Year-round', 
-              difficulty: 'Easy',
-              description: 'Indoor herbs thrive during wet season',
-              care_tips: 'Well-draining soil, bright indirect light, avoid overwatering',
-              varieties: ['Sweet Basil', 'Thai Basil', 'Spearmint', 'Peppermint'],
-              harvest_time: '30-60 days'
-            }
-          ],
           outdoor: [
             { 
               name: 'Taro', 
@@ -1814,26 +1665,6 @@ const SeasonalPlanning = () => {
         {
           month: 'August',
           season: 'wet',
-          indoor: [
-            { 
-              name: 'Indoor Herbs', 
-              timing: 'Year-round', 
-              difficulty: 'Easy',
-              description: 'Indoor herbs thrive during wet season',
-              care_tips: 'Well-draining soil, bright indirect light, avoid overwatering',
-              varieties: ['Basil', 'Mint', 'Parsley', 'Cilantro'],
-              harvest_time: '30-60 days'
-            },
-            { 
-              name: 'Microgreens', 
-              timing: 'Year-round', 
-              difficulty: 'Easy',
-              description: 'Perfect for indoor growing during wet season',
-              care_tips: 'Shallow containers, good drainage, harvest in 7-14 days',
-              varieties: ['Arugula', 'Radish', 'Pea Shoots', 'Sunflower'],
-              harvest_time: '7-14 days'
-            }
-          ],
           outdoor: [
             { 
               name: 'Ube (Purple Yam)', 
@@ -1879,26 +1710,6 @@ const SeasonalPlanning = () => {
         {
           month: 'September',
           season: 'wet',
-          indoor: [
-            { 
-              name: 'Indoor Herbs', 
-              timing: 'Year-round', 
-              difficulty: 'Easy',
-              description: 'Indoor herbs thrive during wet season',
-              care_tips: 'Well-draining soil, bright indirect light, avoid overwatering',
-              varieties: ['Basil', 'Mint', 'Parsley', 'Cilantro'],
-              harvest_time: '30-60 days'
-            },
-            { 
-              name: 'Microgreens', 
-              timing: 'Year-round', 
-              difficulty: 'Easy',
-              description: 'Perfect for indoor growing during wet season',
-              care_tips: 'Shallow containers, good drainage, harvest in 7-14 days',
-              varieties: ['Arugula', 'Radish', 'Pea Shoots', 'Sunflower'],
-              harvest_time: '7-14 days'
-            }
-          ],
           outdoor: [
             { 
               name: 'Bawang (Garlic)', 
@@ -1953,26 +1764,6 @@ const SeasonalPlanning = () => {
         {
           month: 'October',
           season: 'wet',
-          indoor: [
-            { 
-              name: 'Indoor Vegetables', 
-              timing: 'Year-round', 
-              difficulty: 'Easy',
-              description: 'Indoor vegetables thrive during wet season',
-              care_tips: 'Well-draining soil, bright indirect light, avoid overwatering',
-              varieties: ['Lettuce', 'Spinach', 'Kale'],
-              harvest_time: '30-60 days'
-            },
-            { 
-              name: 'Indoor Herbs', 
-              timing: 'Year-round', 
-              difficulty: 'Easy',
-              description: 'Indoor herbs thrive during wet season',
-              care_tips: 'Well-draining soil, bright indirect light, avoid overwatering',
-              varieties: ['Basil', 'Mint', 'Parsley', 'Cilantro'],
-              harvest_time: '30-60 days'
-            }
-          ],
           outdoor: [
             { 
               name: 'Bawang (Garlic)', 
@@ -2018,26 +1809,6 @@ const SeasonalPlanning = () => {
         {
           month: 'November',
           season: 'dry',
-          indoor: [
-            { 
-              name: 'Indoor Herbs', 
-              timing: 'Year-round', 
-              difficulty: 'Easy',
-              description: 'Indoor herbs thrive during dry season',
-              care_tips: 'Well-draining soil, bright indirect light, consistent moisture',
-              varieties: ['Basil', 'Mint', 'Parsley', 'Cilantro'],
-              harvest_time: '30-60 days'
-            },
-            { 
-              name: 'Microgreens', 
-              timing: 'Year-round', 
-              difficulty: 'Easy',
-              description: 'Perfect for indoor growing during dry season',
-              care_tips: 'Shallow containers, good drainage, harvest in 7-14 days',
-              varieties: ['Arugula', 'Radish', 'Pea Shoots', 'Sunflower'],
-              harvest_time: '7-14 days'
-            }
-          ],
           outdoor: [
             { 
               name: 'Bawang (Garlic)', 
@@ -2083,35 +1854,6 @@ const SeasonalPlanning = () => {
         {
           month: 'December',
           season: 'dry',
-          indoor: [
-            { 
-              name: 'Indoor Herbs', 
-              timing: 'Year-round', 
-              difficulty: 'Easy',
-              description: 'Indoor herbs thrive during dry season',
-              care_tips: 'Well-draining soil, bright indirect light, consistent moisture',
-              varieties: ['Basil', 'Mint', 'Parsley', 'Cilantro'],
-              harvest_time: '30-60 days'
-            },
-            { 
-              name: 'Microgreens', 
-              timing: 'Year-round', 
-              difficulty: 'Easy',
-              description: 'Perfect for indoor growing during dry season',
-              care_tips: 'Shallow containers, good drainage, harvest in 7-14 days',
-              varieties: ['Arugula', 'Radish', 'Pea Shoots', 'Sunflower'],
-              harvest_time: '7-14 days'
-            },
-            { 
-              name: 'Indoor Vegetables', 
-              timing: 'Year-round', 
-              difficulty: 'Easy',
-              description: 'Indoor vegetables thrive during dry season',
-              care_tips: 'Well-draining soil, bright indirect light, consistent moisture',
-              varieties: ['Lettuce', 'Spinach', 'Kale'],
-              harvest_time: '30-60 days'
-            }
-          ],
           outdoor: [
             { 
               name: 'Bawang (Garlic)', 
@@ -2348,28 +2090,7 @@ const SeasonalPlanning = () => {
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-4 flex items-center">
-                        <Sun className="h-5 w-5 mr-2 text-yellow-600" />
-                        Indoor Planting
-                      </h4>
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        <p className="text-sm text-gray-600 mb-4">
-                          Discover the best indoor plants for {months[selectedMonth]} in the Philippines
-                        </p>
-                        <button
-                          onClick={() => handleViewRecommendedPlants(plantingCalendar[selectedMonth]?.indoor || [], 'Indoor')}
-                          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
-                        >
-                          <span>View Recommended Plants</span>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                    
+                  <div className="grid grid-cols-1 gap-6">
                     <div>
                       <h4 className="font-medium text-gray-900 mb-4 flex items-center">
                         <Leaf className="h-5 w-5 mr-2 text-green-600" />

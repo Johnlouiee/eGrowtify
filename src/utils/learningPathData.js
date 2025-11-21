@@ -32,7 +32,7 @@ export const getLearningPathModules = () => {
               '🌿 HERBS - The Perfect Starting Point: Basil (loves warmth, grows fast, great for cooking), Mint (vigorous grower, hard to kill, spreads easily), Parsley (biennial, great for garnishes), Chives (perennial, comes back every year, mild onion flavor). Herbs are forgiving because they\'re meant to be harvested regularly.',
               '🥬 VEGETABLES - Quick Rewards: Lettuce (fast-growing, can harvest multiple times, cool-season crop), Spinach (nutrient-dense, grows in cool weather), Radishes (ready in 3-4 weeks, great for kids), Cherry tomatoes (more forgiving than large tomatoes, continuous harvest). Start with leafy greens - they\'re the easiest!',
               '🌸 FLOWERS - Instant Gratification: Marigolds (pest-repellent, bright colors, easy from seed), Calendula (edible flowers, self-seeding), Sunflowers (dramatic height, attracts birds, easy to grow). Flowers provide immediate visual rewards and attract beneficial insects.',
-              '🏠 HOUSEPLANTS - Year-Round Gardening: Pothos (trailing vine, tolerates neglect, purifies air), Snake Plant (nearly indestructible, low water needs), Spider Plant (produces baby plants, great for sharing). Perfect for learning plant care basics indoors.',
+              '🌱 OUTDOOR PLANTS - Year-Round Gardening: Pothos (trailing vine, tolerates neglect, purifies air), Snake Plant (nearly indestructible, low water needs), Spider Plant (produces baby plants, great for sharing). Perfect for learning plant care basics outdoors.',
               '💡 SUCCESS TIP: Start with just 3-5 plants maximum. Master their care routine before adding more. It\'s better to have a few thriving plants than many struggling ones!',
               '🎯 PLANT SELECTION CRITERIA: Choose plants that match your available light, space, and time commitment. Consider your local climate and growing season length.'
             ]
@@ -70,7 +70,7 @@ export const getLearningPathModules = () => {
               imageDescription: 'A snake plant (Sansevieria) showing its characteristic upright, sword-like leaves and low-maintenance appearance',
               options: ['Orchid (needs special care)', 'Snake Plant (very forgiving)', 'Fiddle Leaf Fig (finicky)', 'Succulent (needs lots of sun)'],
               correct: 1,
-              explanation: '✅ CORRECT! This is a Snake Plant (Sansevieria). Perfect for beginners because: It tolerates low light, needs minimal watering, is nearly impossible to kill, and purifies indoor air. It\'s often called "indestructible" for good reason!'
+              explanation: '✅ CORRECT! This is a Snake Plant (Sansevieria). Perfect for beginners because: It tolerates low light, needs minimal watering, is nearly impossible to kill, and purifies air. It\'s often called "indestructible" for good reason!'
             },
             {
               id: 3,
@@ -200,7 +200,7 @@ export const getLearningPathModules = () => {
             points: [
               '🎯 PLANT SELECTION STRATEGY: Start with plants that naturally thrive in your soil type. This reduces maintenance and increases success. Research plant preferences before buying - it saves time and money.',
               '🌱 CONTAINER GARDENING: Use different soil mixes for different plants in containers. Cacti need sandy mix, ferns need moisture-retentive mix, herbs need well-drained mix. This gives you control over growing conditions.',
-              '🏠 INDOOR ADAPTATIONS: Most houseplants prefer well-draining potting mix. Add extra perlite for succulents, extra peat for moisture-loving plants. Use saucers to catch water but empty them regularly.',
+              '🌱 OUTDOOR ADAPTATIONS: Most outdoor plants prefer well-draining potting mix. Add extra perlite for succulents, extra peat for moisture-loving plants. Ensure proper drainage for outdoor containers.',
               '🌿 GARDEN BED PREPARATION: Test soil before planting new beds. Add amendments based on test results and plant needs. Create raised beds for better drainage if needed. Plan plant placement based on soil conditions.',
               '💡 SUCCESS TIPS: Group plants with similar soil needs together. This makes watering and fertilizing easier. Keep records of what works in your soil - this knowledge is valuable for future plantings.',
               '🔄 CONTINUOUS LEARNING: Observe how plants respond to your soil conditions. Some plants may surprise you by thriving in unexpected conditions. Gardening is about learning and adapting to your unique environment.'

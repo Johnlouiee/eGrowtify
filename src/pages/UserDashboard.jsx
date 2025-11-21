@@ -21,6 +21,7 @@ const UserDashboard = () => {
   const [learningProgress, setLearningProgress] = useState({})
   const [seasonalTips, setSeasonalTips] = useState([])
   const [loading, setLoading] = useState(true)
+  const [imageErrors, setImageErrors] = useState({})
 
   // Get learning paths data from centralized source
   const allModules = getLearningPathModules()
@@ -334,14 +335,31 @@ const UserDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
-      // Fetch notifications
-      const notificationsResponse = await axios.get('/api/notifications')
-      setNotifications(notificationsResponse.data || [])
+      
+      // Fetch notifications (handle errors gracefully)
+      try {
+        const notificationsResponse = await axios.get('/notifications')
+        if (notificationsResponse.data && Array.isArray(notificationsResponse.data)) {
+          setNotifications(notificationsResponse.data)
+        } else if (notificationsResponse.data) {
+          setNotifications([notificationsResponse.data])
+        }
+      } catch (notifError) {
+        // Silently handle notifications errors - endpoint may not be fully implemented
+        console.log('Notifications endpoint not available, using empty array')
+        setNotifications([])
+      }
       
       // Fetch plants and gardens
-      const gardenResponse = await axios.get('/garden')
-      setPlants(gardenResponse.data.plants || [])
-      setGardens(gardenResponse.data.gardens || [])
+      try {
+        const gardenResponse = await axios.get('/garden')
+        setPlants(gardenResponse.data.plants || [])
+        setGardens(gardenResponse.data.gardens || [])
+      } catch (gardenError) {
+        console.log('Garden data not available')
+        setPlants([])
+        setGardens([])
+      }
       
       // Calculate learning progress from localStorage
       const calculateProgress = () => {
@@ -400,9 +418,35 @@ const UserDashboard = () => {
       const progress = calculateProgress()
       setLearningProgress(progress)
       
-      // Fetch seasonal tips
-      const tipsResponse = await axios.get('/api/seasonal-tips')
-      setSeasonalTips(tipsResponse.data || [])
+      // Fetch seasonal tips (using seasonal-planning endpoint)
+      try {
+        const tipsResponse = await axios.get('/seasonal-planning')
+        if (tipsResponse.data?.tips) {
+          const currentSeason = tipsResponse.data.current_season
+          const seasonTips = tipsResponse.data.tips[currentSeason] || []
+          setSeasonalTips(seasonTips.map((tip, index) => ({
+            id: index + 1,
+            title: `${currentSeason.charAt(0).toUpperCase() + currentSeason.slice(1)} Tip`,
+            description: tip,
+            icon: Sun
+          })))
+        } else {
+          // Set fallback data if response doesn't have tips
+          setSeasonalTips([
+            { id: 1, title: 'Spring Planting Tips', description: 'Best time to start your vegetable garden', icon: Sun },
+            { id: 2, title: 'Watering Schedule', description: 'Adjust watering frequency for warmer weather', icon: Droplets },
+            { id: 3, title: 'Pest Prevention', description: 'Natural ways to keep pests away', icon: AlertCircle }
+          ])
+        }
+      } catch (tipsError) {
+        // Silently fall back to mock data if endpoint doesn't exist
+        console.log('Seasonal tips endpoint not available, using fallback data')
+        setSeasonalTips([
+          { id: 1, title: 'Spring Planting Tips', description: 'Best time to start your vegetable garden', icon: Sun },
+          { id: 2, title: 'Watering Schedule', description: 'Adjust watering frequency for warmer weather', icon: Droplets },
+          { id: 3, title: 'Pest Prevention', description: 'Natural ways to keep pests away', icon: AlertCircle }
+        ])
+      }
       
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
@@ -721,28 +765,57 @@ const UserDashboard = () => {
               </Link>
             </div>
             <div className="space-y-4">
-              {plants.slice(0, 4).map((plantData, index) => (
+              {plants.slice(0, 4).map((plantData, index) => {
+                // Handle both API plant structure and static plant structure
+                const plant = plantData.plant || plantData
+                const plantImage = plant.latest_image || plant.image_path
+                
+                return (
                 <div key={index} className="group relative overflow-hidden bg-gradient-to-r from-white to-gray-50 rounded-xl border border-gray-200 hover:border-green-300 hover:shadow-lg transition-all duration-300">
                   <div className="p-4">
                     <div className="flex items-center space-x-4">
                       <div className="relative">
-                        <div className="w-14 h-14 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center shadow-sm">
-                          <Leaf className="h-7 w-7 text-green-600" />
-                        </div>
-                        <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
-                          plantData.plant?.health_status === 'healthy' 
-                            ? 'bg-green-500' 
-                            : 'bg-yellow-500'
-                        }`}></div>
+                        {plantImage && 
+                         !plantImage.includes('blob') && 
+                         !plantImage.includes('_blob') &&
+                         !imageErrors[`${plant.id || index}-${plantImage}`] ? (
+                          <div className="w-14 h-14 rounded-xl overflow-hidden border border-gray-300 shadow-sm relative">
+                            <img
+                              src={`/${plantImage}`}
+                              alt={plant.name || 'Plant'}
+                              className="w-full h-full object-cover"
+                              onError={() => {
+                                setImageErrors(prev => ({
+                                  ...prev,
+                                  [`${plant.id || index}-${plantImage}`]: true
+                                }))
+                              }}
+                            />
+                            <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
+                              plantData.plant?.health_status === 'healthy' 
+                                ? 'bg-green-500' 
+                                : 'bg-yellow-500'
+                            }`}></div>
+                          </div>
+                        ) : (
+                          <div className="w-14 h-14 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center shadow-sm relative">
+                            <Leaf className="h-7 w-7 text-green-600" />
+                            <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
+                              plantData.plant?.health_status === 'healthy' 
+                                ? 'bg-green-500' 
+                                : 'bg-yellow-500'
+                            }`}></div>
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-gray-900 truncate">{plantData.plant?.name || 'Plant'}</h3>
-                        <p className="text-sm text-gray-600 capitalize">{plantData.plant?.type || 'Unknown'}</p>
+                        <h3 className="font-bold text-gray-900 truncate">{plant.name || 'Plant'}</h3>
+                        <p className="text-sm text-gray-600 capitalize">{plant.type || 'Unknown'}</p>
                         <div className="flex items-center space-x-4 mt-2">
                           <div className="flex items-center space-x-1">
                             <Droplets className="h-3 w-3 text-blue-500" />
                             <span className="text-xs text-gray-500">
-                              {plantData.plant?.watering_frequency || 'N/A'} days
+                              {plant.watering_frequency || 'N/A'} days
                             </span>
                           </div>
                           <div className="flex items-center space-x-1">
@@ -759,7 +832,8 @@ const UserDashboard = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+                )
+              })}
               {plants.length === 0 && (
                 <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl">
                   <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">

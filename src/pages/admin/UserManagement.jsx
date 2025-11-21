@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
 import { 
-  Users, UserPlus, Eye, Edit, Trash2, Search, Filter,
+  Users, UserPlus, Eye, Trash2, Search, Filter,
   ArrowLeft, Shield, Mail, Phone, Calendar, CheckCircle, XCircle,
   MoreVertical, Download, Upload, RefreshCw, Settings, Crown,
   UserCheck, UserX, Star, AlertTriangle, TrendingUp, BarChart3,
@@ -71,12 +70,13 @@ const UserManagement = () => {
     }
 
     try {
-      await axios.delete(`/api/admin/users/${userId}`)
-      toast.success('User deleted successfully')
+      const response = await axios.delete(`/api/admin/users/${userId}`)
+      toast.success(response.data?.message || 'User deleted successfully')
       fetchUsers() // Refresh the list
     } catch (error) {
       console.error('Error deleting user:', error)
-      toast.error('Failed to delete user')
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to delete user'
+      toast.error(errorMessage)
     }
   }
 
@@ -581,14 +581,6 @@ const UserManagement = () => {
                             <Eye className="h-5 w-5" />
                             <span className="text-sm font-medium">View</span>
                           </button>
-                          <Link
-                            to={`/admin/users/${user.id}/edit`}
-                            className="px-4 py-2.5 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
-                            title="Edit User"
-                          >
-                            <Edit className="h-5 w-5" />
-                            <span className="text-sm font-medium">Edit</span>
-                          </Link>
                           <button
                             onClick={() => handleToggleUserStatus(user.id, user.is_active)}
                             className={`px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md ${
@@ -706,14 +698,6 @@ const UserManagement = () => {
                           <Eye className="h-5 w-5" />
                           <span className="text-sm font-medium">View</span>
                         </button>
-                        <Link
-                          to={`/admin/users/${user.id}/edit`}
-                          className="px-3 py-2 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
-                          title="Edit User"
-                        >
-                          <Edit className="h-5 w-5" />
-                          <span className="text-sm font-medium">Edit</span>
-                        </Link>
                         <button
                           onClick={() => handleDeleteUser(user.id)}
                           className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
@@ -790,14 +774,6 @@ const UserManagement = () => {
                           <Eye className="h-5 w-5" />
                           <span className="text-sm font-medium">View</span>
                         </button>
-                        <Link
-                          to={`/admin/users/${user.id}/edit`}
-                          className="px-3 py-2 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
-                          title="Edit User"
-                        >
-                          <Edit className="h-5 w-5" />
-                          <span className="text-sm font-medium">Edit</span>
-                        </Link>
                         <button
                           onClick={() => handleDeleteUser(user.id)}
                           className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"

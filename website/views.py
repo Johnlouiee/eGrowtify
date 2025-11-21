@@ -13,7 +13,8 @@ from .models import (
     LearningPathContent,
     ActivityLog,
     UserPlantUpdateUsage,
-    UserSharedConcept
+    UserSharedConcept,
+    UserSubscription
 )
 from datetime import datetime, timedelta, timezone
 import os
@@ -1148,7 +1149,8 @@ def soil_analysis():
 
         # Enhanced system prompt for comprehensive soil analysis with plant recommendations
         system_prompt = (
-            "You are an expert soil scientist, agronomist, and horticulturist with extensive experience in soil analysis and plant-soil relationships. "
+            "You are an expert soil scientist, agronomist, and horticulturist with extensive experience in soil analysis and plant-soil relationships, "
+            "SPECIFICALLY for tropical climates and the Philippines. "
             "Analyze the provided soil image and return detailed, accurate soil assessment with specific plant recommendations. "
             "Consider visual indicators of soil health, texture, moisture, color, structure, and potential issues. "
             "Return your analysis as strict JSON with these exact keys: "
@@ -1160,7 +1162,12 @@ def soil_analysis():
             "soil_health_score (1-10 rating with explanation), seasonal_considerations (best planting times for this soil), "
             "soil_amendments (specific materials to add for improvement), water_retention (how well soil holds water), "
             "root_development (how well roots can grow in this soil). "
-            "Be specific, practical, and accurate for home gardening. Focus on plants that would actually thrive in the specific soil conditions visible in the image."
+            "IMPORTANT: For suitable_plants, prioritize and recommend COMMON PHILIPPINE PLANTS that are widely grown in the Philippines. "
+            "For vegetables, recommend: Kangkong (water spinach), Talong (eggplant), Kamatis (tomato), Sitaw (string beans), Okra, Ampalaya (bitter melon), Kalabasa (squash), Pechay (Chinese cabbage), Mustasa (mustard greens), Upo (bottle gourd), Patola (sponge gourd), Sili (chili), Sibuyas (onion), Bawang (garlic), Mais (corn), Labanos (radish), Pipino (cucumber). "
+            "For fruits, recommend: Mango, Saging (banana), Papaya, Pinya (pineapple), Bayabas (guava), Niyog (coconut), Calamansi, Atis (sugar apple), Lansones, Rambutan, Durian, Langka (jackfruit), Pakwan (watermelon). "
+            "For herbs, recommend: Pandan, Tanglad (lemongrass), Luya (ginger), Luyang Dilaw (turmeric), Balanoy (basil), Oregano, Wansoy (cilantro). "
+            "For flowers, recommend: Sampaguita (national flower), Gumamela (hibiscus), Santan, Bougainvillea, Kalachuchi (plumeria), Rosal (rose), Yellow Bell, Adelfa (oleander), Marigold. "
+            "Be specific, practical, and accurate for home gardening in the Philippines. Focus on plants that would actually thrive in the specific soil conditions visible in the image and are commonly available in the Philippines."
         )
 
         try:
@@ -2198,8 +2205,10 @@ def gardening_tips():
     return jsonify({"message": "Gardening tips feature"})
 
 @views.route('/notifications')
+@login_required
 def notifications():
-    return jsonify({"message": "Notifications feature"})
+    # Return empty array for now - can be extended to return actual user notifications
+    return jsonify([])
 
 @views.route('/garden', methods=['GET'])
 @login_required
@@ -4288,11 +4297,27 @@ def admin_delete_user(user_id):
     if not current_user.is_admin():
         return jsonify({"error": "Access denied. Admin privileges required."}), 403
     
-    user = User.query.get_or_404(user_id)
-    db.session.delete(user)
-    db.session.commit()
-    
-    return jsonify({"message": "User deleted successfully"})
+    try:
+        user = User.query.get_or_404(user_id)
+        if user.role == 'admin' and user.id != current_user.id:
+            return jsonify({"error": "Cannot delete other admin users"}), 403
+        
+        # Manually delete related records to avoid foreign key constraint issues
+        UserSubscription.query.filter_by(user_id=user_id).delete()
+        ActivityLog.query.filter_by(user_id=user_id).delete()
+        db.session.commit()
+        
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({"message": "User deleted successfully"})
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        error_msg = str(e)
+        print(f"Error deleting user {user_id}: {error_msg}")
+        print(traceback.format_exc())
+        return jsonify({"error": f"Failed to delete user: {error_msg}"}), 500
 
 @views.route('/admin/feedbacks')
 @login_required
@@ -4760,12 +4785,28 @@ def admin_api_delete_user(user_id):
         if user.role == 'admin' and user.id != current_user.id:
             return jsonify({"error": "Cannot delete other admin users"}), 403
         
+        # Manually delete related records to avoid foreign key constraint issues
+        # Delete UserSubscription records first
+        UserSubscription.query.filter_by(user_id=user_id).delete()
+        
+        # Delete ActivityLog records (they don't have CASCADE in the model)
+        ActivityLog.query.filter_by(user_id=user_id).delete()
+        
+        # Commit the deletions before deleting the user
+        db.session.commit()
+        
+        # Now delete the user - cascades will handle other related data (gardens, etc.)
         db.session.delete(user)
         db.session.commit()
+        
         return jsonify({"message": "User deleted successfully"})
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        import traceback
+        error_msg = str(e)
+        print(f"Error deleting user {user_id}: {error_msg}")
+        print(traceback.format_exc())
+        return jsonify({"error": f"Failed to delete user: {error_msg}"}), 500
 
 @views.route('/api/admin/users/<int:user_id>/status', methods=['PATCH'])
 @login_required
@@ -5127,7 +5168,6 @@ def user_subscribe():
         
         # Update user subscription status
         current_user.subscribed = True
-        current_user.subscription_plan = plan_type
         
         # Create subscription record in user_subscriptions table
         from website.models import UserSubscription, SubscriptionPlan
@@ -5186,6 +5226,15 @@ def user_subscribe():
         )
         
         db.session.commit()
+        
+        # Clear auth status cache to force refresh
+        # Import the auth module to access the cache
+        import website.auth as auth_module
+        if hasattr(auth_module.auth_status, '_cache'):
+            cache_key = f"auth_status_{current_user.id}"
+            if cache_key in auth_module.auth_status._cache:
+                del auth_module.auth_status._cache[cache_key]
+                print(f"🔐 Cleared auth status cache for user {current_user.id}")
         
         print(f"💰 SUBSCRIPTION: Successfully upgraded user {current_user.id} to premium")
         

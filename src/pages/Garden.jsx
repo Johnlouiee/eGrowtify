@@ -73,7 +73,7 @@ const Garden = () => {
       plant: {
         name: 'Basil',
         type: 'herb',
-        environment: 'indoor',
+        environment: 'outdoor',
         watering_frequency: 2,
         fertilizing_frequency: 30,
         pruning_frequency: 14,
@@ -1534,7 +1534,6 @@ const Garden = () => {
                     required
                   >
                     <option value="">Select Environment</option>
-                    <option value="indoor">Indoor</option>
                     <option value="outdoor">Outdoor</option>
                   </select>
                 </div>

@@ -26,7 +26,8 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
   const [uploadingImage, setUploadingImage] = useState(null)
   const [updatingPlant, setUpdatingPlant] = useState(null)
   const [selectedPlantSpace, setSelectedPlantSpace] = useState(null)
-  const [isIndoorGrid, setIsIndoorGrid] = useState(false)
+  // Removed indoor/outdoor toggle - only outdoor mode supported
+  const isIndoorGrid = false
 
   useEffect(() => {
     if (selectedGarden) {
@@ -55,12 +56,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
     }
   }, [selectedGarden, gridSpaces])
 
-  // Re-fetch plants when environment filter changes
-  useEffect(() => {
-    if (selectedGarden && gridSpaces.length > 0) {
-      fetchPlants()
-    }
-  }, [isIndoorGrid])
+  // Removed indoor/outdoor filter - only outdoor plants shown
 
   // Expose refresh function to parent component
   useImperativeHandle(ref, () => ({
@@ -117,9 +113,9 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
         const plantGardenId = item.garden?.id
         const plantEnvironment = item.plant?.environment
         const belongsToSelectedGarden = plantGardenId === selectedGarden?.id
-        const matchesEnvironment = isIndoorGrid ? plantEnvironment === 'indoor' : plantEnvironment === 'outdoor'
+        const matchesEnvironment = plantEnvironment === 'outdoor'
         
-        console.log(`🌱 Plant ${item.plant.name} - Garden: ${plantGardenId} (selected: ${selectedGarden?.id}), Environment: ${plantEnvironment} (indoor: ${isIndoorGrid})`)
+        console.log(`🌱 Plant ${item.plant.name} - Garden: ${plantGardenId} (selected: ${selectedGarden?.id}), Environment: ${plantEnvironment}`)
         console.log(`🌱 Belongs to garden: ${belongsToSelectedGarden}, Matches environment: ${matchesEnvironment}`)
         
         // For now, show all plants that belong to the garden regardless of environment
@@ -185,7 +181,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
             id: 'demo-2',
             name: 'Demo Basil',
             type: 'herb',
-            environment: 'indoor',
+            environment: 'outdoor',
             care_guide: 'Keep soil moist, partial sun',
             ideal_soil_type: 'Rich soil',
             garden_id: selectedGarden.id,
@@ -504,7 +500,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
     console.log('🌱 Available plants:', plants)
     console.log('🌱 Plants length:', plants.length)
     console.log('🌱 Selected garden:', selectedGarden)
-    console.log('🌱 Indoor grid mode:', isIndoorGrid)
+    // Only outdoor mode supported
     console.log('🌱 showPlantModal will be set to true')
     
     setSelectedSpace(space)
@@ -942,16 +938,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-lg font-semibold text-gray-900">Grid Planner</h3>
           <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setIsIndoorGrid(!isIndoorGrid)}
-              className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg transition-colors text-sm ${
-                isIndoorGrid 
-                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              <span>{isIndoorGrid ? '🏠 Indoor' : '🌱 Outdoor'}</span>
-            </button>
+            {/* Indoor/outdoor toggle removed - only outdoor mode supported */}
           <button
             onClick={() => setShowPurchaseModal(true)}
             className="flex items-center space-x-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
@@ -1071,13 +1058,10 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
           <div className="text-center py-4">
             <Leaf className="h-8 w-8 mx-auto mb-2 text-gray-400" />
             <p className="text-sm text-gray-500 mb-2">
-              No {isIndoorGrid ? 'indoor' : 'outdoor'} plants in this garden
+              No outdoor plants in this garden
             </p>
             <p className="text-xs text-gray-400">
-              {isIndoorGrid 
-                ? 'Add indoor plants to this garden or switch to outdoor view' 
-                : 'Add outdoor plants to this garden or switch to indoor view'
-              }
+              Add outdoor plants to this garden
             </p>
           </div>
         </div>
@@ -1135,7 +1119,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                 // Always show all spaces - no environment filtering for basic users
                 const shouldShowSpace = true
                 
-                console.log(`🌱 Grid space ${space.grid_position}: occupied=${isOccupied}, plant=${plant?.name}, environment=${plant?.environment}, indoor=${isIndoorGrid}, shouldShow=${shouldShowSpace}, isPremium=${isPremium}`)
+                console.log(`🌱 Grid space ${space.grid_position}: occupied=${isOccupied}, plant=${plant?.name}, environment=${plant?.environment}, shouldShow=${shouldShowSpace}, isPremium=${isPremium}`)
                 
                 if (!shouldShowSpace) {
                   console.log(`🌱 Hiding space ${space.grid_position} due to environment filter`)
@@ -1620,10 +1604,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                 <Leaf className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <p className="text-gray-500 mb-4">No plants available for this garden.</p>
                 <p className="text-sm text-gray-400 mb-4">
-                  {isIndoorGrid 
-                    ? 'Add some indoor plants to this garden first, or switch to outdoor view to see outdoor plants.' 
-                    : 'Add some outdoor plants to this garden first, or switch to indoor view to see indoor plants.'
-                  }
+                  Add some outdoor plants to this garden first.
                 </p>
                 <div className="flex space-x-3">
                   <button
