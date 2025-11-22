@@ -1246,9 +1246,9 @@ const SeasonalPlanning = () => {
   }
 
   const getSeasonFromMonth = (month) => {
-    // Philippines has only 2 seasons: Wet (June-October) and Dry (November-May)
-    if (month >= 5 && month <= 9) return 'wet' // June-October
-    return 'dry' // November-May
+    // Philippines has only 2 seasons: Wet (June-November) and Dry (December-May)
+    if (month >= 5 && month <= 10) return 'wet' // June-November (months 5-10)
+    return 'dry' // December-May (months 11, 0-4)
   }
 
   const getFrostDate = (latitude, type) => {
@@ -1863,7 +1863,7 @@ const SeasonalPlanning = () => {
         },
         {
           month: 'November',
-          season: 'dry',
+          season: 'wet',
           outdoor: [
             { 
               name: 'Bawang (Garlic)', 
@@ -1887,7 +1887,7 @@ const SeasonalPlanning = () => {
               name: 'Pomelo', 
               timing: 'Plant seedlings', 
               difficulty: 'Medium',
-              description: 'Large citrus fruit perfect for dry season',
+              description: 'Large citrus fruit perfect for wet season',
               care_tips: 'Well-draining soil, full sun, water regularly',
               varieties: ['Chandler', 'Oro Blanco', 'Melogold'],
               harvest_time: '3-4 years'
@@ -1896,15 +1896,15 @@ const SeasonalPlanning = () => {
               name: 'Calamansi Trees', 
               timing: 'Plant seedlings', 
               difficulty: 'Easy',
-              description: 'Filipino citrus tree perfect for dry season',
+              description: 'Filipino citrus tree perfect for wet season',
               care_tips: 'Well-draining soil, full sun, water regularly',
               varieties: ['Philippine Lime', 'Kalamansi'],
               harvest_time: '2-3 years'
             }
           ],
-          tips: 'November is perfect for planting garlic and onions for next year. The dry season provides ideal conditions.',
-          weather_considerations: 'Dry season conditions are perfect for root development. Water consistently.',
-          philippines_specific: 'Traditional Filipino crops like bawang and sibuyas are perfect for planting during dry season.'
+          tips: 'November is perfect for planting garlic and onions for next year. The wet season provides ideal conditions for root development.',
+          weather_considerations: 'Wet season conditions are perfect for root development. Ensure good drainage to prevent waterlogging.',
+          philippines_specific: 'Traditional Filipino crops like bawang and sibuyas are perfect for planting during wet season for harvest in the upcoming dry season.'
         },
         {
           month: 'December',
