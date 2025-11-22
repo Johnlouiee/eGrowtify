@@ -18,6 +18,7 @@ const Subscription = () => {
   const [subscriptionDetails, setSubscriptionDetails] = useState(null)
   const [billingHistory, setBillingHistory] = useState([])
   const [loading, setLoading] = useState(false)
+  const [showCancelWarning, setShowCancelWarning] = useState(false)
 
   const priceDisplay = useMemo(() => ({ amount: '150', currency: 'PHP', plan: 'Premium Plan' }), [])
 
@@ -132,32 +133,16 @@ const Subscription = () => {
   }
 
   const handleDowngrade = async () => {
-    try {
-      setIsProcessing(true)
-      // Mock downgrade process
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      toast.success('Subscription downgraded. You will retain Premium access until the end of your billing period.')
-      setShowSubscriptionDetails(false)
-      // Refresh subscription details
-      fetchSubscriptionDetails()
-    } catch (error) {
-      toast.error('Failed to downgrade subscription. Please try again.')
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-
-  const handleCancelSubscription = async () => {
-    if (window.confirm('Are you sure you want to cancel your subscription? You will immediately lose access to Premium features including advanced learning paths and 6x6 garden grids.')) {
+    if (window.confirm('Are you sure you want to downgrade your subscription? You will lose access to Premium features including advanced learning paths and 6x6 garden grids at the end of your billing period.')) {
       try {
         setIsProcessing(true)
         setError('')
         
-        // Call backend subscription cancellation endpoint
-        const response = await axios.post('/api/subscription/cancel')
+        // Call backend subscription downgrade endpoint
+        const response = await axios.post('/api/subscription/downgrade')
         
         if (response.data.success) {
-          toast.success('Subscription cancelled successfully. You have been reverted to the basic plan.')
+          toast.success('Subscription downgraded successfully. You will retain Premium access until the end of your billing period.')
           setShowSubscriptionDetails(false)
           
           // Refresh auth status to update isPremium
@@ -166,15 +151,49 @@ const Subscription = () => {
           // Refresh subscription details
           fetchSubscriptionDetails()
         } else {
-          throw new Error(response.data.error || 'Subscription cancellation failed')
+          throw new Error(response.data.error || 'Subscription downgrade failed')
         }
       } catch (error) {
-        console.error('Subscription cancellation error:', error)
-        toast.error('Failed to cancel subscription. Please try again.')
-        setError('Failed to cancel subscription. Please try again.')
+        console.error('Subscription downgrade error:', error)
+        toast.error('Failed to downgrade subscription. Please try again.')
+        setError('Failed to downgrade subscription. Please try again.')
       } finally {
         setIsProcessing(false)
       }
+    }
+  }
+
+  const handleCancelSubscription = () => {
+    setShowCancelWarning(true)
+  }
+
+  const confirmCancel = async () => {
+    setShowCancelWarning(false)
+    try {
+      setIsProcessing(true)
+      setError('')
+      
+      // Call backend subscription cancellation endpoint
+      const response = await axios.post('/api/subscription/cancel')
+      
+      if (response.data.success) {
+        toast.success('Subscription cancelled successfully. You have been reverted to the basic plan.')
+        setShowSubscriptionDetails(false)
+        
+        // Refresh auth status to update isPremium
+        await refreshAuthStatus()
+        
+        // Refresh subscription details
+        fetchSubscriptionDetails()
+      } else {
+        throw new Error(response.data.error || 'Subscription cancellation failed')
+      }
+    } catch (error) {
+      console.error('Subscription cancellation error:', error)
+      toast.error('Failed to cancel subscription. Please try again.')
+      setError('Failed to cancel subscription. Please try again.')
+    } finally {
+      setIsProcessing(false)
     }
   }
 
@@ -428,8 +447,9 @@ const Subscription = () => {
                 </li>
               </ul>
               <button 
+                onClick={isPremium ? handleDowngrade : undefined}
                 className={`w-full ${isPremium ? 'btn-secondary' : 'btn-secondary bg-green-600 hover:bg-green-700 text-white border-green-600'}`}
-                disabled={isPremium}
+                disabled={!isPremium || isProcessing}
               >
                 {isPremium ? 'Downgrade to Basic' : 'Current Plan'}
               </button>
@@ -874,6 +894,58 @@ const Subscription = () => {
                   }
                 }} className={`btn-primary ${isProcessing ? 'opacity-70 cursor-not-allowed' : ''}`}>
                   {isProcessing ? 'Processing Payment…' : `Pay ₱${priceDisplay.amount}`}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cancel Subscription Warning Modal */}
+        {showCancelWarning && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black bg-opacity-40" onClick={() => setShowCancelWarning(false)}></div>
+            <div className="relative bg-white w-full max-w-md mx-4 rounded-2xl shadow-xl border border-gray-200">
+              <div className="p-6 border-b">
+                <div className="flex items-center space-x-3">
+                  <div className="flex-shrink-0">
+                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Cancel Subscription</h3>
+                    <p className="text-sm text-gray-600 mt-1">This action cannot be undone</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-sm text-gray-700 font-medium mb-2">⚠️ Warning: You will immediately lose access to:</p>
+                  <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                    <li>All Premium features</li>
+                    <li>6x6 garden grid planner (reduced to 3x3)</li>
+                    <li>Advanced learning paths</li>
+                    <li>20 AI analyses per month (reduced to 4)</li>
+                    <li>Detailed plant and soil analyses</li>
+                    <li>Personalized recommendations</li>
+                  </ul>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Your subscription will be cancelled immediately and you will be reverted to the Basic plan. Any excess plants in your garden beyond the 3x3 grid limit will be removed.
+                </p>
+              </div>
+              <div className="p-6 border-t flex items-center justify-end gap-3">
+                <button 
+                  onClick={() => setShowCancelWarning(false)} 
+                  className="btn-secondary"
+                  disabled={isProcessing}
+                >
+                  Keep Subscription
+                </button>
+                <button 
+                  onClick={confirmCancel}
+                  className="btn-primary bg-red-600 hover:bg-red-700"
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? 'Processing...' : 'Yes, Cancel Subscription'}
                 </button>
               </div>
             </div>

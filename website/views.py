@@ -26,6 +26,9 @@ import json
 import io
 import numpy as np
 from PIL import Image
+from docx import Document
+from docx.shared import Pt, RGBColor, Inches
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 # Simple in-memory cache for AI enrichment to reduce rate and cost
 _AI_CACHE = {}
@@ -409,12 +412,17 @@ def ai_plant_recognition():
             'annona squamosa': 'Sugar Apple',
             'sugar apple': 'Sugar Apple',
             'sweetsop': 'Sugar Apple',
-            'citrus aurantium': 'Sour Orange',
+            'citrus aurantium': 'Orange',
+            'sour orange': 'Orange',
             'malus domestica': 'Apple',
+            'star apple': 'Apple',
+            'chrysophyllum cainito': 'Apple',
             'pyrus': 'Pear',
             'prunus persica': 'Peach',
             'prunus avium': 'Cherry',
             'fragaria': 'Strawberry',
+            'garden strawberry': 'Strawberry',
+            'fragaria x ananassa': 'Strawberry',
             'rubus': 'Raspberry',
             'vitis vinifera': 'Grape',
             'musa': 'Banana',
@@ -515,6 +523,33 @@ def ai_plant_recognition():
                 if common and common.lower() in common_name_mapping:
                     return common_name_mapping[common.lower()]
             
+            # Extract simpler names from compound names in common names list
+            simple_names = ['strawberry', 'orange', 'apple', 'pear', 'peach', 'cherry', 
+                          'raspberry', 'grape', 'banana', 'avocado', 'mango', 'watermelon', 
+                          'cantaloupe', 'pineapple', 'lemon', 'lime', 'tomato', 'pepper',
+                          'cucumber', 'carrot', 'radish', 'onion', 'garlic', 'potato',
+                          'lettuce', 'cabbage', 'spinach', 'corn', 'bean', 'pea']
+            
+            # Check common names list for compound names
+            for common in common_names_list:
+                if common:
+                    common_lower = common.lower()
+                    for simple_name in simple_names:
+                        pattern = r'\b' + re.escape(simple_name) + r'\b'
+                        if re.search(pattern, common_lower):
+                            return simple_name.title()
+            
+            # Extract simpler names from compound names (e.g., "garden strawberry" -> "strawberry")
+            if plant_name:
+                plant_lower = plant_name.lower()
+                for simple_name in simple_names:
+                    # Check if the plant name contains the simple name (e.g., "garden strawberry" contains "strawberry")
+                    if simple_name in plant_lower:
+                        # Make sure it's not part of a larger word
+                        pattern = r'\b' + re.escape(simple_name) + r'\b'
+                        if re.search(pattern, plant_lower):
+                            return simple_name.title()
+            
             # Special handling for grape-like plants
             all_text = f"{plant_name or ''} {scientific_name or ''} {' '.join(common_names_list)}".lower()
             if any(keyword in all_text for keyword in ['grape', 'vitis', 'guelder', 'viburnum', 'snowball']):
@@ -550,6 +585,27 @@ def ai_plant_recognition():
 
         # Get the best common name using our mapping
         display_name = get_best_common_name(name, scientific_name, common_names)
+        
+        # Simplify compound names to common names (e.g., "Garden Strawberry" -> "Strawberry")
+        if display_name:
+            display_lower = display_name.lower()
+            simple_fruit_veg = {
+                'strawberry': 'Strawberry', 'orange': 'Orange', 'apple': 'Apple', 
+                'pear': 'Pear', 'peach': 'Peach', 'cherry': 'Cherry',
+                'raspberry': 'Raspberry', 'grape': 'Grape', 'banana': 'Banana',
+                'avocado': 'Avocado', 'mango': 'Mango', 'watermelon': 'Watermelon',
+                'cantaloupe': 'Cantaloupe', 'pineapple': 'Pineapple', 'lemon': 'Lemon',
+                'lime': 'Lime', 'tomato': 'Tomato', 'pepper': 'Pepper',
+                'cucumber': 'Cucumber', 'carrot': 'Carrot', 'radish': 'Radish',
+                'onion': 'Onion', 'garlic': 'Garlic', 'potato': 'Potato',
+                'lettuce': 'Lettuce', 'cabbage': 'Cabbage', 'spinach': 'Spinach',
+                'corn': 'Corn', 'bean': 'Bean', 'pea': 'Pea'
+            }
+            for simple_name, display_value in simple_fruit_veg.items():
+                pattern = r'\b' + re.escape(simple_name) + r'\b'
+                if re.search(pattern, display_lower):
+                    display_name = display_value
+                    break
         
         # Force common names for known problematic cases
         all_text = f"{name or ''} {scientific_name or ''} {' '.join(common_names)}".lower()
@@ -4544,22 +4600,136 @@ def delete_concept(concept_id):
 @views.route('/concepts/<int:concept_id>/export', methods=['GET'])
 @login_required
 def export_concept(concept_id):
-    """Export a concept as a downloadable JSON payload."""
-    concept = UserSharedConcept.query.get_or_404(concept_id)
-    if not concept.is_public and concept.user_id != current_user.id and not current_user.is_admin():
-        return jsonify({"error": "Unauthorized to export this concept."}), 403
-    
-    concept_data = concept.to_dict(include_owner=True)
-    payload = json.dumps({"concept": concept_data}, indent=2)
-    filename = f"egrowtify_concept_{concept_id}.json"
-    
-    return Response(
-        payload,
-        mimetype='application/json',
-        headers={
-            'Content-Disposition': f'attachment; filename={filename}'
-        }
-    )
+    """Export a concept as a downloadable Word document (.docx)."""
+    try:
+        # Load concept
+        concept = UserSharedConcept.query.get_or_404(concept_id)
+        if not concept.is_public and concept.user_id != current_user.id and not current_user.is_admin():
+            return jsonify({"error": "Unauthorized to export this concept."}), 403
+        
+        # Create a new Document
+        doc = Document()
+        
+        # Helper function to ensure black text
+        def set_black_text(run):
+            """Set text color to black for a run."""
+            if run:
+                run.font.color.rgb = RGBColor(0, 0, 0)
+            return run
+        
+        # Title
+        title_text = concept.title or 'Untitled Concept'
+        title = doc.add_heading(title_text, level=1)
+        title.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        for run in title.runs:
+            set_black_text(run)
+        
+        # Summary
+        if concept.summary:
+            summary_heading = doc.add_heading('Summary', level=2)
+            for run in summary_heading.runs:
+                set_black_text(run)
+            summary_para = doc.add_paragraph()
+            summary_run = summary_para.add_run(concept.summary)
+            set_black_text(summary_run)
+        
+        # Technique / Steps
+        if concept.technique_steps:
+            technique_heading = doc.add_heading('Technique / Steps', level=2)
+            for run in technique_heading.runs:
+                set_black_text(run)
+            # Split by newlines to preserve formatting
+            steps = concept.technique_steps.split('\n')
+            for step in steps:
+                if step.strip():
+                    step_para = doc.add_paragraph()
+                    step_run = step_para.add_run(step.strip())
+                    set_black_text(step_run)
+                    # Add bullet if it starts with certain characters
+                    if step.strip().startswith(('-', '*', '•')):
+                        step_para.style = 'List Bullet'
+        
+        # Tips
+        if concept.tips:
+            tips_heading = doc.add_heading('Tips', level=2)
+            for run in tips_heading.runs:
+                set_black_text(run)
+            tips = concept.tips.split('\n')
+            for tip in tips:
+                if tip.strip():
+                    tip_para = doc.add_paragraph()
+                    tip_run = tip_para.add_run(tip.strip())
+                    set_black_text(tip_run)
+                    # Add bullet if it starts with certain characters
+                    if tip.strip().startswith(('-', '*', '•')):
+                        tip_para.style = 'List Bullet'
+        
+        # Tags - tags are stored as comma-separated string
+        if concept.tags:
+            tags_list = [tag.strip() for tag in concept.tags.split(',') if tag.strip()]
+            if tags_list:
+                tags_heading = doc.add_heading('Tags', level=2)
+                for run in tags_heading.runs:
+                    set_black_text(run)
+                tags_text = ', '.join([f'#{tag}' for tag in tags_list])
+                tags_para = doc.add_paragraph()
+                tags_run = tags_para.add_run(tags_text)
+                set_black_text(tags_run)
+        
+        # Metadata
+        doc.add_paragraph()  # Empty line
+        metadata_para = doc.add_paragraph()
+        shared_by_run = metadata_para.add_run('Shared by: ')
+        set_black_text(shared_by_run)
+        
+        # Get owner from user relationship
+        try:
+            if concept.user:
+                if hasattr(concept.user, 'full_name') and concept.user.full_name:
+                    owner_name = concept.user.full_name
+                elif hasattr(concept.user, 'email'):
+                    owner_name = concept.user.email
+                else:
+                    owner_name = 'Unknown'
+            else:
+                owner_name = 'Unknown'
+        except Exception:
+            owner_name = 'Unknown'
+        
+        owner_run = metadata_para.add_run(owner_name)
+        set_black_text(owner_run)
+        
+        if concept.created_at:
+            created_date = concept.created_at.strftime('%Y-%m-%d %H:%M:%S') if hasattr(concept.created_at, 'strftime') else str(concept.created_at)
+            created_run = metadata_para.add_run(f' • Created: {created_date}')
+            set_black_text(created_run)
+        
+        # Ensure all text in document is black
+        for paragraph in doc.paragraphs:
+            for run in paragraph.runs:
+                set_black_text(run)
+        
+        # Save to BytesIO
+        doc_io = io.BytesIO()
+        doc.save(doc_io)
+        doc_io.seek(0)
+        
+        # Clean filename
+        safe_title = re.sub(r'[^\w\s-]', '', concept.title or 'concept').strip().replace(' ', '_')
+        filename = f"{safe_title}_{concept_id}.docx"
+        
+        return Response(
+            doc_io.getvalue(),
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"'
+            }
+        )
+    except Exception as e:
+        import traceback
+        print(f"Export error: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({"error": f"Failed to export concept: {str(e)}"}), 500
 
 
 @views.route('/concepts/import', methods=['POST'])
@@ -4615,27 +4785,26 @@ def import_concept():
 @login_required
 def get_weather():
     # Simple rate limiting - prevent too many requests
-    import threading
     if not hasattr(get_weather, '_last_request_time'):
         get_weather._last_request_time = 0
     
-    current_time = time.time()
-    if current_time - get_weather._last_request_time < 2:  # 2 seconds minimum between requests
+    rate_limit_time = time.time()
+    if rate_limit_time - get_weather._last_request_time < 2:  # 2 seconds minimum between requests
         print(f"🌤️ Weather API rate limited - too soon since last request")
         return jsonify({
             "error": "Rate limited - please wait before making another request",
             "success": False
         }), 429
     
-    get_weather._last_request_time = current_time
+    get_weather._last_request_time = rate_limit_time
     
     """Get weather data for a specific city using OpenWeatherMap API"""
+    # Initialize variables outside try block to ensure they're available in except
+    city = request.args.get('city', 'Cebu')
+    cache_key = f"weather_{city.lower()}"
+    current_time = time.time()
+    
     try:
-        city = request.args.get('city', 'Cebu')
-        current_time = time.time()
-        
-        # Check cache first
-        cache_key = f"weather_{city.lower()}"
         if cache_key in _WEATHER_CACHE:
             cached_data, cache_time = _WEATHER_CACHE[cache_key]
             if current_time - cache_time < _WEATHER_CACHE_TTL_SECONDS:
@@ -4839,13 +5008,86 @@ def admin_api_toggle_user_subscription(user_id):
             return jsonify({"error": "Cannot modify admin user subscriptions"}), 403
         
         data = request.get_json()
-        user.subscribed = data.get('subscribed', not user.subscribed)
+        new_subscribed_status = data.get('subscribed', not user.subscribed)
+        was_subscribed = user.subscribed
+        
+        user.subscribed = new_subscribed_status
         
         # Update subscription plan based on subscription status
         if user.subscribed:
             user.subscription_plan = 'premium'
         else:
             user.subscription_plan = 'basic'
+        
+        # If downgrading from premium to basic, revert garden features
+        if was_subscribed and not new_subscribed_status:
+            from website.models import UserSubscription, Garden, GridSpace
+            # Update active subscription status to cancelled
+            active_subscription = UserSubscription.query.filter_by(
+                user_id=user_id,
+                status='active'
+            ).first()
+            
+            if active_subscription:
+                active_subscription.status = 'cancelled'
+                active_subscription.updated_at = datetime.now(timezone.utc)
+            
+            # Revert garden features to basic
+            user_gardens = Garden.query.filter_by(user_id=user_id).all()
+            
+            for garden in user_gardens:
+                # Log the garden changes
+                log_history_change(
+                    table_name='garden',
+                    record_id=garden.id,
+                    action='UPDATE',
+                    old_values={'grid_size': garden.grid_size, 'base_grid_spaces': garden.base_grid_spaces},
+                    new_values={'grid_size': '3x3', 'base_grid_spaces': 9},
+                    changed_by=f'admin_{current_user.id}'
+                )
+                
+                # Revert to 3x3 grid for basic plan
+                garden.grid_size = '3x3'
+                garden.base_grid_spaces = 9
+                garden.additional_spaces_purchased = 0
+                
+                # Remove any plants beyond the basic 9 spaces
+                grid_spaces = GridSpace.query.filter_by(garden_id=garden.id).all()
+                
+                # Keep only the first 9 spaces (3x3 grid)
+                spaces_to_remove = grid_spaces[9:]  # Remove spaces beyond 9
+                for space in spaces_to_remove:
+                    if space.plant_id:  # If there's a plant in this space
+                        # Remove the plant from the space
+                        space.plant_id = None
+                        space.planting_date = None
+                        space.notes = None
+                    db.session.delete(space)
+                
+                # Update used grid spaces count
+                remaining_spaces = GridSpace.query.filter_by(garden_id=garden.id).all()
+                garden.used_grid_spaces = len([s for s in remaining_spaces if s.plant_id is not None])
+            
+            # Log the subscription cancellation
+            log_subscription_activity(
+                user_id=user_id,
+                user_name=user.full_name,
+                action='subscription_cancelled',
+                plan_name='Premium Plan',
+                amount=150.00,
+                currency='PHP',
+                payment_method='admin_action',
+                status='cancelled',
+                subscription_id=active_subscription.id if active_subscription else None
+            )
+            
+            # Log the user activity
+            log_activity(
+                user_id=user_id,
+                user_name=user.full_name,
+                action='subscription_cancelled',
+                description=f'Admin {current_user.full_name} cancelled Premium subscription and reverted to basic plan'
+            )
             
         db.session.commit()
         return jsonify({"message": "User subscription updated successfully"})
@@ -5254,6 +5496,110 @@ def user_subscribe():
         print(f"Error processing subscription: {str(e)}")
         return jsonify({"success": False, "error": f"Subscription failed: {str(e)}"}), 500
 
+@views.route('/api/subscription/downgrade', methods=['POST'])
+@login_required
+def user_downgrade_subscription():
+    """Handle user subscription downgrade"""
+    try:
+        print(f"💰 SUBSCRIPTION DOWNGRADE: User {current_user.id} downgrading subscription")
+        
+        # Update user subscription status to basic
+        current_user.subscribed = False
+        current_user.subscription_plan = 'basic'
+        
+        # Update active subscription status to cancelled
+        from website.models import UserSubscription
+        active_subscription = UserSubscription.query.filter_by(
+            user_id=current_user.id,
+            status='active'
+        ).first()
+        
+        if active_subscription:
+            active_subscription.status = 'cancelled'
+            active_subscription.updated_at = datetime.now(timezone.utc)
+        
+        # Log the subscription downgrade
+        log_subscription_activity(
+            user_id=current_user.id,
+            user_name=current_user.full_name,
+            action='subscription_downgraded',
+            plan_name='Premium Plan',
+            amount=150.00,
+            currency='PHP',
+            payment_method='demo',
+            status='cancelled',
+            subscription_id=active_subscription.id if active_subscription else None
+        )
+        
+        # Log the user activity
+        log_activity(
+            user_id=current_user.id,
+            user_name=current_user.full_name,
+            action='subscription_downgraded',
+            description='User downgraded from Premium subscription to basic plan'
+        )
+        
+        # Revert garden features to basic
+        from website.models import Garden, GridSpace
+        user_gardens = Garden.query.filter_by(user_id=current_user.id).all()
+        
+        for garden in user_gardens:
+            # Log the garden changes
+            log_history_change(
+                table_name='garden',
+                record_id=garden.id,
+                action='UPDATE',
+                old_values={'grid_size': garden.grid_size, 'base_grid_spaces': garden.base_grid_spaces},
+                new_values={'grid_size': '3x3', 'base_grid_spaces': 9},
+                changed_by=f'user_{current_user.id}'
+            )
+            
+            # Revert to 3x3 grid for basic plan
+            garden.grid_size = '3x3'
+            garden.base_grid_spaces = 9
+            garden.additional_spaces_purchased = 0
+            
+            # Remove any plants beyond the basic 9 spaces
+            grid_spaces = GridSpace.query.filter_by(garden_id=garden.id).all()
+            
+            # Keep only the first 9 spaces (3x3 grid)
+            spaces_to_remove = grid_spaces[9:]  # Remove spaces beyond 9
+            for space in spaces_to_remove:
+                if space.plant_id:  # If there's a plant in this space
+                    # Remove the plant from the space
+                    space.plant_id = None
+                    space.planting_date = None
+                    space.notes = None
+                db.session.delete(space)
+            
+            # Update used grid spaces count
+            remaining_spaces = GridSpace.query.filter_by(garden_id=garden.id).all()
+            garden.used_grid_spaces = len([s for s in remaining_spaces if s.plant_id is not None])
+        
+        db.session.commit()
+        
+        # Clear auth status cache to force refresh
+        import website.auth as auth_module
+        if hasattr(auth_module.auth_status, '_cache'):
+            cache_key = f"auth_status_{current_user.id}"
+            if cache_key in auth_module.auth_status._cache:
+                del auth_module.auth_status._cache[cache_key]
+                print(f"🔐 Cleared auth status cache for user {current_user.id}")
+        
+        print(f"✅ SUBSCRIPTION DOWNGRADED: User {current_user.id} reverted to basic plan")
+        
+        return jsonify({
+            "success": True,
+            "message": "Subscription downgraded successfully. You will retain Premium access until the end of your billing period.",
+            "subscription_plan": "basic"
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ SUBSCRIPTION DOWNGRADE ERROR: {str(e)}")
+        
+        return jsonify({"success": False, "error": f"Subscription downgrade failed: {str(e)}"}), 500
+
 @views.route('/api/subscription/cancel', methods=['POST'])
 @login_required
 def user_cancel_subscription():
@@ -5572,7 +5918,87 @@ def admin_api_toggle_subscription(user_id):
     try:
         user = User.query.get_or_404(user_id)
         data = request.get_json()
-        user.subscribed = data.get('subscribed', not user.subscribed)
+        new_subscribed_status = data.get('subscribed', not user.subscribed)
+        was_subscribed = user.subscribed
+        
+        user.subscribed = new_subscribed_status
+        
+        # Update subscription plan based on subscription status
+        if user.subscribed:
+            user.subscription_plan = 'premium'
+        else:
+            user.subscription_plan = 'basic'
+        
+        # If downgrading from premium to basic, revert garden features
+        if was_subscribed and not new_subscribed_status:
+            from website.models import UserSubscription, Garden, GridSpace
+            # Update active subscription status to cancelled
+            active_subscription = UserSubscription.query.filter_by(
+                user_id=user_id,
+                status='active'
+            ).first()
+            
+            if active_subscription:
+                active_subscription.status = 'cancelled'
+                active_subscription.updated_at = datetime.now(timezone.utc)
+            
+            # Revert garden features to basic
+            user_gardens = Garden.query.filter_by(user_id=user_id).all()
+            
+            for garden in user_gardens:
+                # Log the garden changes
+                log_history_change(
+                    table_name='garden',
+                    record_id=garden.id,
+                    action='UPDATE',
+                    old_values={'grid_size': garden.grid_size, 'base_grid_spaces': garden.base_grid_spaces},
+                    new_values={'grid_size': '3x3', 'base_grid_spaces': 9},
+                    changed_by=f'admin_{current_user.id}'
+                )
+                
+                # Revert to 3x3 grid for basic plan
+                garden.grid_size = '3x3'
+                garden.base_grid_spaces = 9
+                garden.additional_spaces_purchased = 0
+                
+                # Remove any plants beyond the basic 9 spaces
+                grid_spaces = GridSpace.query.filter_by(garden_id=garden.id).all()
+                
+                # Keep only the first 9 spaces (3x3 grid)
+                spaces_to_remove = grid_spaces[9:]  # Remove spaces beyond 9
+                for space in spaces_to_remove:
+                    if space.plant_id:  # If there's a plant in this space
+                        # Remove the plant from the space
+                        space.plant_id = None
+                        space.planting_date = None
+                        space.notes = None
+                    db.session.delete(space)
+                
+                # Update used grid spaces count
+                remaining_spaces = GridSpace.query.filter_by(garden_id=garden.id).all()
+                garden.used_grid_spaces = len([s for s in remaining_spaces if s.plant_id is not None])
+            
+            # Log the subscription cancellation
+            log_subscription_activity(
+                user_id=user_id,
+                user_name=user.full_name,
+                action='subscription_cancelled',
+                plan_name='Premium Plan',
+                amount=150.00,
+                currency='PHP',
+                payment_method='admin_action',
+                status='cancelled',
+                subscription_id=active_subscription.id if active_subscription else None
+            )
+            
+            # Log the user activity
+            log_activity(
+                user_id=user_id,
+                user_name=user.full_name,
+                action='subscription_cancelled',
+                description=f'Admin {current_user.full_name} cancelled Premium subscription and reverted to basic plan'
+            )
+        
         db.session.commit()
         return jsonify({"message": "Subscription status updated successfully"})
     except Exception as e:
