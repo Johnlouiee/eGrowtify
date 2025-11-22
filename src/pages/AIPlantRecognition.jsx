@@ -42,18 +42,18 @@ const plantImages = {
   'cucumber': 'https://images.unsplash.com/photo-1604977049386-5bb1b5b3d087?w=300&h=300&fit=crop&crop=center',
   'pipino': 'https://images.unsplash.com/photo-1604977049386-5bb1b5b3d087?w=300&h=300&fit=crop&crop=center',
   
-  // Fruits - Common Philippine Fruits (Prutas)
-  'mango': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
+  // Fruits - Common Philippine Fruits (Prutas) - Using unique photo IDs
+  'mango': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center', // Mango fruit
   'mangga': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
-  'banana': 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&h=300&fit=crop&crop=center',
+  'banana': 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&h=300&fit=crop&crop=center', // Banana bunch
   'saging': 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&h=300&fit=crop&crop=center',
-  'papaya': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
-  'pineapple': 'https://images.unsplash.com/photo-1550258987-190a2d41a8ba?w=300&h=300&fit=crop&crop=center',
+  'papaya': 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=300&h=300&fit=crop&crop=center', // Papaya fruit - different from mango
+  'pineapple': 'https://images.unsplash.com/photo-1550258987-190a2d41a8ba?w=300&h=300&fit=crop&crop=center', // Pineapple
   'pinya': 'https://images.unsplash.com/photo-1550258987-190a2d41a8ba?w=300&h=300&fit=crop&crop=center',
-  'guava': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
-  'bayabas': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
-  'coconut': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
-  'niyog': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
+  'guava': 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=300&h=300&fit=crop&crop=center', // Guava fruit - different photo
+  'bayabas': 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=300&h=300&fit=crop&crop=center',
+  'coconut': 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=300&h=300&fit=crop&crop=center', // Coconut - different photo
+  'niyog': 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=300&h=300&fit=crop&crop=center',
   'calamansi': 'https://images.unsplash.com/photo-1557800634-7bf3c73be389?w=300&h=300&fit=crop&crop=center',
   'atis': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
   'sugar apple': 'https://images.unsplash.com/photo-1605027990121-1c8c0a0b0b0b?w=300&h=300&fit=crop&crop=center',
@@ -81,13 +81,13 @@ const plantImages = {
   'wansoy': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
   
   // Flowers - Common Philippine Flowers (Bulaklak)
-  'sampaguita': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'gumamela': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'hibiscus': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'santan': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'bougainvillea': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'kalachuchi': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
-  'plumeria': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
+  'sampaguita': 'https://images.unsplash.com/photo-1597848212624-e17eb04ad490?w=300&h=300&fit=crop&crop=center', // White jasmine flower
+  'gumamela': 'https://images.unsplash.com/photo-1591608971362-f08b2a75731a?w=300&h=300&fit=crop&crop=center', // Red hibiscus flower
+  'hibiscus': 'https://images.unsplash.com/photo-1591608971362-f08b2a75731a?w=300&h=300&fit=crop&crop=center',
+  'santan': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center', // Ixora flower
+  'bougainvillea': 'https://images.unsplash.com/photo-1606041008023-472dfb5e530f?w=300&h=300&fit=crop&crop=center', // Pink bougainvillea
+  'kalachuchi': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center', // White plumeria/frangipani
+  'plumeria': 'https://images.unsplash.com/photo-1615485925534-f28a7b4a82c3?w=300&h=300&fit=crop&crop=center',
   'rosal': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
   'rose': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
   'yellow bell': 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=300&h=300&fit=crop&crop=center',
@@ -107,10 +107,50 @@ const plantImages = {
   'strawberry': 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=300&h=300&fit=crop&crop=center'
 }
 
-// Function to get plant image
+// Function to get plant image with improved name matching
 const getPlantImage = (plantName) => {
-  const normalizedName = plantName.toLowerCase().trim()
-  return plantImages[normalizedName] || 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&h=200&fit=crop&crop=center' // Default plant image
+  if (!plantName) {
+    return 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&h=200&fit=crop&crop=center'
+  }
+  
+  // Normalize the plant name
+  let normalizedName = plantName.toLowerCase().trim()
+  
+  // Extract main name from strings like "Gumamela (hibiscus)" or "Saging (banana)"
+  // Remove content in parentheses and extra whitespace
+  normalizedName = normalizedName.replace(/\s*\([^)]*\)\s*/g, '').trim()
+  
+  // Try exact match first
+  if (plantImages[normalizedName]) {
+    return plantImages[normalizedName]
+  }
+  
+  // Try matching with common variations
+  // Remove common prefixes/suffixes and try again
+  const variations = [
+    normalizedName,
+    normalizedName.replace(/^the\s+/i, ''),
+    normalizedName.replace(/\s+plant$/i, ''),
+    normalizedName.replace(/\s+tree$/i, ''),
+    normalizedName.replace(/\s+flower$/i, ''),
+  ]
+  
+  for (const variant of variations) {
+    if (plantImages[variant]) {
+      return plantImages[variant]
+    }
+  }
+  
+  // Try partial matching for compound names (e.g., "water spinach" should match "kangkong")
+  const nameParts = normalizedName.split(/\s+/)
+  for (const part of nameParts) {
+    if (plantImages[part] && part.length > 3) { // Only match if part is meaningful (more than 3 chars)
+      return plantImages[part]
+    }
+  }
+  
+  // Default fallback image
+  return 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&h=200&fit=crop&crop=center'
 }
 
 const AIPlantRecognition = () => {
@@ -1056,8 +1096,12 @@ const AIPlantRecognition = () => {
                                     src={getPlantImage(plantName)} 
                                     alt={plantName}
                                     className="w-20 h-20 rounded-lg object-cover mb-3"
+                                    loading="lazy"
                                     onError={(e) => {
-                                      e.target.src = 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&h=200&fit=crop&crop=center'
+                                      // Try a generic plant image if the specific one fails
+                                      if (e.target.src !== 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&h=200&fit=crop&crop=center') {
+                                        e.target.src = 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&h=200&fit=crop&crop=center'
+                                      }
                                     }}
                                   />
                                   <span className="text-sm font-medium text-green-800">{plantName}</span>

@@ -2111,12 +2111,23 @@ def get_weather_forecast():
         lat = geocode_data[0]['lat']
         lon = geocode_data[0]['lon']
         
+        # Get current weather for today's temperature
+        current_weather_url = f"http://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+        current_weather_response = requests.get(current_weather_url, timeout=10)
+        current_temp = None
+        if current_weather_response.status_code == 200:
+            current_weather_data = current_weather_response.json()
+            current_temp = round(current_weather_data['main']['temp'])
+        
         # Get 7-day forecast
         forecast_url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={api_key}&units=metric"
         forecast_response = requests.get(forecast_url)
         
         if forecast_response.status_code == 200:
             forecast_data = forecast_response.json()
+            
+            # Get today's date in YYYY-MM-DD format for comparison
+            today = datetime.now().strftime('%Y-%m-%d')
             
             # Process forecast data for planting recommendations
             daily_forecasts = []
@@ -2153,7 +2164,13 @@ def get_weather_forecast():
             # Process daily data
             processed_forecast = []
             for day in daily_forecasts[:7]:  # Limit to 7 days
-                avg_temp = round(sum(day['temperatures']) / len(day['temperatures']))
+                # Use current temperature for today if available, otherwise use average
+                is_today = day['date'] == today
+                if is_today and current_temp is not None:
+                    # For today, use current temperature as the average
+                    avg_temp = current_temp
+                else:
+                    avg_temp = round(sum(day['temperatures']) / len(day['temperatures']))
                 min_temp = round(min(day['temperatures']))
                 max_temp = round(max(day['temperatures']))
                 avg_humidity = round(sum(day['humidity']) / len(day['humidity']))
