@@ -36,6 +36,14 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
     }
   }, [selectedGarden])
 
+  // Watch for changes in subscription status (isPremium) and refresh grid
+  useEffect(() => {
+    if (selectedGarden) {
+      console.log(`🌱 Premium status changed: ${isPremium}, refreshing grid...`)
+      fetchGridSpaces()
+    }
+  }, [isPremium, selectedGarden?.id])
+
   // Watch for changes in additional_spaces_purchased and refresh grid
   useEffect(() => {
     if (selectedGarden?.additional_spaces_purchased > 0) {
@@ -84,17 +92,17 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       console.log(`🌱 Fetched ${spaces.length} grid spaces for garden ${selectedGarden.id}`)
       console.log(`🌱 Premium status: ${isPremium}, effectivePremium: ${effectivePremium}, Base spaces: ${baseSpaces}, Additional: ${additionalSpaces}, Expected total: ${expectedTotalSpaces}`)
       
-      // If we don't have enough spaces, create mock spaces
+      // If we don't have enough spaces, merge existing spaces with mock spaces
       if (spaces.length < expectedTotalSpaces) {
-        console.log(`🌱 Not enough spaces (${spaces.length}/${expectedTotalSpaces}), creating mock spaces`)
-        createMockGridSpaces()
+        console.log(`🌱 Not enough spaces (${spaces.length}/${expectedTotalSpaces}), merging with mock spaces`)
+        createMockGridSpaces(spaces) // Pass existing spaces to preserve plant data
       } else {
         setGridSpaces(spaces)
       }
     } catch (error) {
       console.error('Error fetching grid spaces:', error)
-      // Create mock grid spaces for demo
-      createMockGridSpaces()
+      // Create mock grid spaces for demo, but try to preserve any existing data
+      createMockGridSpaces([])
     }
   }
 
@@ -255,7 +263,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
     console.log(`💰 DEMO PAYMENT: Successfully added ${spacesToAdd} spaces to grid`)
   }
 
-  const createMockGridSpaces = () => {
+  const createMockGridSpaces = (existingSpaces = []) => {
     const spaces = []
     const effectivePremium = isPremium
     const baseGridSize = effectivePremium ? '6x6' : '3x3'
@@ -263,52 +271,96 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
     const additionalSpaces = selectedGarden?.additional_spaces_purchased || 0
     
     console.log(`🌱 Creating mock grid spaces: isPremium=${isPremium}, effectivePremium=${effectivePremium}, base=${baseGridSize} (${baseRows}x${baseCols}), additional=${additionalSpaces}`)
+    console.log(`🌱 Existing spaces to preserve: ${existingSpaces.length}`)
     console.log(`🌱 DEBUG: isPremium type: ${typeof isPremium}, value: ${isPremium}`)
     
-    // Create spaces for the base grid
+    // Create a map of existing spaces by position to preserve plant data
+    const existingSpacesMap = {}
+    existingSpaces.forEach(space => {
+      const position = space.grid_position
+      existingSpacesMap[position] = space
+    })
+    
+    // Create spaces for the base grid, preserving existing plant data
     for (let row = 1; row <= baseRows; row++) {
       for (let col = 1; col <= baseCols; col++) {
-        const spaceId = `mock-${selectedGarden.id}-${row}-${col}`
-        spaces.push({
-          id: spaceId,
-          garden_id: selectedGarden.id,
-          grid_position: `${row},${col}`,
-          plant_id: null,
-          planting_date: null,
-          last_watered: null,
-          last_fertilized: null,
-          last_pruned: null,
-          notes: '',
-          is_active: true
-        })
+        const position = `${row},${col}`
+        const existingSpace = existingSpacesMap[position]
+        
+        if (existingSpace) {
+          // Use existing space data (preserves plant_id, planting_date, etc.)
+          spaces.push(existingSpace)
+          console.log(`🌱 Preserved existing space at ${position} with plant_id: ${existingSpace.plant_id}`)
+        } else {
+          // Create new mock space
+          const spaceId = `mock-${selectedGarden.id}-${row}-${col}`
+          spaces.push({
+            id: spaceId,
+            garden_id: selectedGarden.id,
+            grid_position: position,
+            plant_id: null,
+            planting_date: null,
+            last_watered: null,
+            last_fertilized: null,
+            last_pruned: null,
+            notes: '',
+            is_active: true
+          })
+        }
       }
     }
     
-    // Add additional purchased spaces
+    // Add additional purchased spaces, preserving any existing ones
     if (additionalSpaces > 0) {
       console.log(`🌱 Adding ${additionalSpaces} additional purchased spaces`)
       for (let i = 1; i <= additionalSpaces; i++) {
-        const spaceId = `mock-${selectedGarden.id}-additional-${i}`
-        spaces.push({
-          id: spaceId,
-          garden_id: selectedGarden.id,
-          grid_position: `additional-${i}`,
-          plant_id: null,
-          planting_date: null,
-          last_watered: null,
-          last_fertilized: null,
-          last_pruned: null,
-          notes: '',
-          is_active: true
-        })
+        const position = `additional-${i}`
+        const existingSpace = existingSpacesMap[position]
+        
+        if (existingSpace) {
+          // Use existing space data
+          spaces.push(existingSpace)
+        } else {
+          // Create new mock space
+          const spaceId = `mock-${selectedGarden.id}-additional-${i}`
+          spaces.push({
+            id: spaceId,
+            garden_id: selectedGarden.id,
+            grid_position: position,
+            plant_id: null,
+            planting_date: null,
+            last_watered: null,
+            last_fertilized: null,
+            last_pruned: null,
+            notes: '',
+            is_active: true
+          })
+        }
       }
     }
     
+    // Also add any existing spaces that don't match the standard grid positions
+    // (in case there are spaces with custom positions)
+    existingSpaces.forEach(space => {
+      const position = space.grid_position
+      // Check if it's a standard grid position (row,col format) or additional space
+      const isStandardPosition = /^\d+,\d+$/.test(position) || position.startsWith('additional-')
+      
+      if (!isStandardPosition || !existingSpacesMap[position] || spaces.findIndex(s => s.grid_position === position) === -1) {
+        // This is a custom position or wasn't added yet, add it
+        if (!spaces.find(s => s.id === space.id)) {
+          spaces.push(space)
+          console.log(`🌱 Added existing space with custom position: ${position}`)
+        }
+      }
+    })
+    
     console.log(`🌱 Created ${spaces.length} total grid spaces (${baseRows * baseCols} base + ${additionalSpaces} additional)`)
+    console.log(`🌱 Preserved ${existingSpaces.length} existing spaces with plants`)
     console.log(`🌱 Space positions:`, spaces.map(s => s.grid_position).slice(0, 10))
     
-    // Add some sample plants for demo purposes
-    if (selectedGarden.id === 'static-2' && baseGridSize === '6x6') {
+    // Add some sample plants for demo purposes (only if no existing spaces)
+    if (existingSpaces.length === 0 && selectedGarden.id === 'static-2' && baseGridSize === '6x6') {
       // Add a few sample plants to the Herb Collection
       spaces[0].plant_id = 2 // Basil
       spaces[0].planting_date = '2024-02-01'
@@ -323,7 +375,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       spaces[12].notes = 'Basil - Row 3, Col 1'
     }
     
-    console.log(`🌱 Created ${spaces.length} mock grid spaces`)
+    console.log(`🌱 Created ${spaces.length} mock grid spaces (preserved ${existingSpaces.filter(s => s.plant_id).length} plants)`)
     setGridSpaces(spaces)
   }
 

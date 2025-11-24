@@ -14,7 +14,9 @@ from .models import (
     ActivityLog,
     UserPlantUpdateUsage,
     UserSharedConcept,
-    UserSubscription
+    UserSubscription,
+    AIUsageTracking,
+    AIAnalysisUsage
 )
 from datetime import datetime, timedelta, timezone
 import os
@@ -53,6 +55,59 @@ def _normalize_tags(raw_tags):
     else:
         tags_list = []
     return ','.join(tags_list)
+
+def _get_or_create_ai_usage(user_id):
+    """Ensure an AIAnalysisUsage record exists for the given user."""
+    usage = AIAnalysisUsage.query.filter_by(user_id=user_id).first()
+    if not usage:
+        usage = AIAnalysisUsage(user_id=user_id, free_analyses_used=0, purchased_credits=0)
+        db.session.add(usage)
+        db.session.flush()
+    return usage
+
+def _check_ai_usage_limit(user_id, is_premium=False):
+    """Check if user can perform an AI analysis. Returns (can_proceed, remaining, needs_payment)"""
+    # Premium users get 10 free analyses, basic users get 3
+    free_allocation = 10 if is_premium else 3
+    
+    usage = _get_or_create_ai_usage(user_id)
+    db.session.flush()  # Ensure usage record is in session
+    free_used = usage.free_analyses_used or 0
+    purchased = usage.purchased_credits or 0
+    remaining = usage.total_remaining(free_allocation)
+    
+    print(f"🔍 Usage check for user {user_id}: is_premium={is_premium}, free_allocation={free_allocation}, free_used={free_used}, purchased={purchased}, remaining={remaining}")
+    
+    if remaining > 0:
+        return True, remaining, False
+    else:
+        print(f"⚠️ Limit reached for user {user_id}: free_used={free_used} (limit={free_allocation}), purchased={purchased}")
+        return False, 0, True
+
+def _track_ai_usage(user_id, usage_type, is_free=True, cost=0.00, image_path=None, analysis_result=None):
+    """Track an AI analysis usage"""
+    # Update usage counter
+    usage = _get_or_create_ai_usage(user_id)
+    if is_free:
+        usage.free_analyses_used = (usage.free_analyses_used or 0) + 1
+    else:
+        # Deduct from purchased credits
+        if usage.purchased_credits > 0:
+            usage.purchased_credits = usage.purchased_credits - 1
+    
+    # Create tracking record
+    tracking = AIUsageTracking(
+        user_id=user_id,
+        usage_type=usage_type,
+        image_path=image_path,
+        analysis_result=analysis_result,
+        cost=float(cost),
+        is_free_usage=is_free
+    )
+    db.session.add(tracking)
+    db.session.flush()
+    
+    return tracking
 
 def _get_or_create_update_usage(user_id):
     """Ensure a UserPlantUpdateUsage record exists for the given user."""
@@ -161,6 +216,46 @@ def create_grid_spaces_for_garden(garden_id, grid_size):
         db.session.flush()
     except Exception as e:
         print(f"Error creating grid spaces: {e}")
+        raise e
+
+def expand_garden_grid_to_premium(garden_id):
+    """Expand a garden from 3x3 to 6x6 when user subscribes, preserving existing plants"""
+    try:
+        from website.models import GridSpace
+        
+        # Get existing grid spaces
+        existing_spaces = GridSpace.query.filter_by(garden_id=garden_id, is_active=True).all()
+        
+        # Create a map of existing positions
+        existing_positions = {}
+        for space in existing_spaces:
+            existing_positions[space.grid_position] = space
+        
+        # Create all 6x6 grid spaces (36 total)
+        new_spaces_count = 0
+        for row in range(1, 7):  # 6 rows
+            for col in range(1, 7):  # 6 cols
+                position = f"{row},{col}"
+                
+                # If this position doesn't exist, create it
+                if position not in existing_positions:
+                    grid_space = GridSpace(
+                        garden_id=garden_id,
+                        grid_position=position,
+                        plant_id=None,
+                        planting_date=None,
+                        notes='',
+                        is_active=True
+                    )
+                    db.session.add(grid_space)
+                    new_spaces_count += 1
+        
+        db.session.flush()
+        print(f"✅ Expanded garden {garden_id} from 3x3 to 6x6: added {new_spaces_count} new spaces, preserved {len(existing_spaces)} existing spaces")
+        return new_spaces_count
+        
+    except Exception as e:
+        print(f"Error expanding garden grid: {e}")
         raise e
 
 def create_additional_grid_spaces(garden_id, additional_spaces, grid_size):
@@ -278,13 +373,26 @@ def admin_stats():
         "admins": [{"id": a.id, "username": a.username, "email": a.email, "full_name": a.full_name} for a in admins]
     })
 
-@views.route('/ai-recognition', methods=['POST'])
+@views.route('/api/ai-recognition', methods=['POST'])
 @login_required
 def ai_plant_recognition():
     if current_user.is_admin():
         return jsonify({"error": "Admins do not have access to the AI recognition feature."}), 403
 
     try:
+        # Check usage limit (premium users have unlimited)
+        is_premium = getattr(current_user, 'subscribed', False)
+        can_proceed, remaining, needs_payment = _check_ai_usage_limit(current_user.id, is_premium)
+        
+        if not can_proceed:
+            return jsonify({
+                "error": "Free analysis limit reached. Please purchase additional analyses or subscribe to Premium.",
+                "limit_reached": True,
+                "needs_payment": True,
+                "remaining": 0,
+                "price_per_analysis": 20.00
+            }), 402  # 402 Payment Required
+        
         api_key = os.getenv('PLANT_ID_API_KEY')
         if not api_key:
             # Return graceful message with 200 so frontend doesn't throw
@@ -946,196 +1054,223 @@ def ai_plant_recognition():
             if openai_key:
                 # Check cache first (key by scientific name or display name)
                 cache_key = (result.get('scientific_name') or result.get('plant_name') or '').lower().strip()
-                if cache_key in _AI_CACHE:
+                cache_hit = False
+                # Only check cache if we have a valid key
+                if cache_key and len(cache_key) > 0 and cache_key in _AI_CACHE:
                     cached = _AI_CACHE[cache_key]
+                    # Only use cache if it's fresh and has valid AI data
                     if time.time() - cached['ts'] < _AI_CACHE_TTL_SECONDS and isinstance(cached.get('data'), dict):
                         ai = cached['data']
-                        result['health_status'] = ai.get('health_status') or result['health_status']
-                        result['growth_stage'] = ai.get('growth_stage') or result['growth_stage']
-                        if isinstance(ai.get('care_recommendations'), dict):
-                            result['care_recommendations'].update({
-                                'watering': ai['care_recommendations'].get('watering') or result['care_recommendations']['watering'],
-                                'sunlight': ai['care_recommendations'].get('sunlight') or result['care_recommendations']['sunlight'],
-                                'soil': ai['care_recommendations'].get('soil') or result['care_recommendations']['soil']
-                            })
-                        if isinstance(ai.get('common_issues'), list):
-                            result['common_issues'] = ai.get('common_issues')
-                        if ai.get('estimated_yield'):
-                            result['estimated_yield'] = ai.get('estimated_yield')
-                        result['ai_enriched'] = True
-                        return jsonify(result)
-                
-                # Enhanced system prompt for image-based analysis
-                system_prompt = (
-                    "You are an expert horticulturist and plant pathologist with 20+ years of experience. "
-                    "Analyze the provided plant image and identification data to give accurate, image-specific guidance. "
-                    "Look at the actual condition of the plant in the image - examine leaves, stems, fruits, flowers, and overall health. "
-                    "IMPORTANT: Always use common, everyday plant names that people recognize (like 'Carrot', 'Eggplant', 'Tomato') "
-                    "instead of scientific names or regional names (like 'Daucus carota', 'Brinjal', 'Solanum lycopersicum'). "
-                    "Return your analysis as strict JSON with these exact keys: "
-                    "health_status (detailed assessment based on what you see in the image - mention specific visual indicators), "
-                    "growth_stage (specific stage based on what's visible in the image - flowers, fruits, leaves, etc.), "
-                    "care_recommendations (object with watering, sunlight, soil, fertilizing, pruning based on current condition), "
-                    "common_issues (array of specific problems you can see or likely issues based on the image), "
-                    "estimated_yield (realistic expectations based on current plant condition), "
-                    "seasonal_notes (seasonal care tips), pest_diseases (common threats and prevention). "
-                    "Be specific about what you observe in the image and provide practical advice for home gardening. "
-                    "Use simple, common plant names that everyone understands."
-                )
-                
-                # Enhanced user payload with image context
-                user_payload = {
-                    "plant_name": result.get('plant_name'),
-                    "scientific_name": result.get('scientific_name'),
-                    "common_names": result.get('common_names'),
-                    "confidence": result.get('confidence'),
-                    "wiki_description": wiki_text,
-                    "info_url": result.get('info_url'),
-                    "current_season": "spring",  # Could be dynamic based on date
-                    "analysis_context": "Analyze the actual plant condition visible in the image"
-                }
-                
-                try:
-                    # Try SDK path first with vision capabilities
-                    from openai import OpenAI
-                    # Clear any proxy environment variables that might cause conflicts
-                    proxy_vars = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'ALL_PROXY', 'all_proxy']
-                    original_proxy_values = {}
-                    for var in proxy_vars:
-                        if var in os.environ:
-                            original_proxy_values[var] = os.environ[var]
-                            del os.environ[var]
-                    
-                    # Initialize client with only the api_key to avoid proxy conflicts
-                    client = OpenAI(api_key=openai_key)
-                    
-                    # Restore proxy environment variables
-                    for var, value in original_proxy_values.items():
-                        os.environ[var] = value
-                    
-                    # Use vision model for image analysis
-                    completion = client.chat.completions.create(
-                        model="gpt-4o",  # Use vision-capable model
-                        response_format={"type": "json_object"},
-                        messages=[
-                            {"role": "system", "content": system_prompt},
-                            {
-                                "role": "user",
-                                "content": [
-                                    {
-                                        "type": "text",
-                                        "text": f"Analyze this plant image and provide detailed care guidance based on what you see: {user_payload}"
-                                    },
-                                    {
-                                        "type": "image_url",
-                                        "image_url": {
-                                            "url": f"data:image/jpeg;base64,{image_b64}"
-                                        }
-                                    }
-                                ]
-                            }
-                        ],
-                        temperature=0.3,  # Lower temperature for more consistent results
-                        max_tokens=1000
-                    )
-                    content = completion.choices[0].message.content
-                except Exception as e:
-                    print(f"❌ OpenAI SDK failed: {str(e)}")
-                    # Check if it's the proxies error specifically
-                    if "proxies" in str(e):
-                        print("🔧 Fixing proxies error by using direct HTTP call")
-                    # Fallback to plain HTTPS call with vision
-                    http_headers = {
-                        'Authorization': f'Bearer {openai_key}',
-                        'Content-Type': 'application/json'
-                    }
-                    http_payload = {
-                        'model': 'gpt-4o',  # Use vision-capable model
-                        'response_format': { 'type': 'json_object' },
-                        'messages': [
-                            { 'role': 'system', 'content': system_prompt },
-                            {
-                                'role': 'user',
-                                'content': [
-                                    {
-                                        'type': 'text',
-                                        'text': f'Analyze this plant image and provide detailed care guidance based on what you see: {user_payload}'
-                                    },
-                                    {
-                                        'type': 'image_url',
-                                        'image_url': {
-                                            'url': f'data:image/jpeg;base64,{image_b64}'
-                                        }
-                                    }
-                                ]
-                            }
-                        ],
-                        'temperature': 0.3,
-                        'max_tokens': 1000
-                    }
-                    # Retry with simple backoff on 429
-                    backoffs = [0, 2, 5]
-                    last_err = None
-                    for delay in backoffs:
-                        if delay:
-                            time.sleep(delay)
-                        http_resp = requests.post('https://api.openai.com/v1/chat/completions', json=http_payload, headers=http_headers, timeout=30)
-                        if http_resp.status_code == 429:
-                            last_err = f"429: {http_resp.text[:200]}"
-                            continue
-                        http_resp.raise_for_status()
-                        content = http_resp.json()['choices'][0]['message']['content']
-                        break
+                        # Only use cache if it has meaningful AI data
+                        if ai.get('health_status') or ai.get('growth_stage') or ai.get('care_recommendations'):
+                            result['health_status'] = ai.get('health_status') or result['health_status']
+                            result['growth_stage'] = ai.get('growth_stage') or result['growth_stage']
+                            if isinstance(ai.get('care_recommendations'), dict):
+                                result['care_recommendations'].update({
+                                    'watering': ai['care_recommendations'].get('watering') or result['care_recommendations']['watering'],
+                                    'sunlight': ai['care_recommendations'].get('sunlight') or result['care_recommendations']['sunlight'],
+                                    'soil': ai['care_recommendations'].get('soil') or result['care_recommendations']['soil']
+                                })
+                            if isinstance(ai.get('common_issues'), list):
+                                result['common_issues'] = ai.get('common_issues')
+                            if ai.get('estimated_yield'):
+                                result['estimated_yield'] = ai.get('estimated_yield')
+                            result['ai_enriched'] = True
+                            cache_hit = True
+                            print(f"✅ Using cached AI data for: {cache_key}")
+                            # If using cached data, skip OpenAI API call (usage tracking happens at the end)
+                        else:
+                            print(f"⚠️ Cached data for '{cache_key}' is invalid, will call OpenAI")
                     else:
-                        raise Exception(last_err or 'OpenAI HTTP call failed')
+                        print(f"⚠️ Cache expired for '{cache_key}', will call OpenAI")
+                else:
+                    if not cache_key:
+                        print(f"⚠️ No cache key available (plant_name: {result.get('plant_name')}), will call OpenAI")
+                    else:
+                        print(f"🔄 No cache found for '{cache_key}', will call OpenAI")
                 
-                import json as _json
-                ai = _json.loads(content)
-                
-                # Enhanced merge with more comprehensive data
-                if isinstance(ai, dict):
-                    # Update health status with more detailed assessment
-                    if ai.get('health_status'):
-                        result['health_status'] = ai['health_status']
+                # Only run OpenAI if cache miss
+                if not cache_hit:
+                    print(f"🔄 Cache miss for '{cache_key}', calling OpenAI API...")
+                    # Cache miss - proceed with OpenAI enhancement
+                    # Enhanced system prompt for image-based analysis
+                    system_prompt = (
+                        "You are an expert horticulturist and plant pathologist with 20+ years of experience. "
+                        "Analyze the provided plant image and identification data to give accurate, image-specific guidance. "
+                        "Look at the actual condition of the plant in the image - examine leaves, stems, fruits, flowers, and overall health. "
+                        "IMPORTANT: Always use common, everyday plant names that people recognize (like 'Carrot', 'Eggplant', 'Tomato') "
+                        "instead of scientific names or regional names (like 'Daucus carota', 'Brinjal', 'Solanum lycopersicum'). "
+                        "Return your analysis as strict JSON with these exact keys: "
+                        "health_status (detailed assessment based on what you see in the image - mention specific visual indicators), "
+                        "growth_stage (specific stage based on what's visible in the image - flowers, fruits, leaves, etc.), "
+                        "care_recommendations (object with watering, sunlight, soil, fertilizing, pruning based on current condition), "
+                        "common_issues (array of specific problems you can see or likely issues based on the image), "
+                        "estimated_yield (realistic expectations based on current plant condition), "
+                        "seasonal_notes (seasonal care tips), pest_diseases (common threats and prevention). "
+                        "Be specific about what you observe in the image and provide practical advice for home gardening. "
+                        "Use simple, common plant names that everyone understands."
+                    )
                     
-                    # Update growth stage with more specific information
-                    if ai.get('growth_stage'):
-                        result['growth_stage'] = ai['growth_stage']
+                    # Enhanced user payload with image context
+                    user_payload = {
+                        "plant_name": result.get('plant_name'),
+                        "scientific_name": result.get('scientific_name'),
+                        "common_names": result.get('common_names'),
+                        "confidence": result.get('confidence'),
+                        "wiki_description": wiki_text,
+                        "info_url": result.get('info_url'),
+                        "current_season": "spring",  # Could be dynamic based on date
+                        "analysis_context": "Analyze the actual plant condition visible in the image"
+                    }
                     
-                    # Enhanced care recommendations
-                    if isinstance(ai.get('care_recommendations'), dict):
-                        care_recs = ai['care_recommendations']
-                        result['care_recommendations'].update({
-                            'watering': care_recs.get('watering') or result['care_recommendations']['watering'],
-                            'sunlight': care_recs.get('sunlight') or result['care_recommendations']['sunlight'],
-                            'soil': care_recs.get('soil') or result['care_recommendations']['soil'],
-                            'fertilizing': care_recs.get('fertilizing', 'Follow general fertilizing schedule for this plant type'),
-                            'pruning': care_recs.get('pruning', 'Prune as needed for health and shape')
-                        })
+                    try:
+                        # Try SDK path first with vision capabilities
+                        from openai import OpenAI
+                        # Clear any proxy environment variables that might cause conflicts
+                        proxy_vars = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'ALL_PROXY', 'all_proxy']
+                        original_proxy_values = {}
+                        for var in proxy_vars:
+                            if var in os.environ:
+                                original_proxy_values[var] = os.environ[var]
+                                del os.environ[var]
+                        
+                        # Initialize client with only the api_key to avoid proxy conflicts
+                        client = OpenAI(api_key=openai_key)
+                        
+                        # Restore proxy environment variables
+                        for var, value in original_proxy_values.items():
+                            os.environ[var] = value
+                        
+                        # Use vision model for image analysis
+                        completion = client.chat.completions.create(
+                            model="gpt-4o",  # Use vision-capable model
+                            response_format={"type": "json_object"},
+                            messages=[
+                                {"role": "system", "content": system_prompt},
+                                {
+                                    "role": "user",
+                                    "content": [
+                                        {
+                                            "type": "text",
+                                            "text": f"Analyze this plant image and provide detailed care guidance based on what you see: {user_payload}"
+                                        },
+                                        {
+                                            "type": "image_url",
+                                            "image_url": {
+                                                "url": f"data:image/jpeg;base64,{image_b64}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            temperature=0.3,  # Lower temperature for more consistent results
+                            max_tokens=1000
+                        )
+                        content = completion.choices[0].message.content
+                    except Exception as e:
+                        print(f"❌ OpenAI SDK failed: {str(e)}")
+                        # Check if it's the proxies error specifically
+                        if "proxies" in str(e):
+                            print("🔧 Fixing proxies error by using direct HTTP call")
+                        # Fallback to plain HTTPS call with vision
+                        http_headers = {
+                            'Authorization': f'Bearer {openai_key}',
+                            'Content-Type': 'application/json'
+                        }
+                        http_payload = {
+                            'model': 'gpt-4o',  # Use vision-capable model
+                            'response_format': { 'type': 'json_object' },
+                            'messages': [
+                                { 'role': 'system', 'content': system_prompt },
+                                {
+                                    'role': 'user',
+                                    'content': [
+                                        {
+                                            'type': 'text',
+                                            'text': f'Analyze this plant image and provide detailed care guidance based on what you see: {user_payload}'
+                                        },
+                                        {
+                                            'type': 'image_url',
+                                            'image_url': {
+                                                'url': f'data:image/jpeg;base64,{image_b64}'
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            'temperature': 0.3,
+                            'max_tokens': 1000
+                        }
+                        # Retry with simple backoff on 429
+                        backoffs = [0, 2, 5]
+                        last_err = None
+                        for delay in backoffs:
+                            if delay:
+                                time.sleep(delay)
+                            http_resp = requests.post('https://api.openai.com/v1/chat/completions', json=http_payload, headers=http_headers, timeout=30)
+                            if http_resp.status_code == 429:
+                                last_err = f"429: {http_resp.text[:200]}"
+                                continue
+                            http_resp.raise_for_status()
+                            content = http_resp.json()['choices'][0]['message']['content']
+                            break
+                        else:
+                            raise Exception(last_err or 'OpenAI HTTP call failed')
                     
-                    # Enhanced common issues with solutions
-                    if isinstance(ai.get('common_issues'), list):
-                        result['common_issues'] = ai['common_issues']
+                    import json as _json
+                    ai = _json.loads(content)
                     
-                    # Enhanced yield estimation
-                    if ai.get('estimated_yield'):
-                        result['estimated_yield'] = ai['estimated_yield']
-                    
-                    # Add new AI-enhanced fields
-                    if ai.get('seasonal_notes'):
-                        result['seasonal_notes'] = ai['seasonal_notes']
-                    
-                    if ai.get('pest_diseases'):
-                        result['pest_diseases'] = ai['pest_diseases']
-                    
-                    result['ai_enriched'] = True
-                    
-                    # Save to cache with enhanced data
-                    if cache_key:
-                        _AI_CACHE[cache_key] = { 'ts': time.time(), 'data': ai }
+                    # Enhanced merge with more comprehensive data
+                    if isinstance(ai, dict):
+                        # Update health status with more detailed assessment
+                        if ai.get('health_status'):
+                            result['health_status'] = ai['health_status']
+                        
+                        # Update growth stage with more specific information
+                        if ai.get('growth_stage'):
+                            result['growth_stage'] = ai['growth_stage']
+                        
+                        # Enhanced care recommendations
+                        if isinstance(ai.get('care_recommendations'), dict):
+                            care_recs = ai['care_recommendations']
+                            result['care_recommendations'].update({
+                                'watering': care_recs.get('watering') or result['care_recommendations']['watering'],
+                                'sunlight': care_recs.get('sunlight') or result['care_recommendations']['sunlight'],
+                                'soil': care_recs.get('soil') or result['care_recommendations']['soil'],
+                                'fertilizing': care_recs.get('fertilizing', 'Follow general fertilizing schedule for this plant type'),
+                                'pruning': care_recs.get('pruning', 'Prune as needed for health and shape')
+                            })
+                        
+                        # Enhanced common issues with solutions
+                        if isinstance(ai.get('common_issues'), list):
+                            result['common_issues'] = ai['common_issues']
+                        
+                        # Enhanced yield estimation
+                        if ai.get('estimated_yield'):
+                            result['estimated_yield'] = ai['estimated_yield']
+                        
+                        # Add new AI-enhanced fields
+                        if ai.get('seasonal_notes'):
+                            result['seasonal_notes'] = ai['seasonal_notes']
+                        
+                        if ai.get('pest_diseases'):
+                            result['pest_diseases'] = ai['pest_diseases']
+                        
+                        result['ai_enriched'] = True
+                        print(f"✅ OpenAI enrichment successful for: {cache_key or 'unknown'}")
+                        
+                        # Save to cache with enhanced data
+                        if cache_key:
+                            _AI_CACHE[cache_key] = { 'ts': time.time(), 'data': ai }
+                    else:
+                        print(f"⚠️ OpenAI returned invalid response format")
                         
         except Exception as ai_err:
             # If AI enrichment fails, fall back to defaults but include server log
+            print(f"❌ OpenAI enrichment error: {str(ai_err)}")
+            print(f"❌ Error type: {type(ai_err).__name__}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
             try:
                 import logging
                 logging.getLogger(__name__).warning("AI enrichment failed: %s", str(ai_err))
@@ -1148,6 +1283,27 @@ def ai_plant_recognition():
             except Exception:
                 ...
 
+        # Track usage after successful analysis (both premium and basic users)
+        is_premium = getattr(current_user, 'subscribed', False)
+        free_allocation = 10 if is_premium else 3
+        usage = _get_or_create_ai_usage(current_user.id)
+        is_free = usage.can_use_free(free_allocation)
+        old_free_used = usage.free_analyses_used or 0
+        old_purchased = usage.purchased_credits or 0
+        _track_ai_usage(
+            current_user.id,
+            'plant_analysis',
+            is_free=is_free,
+            cost=0.00 if is_free else 20.00,
+            analysis_result=str(result.get('plant_name', ''))[:500]
+        )
+        db.session.commit()
+        # Refresh to get updated values
+        db.session.refresh(usage)
+        new_free_used = usage.free_analyses_used or 0
+        new_purchased = usage.purchased_credits or 0
+        print(f"✅ Tracked usage for user {current_user.id} (premium={is_premium}, allocation={free_allocation}): free {old_free_used}→{new_free_used}, purchased {old_purchased}→{new_purchased}")
+        
         return jsonify(result)
     except Exception as e:
         # Fallback to simple on-device heuristic so the feature still works offline
@@ -1184,13 +1340,26 @@ def ai_plant_recognition():
         except Exception:
             return jsonify({"error": f"Analysis failed: {str(e)}"}), 500
 
-@views.route('/soil-analysis', methods=['POST'])
+@views.route('/api/soil-analysis', methods=['POST'])
 @login_required
 def soil_analysis():
     if current_user.is_admin():
         return jsonify({"error": "Admins do not have access to the soil analysis feature."}), 403
 
     try:
+        # Check usage limit (premium users have unlimited)
+        is_premium = getattr(current_user, 'subscribed', False)
+        can_proceed, remaining, needs_payment = _check_ai_usage_limit(current_user.id, is_premium)
+        
+        if not can_proceed:
+            return jsonify({
+                "error": "Free analysis limit reached. Please purchase additional analyses or subscribe to Premium.",
+                "limit_reached": True,
+                "needs_payment": True,
+                "remaining": 0,
+                "price_per_analysis": 20.00
+            }), 402  # 402 Payment Required
+        
         openai_key = os.getenv('OPENAI_API_KEY')
         if not openai_key:
             return jsonify({"error": "Missing OPENAI_API_KEY. Add it to .env and restart backend."}), 200
@@ -1341,6 +1510,27 @@ def soil_analysis():
             'root_development': ai_result.get('root_development', 'Unable to assess from image'),
             'ai_analyzed': True
         }
+
+        # Track usage after successful analysis (both premium and basic users)
+        is_premium = getattr(current_user, 'subscribed', False)
+        free_allocation = 10 if is_premium else 3
+        usage = _get_or_create_ai_usage(current_user.id)
+        is_free = usage.can_use_free(free_allocation)
+        old_free_used = usage.free_analyses_used or 0
+        old_purchased = usage.purchased_credits or 0
+        _track_ai_usage(
+            current_user.id,
+            'soil_analysis',
+            is_free=is_free,
+            cost=0.00 if is_free else 20.00,
+            analysis_result=str(result.get('moisture_level', ''))[:500]
+        )
+        db.session.commit()
+        # Refresh to get updated values
+        db.session.refresh(usage)
+        new_free_used = usage.free_analyses_used or 0
+        new_purchased = usage.purchased_credits or 0
+        print(f"✅ Tracked usage for user {current_user.id} (premium={is_premium}, allocation={free_allocation}): free {old_free_used}→{new_free_used}, purchased {old_purchased}→{new_purchased}")
 
         return jsonify(result)
         
@@ -2748,6 +2938,84 @@ def get_grid_spaces(garden_id):
         return jsonify({"grid_spaces": spaces_data})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@views.route('/api/ai-analysis/usage', methods=['GET'])
+@login_required
+def get_ai_usage_status():
+    """Get current AI analysis usage status for the user"""
+    try:
+        is_premium = getattr(current_user, 'subscribed', False)
+        usage = _get_or_create_ai_usage(current_user.id)
+        # Premium users get 10 free analyses, basic users get 3
+        free_allocation = 10 if is_premium else 3
+        
+        free_used = usage.free_analyses_used or 0
+        free_remaining = max(0, free_allocation - free_used)
+        purchased_credits = usage.purchased_credits or 0
+        total_remaining = usage.total_remaining(free_allocation)
+        
+        return jsonify({
+            "success": True,
+            "is_premium": is_premium,
+            "free_allocation": free_allocation,
+            "free_used": free_used,
+            "free_remaining": free_remaining,
+            "purchased_credits": purchased_credits,
+            "total_remaining": total_remaining,
+            "price_per_analysis": 20.00
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@views.route('/api/ai-analysis/purchase', methods=['POST'])
+@login_required
+def purchase_ai_analysis():
+    """Purchase a single AI analysis for ₱20"""
+    try:
+        data = request.get_json() or {}
+        quantity = data.get('quantity', 1)
+        payment_method = data.get('payment_method', 'demo')
+        gcash_number = data.get('gcash_number')
+        
+        if quantity <= 0:
+            return jsonify({"success": False, "error": "Invalid quantity"}), 400
+        
+        # Premium users don't need to purchase
+        is_premium = getattr(current_user, 'subscribed', False)
+        if is_premium:
+            return jsonify({
+                "success": False,
+                "error": "Premium users have unlimited analyses. No purchase needed."
+            }), 400
+        
+        # Validate GCash number if GCash payment method is selected
+        if payment_method == 'gcash' and not gcash_number:
+            return jsonify({"success": False, "error": "GCash mobile number is required"}), 400
+        
+        # For demo purposes, simulate successful payment
+        payment_info = f"via {payment_method}"
+        if payment_method == 'gcash' and gcash_number:
+            payment_info += f" (GCash: {gcash_number})"
+        print(f"💰 AI ANALYSIS PURCHASE: User {current_user.id} purchasing {quantity} analysis(es) {payment_info}")
+        
+        # Update usage with purchased credits
+        usage = _get_or_create_ai_usage(current_user.id)
+        usage.purchased_credits = (usage.purchased_credits or 0) + quantity
+        db.session.commit()
+        
+        total_remaining = usage.total_remaining()
+        
+        return jsonify({
+            "success": True,
+            "message": f"Successfully purchased {quantity} analysis(es).",
+            "credits_added": quantity,
+            "total_remaining": total_remaining,
+            "price_per_analysis": 20.00,
+            "total_paid": quantity * 20.00
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": f"Purchase failed: {str(e)}"}), 500
 
 @views.route('/plant/purchase-updates', methods=['POST'])
 @login_required
@@ -5033,6 +5301,12 @@ def admin_api_toggle_user_subscription(user_id):
         # Update subscription plan based on subscription status
         if user.subscribed:
             user.subscription_plan = 'premium'
+            # Reset free analysis usage when upgrading to premium
+            # This gives premium users a fresh start with 10 free analyses
+            usage = _get_or_create_ai_usage(user_id)
+            old_free_used = usage.free_analyses_used or 0
+            usage.free_analyses_used = 0
+            print(f"🔄 RESET AI USAGE: Admin upgraded user {user_id} to premium - reset free_analyses_used from {old_free_used} to 0")
         else:
             user.subscription_plan = 'basic'
         
@@ -5483,6 +5757,39 @@ def user_subscribe():
             action='subscription_upgrade',
             description='User upgraded to Premium plan'
         )
+        
+        # Expand all existing gardens from 3x3 to 6x6, preserving existing plants
+        from website.models import Garden
+        user_gardens = Garden.query.filter_by(user_id=current_user.id).all()
+        
+        for garden in user_gardens:
+            # Only expand if garden is currently 3x3
+            if garden.grid_size == '3x3' or garden.base_grid_spaces == 9:
+                # Log the garden changes
+                log_history_change(
+                    table_name='garden',
+                    record_id=garden.id,
+                    action='UPDATE',
+                    old_values={'grid_size': garden.grid_size, 'base_grid_spaces': garden.base_grid_spaces},
+                    new_values={'grid_size': '6x6', 'base_grid_spaces': 36},
+                    changed_by=f'user_{current_user.id}'
+                )
+                
+                # Expand the grid from 3x3 to 6x6 (preserves existing plants)
+                expand_garden_grid_to_premium(garden.id)
+                
+                # Update garden metadata
+                garden.grid_size = '6x6'
+                garden.base_grid_spaces = 36
+                
+                print(f"🌱 Expanded garden {garden.id} ({garden.name}) from 3x3 to 6x6")
+        
+        # Reset free analysis usage when upgrading to premium
+        # This gives premium users a fresh start with 10 free analyses
+        usage = _get_or_create_ai_usage(current_user.id)
+        old_free_used = usage.free_analyses_used or 0
+        usage.free_analyses_used = 0
+        print(f"🔄 RESET AI USAGE: User {current_user.id} upgraded to premium - reset free_analyses_used from {old_free_used} to 0")
         
         db.session.commit()
         
@@ -5943,6 +6250,12 @@ def admin_api_toggle_subscription(user_id):
         # Update subscription plan based on subscription status
         if user.subscribed:
             user.subscription_plan = 'premium'
+            # Reset free analysis usage when upgrading to premium
+            # This gives premium users a fresh start with 10 free analyses
+            usage = _get_or_create_ai_usage(user_id)
+            old_free_used = usage.free_analyses_used or 0
+            usage.free_analyses_used = 0
+            print(f"🔄 RESET AI USAGE: Admin upgraded user {user_id} to premium - reset free_analyses_used from {old_free_used} to 0")
         else:
             user.subscription_plan = 'basic'
         

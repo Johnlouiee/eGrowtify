@@ -184,7 +184,7 @@ const Garden = () => {
       const formData = new FormData()
       formData.append('image', file)
 
-      const response = await axios.post('/ai-recognition', formData, {
+      const response = await axios.post('/api/ai-recognition', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -221,13 +221,38 @@ const Garden = () => {
         
         toast.success(`Plant recognized: ${plantName}`)
       } else if (response.data.error) {
-        toast.error(response.data.error)
+        // Check if it's a usage limit error
+        if (response.data.limit_reached || response.data.needs_payment) {
+          toast.error('Free analysis limit reached. Please purchase additional analyses or subscribe to Premium.', {
+            duration: 5000,
+            action: {
+              label: 'Subscribe',
+              onClick: () => navigate('/subscription')
+            }
+          })
+        } else {
+          toast.error(response.data.error)
+        }
       } else {
         toast.error('Could not recognize plant. Please enter the name manually.')
       }
     } catch (error) {
       console.error('AI recognition error:', error)
-      toast.error('Failed to recognize plant. Please enter the name manually.')
+      
+      // Check if it's a 402 Payment Required (usage limit reached)
+      if (error?.response?.status === 402 && (error?.response?.data?.limit_reached || error?.response?.data?.needs_payment)) {
+        toast.error('Free analysis limit reached. Please purchase additional analyses or subscribe to Premium.', {
+          duration: 5000,
+          action: {
+            label: 'Subscribe',
+            onClick: () => navigate('/subscription')
+          }
+        })
+      } else if (error?.response?.data?.error) {
+        toast.error(error.response.data.error)
+      } else {
+        toast.error('Failed to recognize plant. Please enter the name manually.')
+      }
     } finally {
       setIsRecognizing(false)
     }

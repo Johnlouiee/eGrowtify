@@ -12,6 +12,7 @@ const Subscription = () => {
   const [showSubscriptionDetails, setShowSubscriptionDetails] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('gcash')
+  const [gcashNumber, setGcashNumber] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -95,6 +96,20 @@ const Subscription = () => {
       setIsProcessing(true)
       setError('')
       
+      // Validate GCash number if GCash is selected
+      if (paymentMethod === 'gcash' && !gcashNumber.trim()) {
+        setError('Please enter your GCash mobile number')
+        setIsProcessing(false)
+        return
+      }
+
+      const cleanedGcashNumber = gcashNumber.replace(/\s/g, '')
+      if (paymentMethod === 'gcash' && (!/^09\d{9}$/.test(cleanedGcashNumber) || cleanedGcashNumber.length !== 11)) {
+        setError('Please enter a valid GCash mobile number (11 digits: 09XX XXX XXXX)')
+        setIsProcessing(false)
+        return
+      }
+      
       // Process subscription upgrade via backend
       console.log('💰 SUBSCRIPTION: Processing Premium upgrade')
       console.log('💰 SUBSCRIPTION: Amount: ₱150/month')
@@ -105,7 +120,8 @@ const Subscription = () => {
       // Call backend subscription endpoint
       const response = await axios.post('/api/subscription/upgrade', {
         plan_type: 'premium',
-        payment_method: 'demo'
+        payment_method: paymentMethod,
+        gcash_number: paymentMethod === 'gcash' ? cleanedGcashNumber : null
       })
       
       console.log('💰 SUBSCRIPTION: Backend response:', response.data)
@@ -113,6 +129,9 @@ const Subscription = () => {
       if (response.data.success) {
         toast.success('Subscription upgrade successful! You now have Premium access.')
         setShowUpgradeModal(false)
+        // Reset form
+        setGcashNumber('')
+        setPaymentMethod('gcash')
         
         // Clear auth cache to force fresh data
         authService.clearCache()
@@ -651,7 +670,11 @@ const Subscription = () => {
         {/* Upgrade Modal */}
         {showUpgradeModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black bg-opacity-40" onClick={() => setShowUpgradeModal(false)}></div>
+            <div className="absolute inset-0 bg-black bg-opacity-40" onClick={() => {
+              setShowUpgradeModal(false)
+              setGcashNumber('')
+              setPaymentMethod('gcash')
+            }}></div>
             <div className="relative bg-white w-full max-w-2xl mx-4 rounded-2xl shadow-xl border border-gray-200">
               <div className="p-6 border-b">
                 <h3 className="text-xl font-bold text-gray-900">Upgrade Your Plan</h3>
@@ -714,7 +737,11 @@ const Subscription = () => {
               </div>
               <div className="p-6 border-t flex items-center justify-end gap-3">
                 <button 
-                  onClick={() => setShowUpgradeModal(false)} 
+                  onClick={() => {
+                    setShowUpgradeModal(false)
+                    setGcashNumber('')
+                    setPaymentMethod('gcash')
+                  }} 
                   className="btn-secondary"
                 >
                   Cancel
@@ -811,7 +838,28 @@ const Subscription = () => {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">GCash Mobile Number</label>
-                      <input type="tel" placeholder="09XX XXX XXXX" className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400" />
+                      <input
+                        type="tel"
+                        value={gcashNumber}
+                        onChange={(e) => {
+                          // Remove all non-digit characters
+                          let digitsOnly = e.target.value.replace(/\D/g, '')
+                          // Limit to 11 digits
+                          if (digitsOnly.length > 11) digitsOnly = digitsOnly.slice(0, 11)
+                          // Format with spaces: 09XX XXX XXXX
+                          let formatted = digitsOnly
+                          if (digitsOnly.length > 4) {
+                            formatted = digitsOnly.slice(0, 4) + ' ' + digitsOnly.slice(4)
+                          }
+                          if (digitsOnly.length > 7) {
+                            formatted = digitsOnly.slice(0, 4) + ' ' + digitsOnly.slice(4, 7) + ' ' + digitsOnly.slice(7)
+                          }
+                          setGcashNumber(formatted)
+                        }}
+                        placeholder="09XX XXX XXXX"
+                        maxLength={13} // 11 digits + 2 spaces = 13 characters
+                        className="w-full px-4 py-2 rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400"
+                      />
                     </div>
                     <p className="text-xs text-gray-500">Youll be redirected to GCash to authorize the payment.</p>
                   </div>
@@ -892,7 +940,7 @@ const Subscription = () => {
                   } finally {
                     setIsProcessing(false)
                   }
-                }} className={`btn-primary ${isProcessing ? 'opacity-70 cursor-not-allowed' : ''}`}>
+                }} className={`btn-primary ${isProcessing || (paymentMethod === 'gcash' && !gcashNumber.trim()) ? 'opacity-70 cursor-not-allowed' : ''}`} disabled={isProcessing || (paymentMethod === 'gcash' && !gcashNumber.trim())}>
                   {isProcessing ? 'Processing Payment…' : `Pay ₱${priceDisplay.amount}`}
                 </button>
               </div>
