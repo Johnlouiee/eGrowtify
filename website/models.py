@@ -382,6 +382,52 @@ class UserPlantUpdateUsage(db.Model):
     def __repr__(self):
         return f'<UserPlantUpdateUsage user={self.user_id} free_used={self.free_updates_used} purchased={self.purchased_credits}>'
 
+class AIUsageTracking(db.Model):
+    """Track AI analysis usage (plant and soil) for users."""
+    __tablename__ = 'ai_usage_tracking'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    usage_type = db.Column(db.String(20), nullable=False)  # 'plant_analysis' or 'soil_analysis'
+    image_path = db.Column(db.String(500), nullable=True)
+    analysis_result = db.Column(db.Text, nullable=True)
+    cost = db.Column(db.Numeric(10, 2), default=0.00)
+    is_free_usage = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    user = db.relationship('User', backref=db.backref('ai_usage_tracking', lazy='dynamic', cascade='all, delete'))
+    
+    def __repr__(self):
+        return f'<AIUsageTracking {self.id}: User {self.user_id} - {self.usage_type}>'
+
+class AIAnalysisUsage(db.Model):
+    """Track free and purchased AI analysis credits for users."""
+    __tablename__ = 'ai_analysis_usage'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
+    free_analyses_used = db.Column(db.Integer, default=0)  # Total free analyses used (plant + soil combined)
+    purchased_credits = db.Column(db.Integer, default=0)  # Purchased single analysis credits
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    user = db.relationship('User', backref=db.backref('ai_analysis_usage', uselist=False, cascade='all, delete-orphan'))
+    
+    def total_remaining(self, free_allocation=3):
+        """Calculate total remaining analyses (free + purchased)"""
+        free_remaining = max(0, free_allocation - (self.free_analyses_used or 0))
+        credits = self.purchased_credits or 0
+        return free_remaining + credits
+    
+    def can_use_free(self, free_allocation=3):
+        """Check if user can use a free analysis"""
+        return (self.free_analyses_used or 0) < free_allocation
+    
+    def __repr__(self):
+        return f'<AIAnalysisUsage user={self.user_id} free_used={self.free_analyses_used} purchased={self.purchased_credits}>'
+
 class UserSharedConcept(db.Model):
     """User contributed concepts, techniques, and ideas that can be shared across the community."""
     __tablename__ = 'user_shared_concepts'
