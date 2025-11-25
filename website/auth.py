@@ -496,6 +496,23 @@ def upload_profile_photo():
 def delete_account():
     """Delete the current user's account"""
     try:
+        data = request.get_json() or {}
+        password = data.get('password')
+        
+        # Verify password is provided
+        if not password:
+            return jsonify({
+                "success": False,
+                "message": "Password is required to delete your account"
+            }), 400
+        
+        # Verify password is correct
+        if not current_user.check_password(password):
+            return jsonify({
+                "success": False,
+                "message": "Incorrect password. Please enter your current password to delete your account."
+            }), 401
+        
         user_id = current_user.id
         user_email = current_user.email
         
@@ -525,7 +542,7 @@ def delete_account():
         db.session.rollback()
         import traceback
         error_msg = str(e)
-        print(f"Error deleting account for user {user_id}: {error_msg}")
+        print(f"Error deleting account for user {user_id if 'user_id' in locals() else 'unknown'}: {error_msg}")
         print(traceback.format_exc())
         return jsonify({
             "success": False, 

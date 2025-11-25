@@ -29,6 +29,8 @@ const Profile = () => {
   const [photoFile, setPhotoFile] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deletePassword, setDeletePassword] = useState('')
+  const [showDeletePassword, setShowDeletePassword] = useState(false)
   const [showPhotoModal, setShowPhotoModal] = useState(false)
 
   const [profileUser, setProfileUser] = useState(null)
@@ -145,13 +147,20 @@ const Profile = () => {
       return
     }
 
+    if (!deletePassword) {
+      toast.error('Please enter your password to confirm account deletion')
+      return
+    }
+
     if (!window.confirm('Are you absolutely sure? This will permanently delete your account and all associated data. This action cannot be undone.')) {
       return
     }
 
     setLoading(true)
     try {
-      const response = await axios.delete('/profile/delete')
+      const response = await axios.delete('/profile/delete', {
+        data: { password: deletePassword }
+      })
       if (response.data.success) {
         toast.success('Your account has been deleted successfully')
         
@@ -516,11 +525,35 @@ const Profile = () => {
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Enter your password to confirm deletion:
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type={showDeletePassword ? 'text' : 'password'}
+                        value={deletePassword}
+                        onChange={(e) => setDeletePassword(e.target.value)}
+                        placeholder="Enter your password"
+                        className="input-field pl-10 pr-10 w-full"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowDeletePassword(!showDeletePassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showDeletePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="flex space-x-4 pt-2">
                     <button
                       type="button"
                       onClick={handleDeleteAccount}
-                      disabled={loading || deleteConfirmText !== 'DELETE'}
+                      disabled={loading || deleteConfirmText !== 'DELETE' || !deletePassword}
                       className="btn-primary bg-red-600 hover:bg-red-700 text-white border-red-600 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -531,6 +564,7 @@ const Profile = () => {
                       onClick={() => {
                         setShowDeleteConfirm(false)
                         setDeleteConfirmText('')
+                        setDeletePassword('')
                       }}
                       disabled={loading}
                       className="btn-secondary"
