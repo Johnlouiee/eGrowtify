@@ -6,6 +6,7 @@ import {
   Target, TrendingUp, Star, Users, Calendar, MapPin, Zap, Video, PlayCircle, X
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import axios from 'axios'
 import ImageDisplay from '../components/ImageDisplay'
 import { useAuth } from '../contexts/AuthContext'
 import { getModuleData } from '../utils/learningPathData'
@@ -31,12 +32,50 @@ const IntermediateLearningPath = () => {
     return `${key}_user_${user.id}`
   }
 
-  // Get modules from centralized data source
-  const modules = getModuleData('Intermediate').map(module => ({
-    ...module,
-    icon: TrendingUp,
-    color: 'blue'
-  }))
+  // Get modules from backend API
+  const [modules, setModules] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadModules = async () => {
+      try {
+        const response = await axios.get('/api/learning-paths/Intermediate')
+        
+        // Check if backend returned empty array (no content in database)
+        if (response.data && response.data.length === 0) {
+          console.log('No content in database, using fallback data')
+          // Fallback to hardcoded data
+          const fallbackModules = getModuleData('Intermediate').map(module => ({
+            ...module,
+            icon: TrendingUp,
+            color: 'blue'
+          }))
+          setModules(fallbackModules)
+        } else {
+          // Use backend data
+          const backendModules = response.data.map(module => ({
+            ...module,
+            icon: TrendingUp,
+            color: 'blue'
+          }))
+          setModules(backendModules)
+        }
+      } catch (error) {
+        console.error('Error loading modules from backend:', error)
+        // Fallback to hardcoded data
+        const fallbackModules = getModuleData('Intermediate').map(module => ({
+          ...module,
+          icon: TrendingUp,
+          color: 'blue'
+        }))
+        setModules(fallbackModules)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadModules()
+  }, [])
 
   // Clear old progress data function
   const clearOldProgressData = () => {
@@ -398,9 +437,39 @@ const IntermediateLearningPath = () => {
                     {currentModule.lessons[currentLesson].content}
                   </p>
 
+                  {/* Lesson Images */}
+                  {currentModule.lessons[currentLesson].images && currentModule.lessons[currentLesson].images.length > 0 && (
+                    <div className="mb-6 space-y-4">
+                      {currentModule.lessons[currentLesson].images.map((image, imgIndex) => (
+                        <div key={imgIndex} className="rounded-lg overflow-hidden">
+                          <img 
+                            src={image.url || image} 
+                            alt={image.description || `Lesson image ${imgIndex + 1}`}
+                            className="w-full rounded-lg shadow-sm"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Lesson Videos */}
+                  {currentModule.lessons[currentLesson].videos && currentModule.lessons[currentLesson].videos.length > 0 && (
+                    <div className="mb-6 space-y-4">
+                      {currentModule.lessons[currentLesson].videos.map((video, vidIndex) => (
+                        <div key={vidIndex} className="rounded-lg overflow-hidden">
+                          <video 
+                            src={video.url || video} 
+                            controls
+                            className="w-full rounded-lg shadow-sm"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Points */}
                   <div className="space-y-4">
-                    {currentModule.lessons[currentLesson].points.map((point, index) => (
+                    {currentModule.lessons[currentLesson].points && Array.isArray(currentModule.lessons[currentLesson].points) && currentModule.lessons[currentLesson].points.map((point, index) => (
                       <div key={index} className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
                         <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
                           <span className="text-blue-600 text-sm font-medium">{index + 1}</span>
@@ -448,13 +517,22 @@ const IntermediateLearningPath = () => {
                           {index + 1}. {question.question}
                         </h3>
                         
-                        {question.image && (
+                        {(question.image || question.video) && (
                           <div className="mb-4">
-                            <img 
-                              src={question.image} 
-                              alt={question.imageDescription || 'Quiz image'}
-                              className="w-full max-w-md mx-auto rounded-lg shadow-sm"
-                            />
+                            {question.image && (
+                              <img 
+                                src={question.image} 
+                                alt={question.imageDescription || 'Quiz image'}
+                                className="w-full max-w-md mx-auto rounded-lg shadow-sm"
+                              />
+                            )}
+                            {question.video && (
+                              <video 
+                                src={question.video} 
+                                controls
+                                className="w-full max-w-md mx-auto rounded-lg shadow-sm"
+                              />
+                            )}
                           </div>
                         )}
 
@@ -563,6 +641,18 @@ const IntermediateLearningPath = () => {
               </div>
             </div>
           )}
+        </div>
+      </div>
+    )
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading learning modules...</p>
         </div>
       </div>
     )

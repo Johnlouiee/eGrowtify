@@ -8,7 +8,7 @@ import {
   Activity, Clock, DollarSign, UserPlus, Eye, Edit,
   RefreshCw, Download, Upload, Filter, Search, MoreVertical,
   Crown, Star, Target, Globe, Lock, Unlock, MessageSquare,
-  History
+  History, Zap
 } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
@@ -32,6 +32,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true)
   const [recentActivity, setRecentActivity] = useState([])
   const [systemAlerts, setSystemAlerts] = useState([])
+  const [notifications, setNotifications] = useState([])
 
   // Redirect if not admin
   useEffect(() => {
@@ -44,7 +45,30 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchAdminStats()
+    fetchNotifications()
   }, [])
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await axios.get('/api/admin/notifications')
+      // Get only active notifications, sorted by priority and date
+      const activeNotifications = (response.data || [])
+        .filter(n => n.is_active)
+        .sort((a, b) => {
+          // Sort by priority first (High > Medium > Low)
+          const priorityOrder = { 'High': 3, 'Medium': 2, 'Low': 1 }
+          if (priorityOrder[b.priority] !== priorityOrder[a.priority]) {
+            return priorityOrder[b.priority] - priorityOrder[a.priority]
+          }
+          // Then by date (newest first)
+          return new Date(b.created_at) - new Date(a.created_at)
+        })
+        .slice(0, 5) // Show only top 5
+      setNotifications(activeNotifications)
+    } catch (error) {
+      console.error('Error fetching notifications:', error)
+    }
+  }
 
   const fetchAdminStats = async () => {
     try {
@@ -398,6 +422,98 @@ const AdminDashboard = () => {
                 })}
               </div>
             </div>
+
+            {/* Admin Notifications */}
+            {notifications.length > 0 && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Bell className="h-5 w-5 text-green-600" />
+                    </div>
+                    <h3 className="font-semibold text-gray-900">Active Notifications</h3>
+                  </div>
+                  <Link
+                    to="/admin/notifications"
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Manage
+                  </Link>
+                </div>
+                <div className="space-y-3">
+                  {notifications.map((notification) => {
+                    const getPriorityColor = (priority) => {
+                      switch (priority) {
+                        case 'High': return 'border-red-500 bg-red-50'
+                        case 'Medium': return 'border-yellow-500 bg-yellow-50'
+                        case 'Low': return 'border-blue-500 bg-blue-50'
+                        default: return 'border-gray-500 bg-gray-50'
+                      }
+                    }
+
+                    const getTypeIcon = (type) => {
+                      switch (type) {
+                        case 'Maintenance': return AlertTriangle
+                        case 'Update': return Bell
+                        case 'Feature': return Zap
+                        case 'System': return Settings
+                        default: return Bell
+                      }
+                    }
+
+                    const IconComponent = getTypeIcon(notification.type)
+
+                    return (
+                      <div
+                        key={notification.id}
+                        className={`border-l-4 rounded-lg p-3 ${getPriorityColor(notification.priority)}`}
+                      >
+                        <div className="flex items-start space-x-2">
+                          <IconComponent className={`h-4 w-4 mt-0.5 ${
+                            notification.priority === 'High' ? 'text-red-600' :
+                            notification.priority === 'Medium' ? 'text-yellow-600' :
+                            'text-blue-600'
+                          }`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <h4 className="text-sm font-semibold text-gray-900 truncate">
+                                {notification.title}
+                              </h4>
+                              <span className={`ml-2 px-2 py-0.5 text-xs font-semibold rounded-full ${
+                                notification.priority === 'High' ? 'bg-red-200 text-red-800' :
+                                notification.priority === 'Medium' ? 'bg-yellow-200 text-yellow-800' :
+                                'bg-blue-200 text-blue-800'
+                              }`}>
+                                {notification.type}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-700 line-clamp-2 mb-1">
+                              {notification.message}
+                            </p>
+                            {notification.created_at && (
+                              <p className="text-xs text-gray-500">
+                                {new Date(notification.created_at).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                {notifications.length >= 5 && (
+                  <Link
+                    to="/admin/notifications"
+                    className="block mt-4 text-center text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    View all notifications →
+                  </Link>
+                )}
+              </div>
+            )}
 
             {/* System Alerts */}
             {systemAlerts.length > 0 && (

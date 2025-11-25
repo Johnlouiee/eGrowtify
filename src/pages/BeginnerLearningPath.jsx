@@ -437,9 +437,39 @@ const BeginnerLearningPath = () => {
                     {currentModule.lessons[currentLesson].content}
                   </p>
 
+                  {/* Lesson Images */}
+                  {currentModule.lessons[currentLesson].images && currentModule.lessons[currentLesson].images.length > 0 && (
+                    <div className="mb-6 space-y-4">
+                      {currentModule.lessons[currentLesson].images.map((image, imgIndex) => (
+                        <div key={imgIndex} className="rounded-lg overflow-hidden">
+                          <img 
+                            src={image.url || image} 
+                            alt={image.description || `Lesson image ${imgIndex + 1}`}
+                            className="w-full rounded-lg shadow-sm"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Lesson Videos */}
+                  {currentModule.lessons[currentLesson].videos && currentModule.lessons[currentLesson].videos.length > 0 && (
+                    <div className="mb-6 space-y-4">
+                      {currentModule.lessons[currentLesson].videos.map((video, vidIndex) => (
+                        <div key={vidIndex} className="rounded-lg overflow-hidden">
+                          <video 
+                            src={video.url || video} 
+                            controls
+                            className="w-full rounded-lg shadow-sm"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Points */}
                   <div className="space-y-4">
-                    {currentModule.lessons[currentLesson].points.map((point, index) => (
+                    {currentModule.lessons[currentLesson].points && Array.isArray(currentModule.lessons[currentLesson].points) && currentModule.lessons[currentLesson].points.map((point, index) => (
                       <div key={index} className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
                         <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
                           <span className="text-green-600 text-sm font-medium">{index + 1}</span>
@@ -487,13 +517,22 @@ const BeginnerLearningPath = () => {
                           {index + 1}. {question.question}
                         </h3>
                         
-                        {question.image && (
+                        {(question.image || question.video) && (
                           <div className="mb-4">
-                            <img 
-                              src={question.image} 
-                              alt={question.imageDescription || 'Quiz image'}
-                              className="w-full max-w-md mx-auto rounded-lg shadow-sm"
-                            />
+                            {question.image && (
+                              <img 
+                                src={question.image} 
+                                alt={question.imageDescription || 'Quiz image'}
+                                className="w-full max-w-md mx-auto rounded-lg shadow-sm"
+                              />
+                            )}
+                            {question.video && (
+                              <video 
+                                src={question.video} 
+                                controls
+                                className="w-full max-w-md mx-auto rounded-lg shadow-sm"
+                              />
+                            )}
                           </div>
                         )}
 

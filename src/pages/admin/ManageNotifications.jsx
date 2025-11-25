@@ -24,6 +24,15 @@ const ManageNotifications = () => {
   const [selectedNotification, setSelectedNotification] = useState(null)
   const [showNotificationDetails, setShowNotificationDetails] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingNotification, setEditingNotification] = useState(null)
+  const [notificationFormData, setNotificationFormData] = useState({
+    title: '',
+    message: '',
+    type: 'Update',
+    priority: 'Medium',
+    is_active: true,
+    expires_at: ''
+  })
   const [viewMode, setViewMode] = useState('cards') // cards, table, list
   const [stats, setStats] = useState({
     total: 0,
@@ -87,6 +96,59 @@ const ManageNotifications = () => {
     }
   }
 
+  const openCreateModal = () => {
+    setEditingNotification(null)
+    setNotificationFormData({
+      title: '',
+      message: '',
+      type: 'Update',
+      priority: 'Medium',
+      is_active: true,
+      expires_at: ''
+    })
+    setShowCreateModal(true)
+  }
+
+  const openEditModal = (notification) => {
+    setEditingNotification(notification)
+    setNotificationFormData({
+      title: notification.title || '',
+      message: notification.message || '',
+      type: notification.type || 'Update',
+      priority: notification.priority || 'Medium',
+      is_active: notification.is_active !== undefined ? notification.is_active : true,
+      expires_at: notification.expires_at ? new Date(notification.expires_at).toISOString().slice(0, 16) : ''
+    })
+    setShowCreateModal(true)
+  }
+
+  const handleSaveNotification = async (e) => {
+    e.preventDefault()
+    try {
+      const payload = {
+        ...notificationFormData,
+        expires_at: notificationFormData.expires_at || null
+      }
+
+      if (editingNotification) {
+        // Update existing notification
+        await axios.put(`/api/admin/notifications/${editingNotification.id}`, payload)
+        toast.success('Notification updated successfully!')
+      } else {
+        // Create new notification
+        await axios.post('/api/admin/notifications', payload)
+        toast.success('Notification created successfully!')
+      }
+
+      setShowCreateModal(false)
+      setEditingNotification(null)
+      fetchNotifications()
+    } catch (error) {
+      console.error('Error saving notification:', error)
+      toast.error(error.response?.data?.error || 'Failed to save notification')
+    }
+  }
+
   const filteredNotifications = notifications.filter(notification => {
     const matchesSearch = notification.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          notification.message?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -131,7 +193,7 @@ const ManageNotifications = () => {
           {
             text: "Create Notification",
             icon: Plus,
-            onClick: () => setShowCreateModal(true)
+            onClick: openCreateModal
           }
         ]}
       />
@@ -301,7 +363,10 @@ const ManageNotifications = () => {
                         <Eye className="h-5 w-5" />
                         <span className="text-sm font-medium">View</span>
                       </button>
-                      <button className="px-4 py-2.5 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md">
+                      <button 
+                        onClick={() => openEditModal(notification)}
+                        className="px-4 py-2.5 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
+                      >
                         <Edit className="h-5 w-5" />
                         <span className="text-sm font-medium">Edit</span>
                       </button>
@@ -414,7 +479,10 @@ const ManageNotifications = () => {
                           <Eye className="h-4 w-4 mr-1" />
                           View
                         </button>
-                          <button className="px-4 py-2.5 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md">
+                          <button 
+                            onClick={() => openEditModal(notification)}
+                            className="px-4 py-2.5 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
+                          >
                             <Edit className="h-5 w-5" />
                             <span className="text-sm font-medium">Edit</span>
                           </button>
@@ -488,7 +556,10 @@ const ManageNotifications = () => {
                         <Eye className="h-4 w-4 mr-1" />
                         View
                       </button>
-                      <button className="flex items-center px-3 py-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg transition-all duration-200">
+                      <button 
+                        onClick={() => openEditModal(notification)}
+                        className="flex items-center px-3 py-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg transition-all duration-200"
+                      >
                         <Edit className="h-4 w-4 mr-1" />
                         Edit
                       </button>
@@ -614,12 +685,145 @@ const ManageNotifications = () => {
                     >
                       Close
                     </button>
-                    <button className="flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                    <button 
+                      onClick={() => {
+                        setShowNotificationDetails(false)
+                        openEditModal(selectedNotification)
+                      }}
+                      className="flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                    >
                       <Edit className="h-4 w-4 mr-2" />
                       Edit Notification
                     </button>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Create/Edit Notification Modal */}
+        {showCreateModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-200/50 shadow-2xl">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Bell className="h-5 w-5 text-green-600" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900">
+                      {editingNotification ? 'Edit Notification' : 'Create Notification'}
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowCreateModal(false)
+                      setEditingNotification(null)
+                    }}
+                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200"
+                  >
+                    <XCircle className="h-5 w-5" />
+                  </button>
+                </div>
+                
+                <form onSubmit={handleSaveNotification} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Title *</label>
+                    <input
+                      type="text"
+                      value={notificationFormData.title}
+                      onChange={(e) => setNotificationFormData(prev => ({ ...prev, title: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      placeholder="Enter notification title"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Message *</label>
+                    <textarea
+                      value={notificationFormData.message}
+                      onChange={(e) => setNotificationFormData(prev => ({ ...prev, message: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      placeholder="Enter notification message"
+                      rows="4"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Type</label>
+                      <select
+                        value={notificationFormData.type}
+                        onChange={(e) => setNotificationFormData(prev => ({ ...prev, type: e.target.value }))}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      >
+                        <option value="Update">Update</option>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Feature">Feature</option>
+                        <option value="System">System</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Priority</label>
+                      <select
+                        value={notificationFormData.priority}
+                        onChange={(e) => setNotificationFormData(prev => ({ ...prev, priority: e.target.value }))}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      >
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Expiration Date (Optional)</label>
+                    <input
+                      type="datetime-local"
+                      value={notificationFormData.expires_at}
+                      onChange={(e) => setNotificationFormData(prev => ({ ...prev, expires_at: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Leave empty for no expiration</p>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="is_active"
+                      checked={notificationFormData.is_active}
+                      onChange={(e) => setNotificationFormData(prev => ({ ...prev, is_active: e.target.checked }))}
+                      className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                    />
+                    <label htmlFor="is_active" className="text-sm font-medium text-slate-700">
+                      Active (visible to users)
+                    </label>
+                  </div>
+
+                  <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateModal(false)
+                        setEditingNotification(null)
+                      }}
+                      className="px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all duration-200"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                    >
+                      {editingNotification ? 'Update' : 'Create'} Notification
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>

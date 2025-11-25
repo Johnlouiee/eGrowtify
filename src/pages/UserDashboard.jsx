@@ -155,6 +155,22 @@ const UserDashboard = () => {
   }
 
   useEffect(() => {
+    // Fetch notifications
+    const fetchNotifications = async () => {
+      try {
+        const response = await axios.get('/api/notifications')
+        setNotifications(response.data || [])
+      } catch (error) {
+        console.error('Error fetching notifications:', error)
+      }
+    }
+    
+    if (user) {
+      fetchNotifications()
+    }
+  }, [user])
+
+  useEffect(() => {
     // Load learning progress from localStorage
     const loadLearningProgress = () => {
       const calculateProgress = () => {
@@ -599,7 +615,82 @@ const UserDashboard = () => {
           </div>
         </div>
 
-        
+        {/* Admin Notifications/Announcements */}
+        {notifications.length > 0 && (
+          <div className="mb-8 space-y-3">
+            {notifications.map((notification) => {
+              const getPriorityColor = (priority) => {
+                switch (priority) {
+                  case 'High': return 'border-red-500 bg-red-50'
+                  case 'Medium': return 'border-yellow-500 bg-yellow-50'
+                  case 'Low': return 'border-blue-500 bg-blue-50'
+                  default: return 'border-gray-500 bg-gray-50'
+                }
+              }
+
+              const getTypeIcon = (type) => {
+                switch (type) {
+                  case 'Maintenance': return AlertCircle
+                  case 'Update': return Bell
+                  case 'Feature': return Zap
+                  case 'System': return Settings
+                  default: return Bell
+                }
+              }
+
+              const IconComponent = getTypeIcon(notification.type)
+
+              return (
+                <div
+                  key={notification.id}
+                  className={`border-l-4 rounded-lg p-4 shadow-sm ${getPriorityColor(notification.priority)}`}
+                >
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      <div className={`p-2 rounded-lg ${
+                        notification.priority === 'High' ? 'bg-red-100' :
+                        notification.priority === 'Medium' ? 'bg-yellow-100' :
+                        'bg-blue-100'
+                      }`}>
+                        <IconComponent className={`h-5 w-5 ${
+                          notification.priority === 'High' ? 'text-red-600' :
+                          notification.priority === 'Medium' ? 'text-yellow-600' :
+                          'text-blue-600'
+                        }`} />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {notification.title}
+                        </h3>
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          notification.priority === 'High' ? 'bg-red-200 text-red-800' :
+                          notification.priority === 'Medium' ? 'bg-yellow-200 text-yellow-800' :
+                          'bg-blue-200 text-blue-800'
+                        }`}>
+                          {notification.type}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 leading-relaxed">
+                        {notification.message}
+                      </p>
+                      {notification.created_at && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          {new Date(notification.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">

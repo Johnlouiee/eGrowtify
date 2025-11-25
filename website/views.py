@@ -16,7 +16,8 @@ from .models import (
     UserSharedConcept,
     UserSubscription,
     AIUsageTracking,
-    AIAnalysisUsage
+    AIAnalysisUsage,
+    Notification
 )
 from datetime import datetime, timedelta, timezone
 import os
@@ -5429,10 +5430,42 @@ def admin_api_learning_paths():
 
 @views.route('/api/learning-paths/<difficulty>')
 def get_learning_path_content(difficulty):
-    """Serve learning path content with integrated admin-uploaded images"""
+    """Serve learning path content - prioritize saved modules from database, fallback to static modules"""
     try:
+        # First, get complete modules saved by admin (content_type='module')
+        saved_modules = LearningPathContent.query.filter_by(
+            path_difficulty=difficulty,
+            content_type='module',
+            is_active=True
+        ).all()
         
-        # Get all content for this difficulty level
+        module_list = []
+        
+        # Parse saved modules from database
+        for saved_module in saved_modules:
+            try:
+                module_data = json.loads(saved_module.content) if saved_module.content else {}
+                if module_data:
+                    module_list.append(module_data)
+            except json.JSONDecodeError:
+                print(f"Error parsing module data for {saved_module.module_id}")
+                continue
+        
+        # If we have saved modules, ensure we have the 3 static modules (basic-information, lessons, quizzes)
+        # Check if static modules exist, if not, they'll be added by the admin panel
+        static_module_ids = ['basic-information', 'lessons', 'quizzes']
+        existing_ids = [m.get('id') for m in module_list]
+        
+        # If we have saved modules, return them (they should include the static ones)
+        if module_list:
+            # Ensure all 3 static modules are present
+            for static_id in static_module_ids:
+                if static_id not in existing_ids:
+                    # This shouldn't happen if admin auto-saved them, but handle gracefully
+                    print(f"Warning: Static module {static_id} not found for {difficulty}")
+            return jsonify(module_list)
+        
+        # Fallback: Get individual content items (lessons, quiz questions) for backward compatibility
         content_items = LearningPathContent.query.filter_by(
             path_difficulty=difficulty,
             is_active=True
@@ -5487,7 +5520,8 @@ def get_learning_path_content(difficulty):
                 'quiz': module_data['quiz']
             })
         
-        # If no content found in database, return empty list to trigger fallback
+        # If no content found in database, return empty list to trigger fallback to static data in frontend
+        # The frontend will use getModuleData() or the admin will auto-save static modules
         if not module_list:
             return jsonify([])
         
@@ -5524,32 +5558,154 @@ def admin_api_ai_data():
     ]
     return jsonify(ai_data)
 
-@views.route('/api/admin/notifications')
+@views.route('/api/admin/notifications', methods=['GET'])
 @login_required
 def admin_api_notifications():
+    """Get all notifications for admin management"""
     if not current_user.is_admin():
         return jsonify({"error": "Admin access required"}), 403
     
-    # Mock data for system notifications
-    notifications = [
-        {
-            "id": 1,
-            "title": "System Maintenance",
-            "message": "Scheduled maintenance will occur tonight at 2 AM",
-            "type": "System",
-            "priority": "Medium",
-            "is_active": True
-        },
-        {
-            "id": 2,
-            "title": "New Feature Release",
-            "message": "AI Plant Recognition has been updated with new species",
-            "type": "Feature",
-            "priority": "Low",
-            "is_active": True
-        }
-    ]
-    return jsonify(notifications)
+    try:
+        notifications = Notification.query.order_by(Notification.created_at.desc()).all()
+        return jsonify([n.to_dict() for n in notifications])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/notifications', methods=['POST'])
+@login_required
+def admin_api_create_notification():
+    """Create a new notification"""
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data.get('title') or not data.get('message'):
+            return jsonify({"error": "Title and message are required"}), 400
+        
+        # Parse expiration date if provided
+        expires_at = None
+        if data.get('expires_at'):
+            try:
+                expires_at = datetime.fromisoformat(data['expires_at'].replace('Z', '+00:00'))
+            except:
+                pass
+        
+        notification = Notification(
+            title=data['title'],
+            message=data['message'],
+            type=data.get('type', 'Update'),
+            priority=data.get('priority', 'Medium'),
+            is_active=data.get('is_active', True),
+            created_by=current_user.id,
+            expires_at=expires_at
+        )
+        
+        db.session.add(notification)
+        db.session.commit()
+        
+        return jsonify(notification.to_dict()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/notifications/<int:notification_id>', methods=['PUT'])
+@login_required
+def admin_api_update_notification(notification_id):
+    """Update an existing notification"""
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        notification = Notification.query.get_or_404(notification_id)
+        data = request.get_json()
+        
+        # Update fields
+        if 'title' in data:
+            notification.title = data['title']
+        if 'message' in data:
+            notification.message = data['message']
+        if 'type' in data:
+            notification.type = data['type']
+        if 'priority' in data:
+            notification.priority = data['priority']
+        if 'is_active' in data:
+            notification.is_active = data['is_active']
+        if 'expires_at' in data:
+            if data['expires_at']:
+                try:
+                    notification.expires_at = datetime.fromisoformat(data['expires_at'].replace('Z', '+00:00'))
+                except:
+                    notification.expires_at = None
+            else:
+                notification.expires_at = None
+        
+        notification.updated_at = datetime.now(timezone.utc)
+        db.session.commit()
+        
+        return jsonify(notification.to_dict())
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/notifications/<int:notification_id>', methods=['DELETE'])
+@login_required
+def admin_api_delete_notification(notification_id):
+    """Delete a notification"""
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        notification = Notification.query.get_or_404(notification_id)
+        db.session.delete(notification)
+        db.session.commit()
+        
+        return jsonify({"message": "Notification deleted successfully"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/notifications/<int:notification_id>/status', methods=['PATCH'])
+@login_required
+def admin_api_toggle_notification_status(notification_id):
+    """Toggle notification active status"""
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        notification = Notification.query.get_or_404(notification_id)
+        data = request.get_json()
+        
+        if 'is_active' in data:
+            notification.is_active = data['is_active']
+        
+        notification.updated_at = datetime.now(timezone.utc)
+        db.session.commit()
+        
+        return jsonify(notification.to_dict())
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/notifications', methods=['GET'])
+@login_required
+def api_user_notifications():
+    """Get active notifications for users"""
+    try:
+        now = datetime.now(timezone.utc)
+        notifications = Notification.query.filter(
+            Notification.is_active == True,
+            (Notification.expires_at.is_(None)) | (Notification.expires_at > now)
+        ).order_by(
+            Notification.priority.desc(),
+            Notification.created_at.desc()
+        ).all()
+        
+        return jsonify([n.to_dict() for n in notifications])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @views.route('/api/admin/seasonal-content')
 @login_required
@@ -6520,6 +6676,130 @@ def admin_api_toggle_learning_path_status(path_id):
             "note": "In production, this would update the database and notify affected users"
         })
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Save Module API (POST for create)
+@views.route('/api/admin/learning-paths/<difficulty>/modules', methods=['POST'])
+@login_required
+def admin_api_create_module(difficulty):
+    """Create a new module for a learning path"""
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        data = request.get_json()
+        module_id = data.get('id')
+        module_data = data.get('module')
+        
+        if not module_id or not module_data:
+            return jsonify({"error": "Module ID and data required"}), 400
+        
+        # Check if module already exists
+        existing = LearningPathContent.query.filter_by(
+            path_difficulty=difficulty,
+            module_id=module_id,
+            content_type='module'
+        ).first()
+        
+        if existing:
+            return jsonify({"error": "Module already exists. Use PUT to update."}), 400
+        
+        # Create new module record
+        new_module = LearningPathContent(
+            path_difficulty=difficulty,
+            module_id=module_id,
+            content_type='module',
+            content_id=0,
+            title=module_data.get('title', ''),
+            content=json.dumps(module_data),
+            is_active=True
+        )
+        db.session.add(new_module)
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Module created successfully",
+            "module_id": module_id
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+# Update Module API (PUT for update)
+@views.route('/api/admin/learning-paths/<difficulty>/modules', methods=['PUT'])
+@login_required
+def admin_api_update_module(difficulty):
+    """Update an existing module for a learning path"""
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        data = request.get_json()
+        module_id = data.get('id')
+        module_data = data.get('module')
+        
+        if not module_id or not module_data:
+            return jsonify({"error": "Module ID and data required"}), 400
+        
+        # Find existing module
+        existing = LearningPathContent.query.filter_by(
+            path_difficulty=difficulty,
+            module_id=module_id,
+            content_type='module'
+        ).first()
+        
+        if existing:
+            # Update existing module
+            existing.content = json.dumps(module_data)
+            existing.title = module_data.get('title', '')
+            existing.updated_at = datetime.now(timezone.utc)
+        else:
+            # Create if doesn't exist (for backward compatibility)
+            existing = LearningPathContent(
+                path_difficulty=difficulty,
+                module_id=module_id,
+                content_type='module',
+                content_id=0,
+                title=module_data.get('title', ''),
+                content=json.dumps(module_data),
+                is_active=True
+            )
+            db.session.add(existing)
+        
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Module updated successfully",
+            "module_id": module_id
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+# Delete Module API
+@views.route('/api/admin/learning-paths/<difficulty>/modules/<module_id>', methods=['DELETE'])
+@login_required
+def admin_api_delete_module(difficulty, module_id):
+    """Delete a module from a learning path"""
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        # Delete the module record
+        module = LearningPathContent.query.filter_by(
+            path_difficulty=difficulty,
+            module_id=module_id,
+            content_type='module'
+        ).first()
+        
+        if module:
+            db.session.delete(module)
+            db.session.commit()
+            return jsonify({"message": "Module deleted successfully"})
+        else:
+            return jsonify({"error": "Module not found"}), 404
+    except Exception as e:
+        db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
 @views.route('/api/admin/upload', methods=['POST'])

@@ -401,6 +401,42 @@ class AIUsageTracking(db.Model):
     def __repr__(self):
         return f'<AIUsageTracking {self.id}: User {self.user_id} - {self.usage_type}>'
 
+class Notification(db.Model):
+    """Admin announcements and notifications for users"""
+    __tablename__ = 'admin_notifications'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    type = db.Column(db.String(50), default='Update')  # Update, Maintenance, Feature, System
+    priority = db.Column(db.String(20), default='Medium')  # High, Medium, Low
+    is_active = db.Column(db.Boolean, default=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    expires_at = db.Column(db.DateTime, nullable=True)  # Optional expiration date
+    
+    # Relationships
+    creator = db.relationship('User', backref='created_notifications', foreign_keys=[created_by])
+    
+    def to_dict(self):
+        """Convert notification to dictionary format for API responses"""
+        return {
+            'id': self.id,
+            'title': self.title,
+            'message': self.message,
+            'type': self.type,
+            'priority': self.priority,
+            'is_active': self.is_active,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'expires_at': self.expires_at.isoformat() if self.expires_at else None
+        }
+    
+    def __repr__(self):
+        return f'<Notification {self.id}: {self.title}>'
+
 class AIAnalysisUsage(db.Model):
     """Track free and purchased AI analysis credits for users."""
     __tablename__ = 'ai_analysis_usage'

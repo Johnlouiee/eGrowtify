@@ -28,7 +28,6 @@ const ManageLearningPaths = () => {
   const [editingPath, setEditingPath] = useState(null)
   const [isEditingPath, setIsEditingPath] = useState(false)
   const [isAddingPath, setIsAddingPath] = useState(false)
-  const [selectedModuleForAction, setSelectedModuleForAction] = useState(null)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -53,6 +52,9 @@ const ManageLearningPaths = () => {
   const [activeModuleTab, setActiveModuleTab] = useState('basic') // 'basic', 'lessons', 'quizzes'
   const [viewMode, setViewMode] = useState('grid') // grid or list
   const [expandedModules, setExpandedModules] = useState({})
+  const [editingLessonInline, setEditingLessonInline] = useState(null) // lesson ID being edited inline
+  const [isEditingQuizInline, setIsEditingQuizInline] = useState(false) // whether quiz is being edited inline
+  const [editingQuestionInline, setEditingQuestionInline] = useState(null) // question ID being edited inline
   const [moduleFormData, setModuleFormData] = useState({
     title: '',
     description: '',
@@ -80,8 +82,560 @@ const ManageLearningPaths = () => {
     options: ['', '', '', ''],
     correct: 0,
     explanation: '',
-    image: null
+    image: null,
+    video: null
   })
+
+  // Generate static default modules for each difficulty level
+  const getDefaultStaticModules = (difficulty) => {
+    const baseModules = {
+      'Beginner': [
+        {
+          id: 'basic-information',
+          title: 'Basic Information - Getting Started',
+          difficulty: 'Beginner',
+          estimatedTime: '25 min',
+          description: 'Essential information every beginner gardener needs to know',
+          lessons: [
+            {
+              id: 1,
+              title: 'Introduction to Gardening',
+              content: 'Welcome to the wonderful world of gardening! Gardening is a rewarding hobby that connects you with nature and provides fresh produce, beautiful flowers, and a sense of accomplishment.',
+              points: [
+                '🌱 Gardening is accessible to everyone, regardless of space or experience',
+                '🌿 Start small with a few plants to build confidence',
+                '💧 Understanding your local climate and growing season is crucial',
+                '🌞 Most plants need 6-8 hours of sunlight daily',
+                '💡 Gardening teaches patience and observation skills',
+                '🎯 Set realistic goals for your first growing season'
+              ],
+              images: [],
+              videos: []
+            },
+            {
+              id: 2,
+              title: 'Essential Tools and Supplies',
+              content: 'You don\'t need expensive equipment to start gardening. Here are the essential tools every beginner should have:',
+              points: [
+                '🪴 Containers with drainage holes (or garden space)',
+                '🌱 Quality potting mix or garden soil',
+                '💧 Watering can or hose with gentle spray',
+                '✂️ Pruning shears for trimming plants',
+                '🌿 Plant labels to track what you\'re growing',
+                '📏 Basic measuring tools for spacing'
+              ],
+              images: [],
+              videos: []
+            }
+          ],
+          quiz: {
+            title: 'Basic Information Quiz',
+            questions: [
+              {
+                id: 1,
+                question: 'How many hours of sunlight do most plants need daily?',
+                options: ['2-4 hours', '6-8 hours', '10-12 hours', 'All day'],
+                correct: 1,
+                explanation: '✅ CORRECT! Most plants need 6-8 hours of direct sunlight daily to thrive and produce flowers or fruits.',
+                required: true
+              },
+              {
+                id: 2,
+                question: 'What is the best approach for beginner gardeners?',
+                options: ['Start with 20+ plants', 'Start with 3-5 plants', 'Start with only one plant', 'Start with a full garden'],
+                correct: 1,
+                explanation: '✅ CORRECT! Starting with 3-5 plants allows you to give each plant proper attention and learn their specific needs without feeling overwhelmed.',
+                required: true
+              }
+            ]
+          },
+          images: [],
+          videos: []
+        },
+        {
+          id: 'lessons',
+          title: 'Essential Lessons - Core Gardening Skills',
+          difficulty: 'Beginner',
+          estimatedTime: '30 min',
+          description: 'Learn the fundamental skills needed for successful gardening',
+          lessons: [
+            {
+              id: 1,
+              title: 'Watering Basics',
+              content: 'Proper watering is the foundation of plant care. Understanding when and how to water is crucial for plant health.',
+              points: [
+                '💧 Water when the top inch of soil feels dry to touch',
+                '🌱 Water deeply but less frequently to encourage strong roots',
+                '🌿 Water in the morning to allow leaves to dry before evening',
+                '🚫 Avoid overwatering - it\'s the #1 cause of plant death',
+                '💡 Different plants have different water needs - observe your plants',
+                '🌧️ Adjust watering based on weather and season'
+              ],
+              images: [],
+              videos: []
+            },
+            {
+              id: 2,
+              title: 'Light Requirements',
+              content: 'Understanding light needs helps you place plants in the right location for optimal growth.',
+              points: [
+                '☀️ Full sun: 6+ hours of direct sunlight (vegetables, most flowers)',
+                '🌤️ Partial sun: 3-6 hours of direct sunlight (many herbs, some flowers)',
+                '🌥️ Partial shade: 2-4 hours of direct sunlight (leafy greens, some houseplants)',
+                '🌑 Full shade: Less than 2 hours of direct sunlight (ferns, some houseplants)',
+                '🪟 Indoor plants: Place near windows based on their light needs',
+                '🔄 Rotate indoor plants regularly for even growth'
+              ],
+              images: [],
+              videos: []
+            }
+          ],
+          quiz: {
+            title: 'Essential Lessons Quiz',
+            questions: [
+              {
+                id: 1,
+                question: 'When should you water your plants?',
+                options: ['Every day at the same time', 'When the top inch of soil feels dry', 'Only when leaves droop', 'Once a week regardless'],
+                correct: 1,
+                explanation: '✅ CORRECT! Water when the top inch of soil feels dry. This ensures plants get water when needed without overwatering.',
+                required: true
+              },
+              {
+                id: 2,
+                question: 'What does "full sun" mean?',
+                options: ['All day sunlight', '6+ hours of direct sunlight', 'Bright indirect light', 'Morning sun only'],
+                correct: 1,
+                explanation: '✅ CORRECT! Full sun means 6 or more hours of direct sunlight daily. Most vegetables and flowering plants need full sun.',
+                required: true
+              }
+            ]
+          },
+          images: [],
+          videos: []
+        },
+        {
+          id: 'quizzes',
+          title: 'Knowledge Check - Test Your Understanding',
+          difficulty: 'Beginner',
+          estimatedTime: '20 min',
+          description: 'Test your knowledge with comprehensive quizzes covering all beginner topics',
+          lessons: [
+            {
+              id: 1,
+              title: 'Preparing for Quizzes',
+              content: 'Quizzes help reinforce what you\'ve learned and identify areas that need more attention. Take your time and think through each question.',
+              points: [
+                '📚 Review the lessons before taking quizzes',
+                '🤔 Read each question carefully',
+                '💭 Think about what you learned in the lessons',
+                '✅ Don\'t worry about perfect scores - learning is the goal',
+                '🔄 You can retake quizzes to improve your understanding',
+                '📝 Review explanations to understand why answers are correct'
+              ],
+              images: [],
+              videos: []
+            }
+          ],
+          quiz: {
+            title: 'Comprehensive Beginner Quiz',
+            questions: [
+              {
+                id: 1,
+                question: 'What is the most common cause of plant death for beginners?',
+                options: ['Too little sunlight', 'Overwatering', 'Not enough fertilizer', 'Wrong container size'],
+                correct: 1,
+                explanation: '✅ CORRECT! Overwatering is the #1 cause of plant death. It leads to root rot and prevents roots from getting oxygen.',
+                required: true
+              },
+              {
+                id: 2,
+                question: 'Which tool is essential for all container gardens?',
+                options: ['Expensive fertilizer', 'Drainage holes in containers', 'Grow lights', 'Automatic watering system'],
+                correct: 1,
+                explanation: '✅ CORRECT! Drainage holes are absolutely essential. Without them, water accumulates and causes root rot.',
+                required: true
+              },
+              {
+                id: 3,
+                question: 'What should you do if a plant shows yellow leaves?',
+                options: ['Water more frequently', 'Check for overwatering or nutrient issues', 'Move to full sun immediately', 'Add more fertilizer'],
+                correct: 1,
+                explanation: '✅ CORRECT! Yellow leaves can indicate overwatering, underwatering, or nutrient deficiency. Check the soil and plant conditions first.',
+                required: true
+              }
+            ]
+          },
+          images: [],
+          videos: []
+        }
+      ],
+      'Intermediate': [
+        {
+          id: 'basic-information',
+          title: 'Advanced Information - Deepening Your Knowledge',
+          difficulty: 'Intermediate',
+          estimatedTime: '30 min',
+          description: 'Expand your understanding with advanced gardening concepts and techniques',
+          lessons: [
+            {
+              id: 1,
+              title: 'Plant Nutrition and Fertilization',
+              content: 'Understanding plant nutrition helps you provide the right nutrients at the right time for optimal growth and productivity.',
+              points: [
+                '🌿 NPK Ratio: Nitrogen (N) for leaves, Phosphorus (P) for roots/flowers, Potassium (K) for overall health',
+                '⏰ Fertilize during active growth periods (spring/summer)',
+                '🌱 Organic fertilizers feed soil life and release slowly',
+                '⚡ Synthetic fertilizers provide quick nutrients but don\'t improve soil',
+                '📊 Test soil before fertilizing to know what your plants need',
+                '💧 Water before and after fertilizing to prevent root burn'
+              ],
+              images: [],
+              videos: []
+            },
+            {
+              id: 2,
+              title: 'Pest and Disease Management',
+              content: 'Preventing and managing pests and diseases is crucial for maintaining healthy plants.',
+              points: [
+                '🔍 Regular inspection helps catch problems early',
+                '🌿 Healthy plants are naturally more resistant to pests and diseases',
+                '🪴 Proper spacing improves air circulation and reduces disease spread',
+                '🧪 Identify problems correctly before treating',
+                '🌱 Use organic methods first (neem oil, insecticidal soap)',
+                '🔄 Rotate crops to prevent pest and disease buildup'
+              ],
+              images: [],
+              videos: []
+            }
+          ],
+          quiz: {
+            title: 'Advanced Information Quiz',
+            questions: [
+              {
+                id: 1,
+                question: 'What does the "P" in NPK fertilizer stand for?',
+                options: ['Potassium', 'Phosphorus', 'Protein', 'Photosynthesis'],
+                correct: 1,
+                explanation: '✅ CORRECT! P stands for Phosphorus, which is essential for root development, flowering, and fruiting.',
+                required: true
+              },
+              {
+                id: 2,
+                question: 'When is the best time to fertilize plants?',
+                options: ['Only in winter', 'During active growth periods', 'Every day', 'Only when plants show problems'],
+                correct: 1,
+                explanation: '✅ CORRECT! Fertilize during active growth periods (spring and summer) when plants can use the nutrients most effectively.',
+                required: true
+              }
+            ]
+          },
+          images: [],
+          videos: []
+        },
+        {
+          id: 'lessons',
+          title: 'Advanced Lessons - Mastering Techniques',
+          difficulty: 'Intermediate',
+          estimatedTime: '35 min',
+          description: 'Learn advanced techniques to take your gardening to the next level',
+          lessons: [
+            {
+              id: 1,
+              title: 'Pruning and Training Plants',
+              content: 'Proper pruning and training techniques help plants grow stronger and produce better yields.',
+              points: [
+                '✂️ Prune to remove dead, damaged, or diseased growth',
+                '🌿 Prune to shape plants and encourage bushier growth',
+                '🍅 Pinch suckers on tomatoes for better fruit production',
+                '🌱 Train vining plants with supports for better air circulation',
+                '⏰ Prune at the right time for each plant type',
+                '🧹 Use clean, sharp tools to prevent disease spread'
+              ],
+              images: [],
+              videos: []
+            },
+            {
+              id: 2,
+              title: 'Companion Planting',
+              content: 'Companion planting uses beneficial plant relationships to improve growth and deter pests.',
+              points: [
+                '🌱 Some plants help each other when grown together',
+                '🌿 Marigolds repel many garden pests',
+                '🌾 Tall plants can provide shade for shade-loving plants',
+                '🦋 Some plants attract beneficial insects',
+                '🚫 Some plant combinations should be avoided',
+                '📊 Plan your garden layout with companion planting in mind'
+              ],
+              images: [],
+              videos: []
+            }
+          ],
+          quiz: {
+            title: 'Advanced Lessons Quiz',
+            questions: [
+              {
+                id: 1,
+                question: 'Why should you prune plants?',
+                options: ['To make them smaller', 'To remove dead/damaged growth and encourage healthy growth', 'To reduce watering needs', 'To make them grow faster'],
+                correct: 1,
+                explanation: '✅ CORRECT! Pruning removes dead, damaged, or diseased growth and encourages plants to grow stronger and produce better yields.',
+                required: true
+              },
+              {
+                id: 2,
+                question: 'What is companion planting?',
+                options: ['Growing only one type of plant', 'Using beneficial plant relationships', 'Growing plants in pairs', 'Growing plants far apart'],
+                correct: 1,
+                explanation: '✅ CORRECT! Companion planting uses beneficial relationships between plants to improve growth, deter pests, and maximize garden productivity.',
+                required: true
+              }
+            ]
+          },
+          images: [],
+          videos: []
+        },
+        {
+          id: 'quizzes',
+          title: 'Advanced Knowledge Assessment',
+          difficulty: 'Intermediate',
+          estimatedTime: '25 min',
+          description: 'Test your intermediate gardening knowledge with comprehensive assessments',
+          lessons: [
+            {
+              id: 1,
+              title: 'Review and Assessment',
+              content: 'These quizzes test your understanding of intermediate gardening concepts. Review the lessons and apply what you\'ve learned.',
+              points: [
+                '📖 Review all intermediate lessons before taking quizzes',
+                '🧠 Apply concepts to real gardening situations',
+                '💡 Think about how techniques work together',
+                '📝 Note areas where you need more practice',
+                '🔄 Use quiz results to guide further learning',
+                '✅ Celebrate your progress and knowledge growth'
+              ],
+              images: [],
+              videos: []
+            }
+          ],
+          quiz: {
+            title: 'Comprehensive Intermediate Quiz',
+            questions: [
+              {
+                id: 1,
+                question: 'What is the primary benefit of organic fertilizers?',
+                options: ['They work faster', 'They feed soil life and improve soil structure', 'They cost less', 'They last longer'],
+                correct: 1,
+                explanation: '✅ CORRECT! Organic fertilizers feed beneficial soil microorganisms and improve soil structure over time, creating healthier growing conditions.',
+                required: true
+              },
+              {
+                id: 2,
+                question: 'When should you start treating a pest problem?',
+                options: ['Wait until it\'s severe', 'As soon as you notice it', 'Only in spring', 'Never - let nature handle it'],
+                correct: 1,
+                explanation: '✅ CORRECT! Start treating pest problems as soon as you notice them. Early intervention is much more effective than waiting.',
+                required: true
+              },
+              {
+                id: 3,
+                question: 'What is the main purpose of companion planting?',
+                options: ['To save space', 'To use beneficial plant relationships', 'To reduce costs', 'To simplify watering'],
+                correct: 1,
+                explanation: '✅ CORRECT! Companion planting uses beneficial relationships between plants to improve growth, deter pests, attract beneficial insects, and maximize garden productivity.',
+                required: true
+              }
+            ]
+          },
+          images: [],
+          videos: []
+        }
+      ],
+      'Expert': [
+        {
+          id: 'basic-information',
+          title: 'Expert Information - Master-Level Knowledge',
+          difficulty: 'Expert',
+          estimatedTime: '40 min',
+          description: 'Master advanced concepts and professional-level gardening information',
+          lessons: [
+            {
+              id: 1,
+              title: 'Soil Science and Chemistry',
+              content: 'Understanding soil chemistry and science enables you to create optimal growing conditions for any plant.',
+              points: [
+                '🧪 Soil pH affects nutrient availability - most plants prefer 6.0-7.0',
+                '🌱 Cation Exchange Capacity (CEC) measures soil\'s ability to hold nutrients',
+                '🦠 Beneficial microorganisms are essential for healthy soil',
+                '🌿 Organic matter improves soil structure and nutrient availability',
+                '💧 Soil texture (sand, silt, clay) affects drainage and water retention',
+                '📊 Regular soil testing guides amendment decisions'
+              ],
+              images: [],
+              videos: []
+            },
+            {
+              id: 2,
+              title: 'Advanced Propagation Techniques',
+              content: 'Master propagation techniques to multiply your plants and share with others.',
+              points: [
+                '🌱 Seed starting requires proper temperature, moisture, and light',
+                '✂️ Stem cuttings can clone plants exactly',
+                '🌿 Layering creates new plants while still attached to parent',
+                '🔬 Grafting combines desirable traits from different plants',
+                '⏰ Timing is crucial for successful propagation',
+                '🌡️ Bottom heat and humidity domes improve success rates'
+              ],
+              images: [],
+              videos: []
+            }
+          ],
+          quiz: {
+            title: 'Expert Information Quiz',
+            questions: [
+              {
+                id: 1,
+                question: 'What pH range do most plants prefer?',
+                options: ['4.0-5.0', '6.0-7.0', '8.0-9.0', '10.0-11.0'],
+                correct: 1,
+                explanation: '✅ CORRECT! Most plants prefer slightly acidic to neutral soil (pH 6.0-7.0) where nutrients are most available.',
+                required: true
+              },
+              {
+                id: 2,
+                question: 'What does CEC stand for in soil science?',
+                options: ['Carbon Exchange Capacity', 'Cation Exchange Capacity', 'Chemical Element Count', 'Crop Enhancement Coefficient'],
+                correct: 1,
+                explanation: '✅ CORRECT! CEC (Cation Exchange Capacity) measures a soil\'s ability to hold and exchange positively charged nutrient ions.',
+                required: true
+              }
+            ]
+          },
+          images: [],
+          videos: []
+        },
+        {
+          id: 'lessons',
+          title: 'Expert Lessons - Professional Techniques',
+          difficulty: 'Expert',
+          estimatedTime: '45 min',
+          description: 'Learn professional-grade techniques used by master gardeners',
+          lessons: [
+            {
+              id: 1,
+              title: 'Integrated Pest Management (IPM)',
+              content: 'IPM combines multiple strategies to manage pests while minimizing environmental impact.',
+              points: [
+                '🔍 Monitor and identify pests accurately',
+                '🌿 Use cultural controls (proper spacing, crop rotation)',
+                '🦋 Encourage beneficial insects and natural predators',
+                '🧪 Use chemical controls only as last resort',
+                '📊 Keep records to track pest patterns',
+                '🔄 Rotate control methods to prevent resistance'
+              ],
+              images: [],
+              videos: []
+            },
+            {
+              id: 2,
+              title: 'Advanced Soil Building',
+              content: 'Build and maintain exceptional soil through advanced techniques and understanding.',
+              points: [
+                '🌱 No-till gardening preserves soil structure and beneficial organisms',
+                '🔄 Cover crops add organic matter and fix nitrogen',
+                '🌿 Composting creates nutrient-rich soil amendments',
+                '🦠 Microbial inoculants introduce beneficial organisms',
+                '📊 Regular soil testing guides improvement strategies',
+                '🌍 Long-term soil health benefits entire ecosystem'
+              ],
+              images: [],
+              videos: []
+            }
+          ],
+          quiz: {
+            title: 'Expert Lessons Quiz',
+            questions: [
+              {
+                id: 1,
+                question: 'What is Integrated Pest Management (IPM)?',
+                options: ['Using only chemicals', 'Combining multiple pest control strategies', 'Never treating pests', 'Using only organic methods'],
+                correct: 1,
+                explanation: '✅ CORRECT! IPM combines monitoring, cultural controls, biological controls, and chemical controls (as last resort) for effective, environmentally responsible pest management.',
+                required: true
+              },
+              {
+                id: 2,
+                question: 'What is a primary benefit of no-till gardening?',
+                options: ['Saves time', 'Preserves soil structure and beneficial organisms', 'Reduces watering', 'Makes planting easier'],
+                correct: 1,
+                explanation: '✅ CORRECT! No-till gardening preserves soil structure, maintains beneficial soil organisms, and prevents erosion while building soil health over time.',
+                required: true
+              }
+            ]
+          },
+          images: [],
+          videos: []
+        },
+        {
+          id: 'quizzes',
+          title: 'Expert Mastery Assessment',
+          difficulty: 'Expert',
+          estimatedTime: '30 min',
+          description: 'Comprehensive assessment of expert-level gardening knowledge',
+          lessons: [
+            {
+              id: 1,
+              title: 'Mastery Assessment Preparation',
+              content: 'These comprehensive assessments test your mastery of expert-level gardening concepts and techniques.',
+              points: [
+                '📚 Review all expert-level lessons thoroughly',
+                '🧠 Apply advanced concepts to complex scenarios',
+                '💡 Think critically about problem-solving approaches',
+                '📊 Use assessment results to identify mastery areas',
+                '🔄 Continue learning and refining techniques',
+                '🌟 Share knowledge with other gardeners'
+              ],
+              images: [],
+              videos: []
+            }
+          ],
+          quiz: {
+            title: 'Comprehensive Expert Quiz',
+            questions: [
+              {
+                id: 1,
+                question: 'Why is soil pH important for plant nutrition?',
+                options: ['It doesn\'t matter', 'It affects nutrient availability', 'It only matters for vegetables', 'It changes daily'],
+                correct: 1,
+                explanation: '✅ CORRECT! Soil pH directly affects nutrient availability. Most nutrients are available at pH 6.0-7.0, while extreme pH levels lock up nutrients.',
+                required: true
+              },
+              {
+                id: 2,
+                question: 'What is the correct order of IPM strategies?',
+                options: ['Chemical first', 'Monitor, cultural controls, biological controls, chemical as last resort', 'Only biological', 'No order needed'],
+                correct: 1,
+                explanation: '✅ CORRECT! IPM follows this order: 1) Monitor and identify, 2) Cultural controls, 3) Biological controls, 4) Chemical controls as last resort.',
+                required: true
+              },
+              {
+                id: 3,
+                question: 'What is the primary goal of advanced soil building?',
+                options: ['To save money', 'To create long-term soil health and ecosystem benefits', 'To reduce watering', 'To grow faster plants'],
+                correct: 1,
+                explanation: '✅ CORRECT! Advanced soil building focuses on creating long-term soil health that benefits the entire ecosystem, not just individual plants.',
+                required: true
+              }
+            ]
+          },
+          images: [],
+          videos: []
+        }
+      ]
+    }
+    
+    return baseModules[difficulty] || []
+  }
 
   useEffect(() => {
     fetchLearningPaths()
@@ -90,23 +644,88 @@ const ManageLearningPaths = () => {
   const fetchLearningPaths = async () => {
     try {
       setLoading(true)
-      // Get the actual learning path data that users see
-      const allModules = getLearningPathModules()
       
-      // Create learning path objects for admin management
-      const learningPathsData = Object.keys(allModules).map(difficulty => ({
+      // Try to load from API first (admin-managed content)
+      const difficulties = ['Beginner', 'Intermediate', 'Expert']
+      const learningPathsData = []
+      
+      for (const difficulty of difficulties) {
+        try {
+          // Try to get saved modules from API
+          const response = await axios.get(`/api/learning-paths/${difficulty}`)
+          let modules = []
+          
+          if (response.data && response.data.length > 0) {
+            // Use saved modules from database
+            modules = response.data
+          } else {
+            // If no saved modules, use static default modules
+            modules = getDefaultStaticModules(difficulty)
+      
+            // Auto-save static modules to database for first-time setup
+            try {
+              for (const module of modules) {
+                await axios.post(`/api/admin/learning-paths/${difficulty}/modules`, {
+                  id: module.id,
+                  module: module
+                })
+              }
+              console.log(`Auto-saved ${modules.length} default modules for ${difficulty}`)
+            } catch (saveError) {
+              console.error(`Error auto-saving ${difficulty} modules:`, saveError)
+              // Continue even if save fails
+            }
+          }
+          
+          // Ensure we always have the 3 static modules (merge with existing if needed)
+          const staticModules = getDefaultStaticModules(difficulty)
+          const existingModuleIds = modules.map(m => m.id)
+          
+          // Add any missing static modules
+          staticModules.forEach(staticModule => {
+            if (!existingModuleIds.includes(staticModule.id)) {
+              modules.push(staticModule)
+              // Try to save it
+              axios.post(`/api/admin/learning-paths/${difficulty}/modules`, {
+                id: staticModule.id,
+                module: staticModule
+              }).catch(err => console.error(`Error saving static module:`, err))
+            }
+          })
+          
+          learningPathsData.push({
         id: difficulty.toLowerCase(),
         title: `${difficulty} Learning Path`,
         description: `Comprehensive ${difficulty.toLowerCase()} level modules focused on plants and soil`,
         difficulty: difficulty,
-        estimatedTime: `${allModules[difficulty].reduce((total, module) => {
-          const time = parseInt(module.estimatedTime) || 30
+            estimatedTime: `${modules.reduce((total, module) => {
+              const time = parseInt(module.estimatedTime?.replace(' min', '') || module.estimatedTime || 30) || 30
           return total + time
         }, 0)} min`,
-        modules_count: allModules[difficulty].length,
+            modules_count: modules.length,
         is_active: true,
-        modules: allModules[difficulty]
-      }))
+            modules: modules
+          })
+        } catch (apiError) {
+          console.error(`Error loading ${difficulty} modules from API:`, apiError)
+          // Fallback to static modules
+          const modules = getDefaultStaticModules(difficulty)
+          
+          learningPathsData.push({
+            id: difficulty.toLowerCase(),
+            title: `${difficulty} Learning Path`,
+            description: `Comprehensive ${difficulty.toLowerCase()} level modules focused on plants and soil`,
+            difficulty: difficulty,
+            estimatedTime: `${modules.reduce((total, module) => {
+              const time = parseInt(module.estimatedTime?.replace(' min', '') || module.estimatedTime || 30) || 30
+              return total + time
+            }, 0)} min`,
+            modules_count: modules.length,
+            is_active: true,
+            modules: modules
+          })
+        }
+      }
       
       setLearningPaths(learningPathsData)
     } catch (error) {
@@ -295,16 +914,27 @@ const ManageLearningPaths = () => {
         id: `module-${Date.now()}`,
         ...moduleFormData,
         lessons: moduleFormData.lessons.map((lesson, index) => ({
-          id: index + 1,
+          id: lesson.id || index + 1,
           ...lesson
         })),
         quiz: {
           ...moduleFormData.quiz,
           questions: moduleFormData.quiz.questions.map((question, index) => ({
-            id: index + 1,
+            id: question.id || index + 1,
             ...question
           }))
         }
+      }
+
+      // Save to backend API
+      try {
+        await axios.post(`/api/admin/learning-paths/${selectedPath.difficulty}/modules`, {
+          id: newModule.id,
+          module: newModule
+        })
+      } catch (apiError) {
+        console.error('Error saving module to backend:', apiError)
+        // Continue with local state update even if API fails
       }
 
       // Update the learning paths state
@@ -318,7 +948,17 @@ const ManageLearningPaths = () => {
 
       toast.success('Module added successfully!')
       setShowAddModuleModal(false)
+      setEditingLessonInline(null)
+      setIsEditingQuizInline(false)
       resetModuleForm()
+      
+      // Update selectedPath to reflect the new module
+      if (selectedPath) {
+        setSelectedPath(prev => ({
+          ...prev,
+          modules: [...prev.modules, newModule]
+        }))
+      }
     } catch (error) {
       console.error('Error adding module:', error)
       toast.error('Failed to add module')
@@ -344,6 +984,17 @@ const ManageLearningPaths = () => {
         }
       }
 
+      // Save to backend API
+      try {
+        await axios.put(`/api/admin/learning-paths/${selectedPath.difficulty}/modules`, {
+          id: updatedModule.id,
+          module: updatedModule
+        })
+      } catch (apiError) {
+        console.error('Error saving module to backend:', apiError)
+        // Continue with local state update even if API fails
+      }
+
       // Update the learning paths state
       setLearningPaths(prevPaths => 
         prevPaths.map(path => 
@@ -359,8 +1010,22 @@ const ManageLearningPaths = () => {
       )
 
       toast.success('Module updated successfully!')
+      
+      // Update selectedPath to reflect the changes
+      if (selectedPath) {
+        setSelectedPath(prev => ({
+          ...prev,
+          modules: prev.modules.map(module => 
+            module.id === editingModule.id ? updatedModule : module
+          )
+        }))
+      }
+      
       setShowEditModuleModal(false)
       setEditingModule(null)
+      setEditingLessonInline(null)
+      setIsEditingQuizInline(false)
+      setEditingQuestionInline(null)
       resetModuleForm()
     } catch (error) {
       console.error('Error updating module:', error)
@@ -371,6 +1036,14 @@ const ManageLearningPaths = () => {
   const handleDeleteModule = async (moduleId) => {
     if (window.confirm('Are you sure you want to delete this module? This action cannot be undone.')) {
       try {
+        // Delete from backend API
+        try {
+          await axios.delete(`/api/admin/learning-paths/${selectedPath.difficulty}/modules/${moduleId}`)
+        } catch (apiError) {
+          console.error('Error deleting module from backend:', apiError)
+          // Continue with local state update even if API fails
+        }
+
         setLearningPaths(prevPaths => 
           prevPaths.map(path => 
             path.id === selectedPath.id 
@@ -381,6 +1054,14 @@ const ManageLearningPaths = () => {
               : path
           )
         )
+
+        // Update selectedPath to reflect the deletion
+        if (selectedPath) {
+          setSelectedPath(prev => ({
+            ...prev,
+            modules: prev.modules.filter(module => module.id !== moduleId)
+          }))
+        }
 
         toast.success('Module deleted successfully!')
       } catch (error) {
@@ -399,8 +1080,7 @@ const ManageLearningPaths = () => {
       images: [],
       videos: []
     })
-    setActiveModuleTab('lessons')
-    // The lesson form will be shown in the main modal's lessons tab
+    setShowAddLessonModal(true)
   }
 
   const openEditLessonModal = (lesson) => {
@@ -415,10 +1095,12 @@ const ManageLearningPaths = () => {
     setShowEditLessonModal(true)
   }
 
-  const handleAddLesson = () => {
+  const handleAddLesson = (e) => {
+    e.preventDefault()
     const newLesson = {
       id: Date.now(),
-      ...lessonFormData
+      ...lessonFormData,
+      points: lessonFormData.points.filter(point => point.trim() !== '') // Remove empty points
     }
 
     setModuleFormData(prev => ({
@@ -431,7 +1113,8 @@ const ManageLearningPaths = () => {
     resetLessonForm()
   }
 
-  const handleEditLesson = () => {
+  const handleEditLesson = (e) => {
+    e.preventDefault()
     setModuleFormData(prev => ({
       ...prev,
       lessons: prev.lessons.map(lesson => 
@@ -457,6 +1140,69 @@ const ManageLearningPaths = () => {
     }
   }
 
+  // Inline editing functions for module edit modal
+  const startEditingLessonInline = (lesson) => {
+    setEditingLessonInline(lesson.id)
+    setLessonFormData({
+      title: lesson.title,
+      content: lesson.content,
+      points: lesson.points || [''],
+      images: lesson.images || [],
+      videos: lesson.videos || []
+    })
+  }
+
+  const saveLessonInline = () => {
+    if (!editingLessonInline) return
+    
+    setModuleFormData(prev => ({
+      ...prev,
+      lessons: prev.lessons.map(lesson => 
+        lesson.id === editingLessonInline 
+          ? { ...lesson, ...lessonFormData }
+          : lesson
+      )
+    }))
+    
+    toast.success('Lesson updated successfully!')
+    setEditingLessonInline(null)
+    resetLessonForm()
+  }
+
+  const cancelLessonInline = () => {
+    setEditingLessonInline(null)
+    resetLessonForm()
+  }
+
+  const startEditingQuizInline = () => {
+    setIsEditingQuizInline(true)
+    setQuizFormData({
+      title: moduleFormData.quiz.title || '',
+      questions: moduleFormData.quiz.questions || [],
+      images: moduleFormData.quiz.images || []
+    })
+  }
+
+  const saveQuizInline = () => {
+    setModuleFormData(prev => ({
+      ...prev,
+      quiz: quizFormData
+    }))
+    
+    toast.success('Quiz updated successfully!')
+    setIsEditingQuizInline(false)
+  }
+
+  const cancelQuizInline = () => {
+    setIsEditingQuizInline(false)
+    // Restore original quiz data
+    setQuizFormData({
+      title: moduleFormData.quiz.title || '',
+      questions: moduleFormData.quiz.questions || [],
+      images: moduleFormData.quiz.images || []
+    })
+  }
+
   // Quiz CRUD Functions
   const openAddQuizModal = () => {
     setQuizFormData({
@@ -464,8 +1210,7 @@ const ManageLearningPaths = () => {
       questions: [],
       images: []
     })
-    setActiveModuleTab('quizzes')
-    // The quiz form will be shown in the main modal's quizzes tab
+    setShowAddQuizModal(true)
   }
 
   const openEditQuizModal = (quiz) => {
@@ -478,10 +1223,20 @@ const ManageLearningPaths = () => {
     setShowEditQuizModal(true)
   }
 
-  const handleAddQuiz = () => {
+  const handleAddQuiz = (e) => {
+    e.preventDefault()
+    // Ensure questions have proper IDs
+    const quizWithIds = {
+      ...quizFormData,
+      questions: quizFormData.questions.map((question, index) => ({
+        ...question,
+        id: question.id || Date.now() + index
+      }))
+    }
+    
     setModuleFormData(prev => ({
       ...prev,
-      quiz: quizFormData
+      quiz: quizWithIds
     }))
 
     toast.success('Quiz added successfully!')
@@ -489,10 +1244,20 @@ const ManageLearningPaths = () => {
     resetQuizForm()
   }
 
-  const handleEditQuiz = () => {
+  const handleEditQuiz = (e) => {
+    e.preventDefault()
+    // Ensure questions have proper IDs
+    const quizWithIds = {
+      ...quizFormData,
+      questions: quizFormData.questions.map((question, index) => ({
+        ...question,
+        id: question.id || Date.now() + index
+      }))
+    }
+    
     setModuleFormData(prev => ({
       ...prev,
-      quiz: quizFormData
+      quiz: quizWithIds
     }))
 
     toast.success('Quiz updated successfully!')
@@ -513,14 +1278,71 @@ const ManageLearningPaths = () => {
   }
 
   const handleAddQuestion = () => {
+    // Validate question has content
+    if (!questionFormData.question.trim()) {
+      toast.error('Please enter a question')
+      return
+    }
+    
+    // Validate at least 2 options
+    const validOptions = questionFormData.options.filter(opt => opt.trim() !== '')
+    if (validOptions.length < 2) {
+      toast.error('Please provide at least 2 options')
+      return
+    }
+    
     const newQuestion = {
       id: Date.now(),
-      ...questionFormData
+      question: questionFormData.question.trim(),
+      options: validOptions,
+      correct: questionFormData.correct,
+      explanation: questionFormData.explanation || '',
+      required: questionFormData.required !== undefined ? questionFormData.required : true,
+      image: questionFormData.image || null,
+      video: questionFormData.video || null
     }
 
     setQuizFormData(prev => ({
       ...prev,
       questions: [...prev.questions, newQuestion]
+    }))
+
+    toast.success('Question added successfully!')
+    resetQuestionForm()
+  }
+
+  // Add question directly to module quiz (for inline editing in module edit modal)
+  const handleAddQuestionToModule = () => {
+    // Validate question has content
+    if (!questionFormData.question.trim()) {
+      toast.error('Please enter a question')
+      return
+    }
+    
+    // Validate at least 2 options
+    const validOptions = questionFormData.options.filter(opt => opt.trim() !== '')
+    if (validOptions.length < 2) {
+      toast.error('Please provide at least 2 options')
+      return
+    }
+    
+    const newQuestion = {
+      id: Date.now(),
+      question: questionFormData.question.trim(),
+      options: validOptions,
+      correct: questionFormData.correct,
+      explanation: questionFormData.explanation || '',
+      required: questionFormData.required !== undefined ? questionFormData.required : true,
+      image: questionFormData.image || null,
+      video: questionFormData.video || null
+    }
+
+    setModuleFormData(prev => ({
+      ...prev,
+      quiz: {
+        ...prev.quiz,
+        questions: [...(prev.quiz.questions || []), newQuestion]
+      }
     }))
 
     toast.success('Question added successfully!')
@@ -569,14 +1391,17 @@ const ManageLearningPaths = () => {
     setLessonFormData({
       title: '',
       content: '',
-      points: ['']
+      points: [''],
+      images: [],
+      videos: []
     })
   }
 
   const resetQuizForm = () => {
     setQuizFormData({
       title: '',
-      questions: []
+      questions: [],
+      images: []
     })
   }
 
@@ -586,7 +1411,8 @@ const ManageLearningPaths = () => {
       options: ['', '', '', ''],
       correct: 0,
       explanation: '',
-      image: null
+      image: null,
+      video: null
     })
   }
 
@@ -947,6 +1773,154 @@ const ManageLearningPaths = () => {
     }
   }
 
+  // Handle question image upload (directly to question)
+  const handleQuestionImageUpload = async (file, questionIndex) => {
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', 'image')
+      
+      const response = await axios.post('/api/admin/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      setQuizFormData(prev => ({
+        ...prev,
+        questions: prev.questions.map((q, idx) => 
+          idx === questionIndex ? { ...q, image: response.data.fileUrl, imageDescription: file.name } : q
+        )
+      }))
+      
+      toast.success('Image uploaded successfully!')
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      toast.error('Failed to upload image')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  // Handle question video upload (directly to question)
+  const handleQuestionVideoUpload = async (file, questionIndex) => {
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', 'video')
+      
+      const response = await axios.post('/api/admin/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      setQuizFormData(prev => ({
+        ...prev,
+        questions: prev.questions.map((q, idx) => 
+          idx === questionIndex ? { ...q, video: response.data.fileUrl } : q
+        )
+      }))
+      
+      toast.success('Video uploaded successfully!')
+    } catch (error) {
+      console.error('Error uploading video:', error)
+      toast.error('Failed to upload video')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  // Handle question image upload inline (in module edit modal)
+  const handleQuestionImageUploadInline = async (file, questionId) => {
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', 'image')
+      
+      const response = await axios.post('/api/admin/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      const imageUrl = response.data.fileUrl
+      
+      // Update moduleFormData
+      setModuleFormData(prev => ({
+        ...prev,
+        quiz: {
+          ...prev.quiz,
+          questions: prev.quiz.questions.map(q => 
+            q.id === questionId ? { ...q, image: imageUrl, imageDescription: file.name } : q
+          )
+        }
+      }))
+      
+      // Update questionFormData if this question is being edited or is new
+      if (editingQuestionInline === questionId || questionId === 'new') {
+        setQuestionFormData(prev => ({
+          ...prev,
+          image: imageUrl
+        }))
+      }
+      
+      toast.success('Image uploaded successfully!')
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      toast.error('Failed to upload image')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  // Handle question video upload inline (in module edit modal)
+  const handleQuestionVideoUploadInline = async (file, questionId) => {
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', 'video')
+      
+      const response = await axios.post('/api/admin/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      const videoUrl = response.data.fileUrl
+      
+      // Update moduleFormData
+      setModuleFormData(prev => ({
+        ...prev,
+        quiz: {
+          ...prev.quiz,
+          questions: prev.quiz.questions.map(q => 
+            q.id === questionId ? { ...q, video: videoUrl } : q
+          )
+        }
+      }))
+      
+      // Update questionFormData if this question is being edited or is new
+      if (editingQuestionInline === questionId || questionId === 'new') {
+        setQuestionFormData(prev => ({
+          ...prev,
+          video: videoUrl
+        }))
+      }
+      
+      toast.success('Video uploaded successfully!')
+    } catch (error) {
+      console.error('Error uploading video:', error)
+      toast.error('Failed to upload video')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const filteredPaths = learningPaths.filter(path => {
     const matchesSearch = path.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          path.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -983,14 +1957,6 @@ const ManageLearningPaths = () => {
         icon={BookOpen}
         iconColor="from-green-600 to-emerald-600"
         showBackButton={true}
-        actions={[
-          {
-            text: "Add Module",
-            icon: Plus,
-            onClick: () => setShowAddModuleModal(true),
-            className: 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700'
-          }
-        ]}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -1096,7 +2062,6 @@ const ManageLearningPaths = () => {
                   <button
                     onClick={() => {
                       setShowPathDetails(false)
-                      setSelectedModuleForAction(null)
                     }}
                     className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all duration-200"
                   >
@@ -1176,14 +2141,6 @@ const ManageLearningPaths = () => {
                             <List className="h-5 w-5" />
                           </button>
                         </div>
-                        
-                        <button
-                          onClick={() => openAddModuleModal(selectedPath)}
-                          className="px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 flex items-center text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-                        >
-                          <Plus className="h-6 w-6 mr-3" />
-                          Add New Module
-                        </button>
                       </div>
                     </div>
                     
@@ -1193,270 +2150,181 @@ const ManageLearningPaths = () => {
                         {selectedPath.modules.map((module) => (
                           <div 
                             key={module.id} 
-                            onClick={() => setSelectedModuleForAction(selectedModuleForAction === module.id ? null : module.id)}
-                            className={`group relative overflow-hidden backdrop-blur-sm rounded-2xl border transition-all duration-300 transform cursor-pointer ${
-                              selectedModuleForAction === module.id 
-                                ? 'bg-green-50 border-green-300 shadow-2xl shadow-green-500/20 scale-105' 
-                                : 'bg-white/80 border-slate-200/50 hover:border-green-300/50 hover:shadow-2xl hover:shadow-green-500/10 hover:scale-105'
-                            }`}
+                            className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
                           >
-                            {/* Enhanced Module Header */}
-                            <div className="p-6 border-b border-slate-200/60">
-                              <div className="flex items-start justify-between mb-4">
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-3 mb-3">
-                                    <div className={`p-2 rounded-lg shadow-lg ${
-                                      selectedModuleForAction === module.id 
-                                        ? 'bg-gradient-to-r from-green-600 to-emerald-600' 
-                                        : 'bg-gradient-to-r from-green-500 to-emerald-500'
-                                    }`}>
-                                      <BookOpen className="h-5 w-5 text-white" />
+                            {/* Simplified Module Header */}
+                            <div className="p-5 border-b border-gray-200">
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex-1 pr-4">
+                                  <div className="flex items-center space-x-2 mb-2">
+                                    <BookOpen className="h-5 w-5 text-green-600" />
+                                    <h6 className="font-semibold text-lg text-gray-900">{module.title}</h6>
                                     </div>
-                                    <div>
-                                      <h6 className="font-bold text-slate-900 text-xl">{module.title}</h6>
-                                      <div className="flex items-center text-sm text-slate-500 mt-1">
-                                        <Clock className="h-4 w-4 mr-1" />
+                                  <p className="text-sm text-gray-600 line-clamp-2 mb-2">{module.description}</p>
+                                  <div className="flex items-center space-x-3 text-xs text-gray-500">
+                                    <div className="flex items-center">
+                                      <Clock className="h-3 w-3 mr-1" />
                                         {module.estimatedTime}
                                       </div>
+                                    <div className="flex items-center">
+                                      <BookOpen className="h-3 w-3 mr-1" />
+                                      {module.lessons?.length || 0} lessons
                                     </div>
+                                    <div className="flex items-center">
+                                      <FileText className="h-3 w-3 mr-1" />
+                                      {module.quiz?.questions?.length || 0} quiz
                                   </div>
-                                  <p className="text-slate-600 leading-relaxed line-clamp-3">{module.description}</p>
+                                  </div>
                                 </div>
                                 
-                                {/* Action Buttons - Show when selected */}
-                                {selectedModuleForAction === module.id && (
-                                  <div className="flex items-center space-x-2 ml-4">
+                                {/* Edit and Delete Buttons - Single set only */}
+                                <div className="flex items-center space-x-2 flex-shrink-0">
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation()
                                         openEditModuleModal(module)
                                       }}
-                                      className="px-4 py-2.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
+                                    className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center justify-center"
                                       title="Edit Module"
                                     >
-                                      <Edit className="h-5 w-5" />
+                                    <Edit className="h-4 w-4" />
                                     </button>
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation()
                                         handleDeleteModule(module.id)
                                       }}
-                                      className="p-3 bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition-all duration-200 shadow-lg hover:shadow-xl"
+                                    className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors flex items-center justify-center"
                                       title="Delete Module"
                                     >
-                                      <Trash2 className="h-5 w-5" />
+                                    <Trash2 className="h-4 w-4" />
                                     </button>
                                   </div>
-                                )}
-                              </div>
-                              
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-4">
-                                  <div className="flex items-center text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-                                    <BookOpen className="h-4 w-4 mr-1" />
-                                    {module.lessons?.length || 0} lessons
-                                  </div>
-                                  <div className="flex items-center text-sm text-slate-500 bg-blue-100 px-3 py-1 rounded-full">
-                                    <FileText className="h-4 w-4 mr-1" />
-                                    {module.quiz?.questions?.length || 0} quiz
-                                  </div>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <button
-                                    onClick={() => openModuleDetails(module)}
-                                    className="flex items-center px-4 py-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
-                                  >
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View Details
-                                  </button>
-                                  <button
-                                    onClick={() => toggleModuleExpansion(module.id)}
-                                    className="px-4 py-2.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
-                                  >
-                                    {expandedModules[module.id] ? 'Less' : 'More'}
-                                    {expandedModules[module.id] ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
-                                  </button>
-                                </div>
                               </div>
                             </div>
                             
-                            {/* Enhanced Module Content */}
-                            <div className="p-6">
-                              {/* Enhanced Lessons Summary */}
-                              <div className="mb-6">
-                                <div className="flex items-center justify-between mb-4">
-                                  <div className="flex items-center space-x-3">
-                                    <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-lg">
-                                      <BookOpen className="h-5 w-5 text-white" />
-                                    </div>
-                                    <h7 className="text-lg font-bold text-slate-900">Lessons ({module.lessons.length})</h7>
-                                  </div>
-                                  <button
-                                    onClick={() => openAddLessonModal()}
-                                    className="px-4 py-2 text-sm text-green-600 hover:text-green-700 flex items-center bg-green-50 rounded-xl hover:bg-green-100 transition-all duration-200 shadow-lg hover:shadow-xl"
-                                  >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Lesson
-                                  </button>
+                            {/* Simplified Module Content - Display Only */}
+                            <div className="p-5">
+                              {/* Lessons Section */}
+                              <div className="mb-4">
+                                <div className="mb-3">
+                                  <h7 className="text-sm font-semibold text-gray-700">Lessons ({module.lessons.length})</h7>
                                 </div>
                                 {expandedModules[module.id] ? (
-                                  <div className="space-y-3">
+                                  <div className="space-y-2">
                                     {module.lessons.map((lesson, index) => (
-                                      <div key={lesson.id} className="flex items-center justify-between bg-slate-50 rounded-xl p-4 hover:bg-slate-100 transition-all duration-200 shadow-sm hover:shadow-md">
-                                        <div className="flex items-center space-x-3">
-                                          <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
-                                            {index + 1}
+                                      <div key={lesson.id} className="flex items-center bg-gray-50 rounded p-3">
+                                        <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                          <span className="text-xs font-medium text-gray-500 w-6">{index + 1}.</span>
+                                          <div className="flex-1 min-w-0">
+                                            <span className="text-sm font-medium text-gray-900 block truncate">{lesson.title}</span>
                                         </div>
-                                          <div>
-                                            <span className="text-base font-semibold text-slate-900">{lesson.title}</span>
-                                            <p className="text-sm text-slate-500 mt-1 line-clamp-2">{lesson.content}</p>
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                          <button
-                                            onClick={() => openEditLessonModal(lesson)}
-                                            className="px-4 py-2.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
-                                            title="Edit Lesson"
-                                          >
-                                            <Edit className="h-4 w-4" />
-                                          </button>
-                                          <button
-                                            onClick={() => handleDeleteLesson(lesson.id)}
-                                            className="p-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition-all duration-200 shadow-lg hover:shadow-xl"
-                                            title="Delete Lesson"
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </button>
                                         </div>
                                       </div>
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="text-sm text-slate-500 bg-slate-100 rounded-xl p-3">
+                                  <div className="text-xs text-gray-500 bg-gray-50 rounded p-2">
                                     {module.lessons.slice(0, 2).map(lesson => lesson.title).join(', ')}
                                     {module.lessons.length > 2 && ` +${module.lessons.length - 2} more`}
                                   </div>
                                 )}
                               </div>
                               
-                              {/* Enhanced Quiz Summary */}
-                              <div className="border-t border-slate-200/60 pt-6">
-                                <div className="flex items-center justify-between mb-4">
-                                  <div className="flex items-center space-x-3">
-                                    <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow-lg">
-                                      <FileText className="h-5 w-5 text-white" />
+                              {/* Quiz Section */}
+                              <div className="border-t border-gray-200 pt-4">
+                                <div className="mb-3">
+                                  <h7 className="text-sm font-semibold text-gray-700">Quiz</h7>
                                     </div>
-                                    <h7 className="text-lg font-bold text-slate-900">Quiz</h7>
-                                  </div>
-                                  <button
-                                    onClick={() => openAddQuizModal()}
-                                    className="px-4 py-2 text-sm text-green-600 hover:text-green-700 flex items-center bg-green-50 rounded-xl hover:bg-green-100 transition-all duration-200 shadow-lg hover:shadow-xl"
-                                  >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Quiz
-                                  </button>
-                                </div>
-                                <div className="bg-slate-50 rounded-xl p-4">
-                                  <div className="text-base font-semibold text-slate-900 mb-2">
+                                <div className="bg-gray-50 rounded p-3">
+                                  <div className="text-sm font-medium text-gray-900 mb-1">
                                   {module.quiz.title || 'No quiz added'}
                                 </div>
                                 {module.quiz.questions && module.quiz.questions.length > 0 && (
-                                    <div className="flex items-center space-x-4">
-                                      <div className="text-sm text-slate-500 bg-green-100 px-3 py-1 rounded-full">
+                                    <div className="text-xs text-gray-500">
                                     {module.quiz.questions.length} questions
                                       </div>
-                                      <div className="text-sm text-slate-500 bg-green-100 px-3 py-1 rounded-full">
-                                        Ready to use
+                                  )}
                                       </div>
                                   </div>
+                              
+                              {/* Expand/Collapse Button */}
+                              <div className="mt-4 pt-4 border-t border-gray-200">
+                                <button
+                                  onClick={() => toggleModuleExpansion(module.id)}
+                                  className="w-full px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded transition-colors flex items-center justify-center"
+                                >
+                                  {expandedModules[module.id] ? (
+                                    <>
+                                      <ChevronUp className="h-4 w-4 mr-1" />
+                                      Show Less
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ChevronDown className="h-4 w-4 mr-1" />
+                                      Show More
+                                    </>
                                 )}
-                                </div>
+                                </button>
                               </div>
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         {selectedPath.modules.map((module) => (
                           <div 
                             key={module.id} 
-                            onClick={() => setSelectedModuleForAction(selectedModuleForAction === module.id ? null : module.id)}
-                            className={`border rounded-lg shadow-sm transition-all duration-300 cursor-pointer ${
-                              selectedModuleForAction === module.id 
-                                ? 'bg-green-50 border-green-300 shadow-lg' 
-                                : 'bg-white border-gray-200 hover:border-green-300'
-                            }`}
+                            className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
                           >
                             <div className="p-4">
                               <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-4">
-                                    <h6 className={`font-semibold ${
-                                      selectedModuleForAction === module.id ? 'text-blue-900' : 'text-gray-900'
-                                    }`}>{module.title}</h6>
-                                    <span className={`text-xs px-2 py-1 rounded ${
-                                      selectedModuleForAction === module.id 
-                                        ? 'text-blue-600 bg-blue-100' 
-                                        : 'text-gray-500 bg-gray-100'
-                                    }`}>
-                                      {module.estimatedTime}
-                                    </span>
+                                <div className="flex-1 pr-4">
+                                  <div className="flex items-center space-x-2 mb-1">
+                                    <BookOpen className="h-4 w-4 text-green-600" />
+                                    <h6 className="font-semibold text-gray-900">{module.title}</h6>
                                   </div>
-                                  <p className={`text-sm mt-1 ${
-                                    selectedModuleForAction === module.id ? 'text-blue-700' : 'text-gray-600'
-                                  }`}>{module.description}</p>
-                                  
-                                  <div className="flex items-center space-x-6 mt-3 text-xs text-gray-500">
+                                  <p className="text-sm text-gray-600 mb-2 line-clamp-1">{module.description}</p>
+                                  <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                    <div className="flex items-center">
+                                      <Clock className="h-3 w-3 mr-1" />
+                                      {module.estimatedTime}
+                                  </div>
                                     <div className="flex items-center">
                                       <BookOpen className="h-3 w-3 mr-1" />
                                       {module.lessons.length} lessons
                                     </div>
                                     <div className="flex items-center">
                                       <FileText className="h-3 w-3 mr-1" />
-                                      {module.quiz.questions ? module.quiz.questions.length : 0} quiz questions
+                                      {module.quiz.questions ? module.quiz.questions.length : 0} quiz
                                     </div>
                                   </div>
                                 </div>
                                 
-                                {/* Action Buttons - Show when selected */}
-                                {selectedModuleForAction === module.id ? (
-                                  <div className="flex items-center space-x-2">
+                                {/* Edit and Delete Buttons - Single set only */}
+                                <div className="flex items-center space-x-2 flex-shrink-0">
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation()
                                         openEditModuleModal(module)
                                       }}
-                                      className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 flex items-center"
+                                    className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center justify-center"
+                                    title="Edit Module"
                                     >
-                                      <Edit className="h-3 w-3 mr-1" />
-                                      Edit
+                                    <Edit className="h-4 w-4" />
                                     </button>
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation()
                                         handleDeleteModule(module.id)
                                       }}
-                                      className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 flex items-center"
+                                    className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors flex items-center justify-center"
+                                    title="Delete Module"
                                     >
-                                      <Trash2 className="h-3 w-3 mr-1" />
-                                      Delete
+                                    <Trash2 className="h-4 w-4" />
                                     </button>
                                   </div>
-                                ) : (
-                                  <div className="flex items-center space-x-2">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        openModuleDetails(module)
-                                      }}
-                                      className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200 flex items-center"
-                                    >
-                                      <Eye className="h-3 w-3 mr-1" />
-                                      View Details
-                                    </button>
-                                  </div>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -1469,7 +2337,6 @@ const ManageLearningPaths = () => {
                     <button
                       onClick={() => {
                         setShowPathDetails(false)
-                        setSelectedModuleForAction(null)
                       }}
                       className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
                     >
@@ -1780,6 +2647,39 @@ const ManageLearningPaths = () => {
                     </div>
 
                     {/* Tab Content */}
+                    {activeModuleTab === 'basic' && (
+                      <div className="space-y-6">
+                        <h5 className="text-lg font-semibold text-slate-900">Module Basic Information</h5>
+                        <div className="bg-white rounded-lg p-6 border border-gray-200 space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Module Title</label>
+                            <p className="text-base text-gray-900">{moduleFormData.title || 'Not set'}</p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <p className="text-base text-gray-900 whitespace-pre-wrap">{moduleFormData.description || 'Not set'}</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Time</label>
+                              <p className="text-base text-gray-900">{moduleFormData.estimatedTime || 'Not set'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
+                              <p className="text-base text-gray-900">{moduleFormData.difficulty || 'Not set'}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Media</label>
+                            <div className="flex items-center space-x-4 text-sm text-gray-600">
+                              <span>{moduleFormData.images?.length || 0} images</span>
+                              <span>{moduleFormData.videos?.length || 0} videos</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {activeModuleTab === 'lessons' && (
                       <div className="space-y-6">
                         <div className="flex items-center justify-between">
@@ -1847,7 +2747,7 @@ const ManageLearningPaths = () => {
                         </div>
                         
                         <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between mb-4">
                             <div className="flex-1">
                               <div className="text-lg font-semibold text-slate-900 mb-2">
                                 {moduleFormData.quiz.title || 'No quiz added'}
@@ -1894,6 +2794,562 @@ const ManageLearningPaths = () => {
                               </div>
                             )}
                           </div>
+                          
+                          {/* Add Question Button */}
+                          <div className="mt-4 mb-4">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                resetQuestionForm()
+                                setEditingQuestionInline('new')
+                              }}
+                              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Question
+                            </button>
+                        </div>
+
+                          {/* New Question Form */}
+                          {editingQuestionInline === 'new' && (
+                            <div className="mt-4 mb-4 bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
+                              <h6 className="text-sm font-semibold text-slate-700 mb-3">New Question</h6>
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Question</label>
+                                  <input
+                                    type="text"
+                                    value={questionFormData.question}
+                                    onChange={(e) => setQuestionFormData(prev => ({ ...prev, question: e.target.value }))}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Enter question"
+                                  />
+                      </div>
+                                
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Options</label>
+                                  {questionFormData.options.map((option, optIndex) => (
+                                    <div key={optIndex} className="flex items-center space-x-2 mb-2">
+                                      <input
+                                        type="radio"
+                                        name="new-question-correct"
+                                        checked={questionFormData.correct === optIndex}
+                                        onChange={() => setQuestionFormData(prev => ({ ...prev, correct: optIndex }))}
+                                        className="w-4 h-4 text-blue-600"
+                                      />
+                                      <input
+                                        type="text"
+                                        value={option}
+                                        onChange={(e) => {
+                                          const newOptions = [...questionFormData.options]
+                                          newOptions[optIndex] = e.target.value
+                                          setQuestionFormData(prev => ({ ...prev, options: newOptions }))
+                                        }}
+                                        className="flex-1 border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder={`Option ${optIndex + 1}`}
+                                      />
+                                      {questionFormData.options.length > 2 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const newOptions = questionFormData.options.filter((_, i) => i !== optIndex)
+                                            setQuestionFormData(prev => ({
+                                              ...prev,
+                                              options: newOptions,
+                                              correct: prev.correct >= optIndex ? Math.max(0, prev.correct - 1) : prev.correct
+                                            }))
+                                          }}
+                                          className="p-1 text-red-400 hover:text-red-600"
+                                        >
+                                          <X className="h-4 w-4" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  ))}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setQuestionFormData(prev => ({
+                                        ...prev,
+                                        options: [...prev.options, '']
+                                      }))
+                                    }}
+                                    className="text-sm text-blue-600 hover:text-blue-700 flex items-center mt-2"
+                                  >
+                                    <Plus className="h-4 w-4 mr-1" />
+                                    Add option
+                                  </button>
+                                </div>
+
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Explanation</label>
+                                  <textarea
+                                    value={questionFormData.explanation}
+                                    onChange={(e) => setQuestionFormData(prev => ({ ...prev, explanation: e.target.value }))}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Explain why this answer is correct..."
+                                    rows="2"
+                                  />
+                                </div>
+
+                                {/* Image/Video Upload */}
+                                <div className="space-y-2">
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Media</label>
+                                  <div className="flex items-center space-x-2">
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) => {
+                                        if (e.target.files[0]) {
+                                          handleQuestionImageUploadInline(e.target.files[0], 'new')
+                                          e.target.value = ''
+                                        }
+                                      }}
+                                      className="hidden"
+                                      id="new-question-image"
+                                    />
+                                    <label
+                                      htmlFor="new-question-image"
+                                      className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer flex items-center text-sm"
+                                    >
+                                      <Image className="h-4 w-4 mr-1" />
+                                      Add Image
+                                    </label>
+                                    
+                                    <input
+                                      type="file"
+                                      accept="video/*"
+                                      onChange={(e) => {
+                                        if (e.target.files[0]) {
+                                          handleQuestionVideoUploadInline(e.target.files[0], 'new')
+                                          e.target.value = ''
+                                        }
+                                      }}
+                                      className="hidden"
+                                      id="new-question-video"
+                                    />
+                                    <label
+                                      htmlFor="new-question-video"
+                                      className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer flex items-center text-sm"
+                                    >
+                                      <Video className="h-4 w-4 mr-1" />
+                                      Add Video
+                                    </label>
+                                  </div>
+
+                                  {/* Display current media */}
+                                  {questionFormData.image && (
+                                    <div className="relative inline-block mt-2">
+                                      <img 
+                                        src={questionFormData.image} 
+                                        alt="Question" 
+                                        className="max-w-xs rounded-lg border border-gray-300" 
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => setQuestionFormData(prev => ({ ...prev, image: null }))}
+                                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  )}
+                                  {questionFormData.video && (
+                                    <div className="relative inline-block mt-2">
+                                      <video 
+                                        src={questionFormData.video} 
+                                        controls 
+                                        className="max-w-xs rounded-lg border border-gray-300" 
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => setQuestionFormData(prev => ({ ...prev, video: null }))}
+                                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center space-x-2 pt-2">
+                                  <label className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={questionFormData.required !== undefined ? questionFormData.required : true}
+                                      onChange={(e) => setQuestionFormData(prev => ({ ...prev, required: e.target.checked }))}
+                                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                    />
+                                    <span className="text-sm text-gray-600">Required</span>
+                                  </label>
+                                </div>
+
+                                <div className="flex justify-end space-x-2 pt-2 border-t">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      handleAddQuestionToModule()
+                                      setEditingQuestionInline(null)
+                                    }}
+                                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                                  >
+                                    Add Question
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingQuestionInline(null)
+                                      resetQuestionForm()
+                                    }}
+                                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Display Quiz Questions */}
+                          {moduleFormData.quiz.questions && moduleFormData.quiz.questions.length > 0 && (
+                            <div className="mt-4 space-y-3">
+                              <h6 className="text-sm font-semibold text-slate-700 mb-2">Questions ({moduleFormData.quiz.questions.length}):</h6>
+                              {moduleFormData.quiz.questions.map((question, index) => (
+                                <div key={question.id || index} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                                  {editingQuestionInline === question.id ? (
+                                    // Inline Edit Form
+                                    <div className="space-y-4">
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Question</label>
+                                        <input
+                                          type="text"
+                                          value={questionFormData.question}
+                                          onChange={(e) => setQuestionFormData(prev => ({ ...prev, question: e.target.value }))}
+                                          className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                          placeholder="Enter question"
+                                        />
+                                      </div>
+                                      
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Options</label>
+                                        {questionFormData.options.map((option, optIndex) => (
+                                          <div key={optIndex} className="flex items-center space-x-2 mb-2">
+                                            <input
+                                              type="radio"
+                                              name={`edit-question-${question.id}`}
+                                              checked={questionFormData.correct === optIndex}
+                                              onChange={() => setQuestionFormData(prev => ({ ...prev, correct: optIndex }))}
+                                              className="w-4 h-4 text-blue-600"
+                                            />
+                                            <input
+                                              type="text"
+                                              value={option}
+                                              onChange={(e) => {
+                                                const newOptions = [...questionFormData.options]
+                                                newOptions[optIndex] = e.target.value
+                                                setQuestionFormData(prev => ({ ...prev, options: newOptions }))
+                                              }}
+                                              className="flex-1 border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                              placeholder={`Option ${optIndex + 1}`}
+                                            />
+                                            {questionFormData.options.length > 2 && (
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  const newOptions = questionFormData.options.filter((_, i) => i !== optIndex)
+                                                  setQuestionFormData(prev => ({
+                                                    ...prev,
+                                                    options: newOptions,
+                                                    correct: prev.correct >= optIndex ? Math.max(0, prev.correct - 1) : prev.correct
+                                                  }))
+                                                }}
+                                                className="p-1 text-red-400 hover:text-red-600"
+                                              >
+                                                <X className="h-4 w-4" />
+                                              </button>
+                                            )}
+                                          </div>
+                                        ))}
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setQuestionFormData(prev => ({
+                                              ...prev,
+                                              options: [...prev.options, '']
+                                            }))
+                                          }}
+                                          className="text-sm text-blue-600 hover:text-blue-700 flex items-center mt-2"
+                                        >
+                                          <Plus className="h-4 w-4 mr-1" />
+                                          Add option
+                                        </button>
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Explanation</label>
+                                        <textarea
+                                          value={questionFormData.explanation}
+                                          onChange={(e) => setQuestionFormData(prev => ({ ...prev, explanation: e.target.value }))}
+                                          className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                          placeholder="Explain why this answer is correct..."
+                                          rows="2"
+                                        />
+                                      </div>
+
+                                      {/* Image/Video Upload */}
+                                      <div className="space-y-2">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Media</label>
+                                        <div className="flex items-center space-x-2">
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                              if (e.target.files[0]) {
+                                                handleQuestionImageUploadInline(e.target.files[0], question.id)
+                                                e.target.value = ''
+                                              }
+                                            }}
+                                            className="hidden"
+                                            id={`edit-question-image-${question.id}`}
+                                          />
+                                          <label
+                                            htmlFor={`edit-question-image-${question.id}`}
+                                            className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer flex items-center text-sm"
+                                          >
+                                            <Image className="h-4 w-4 mr-1" />
+                                            {question.image ? 'Change Image' : 'Add Image'}
+                                          </label>
+                                          
+                                          <input
+                                            type="file"
+                                            accept="video/*"
+                                            onChange={(e) => {
+                                              if (e.target.files[0]) {
+                                                handleQuestionVideoUploadInline(e.target.files[0], question.id)
+                                                e.target.value = ''
+                                              }
+                                            }}
+                                            className="hidden"
+                                            id={`edit-question-video-${question.id}`}
+                                          />
+                                          <label
+                                            htmlFor={`edit-question-video-${question.id}`}
+                                            className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer flex items-center text-sm"
+                                          >
+                                            <Video className="h-4 w-4 mr-1" />
+                                            {question.video ? 'Change Video' : 'Add Video'}
+                                          </label>
+                                        </div>
+
+                                        {/* Display current media */}
+                                        {(question.image || questionFormData.image) && (
+                                          <div className="relative inline-block mt-2">
+                                            <img 
+                                              src={question.image || questionFormData.image} 
+                                              alt="Question" 
+                                              className="max-w-xs rounded-lg border border-gray-300" 
+                                            />
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setModuleFormData(prev => ({
+                                                  ...prev,
+                                                  quiz: {
+                                                    ...prev.quiz,
+                                                    questions: prev.quiz.questions.map(q => 
+                                                      q.id === question.id ? { ...q, image: null } : q
+                                                    )
+                                                  }
+                                                }))
+                                                setQuestionFormData(prev => ({ ...prev, image: null }))
+                                              }}
+                                              className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                            >
+                                              <X className="h-4 w-4" />
+                                            </button>
+                                          </div>
+                                        )}
+                                        {(question.video || questionFormData.video) && (
+                                          <div className="relative inline-block mt-2">
+                                            <video 
+                                              src={question.video || questionFormData.video} 
+                                              controls 
+                                              className="max-w-xs rounded-lg border border-gray-300" 
+                                            />
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setModuleFormData(prev => ({
+                                                  ...prev,
+                                                  quiz: {
+                                                    ...prev.quiz,
+                                                    questions: prev.quiz.questions.map(q => 
+                                                      q.id === question.id ? { ...q, video: null } : q
+                                                    )
+                                                  }
+                                                }))
+                                                setQuestionFormData(prev => ({ ...prev, video: null }))
+                                              }}
+                                              className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                            >
+                                              <X className="h-4 w-4" />
+                                            </button>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      <div className="flex items-center space-x-2 pt-2">
+                                        <label className="flex items-center space-x-2 cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={questionFormData.required !== undefined ? questionFormData.required : true}
+                                            onChange={(e) => setQuestionFormData(prev => ({ ...prev, required: e.target.checked }))}
+                                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                          />
+                                          <span className="text-sm text-gray-600">Required</span>
+                                        </label>
+                                      </div>
+
+                                      <div className="flex justify-end space-x-2 pt-2 border-t">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setModuleFormData(prev => ({
+                                              ...prev,
+                                              quiz: {
+                                                ...prev.quiz,
+                                                questions: prev.quiz.questions.map(q => 
+                                                  q.id === question.id ? {
+                                                    ...q,
+                                                    question: questionFormData.question,
+                                                    options: questionFormData.options.filter(opt => opt.trim() !== ''),
+                                                    correct: questionFormData.correct,
+                                                    explanation: questionFormData.explanation,
+                                                    required: questionFormData.required !== undefined ? questionFormData.required : true,
+                                                    image: questionFormData.image || q.image,
+                                                    video: questionFormData.video || q.video
+                                                  } : q
+                                                )
+                                              }
+                                            }))
+                                            setEditingQuestionInline(null)
+                                            resetQuestionForm()
+                                            toast.success('Question updated!')
+                                          }}
+                                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                                        >
+                                          Save
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setEditingQuestionInline(null)
+                                            resetQuestionForm()
+                                          }}
+                                          className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    // Display Mode
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <div className="flex items-center space-x-2 mb-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setEditingQuestionInline(question.id)
+                                              setQuestionFormData({
+                                                question: question.question || '',
+                                                options: question.options || ['', '', '', ''],
+                                                correct: question.correct || 0,
+                                                explanation: question.explanation || '',
+                                                required: question.required !== undefined ? question.required : true,
+                                                image: question.image || null
+                                              })
+                                            }}
+                                            className="text-sm font-medium text-blue-600 hover:text-blue-700 cursor-pointer"
+                                          >
+                                            Q{index + 1}:
+                                          </button>
+                                          <span className="text-sm text-slate-900">{question.question}</span>
+                                        </div>
+                                        {question.options && question.options.length > 0 && (
+                                          <div className="ml-6 space-y-1">
+                                            {question.options.map((option, optIndex) => (
+                                              <div key={optIndex} className="text-xs text-slate-600">
+                                                {optIndex === question.correct ? (
+                                                  <span className="text-green-600 font-medium">✓ {option} (Correct)</span>
+                                                ) : (
+                                                  <span>{option}</span>
+                                                )}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                        {question.explanation && (
+                                          <div className="ml-6 mt-2 text-xs text-slate-500 italic">
+                                            Explanation: {question.explanation}
+                                          </div>
+                                        )}
+                                        {(question.image || question.video) && (
+                                          <div className="ml-6 mt-2">
+                                            {question.image && (
+                                              <img src={question.image} alt="Question" className="max-w-xs rounded-lg border border-gray-300" />
+                                            )}
+                                            {question.video && (
+                                              <video src={question.video} controls className="max-w-xs rounded-lg border border-gray-300" />
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center space-x-2 ml-4">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setEditingQuestionInline(question.id)
+                                            setQuestionFormData({
+                                              question: question.question || '',
+                                              options: question.options || ['', '', '', ''],
+                                              correct: question.correct || 0,
+                                              explanation: question.explanation || '',
+                                              required: question.required !== undefined ? question.required : true,
+                                              image: question.image || null
+                                            })
+                                          }}
+                                          className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                                          title="Edit Question"
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            if (window.confirm('Are you sure you want to delete this question?')) {
+                                              setModuleFormData(prev => ({
+                                                ...prev,
+                                                quiz: {
+                                                  ...prev.quiz,
+                                                  questions: prev.quiz.questions.filter(q => q.id !== question.id)
+                                                }
+                                              }))
+                                              toast.success('Question deleted!')
+                                            }
+                                          }}
+                                          className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200"
+                                          title="Delete Question"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -1946,6 +3402,9 @@ const ManageLearningPaths = () => {
                     onClick={() => {
                       setShowEditModuleModal(false)
                       setEditingModule(null)
+                      setEditingLessonInline(null)
+                      setIsEditingQuizInline(false)
+                      setEditingQuestionInline(null)
                       resetModuleForm()
                     }}
                     className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all duration-200"
@@ -2221,6 +3680,39 @@ const ManageLearningPaths = () => {
                     </div>
 
                     {/* Tab Content */}
+                    {activeModuleTab === 'basic' && (
+                      <div className="space-y-6">
+                        <h5 className="text-lg font-semibold text-slate-900">Module Basic Information</h5>
+                        <div className="bg-white rounded-lg p-6 border border-gray-200 space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Module Title</label>
+                            <p className="text-base text-gray-900">{moduleFormData.title || 'Not set'}</p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <p className="text-base text-gray-900 whitespace-pre-wrap">{moduleFormData.description || 'Not set'}</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Time</label>
+                              <p className="text-base text-gray-900">{moduleFormData.estimatedTime || 'Not set'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
+                              <p className="text-base text-gray-900">{moduleFormData.difficulty || 'Not set'}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Media</label>
+                            <div className="flex items-center space-x-4 text-sm text-gray-600">
+                              <span>{moduleFormData.images?.length || 0} images</span>
+                              <span>{moduleFormData.videos?.length || 0} videos</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {activeModuleTab === 'lessons' && (
                       <div className="space-y-6">
                         <div className="flex items-center justify-between">
@@ -2237,22 +3729,64 @@ const ManageLearningPaths = () => {
                         
                         <div className="space-y-4">
                           {moduleFormData.lessons.map((lesson, index) => (
-                            <div key={lesson.id} className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-4">
-                                  <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
-                                    {index + 1}
+                            <div key={lesson.id} className="bg-white rounded-lg p-4 border border-gray-200">
+                              {editingLessonInline === lesson.id ? (
+                                // Inline Edit Form
+                                <div className="space-y-4">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Lesson Title</label>
+                                    <input
+                                      type="text"
+                                      value={lessonFormData.title}
+                                      onChange={(e) => setLessonFormData(prev => ({ ...prev, title: e.target.value }))}
+                                      className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      placeholder="Enter lesson title"
+                                    />
                                   </div>
                                   <div>
-                                    <span className="text-lg font-semibold text-slate-900">{lesson.title}</span>
-                                    <p className="text-sm text-slate-500 mt-1 line-clamp-2">{lesson.content}</p>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                                    <textarea
+                                      value={lessonFormData.content}
+                                      onChange={(e) => setLessonFormData(prev => ({ ...prev, content: e.target.value }))}
+                                      rows="4"
+                                      className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      placeholder="Enter lesson content"
+                                    />
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      type="button"
+                                      onClick={saveLessonInline}
+                                      className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                    >
+                                      Save
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={cancelLessonInline}
+                                      className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                                    >
+                                      Cancel
+                                    </button>
                                   </div>
                                 </div>
-                                <div className="flex items-center space-x-2">
+                              ) : (
+                                // Display Mode
+                              <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-4 flex-1">
+                                    <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                    {index + 1}
+                                  </div>
+                                    <div className="flex-1">
+                                      <span className="text-base font-semibold text-gray-900 block">{lesson.title}</span>
+                                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">{lesson.content}</p>
+                                  </div>
+                                </div>
+                                  <div className="flex items-center space-x-2 ml-4">
                                   <button
                                     type="button"
-                                    onClick={() => openEditLessonModal(lesson)}
-                                    className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                                      onClick={() => startEditingLessonInline(lesson)}
+                                      className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center"
                                     title="Edit Lesson"
                                   >
                                     <Edit className="h-4 w-4" />
@@ -2260,13 +3794,14 @@ const ManageLearningPaths = () => {
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteLesson(lesson.id)}
-                                    className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200"
+                                      className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors flex items-center"
                                     title="Delete Lesson"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </button>
                                 </div>
                               </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -2277,6 +3812,7 @@ const ManageLearningPaths = () => {
                       <div className="space-y-6">
                         <div className="flex items-center justify-between">
                           <h5 className="text-lg font-semibold text-slate-900">Module Quiz</h5>
+                          {!isEditingQuizInline && (
                           <button
                             type="button"
                             onClick={openAddQuizModal}
@@ -2285,22 +3821,65 @@ const ManageLearningPaths = () => {
                             <Plus className="h-4 w-4 mr-2" />
                             Add Quiz
                           </button>
+                          )}
                         </div>
                         
-                        <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200">
+                        {isEditingQuizInline ? (
+                          // Inline Quiz Edit Form
+                          <div className="bg-white rounded-lg p-6 border border-gray-200 space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Quiz Title</label>
+                              <input
+                                type="text"
+                                value={quizFormData.title}
+                                onChange={(e) => setQuizFormData(prev => ({ ...prev, title: e.target.value }))}
+                                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Enter quiz title"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Questions ({quizFormData.questions.length})</label>
+                              {quizFormData.questions.length > 0 ? (
+                                <div className="space-y-3">
+                                  {quizFormData.questions.map((q, idx) => (
+                                    <div key={idx} className="p-3 bg-gray-50 rounded border border-gray-200">
+                                      <p className="text-sm font-medium text-gray-900">{q.question}</p>
+                                      <p className="text-xs text-gray-500 mt-1">Correct: Option {q.correct + 1}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-gray-500">No questions added. Use "Add Quiz" to create questions.</p>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                type="button"
+                                onClick={saveQuizInline}
+                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                              >
+                                Save
+                              </button>
+                              <button
+                                type="button"
+                                onClick={cancelQuizInline}
+                                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          // Display Mode
+                          <div className="bg-white rounded-lg p-6 border border-gray-200">
                           <div className="flex items-center justify-between">
                             <div className="flex-1">
-                              <div className="text-lg font-semibold text-slate-900 mb-2">
+                                <div className="text-base font-semibold text-gray-900 mb-2">
                                 {moduleFormData.quiz.title || 'No quiz added'}
                               </div>
                               {moduleFormData.quiz.questions && moduleFormData.quiz.questions.length > 0 && (
-                                <div className="flex items-center space-x-4">
-                                  <div className="text-sm text-slate-500 bg-blue-100 px-3 py-1 rounded-full">
+                                  <div className="text-sm text-gray-500">
                                     {moduleFormData.quiz.questions.length} questions
-                                  </div>
-                                  <div className="text-sm text-slate-500 bg-green-100 px-3 py-1 rounded-full">
-                                    Ready to use
-                                  </div>
                                 </div>
                               )}
                             </div>
@@ -2310,8 +3889,8 @@ const ManageLearningPaths = () => {
                               <div className="flex items-center space-x-2 ml-4">
                                 <button
                                   type="button"
-                                  onClick={() => openEditQuizModal(moduleFormData.quiz)}
-                                  className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                                    onClick={startEditingQuizInline}
+                                    className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center"
                                   title="Edit Quiz"
                                 >
                                   <Edit className="h-4 w-4" />
@@ -2327,7 +3906,7 @@ const ManageLearningPaths = () => {
                                       toast.success('Quiz deleted successfully!')
                                     }
                                   }}
-                                  className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200"
+                                    className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors flex items-center"
                                   title="Delete Quiz"
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -2336,6 +3915,7 @@ const ManageLearningPaths = () => {
                             )}
                           </div>
                         </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -2346,6 +3926,9 @@ const ManageLearningPaths = () => {
                       onClick={() => {
                         setShowEditModuleModal(false)
                         setEditingModule(null)
+                        setEditingLessonInline(null)
+                        setIsEditingQuizInline(false)
+                        setEditingQuestionInline(null)
                         resetModuleForm()
                       }}
                       className="px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-all duration-200 shadow-lg hover:shadow-xl"
@@ -2690,6 +4273,348 @@ const ManageLearningPaths = () => {
                     </div>
                   </div>
 
+                  {/* Questions Builder - Google Forms Style */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg shadow-lg">
+                          <FileText className="h-5 w-5 text-white" />
+                        </div>
+                        <h4 className="text-xl font-bold text-slate-900">Questions</h4>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newQuestion = {
+                            id: Date.now(),
+                            question: '',
+                            type: 'multiple_choice',
+                            options: ['', ''],
+                            correct: 0,
+                            required: false,
+                            image: null
+                          }
+                          setQuizFormData(prev => ({
+                            ...prev,
+                            questions: [...prev.questions, newQuestion]
+                          }))
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Question
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {quizFormData.questions.map((question, qIndex) => (
+                        <div key={question.id} className="bg-white rounded-lg border-2 border-gray-200 p-6 shadow-sm">
+                          {/* Question Header */}
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex items-center space-x-2 flex-1">
+                              <div className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded text-sm font-medium text-gray-600">
+                                {qIndex + 1}
+                              </div>
+                              <div className="flex-1">
+                                <input
+                                  type="text"
+                                  value={question.question}
+                                  onChange={(e) => {
+                                    setQuizFormData(prev => ({
+                                      ...prev,
+                                      questions: prev.questions.map((q, idx) => 
+                                        idx === qIndex ? { ...q, question: e.target.value } : q
+                                      )
+                                    }))
+                                  }}
+                                  className="w-full border-b-2 border-transparent focus:border-blue-500 px-2 py-2 text-lg font-semibold focus:outline-none"
+                                  placeholder="Question"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <select
+                                value={question.type || 'multiple_choice'}
+                                onChange={(e) => {
+                                  setQuizFormData(prev => ({
+                                    ...prev,
+                                    questions: prev.questions.map((q, idx) => 
+                                      idx === qIndex ? { ...q, type: e.target.value } : q
+                                    )
+                                  }))
+                                }}
+                                className="border border-gray-300 rounded px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              >
+                                <option value="multiple_choice">Multiple choice</option>
+                              </select>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  if (e.target.files[0]) {
+                                    handleQuestionImageUpload(e.target.files[0], qIndex)
+                                    e.target.value = ''
+                                  }
+                                }}
+                                className="hidden"
+                                id={`question-image-${qIndex}`}
+                              />
+                              <label
+                                htmlFor={`question-image-${qIndex}`}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-pointer"
+                                title="Add image to question"
+                              >
+                                <Image className="h-5 w-5" />
+                              </label>
+                              <input
+                                type="file"
+                                accept="video/*"
+                                onChange={(e) => {
+                                  if (e.target.files[0]) {
+                                    handleQuestionVideoUpload(e.target.files[0], qIndex)
+                                    e.target.value = ''
+                                  }
+                                }}
+                                className="hidden"
+                                id={`question-video-${qIndex}`}
+                              />
+                              <label
+                                htmlFor={`question-video-${qIndex}`}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-pointer"
+                                title="Add video to question"
+                              >
+                                <Video className="h-5 w-5" />
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* Question Options */}
+                          {question.type === 'multiple_choice' && (
+                            <div className="ml-10 space-y-2">
+                              {question.options.map((option, optIndex) => (
+                                <div key={optIndex} className="flex items-center space-x-3">
+                                  <input
+                                    type="radio"
+                                    name={`question-${qIndex}`}
+                                    checked={question.correct === optIndex}
+                                    onChange={() => {
+                                      setQuizFormData(prev => ({
+                                        ...prev,
+                                        questions: prev.questions.map((q, idx) => 
+                                          idx === qIndex ? { ...q, correct: optIndex } : q
+                                        )
+                                      }))
+                                    }}
+                                    className="w-4 h-4 text-blue-600"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={option}
+                                    onChange={(e) => {
+                                      const newOptions = [...question.options]
+                                      newOptions[optIndex] = e.target.value
+                                      setQuizFormData(prev => ({
+                                        ...prev,
+                                        questions: prev.questions.map((q, idx) => 
+                                          idx === qIndex ? { ...q, options: newOptions } : q
+                                        )
+                                      }))
+                                    }}
+                                    className="flex-1 border-b border-transparent focus:border-blue-500 px-2 py-1 focus:outline-none"
+                                    placeholder={`Option ${optIndex + 1}`}
+                                  />
+                                  <button
+                                    type="button"
+                                    className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                                    title="Add image to option"
+                                  >
+                                    <Image className="h-4 w-4" />
+                                  </button>
+                                  {question.options.length > 2 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newOptions = question.options.filter((_, idx) => idx !== optIndex)
+                                        setQuizFormData(prev => ({
+                                          ...prev,
+                                          questions: prev.questions.map((q, idx) => 
+                                            idx === qIndex ? { 
+                                              ...q, 
+                                              options: newOptions,
+                                              correct: q.correct >= optIndex ? Math.max(0, q.correct - 1) : q.correct
+                                            } : q
+                                          )
+                                        }))
+                                      }}
+                                      className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
+                                      title="Delete option"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newOptions = [...question.options, '']
+                                  setQuizFormData(prev => ({
+                                    ...prev,
+                                    questions: prev.questions.map((q, idx) => 
+                                      idx === qIndex ? { ...q, options: newOptions } : q
+                                    )
+                                  }))
+                                }}
+                                className="ml-7 text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                              >
+                                <Plus className="h-4 w-4 mr-1" />
+                                Add option
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Question Media Display */}
+                          {(question.image || question.video) && (
+                            <div className="ml-10 mt-4 space-y-2">
+                              {question.image && (
+                                <div className="relative inline-block">
+                                  <img 
+                                    src={question.image} 
+                                    alt="Question" 
+                                    className="max-w-xs rounded-lg border border-gray-300"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setQuizFormData(prev => ({
+                                        ...prev,
+                                        questions: prev.questions.map((q, idx) => 
+                                          idx === qIndex ? { ...q, image: null } : q
+                                        )
+                                      }))
+                                    }}
+                                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              )}
+                              {question.video && (
+                                <div className="relative inline-block">
+                                  <video 
+                                    src={question.video} 
+                                    controls
+                                    className="max-w-xs rounded-lg border border-gray-300"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setQuizFormData(prev => ({
+                                        ...prev,
+                                        questions: prev.questions.map((q, idx) => 
+                                          idx === qIndex ? { ...q, video: null } : q
+                                        )
+                                      }))
+                                    }}
+                                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Explanation Field */}
+                          <div className="ml-10 mt-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Explanation (shown after answer)</label>
+                            <textarea
+                              value={question.explanation || ''}
+                              onChange={(e) => {
+                                setQuizFormData(prev => ({
+                                  ...prev,
+                                  questions: prev.questions.map((q, idx) => 
+                                    idx === qIndex ? { ...q, explanation: e.target.value } : q
+                                  )
+                                }))
+                              }}
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Explain why this answer is correct..."
+                              rows="2"
+                            />
+                          </div>
+
+                          {/* Question Footer */}
+                          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+                            <div className="flex items-center space-x-4">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const duplicatedQuestion = {
+                                    ...question,
+                                    id: Date.now(),
+                                    question: `${question.question} (Copy)`
+                                  }
+                                  const newQuestions = [...quizFormData.questions]
+                                  newQuestions.splice(qIndex + 1, 0, duplicatedQuestion)
+                                  setQuizFormData(prev => ({
+                                    ...prev,
+                                    questions: newQuestions
+                                  }))
+                                  toast.success('Question duplicated!')
+                                }}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                                title="Duplicate question"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (window.confirm('Are you sure you want to delete this question?')) {
+                                    setQuizFormData(prev => ({
+                                      ...prev,
+                                      questions: prev.questions.filter((_, idx) => idx !== qIndex)
+                                    }))
+                                  }
+                                }}
+                                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
+                                title="Delete question"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <label className="flex items-center space-x-2 cursor-pointer">
+                                <span className="text-sm text-gray-600">Required</span>
+                                <input
+                                  type="checkbox"
+                                  checked={question.required || false}
+                                  onChange={(e) => {
+                                    setQuizFormData(prev => ({
+                                      ...prev,
+                                      questions: prev.questions.map((q, idx) => 
+                                        idx === qIndex ? { ...q, required: e.target.checked } : q
+                                      )
+                                    }))
+                                  }}
+                                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {quizFormData.questions.length === 0 && (
+                        <div className="text-center py-8 text-gray-500">
+                          <FileText className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                          <p>No questions added yet. Click "Add Question" to get started.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Quiz Images by Question */}
                   <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200/50">
                     <div className="flex items-center space-x-3 mb-6">
@@ -2712,8 +4637,8 @@ const ManageLearningPaths = () => {
                               className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             >
                               <option value="">Choose question number...</option>
-                              {Array.from({ length: 10 }, (_, i) => i + 1).map(num => (
-                                <option key={num} value={num}>Question {num}</option>
+                              {quizFormData.questions.map((q, idx) => (
+                                <option key={q.id} value={idx + 1}>Question {idx + 1}{q.question ? `: ${q.question.substring(0, 30)}...` : ''}</option>
                               ))}
                             </select>
                           </div>

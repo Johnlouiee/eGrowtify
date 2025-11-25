@@ -375,6 +375,25 @@ CREATE TABLE `notifications` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `admin_notifications`
+--
+
+CREATE TABLE `admin_notifications` (
+  `id` int(11) NOT NULL,
+  `title` varchar(200) NOT NULL,
+  `message` text NOT NULL,
+  `type` varchar(50) DEFAULT 'Update',
+  `priority` varchar(20) DEFAULT 'Medium',
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `expires_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `payment_methods`
 --
 
@@ -778,6 +797,10 @@ ALTER TABLE `notifications`
   ADD KEY `idx_notifications_user_id` (`user_id`),
   ADD KEY `idx_notifications_due_date` (`due_date`);
 
+ALTER TABLE `admin_notifications`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `created_by` (`created_by`);
+
 --
 -- Indexes for table `payment_methods`
 --
@@ -908,6 +931,12 @@ ALTER TABLE `notifications`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
+-- AUTO_INCREMENT for table `admin_notifications`
+--
+ALTER TABLE `admin_notifications`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `payment_methods`
 --
 ALTER TABLE `payment_methods`
@@ -1003,6 +1032,12 @@ ALTER TABLE `notifications`
   ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `notifications_ibfk_2` FOREIGN KEY (`plant_id`) REFERENCES `plant` (`PLANT_ID`) ON DELETE SET NULL,
   ADD CONSTRAINT `notifications_ibfk_3` FOREIGN KEY (`garden_id`) REFERENCES `garden` (`GARDEN_ID`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `admin_notifications`
+--
+ALTER TABLE `admin_notifications`
+  ADD CONSTRAINT `admin_notifications_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `planttracking`
