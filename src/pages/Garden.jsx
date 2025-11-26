@@ -130,6 +130,12 @@ const Garden = () => {
   const [showImageModal, setShowImageModal] = useState(false)
   const gridPlannerRef = useRef()
   
+  // AI Recognition usage state
+  const [aiUsage, setAiUsage] = useState(null)
+  const [loadingUsage, setLoadingUsage] = useState(false)
+  const [purchasing, setPurchasing] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  
   // Garden alerts state
   const [gardenAlerts, setGardenAlerts] = useState([])
   const [completedActions, setCompletedActions] = useState([])
@@ -146,7 +152,15 @@ const Garden = () => {
     console.log('🌱 Garden component - isPremium:', isPremium, 'type:', typeof isPremium)
     fetchGardens()
     fetchPlants()
+    fetchAiUsage()
   }, [isPremium]) // Re-fetch when subscription status changes
+  
+  // Fetch AI usage when modal opens
+  useEffect(() => {
+    if (showAddPlant) {
+      fetchAiUsage()
+    }
+  }, [showAddPlant])
 
   // Fetch alerts when a garden is selected
   useEffect(() => {
@@ -255,6 +269,53 @@ const Garden = () => {
       }
     } finally {
       setIsRecognizing(false)
+      // Refresh usage after recognition attempt
+      fetchAiUsage()
+    }
+  }
+
+  const fetchAiUsage = async () => {
+    try {
+      setLoadingUsage(true)
+      const response = await axios.get('/api/ai-analysis/usage')
+      if (response.data.success) {
+        setAiUsage(response.data)
+      }
+    } catch (error) {
+      console.error('Error fetching AI usage:', error)
+      // Set default values if API fails
+      setAiUsage({
+        free_remaining: 3,
+        total_remaining: 3,
+        is_premium: false,
+        price_per_analysis: 20.00
+      })
+    } finally {
+      setLoadingUsage(false)
+    }
+  }
+
+  const purchaseOneTimeRecognition = async () => {
+    try {
+      setPurchasing(true)
+      const response = await axios.post('/api/ai-analysis/purchase', {
+        quantity: 1,
+        payment_method: 'demo' // For demo purposes
+      })
+      
+      if (response.data.success) {
+        toast.success(`Successfully purchased 1 recognition for ₱${response.data.total_paid.toFixed(2)}`)
+        setShowPaymentModal(false)
+        // Refresh usage status
+        await fetchAiUsage()
+      } else {
+        toast.error(response.data.error || 'Purchase failed')
+      }
+    } catch (error) {
+      console.error('Error purchasing recognition:', error)
+      toast.error(error.response?.data?.error || 'Failed to purchase recognition')
+    } finally {
+      setPurchasing(false)
     }
   }
 
@@ -1484,19 +1545,29 @@ const Garden = () => {
                       onChange={handleImageUpload}
                       className="hidden"
                       id="plant-image-upload"
-                      disabled={isRecognizing}
+                      disabled={isRecognizing || (!editingPlant && aiUsage && aiUsage.total_remaining === 0)}
                     />
                     <label
                       htmlFor="plant-image-upload"
-                      className={`flex items-center space-x-2 px-4 py-2 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                        isRecognizing 
+                      className={`flex items-center space-x-2 px-4 py-2 border-2 border-dashed rounded-lg transition-colors ${
+                        isRecognizing || (!editingPlant && aiUsage && aiUsage.total_remaining === 0)
                           ? 'border-gray-300 bg-gray-100 cursor-not-allowed' 
-                          : 'border-green-300 bg-green-50 hover:bg-green-100'
+                          : 'border-green-300 bg-green-50 hover:bg-green-100 cursor-pointer'
                       }`}
                     >
-                      <Camera className="h-4 w-4 text-green-600" />
-                      <span className="text-sm text-green-700">
-                        {isRecognizing ? 'Recognizing...' : 'Upload Image'}
+                      <Camera className={`h-4 w-4 ${
+                        isRecognizing || (!editingPlant && aiUsage && aiUsage.total_remaining === 0)
+                          ? 'text-gray-400' 
+                          : 'text-green-600'
+                      }`} />
+                      <span className={`text-sm ${
+                        isRecognizing || (!editingPlant && aiUsage && aiUsage.total_remaining === 0)
+                          ? 'text-gray-500' 
+                          : 'text-green-700'
+                      }`}>
+                        {isRecognizing ? 'Recognizing...' : 
+                         (!editingPlant && aiUsage && aiUsage.total_remaining === 0) ? 'No Credits Available' :
+                         'Upload Image'}
                       </span>
                     </label>
                     {plantImage && (
@@ -1530,6 +1601,103 @@ const Garden = () => {
                           ×
                         </button>
                       </div>
+                    </div>
+                  )}
+                  
+                  {/* AI Recognition Usage Indicator */}
+                  {!editingPlant && (
+                    <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      {loadingUsage ? (
+                        <div className="flex items-center justify-center py-2">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                          <span className="ml-2 text-sm text-gray-600">Loading usage...</span>
+                        </div>
+                      ) : aiUsage ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <Camera className="h-5 w-5 text-blue-600" />
+                              <span className="text-sm font-medium text-gray-900">AI Recognition Credits</span>
+                            </div>
+                            <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                              aiUsage.total_remaining > 0 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {aiUsage.total_remaining} {aiUsage.total_remaining === 1 ? 'credit' : 'credits'} left
+                            </div>
+                          </div>
+                          
+                          <div className="text-xs text-gray-600 space-y-1">
+                            <div className="flex justify-between">
+                              <span>Free tries:</span>
+                              <span className="font-medium">{aiUsage.free_remaining || 0} / {aiUsage.free_allocation || 3}</span>
+                            </div>
+                            {aiUsage.purchased_credits > 0 && (
+                              <div className="flex justify-between">
+                                <span>Purchased credits:</span>
+                                <span className="font-medium">{aiUsage.purchased_credits}</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {aiUsage.total_remaining === 0 && (
+                            <div className="mt-3 pt-3 border-t border-blue-200">
+                              <p className="text-sm font-medium text-gray-900 mb-2">No credits remaining. Choose an option:</p>
+                              <div className="flex flex-col space-y-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPaymentModal(true)}
+                                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center justify-center space-x-2"
+                                >
+                                  <span>💳</span>
+                                  <span>Buy 1 Recognition (₱{aiUsage.price_per_analysis?.toFixed(2) || '20.00'})</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShowAddPlant(false)
+                                    navigate('/subscription')
+                                  }}
+                                  className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center justify-center space-x-2"
+                                >
+                                  <span>👑</span>
+                                  <span>Subscribe to Premium (Unlimited)</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {aiUsage.total_remaining > 0 && aiUsage.total_remaining <= 2 && (
+                            <div className="mt-2 pt-2 border-t border-blue-200">
+                              <p className="text-xs text-amber-700 mb-2">Running low on credits!</p>
+                              <div className="flex space-x-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPaymentModal(true)}
+                                  className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+                                >
+                                  Buy More
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShowAddPlant(false)
+                                    navigate('/subscription')
+                                  }}
+                                  className="flex-1 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
+                                >
+                                  Subscribe
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-600">
+                          Unable to load usage information. You can still try uploading an image.
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1661,6 +1829,65 @@ const Garden = () => {
             </div>
           </div>
         )}
+
+      {/* Payment Modal for One-Time Recognition Purchase */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-xl font-semibold mb-4">Purchase AI Recognition</h3>
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-900">1x AI Recognition</span>
+                  <span className="text-lg font-bold text-green-600">₱{aiUsage?.price_per_analysis?.toFixed(2) || '20.00'}</span>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">
+                  Get instant plant identification with AI-powered recognition. This is a one-time purchase.
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Payment Method</label>
+                <select className="input-field" defaultValue="demo">
+                  <option value="demo">Demo Payment (Instant)</option>
+                  <option value="gcash">GCash</option>
+                  <option value="paymaya">PayMaya</option>
+                </select>
+              </div>
+              
+              <div className="flex space-x-4 pt-4">
+                <button
+                  onClick={purchaseOneTimeRecognition}
+                  disabled={purchasing}
+                  className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {purchasing ? 'Processing...' : `Pay ₱${aiUsage?.price_per_analysis?.toFixed(2) || '20.00'}`}
+                </button>
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="flex-1 btn-secondary"
+                  disabled={purchasing}
+                >
+                  Cancel
+                </button>
+              </div>
+              
+              <div className="pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    setShowPaymentModal(false)
+                    setShowAddPlant(false)
+                    navigate('/subscription')
+                  }}
+                  className="w-full text-sm text-purple-600 hover:text-purple-800 font-medium"
+                >
+                  👑 Or subscribe to Premium for unlimited recognition →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Image Modal */}
       {showImageModal && selectedImage && (

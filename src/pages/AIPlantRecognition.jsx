@@ -181,9 +181,6 @@ const AIPlantRecognition = () => {
     planting_date: new Date().toISOString().split('T')[0]
   })
   const [showPaymentModal, setShowPaymentModal] = useState(false)
-  const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false)
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('gcash')
-  const [gcashNumber, setGcashNumber] = useState('')
   const [usageStatus, setUsageStatus] = useState(null)
   const [isLoadingUsage, setIsLoadingUsage] = useState(true)
   const [isPurchasing, setIsPurchasing] = useState(false)
@@ -512,55 +509,39 @@ const AIPlantRecognition = () => {
     }
   }
 
-  const handlePurchaseAnalysis = () => {
-    // Show payment method selection modal first
-    setShowPaymentMethodModal(true)
-    setShowPaymentModal(false)
-  }
-
-  const handleConfirmPurchase = async () => {
-    // Validate GCash number if GCash is selected
-    if (selectedPaymentMethod === 'gcash' && !gcashNumber.trim()) {
-      toast.error('Please enter your GCash mobile number')
-      return
-    }
-
-    const cleanedGcashNumber = gcashNumber.replace(/\s/g, '')
-    if (selectedPaymentMethod === 'gcash' && (!/^09\d{9}$/.test(cleanedGcashNumber) || cleanedGcashNumber.length !== 11)) {
-      toast.error('Please enter a valid GCash mobile number (11 digits: 09XX XXX XXXX)')
-      return
-    }
-
+  const handlePurchaseAnalysis = async () => {
+    // Direct purchase with demo payment (matching Garden feature)
     setIsPurchasing(true)
     try {
       const response = await axios.post('/api/ai-analysis/purchase', {
         quantity: 1,
-        payment_method: selectedPaymentMethod,
-        gcash_number: selectedPaymentMethod === 'gcash' ? gcashNumber : null
+        payment_method: 'demo' // Demo payment for instant purchase
       })
-
+      
       if (response.data.success) {
-        toast.success('Analysis purchased successfully!')
+        toast.success(`Successfully purchased 1 analysis for ₱${response.data.total_paid.toFixed(2)}`)
+        setShowPaymentModal(false)
+        // Refresh usage status
         await fetchUsageStatus()
-        setShowPaymentMethodModal(false)
-        setGcashNumber('')
-        setSelectedPaymentMethod('gcash')
-        // Retry the analysis
-        if (analysisMode === 'plant') {
-          analyzePlant()
-        } else {
-          analyzeSoil()
+        // Retry the analysis if an image is selected
+        if (selectedImage) {
+          if (analysisMode === 'plant') {
+            analyzePlant()
+          } else {
+            analyzeSoil()
+          }
         }
       } else {
         toast.error(response.data.error || 'Purchase failed')
       }
     } catch (error) {
-      toast.error('Failed to purchase analysis')
-      console.error('Purchase error:', error)
+      console.error('Error purchasing analysis:', error)
+      toast.error(error.response?.data?.error || 'Failed to purchase analysis')
     } finally {
       setIsPurchasing(false)
     }
   }
+
 
   const handleSubscribe = () => {
     setShowPaymentModal(false)
@@ -604,85 +585,88 @@ const AIPlantRecognition = () => {
               </button>
             </div>
 
-            {/* Free Analyses Remaining Indicator - Always show */}
-            <div className={`mb-4 p-3 rounded-lg border-2 ${
-              isLoadingUsage 
-                ? 'bg-gray-50 border-gray-300' 
-                : (() => {
-                    const isPremiumUser = usageStatus?.is_premium || isPremium
-                    const freeUsed = usageStatus?.free_used ?? 0
-                    const freeAllocation = usageStatus?.free_allocation ?? 3
-                    const purchased = usageStatus?.purchased_credits ?? 0
-                    const totalRemaining = Math.max(0, (freeAllocation - freeUsed) + purchased)
-                    
-                    console.log('🎨 Indicator render:', { isPremiumUser, freeUsed, freeAllocation, purchased, totalRemaining })
-                    
-                    if (isPremiumUser) return 'bg-blue-50 border-blue-300'
-                    if (totalRemaining === 0) return 'bg-red-50 border-red-300'
-                    if (totalRemaining === 1) return 'bg-yellow-50 border-yellow-300'
-                    return 'bg-green-50 border-green-300'
-                  })()
-            }`}>
+            {/* AI Recognition Usage Indicator - Matching Garden page style */}
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               {isLoadingUsage ? (
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
-                  <span className="text-gray-600">Loading usage status...</span>
+                <div className="flex items-center justify-center py-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                  <span className="ml-2 text-sm text-gray-600">Loading usage...</span>
+                </div>
+              ) : usageStatus ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Camera className="h-5 w-5 text-blue-600" />
+                      <span className="text-sm font-medium text-gray-900">AI Recognition Credits</span>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                      usageStatus.total_remaining > 0 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {usageStatus.total_remaining} {usageStatus.total_remaining === 1 ? 'credit' : 'credits'} left
+                    </div>
+                  </div>
+                  
+                  <div className="text-xs text-gray-600 space-y-1">
+                    <div className="flex justify-between">
+                      <span>Free tries:</span>
+                      <span className="font-medium">{usageStatus.free_remaining || 0} / {usageStatus.free_allocation || 3}</span>
+                    </div>
+                    {usageStatus.purchased_credits > 0 && (
+                      <div className="flex justify-between">
+                        <span>Purchased credits:</span>
+                        <span className="font-medium">{usageStatus.purchased_credits}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {usageStatus.total_remaining === 0 && (
+                    <div className="mt-3 pt-3 border-t border-blue-200">
+                      <p className="text-sm font-medium text-gray-900 mb-2">No credits remaining. Choose an option:</p>
+                      <div className="flex flex-col space-y-2">
+                        <button
+                          onClick={() => setShowPaymentModal(true)}
+                          className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center justify-center space-x-2"
+                        >
+                          <span>💳</span>
+                          <span>Buy 1 Recognition (₱{usageStatus.price_per_analysis?.toFixed(2) || '20.00'})</span>
+                        </button>
+                        <button
+                          onClick={handleSubscribe}
+                          className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center justify-center space-x-2"
+                        >
+                          <span>👑</span>
+                          <span>Subscribe to Premium (Unlimited)</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {usageStatus.total_remaining > 0 && usageStatus.total_remaining <= 2 && (
+                    <div className="mt-2 pt-2 border-t border-blue-200">
+                      <p className="text-xs text-amber-700 mb-2">Running low on credits!</p>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => setShowPaymentModal(true)}
+                          className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+                        >
+                          Buy More
+                        </button>
+                        <button
+                          onClick={handleSubscribe}
+                          className="flex-1 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
+                        >
+                          Subscribe
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <>
-                  {(() => {
-                    const isPremiumUser = usageStatus?.is_premium || isPremium
-                    const freeUsed = usageStatus?.free_used ?? 0
-                    const freeAllocation = usageStatus?.free_allocation ?? 3
-                    const purchased = usageStatus?.purchased_credits ?? 0
-                    const totalRemaining = Math.max(0, (freeAllocation - freeUsed) + purchased)
-                    
-                    if (isPremiumUser) {
-                      return (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-blue-700 font-semibold">⭐ Premium: {totalRemaining} free {totalRemaining === 1 ? 'analysis' : 'analyses'} remaining</span>
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            {freeUsed} / {freeAllocation} used
-                            {purchased > 0 && (
-                              <span className="ml-2 text-primary-600">+{purchased} purchased</span>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    }
-                    
-                    return (
-                      <>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            {totalRemaining === 0 ? (
-                              <span className="text-red-600 font-semibold">⚠️ No free analyses remaining</span>
-                            ) : (
-                              <span className={`font-semibold ${
-                                totalRemaining === 1 ? 'text-yellow-700' : 'text-green-700'
-                              }`}>
-                                {totalRemaining === 1 ? '⚠️' : '✓'} {totalRemaining} free {totalRemaining === 1 ? 'analysis' : 'analyses'} remaining
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            {freeUsed} / {freeAllocation} used
-                            {purchased > 0 && (
-                              <span className="ml-2 text-primary-600">+{purchased} purchased</span>
-                            )}
-                          </div>
-                        </div>
-                        {totalRemaining === 0 && (
-                          <p className="text-sm text-red-600 mt-2">
-                            Subscribe to Premium for unlimited analyses or purchase individual credits.
-                          </p>
-                        )}
-                      </>
-                    )
-                  })()}
-                </>
+                <div className="text-sm text-gray-600">
+                  Unable to load usage information. You can still try uploading an image.
+                </div>
               )}
             </div>
             
@@ -1519,243 +1503,57 @@ const AIPlantRecognition = () => {
         </div>
       )}
 
-      {/* Payment Modal - Show when limit reached */}
+      {/* Payment Modal for One-Time Analysis Purchase - Matching Garden feature style */}
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-900">Free Analysis Limit Reached</h3>
-                <button
-                  onClick={() => setShowPaymentModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="mb-6">
-                <p className="text-gray-600 mb-4">
-                  You've used all 3 free AI analyses. Choose an option to continue:
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-xl font-semibold mb-4">Purchase AI Recognition</h3>
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-900">1x AI Recognition</span>
+                  <span className="text-lg font-bold text-green-600">₱{usageStatus?.price_per_analysis?.toFixed(2) || '20.00'}</span>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">
+                  Get instant plant identification with AI-powered recognition. This is a one-time purchase.
                 </p>
-
-                {usageStatus && (
-                  <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                    <div className="text-sm text-gray-600">
-                      <div className="flex justify-between mb-2">
-                        <span>Free analyses used:</span>
-                        <span className="font-medium">{usageStatus.free_used} / {usageStatus.free_allocation}</span>
-                      </div>
-                      {usageStatus.purchased_credits > 0 && (
-                        <div className="flex justify-between">
-                          <span>Purchased credits:</span>
-                          <span className="font-medium">{usageStatus.purchased_credits}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
-
-              <div className="space-y-3">
-                {/* Purchase Single Analysis Option */}
+              
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Payment Method</label>
+                <select className="input-field" defaultValue="demo">
+                  <option value="demo">Demo Payment (Instant)</option>
+                  <option value="gcash">GCash</option>
+                  <option value="paymaya">PayMaya</option>
+                </select>
+              </div>
+              
+              <div className="flex space-x-4 pt-4">
                 <button
                   onClick={handlePurchaseAnalysis}
                   disabled={isPurchasing}
-                  className="w-full flex items-center justify-between p-4 border-2 border-green-500 rounded-lg hover:bg-green-50 transition-colors disabled:opacity-50"
+                  className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <div className="flex items-center space-x-3">
-                    <CreditCard className="h-5 w-5 text-green-600" />
-                    <div className="text-left">
-                      <div className="font-semibold text-gray-900">Purchase 1 Analysis</div>
-                      <div className="text-sm text-gray-600">₱20.00 per analysis</div>
-                    </div>
-                  </div>
-                  <div className="text-lg font-bold text-green-600">₱20</div>
+                  {isPurchasing ? 'Processing...' : `Pay ₱${usageStatus?.price_per_analysis?.toFixed(2) || '20.00'}`}
                 </button>
-
-                {/* Subscribe Option */}
-                <button
-                  onClick={handleSubscribe}
-                  className="w-full flex items-center justify-between p-4 border-2 border-yellow-500 rounded-lg hover:bg-yellow-50 transition-colors"
-                >
-                  <div className="flex items-center space-x-3">
-                    <Crown className="h-5 w-5 text-yellow-600" />
-                    <div className="text-left">
-                      <div className="font-semibold text-gray-900">Subscribe to Premium</div>
-                      <div className="text-sm text-gray-600">Unlimited analyses + more features</div>
-                    </div>
-                  </div>
-                  <div className="text-lg font-bold text-yellow-600">₱150/mo</div>
-                </button>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-gray-200">
                 <button
                   onClick={() => setShowPaymentModal(false)}
-                  className="w-full px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="flex-1 btn-secondary"
+                  disabled={isPurchasing}
                 >
                   Cancel
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Payment Method Selection Modal */}
-      {showPaymentMethodModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-900">Secure Payment</h3>
+              
+              <div className="pt-4 border-t border-gray-200">
                 <button
                   onClick={() => {
-                    setShowPaymentMethodModal(false)
-                    setGcashNumber('')
-                    setSelectedPaymentMethod('gcash')
+                    setShowPaymentModal(false)
+                    handleSubscribe()
                   }}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="w-full text-sm text-purple-600 hover:text-purple-800 font-medium"
                 >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <p className="text-sm text-gray-600 mb-6">
-                Your payment will be processed securely. Your analysis credit will be activated immediately upon successful payment.
-              </p>
-
-              <div className="mb-6">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Select payment method</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  {/* GCash */}
-                  <button
-                    onClick={() => setSelectedPaymentMethod('gcash')}
-                    className={`p-4 border-2 rounded-lg transition-all ${
-                      selectedPaymentMethod === 'gcash'
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="relative">
-                      <div className="flex items-center justify-center mb-2">
-                        <Wallet className={`h-8 w-8 ${selectedPaymentMethod === 'gcash' ? 'text-blue-600' : 'text-gray-400'}`} />
-                      </div>
-                      <div className="text-sm font-medium text-gray-900">GCash</div>
-                      {selectedPaymentMethod === 'gcash' && (
-                        <span className="absolute top-0 right-0 bg-green-500 text-white text-xs px-2 py-0.5 rounded">Recommended</span>
-                      )}
-                    </div>
-                  </button>
-
-                  {/* PayMaya */}
-                  <button
-                    onClick={() => setSelectedPaymentMethod('paymaya')}
-                    className={`p-4 border-2 rounded-lg transition-all ${
-                      selectedPaymentMethod === 'paymaya'
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center mb-2">
-                      <Smartphone className={`h-8 w-8 ${selectedPaymentMethod === 'paymaya' ? 'text-blue-600' : 'text-gray-400'}`} />
-                    </div>
-                    <div className="text-sm font-medium text-gray-900">PayMaya</div>
-                  </button>
-
-                  {/* Credit Card */}
-                  <button
-                    onClick={() => setSelectedPaymentMethod('credit_card')}
-                    className={`p-4 border-2 rounded-lg transition-all ${
-                      selectedPaymentMethod === 'credit_card'
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center mb-2">
-                      <CreditCard className={`h-8 w-8 ${selectedPaymentMethod === 'credit_card' ? 'text-blue-600' : 'text-gray-400'}`} />
-                    </div>
-                    <div className="text-sm font-medium text-gray-900">Credit Card</div>
-                  </button>
-
-                  {/* Debit */}
-                  <button
-                    onClick={() => setSelectedPaymentMethod('debit')}
-                    className={`p-4 border-2 rounded-lg transition-all ${
-                      selectedPaymentMethod === 'debit'
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center mb-2">
-                      <Landmark className={`h-8 w-8 ${selectedPaymentMethod === 'debit' ? 'text-blue-600' : 'text-gray-400'}`} />
-                    </div>
-                    <div className="text-sm font-medium text-gray-900">Debit</div>
-                  </button>
-                </div>
-              </div>
-
-              {/* GCash Mobile Number Input */}
-              {selectedPaymentMethod === 'gcash' && (
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    GCash Mobile Number
-                  </label>
-                  <input
-                    type="tel"
-                    value={gcashNumber}
-                    onChange={(e) => {
-                      // Remove all non-digit characters
-                      let digitsOnly = e.target.value.replace(/\D/g, '')
-                      // Limit to 11 digits
-                      if (digitsOnly.length > 11) digitsOnly = digitsOnly.slice(0, 11)
-                      // Format with spaces: 09XX XXX XXXX
-                      let formatted = digitsOnly
-                      if (digitsOnly.length > 4) {
-                        formatted = digitsOnly.slice(0, 4) + ' ' + digitsOnly.slice(4)
-                      }
-                      if (digitsOnly.length > 7) {
-                        formatted = digitsOnly.slice(0, 4) + ' ' + digitsOnly.slice(4, 7) + ' ' + digitsOnly.slice(7)
-                      }
-                      setGcashNumber(formatted)
-                    }}
-                    placeholder="09XX XXX XXXX"
-                    maxLength={13} // 11 digits + 2 spaces = 13 characters
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    You'll be redirected to GCash to authorize the payment.
-                  </p>
-                </div>
-              )}
-
-              {/* Payment Summary */}
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Total Amount:</span>
-                  <span className="text-lg font-bold text-gray-900">₱20.00</span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => {
-                    setShowPaymentMethodModal(false)
-                    setGcashNumber('')
-                    setSelectedPaymentMethod('gcash')
-                  }}
-                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmPurchase}
-                  disabled={isPurchasing || (selectedPaymentMethod === 'gcash' && !gcashNumber.trim())}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isPurchasing ? 'Processing...' : 'Pay ₱20.00'}
+                  👑 Or subscribe to Premium for unlimited recognition →
                 </button>
               </div>
             </div>
