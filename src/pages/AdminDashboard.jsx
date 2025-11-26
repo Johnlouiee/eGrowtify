@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { 
-  Users, BookOpen, Bell, Calendar, BarChart3, 
+  Users, BookOpen, Bell, BarChart3, 
   ArrowLeft, Shield, TrendingUp, CheckCircle, CreditCard,
   Settings, Database, FileText, Mail, AlertTriangle, 
   Activity, Clock, DollarSign, UserPlus, Eye, Edit,
   RefreshCw, Download, Upload, Filter, Search, MoreVertical,
   Crown, Star, Target, Globe, Lock, Unlock, MessageSquare,
-  History, Zap
+  Zap
 } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
@@ -169,14 +169,6 @@ const AdminDashboard = () => {
       stats: stats.subscribedUsers
     },
     {
-      id: 'manage-seasonal-content',
-      title: 'Seasonal Content',
-      description: 'Manage seasonal tips and content',
-      icon: Calendar,
-      color: 'bg-indigo-500',
-      path: '/admin/seasonal-content'
-    },
-    {
       id: 'manage-feedback',
       title: 'Feedback Management',
       description: 'Review and respond to user feedback',
@@ -185,36 +177,12 @@ const AdminDashboard = () => {
       path: '/admin/feedback'
     },
     {
-      id: 'activity-logs',
-      title: 'Activity Logs',
-      description: 'Monitor system activities and user actions',
-      icon: Activity,
-      color: 'bg-blue-600',
-      path: '/admin/activity-logs'
-    },
-    {
-      id: 'history-logs',
-      title: 'History Logs',
-      description: 'Track data changes and system modifications',
-      icon: History,
-      color: 'bg-purple-600',
-      path: '/admin/history-logs'
-    },
-    {
       id: 'reports',
       title: 'Reports & Analytics',
       description: 'View system reports, activity logs, and analytics',
       icon: BarChart3,
       color: 'bg-indigo-500',
       path: '/admin/reports'
-    },
-    {
-      id: 'system-settings',
-      title: 'System Settings',
-      description: 'Configure system settings and preferences',
-      icon: Settings,
-      color: 'bg-gray-500',
-      path: '/admin/settings'
     }
   ]
 
@@ -244,13 +212,13 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-pink-100 to-purple-100 p-8 mb-8">
+      <div className="bg-gradient-to-r from-green-100 via-emerald-100 to-teal-100 p-8 mb-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
                 <Shield className="h-8 w-8 text-white" />
               </div>
               <div>
@@ -260,7 +228,7 @@ const AdminDashboard = () => {
             </div>
             <button 
               onClick={() => navigate('/admin/profile')}
-              className="bg-white/80 hover:bg-white text-gray-700 px-4 py-2 rounded-lg border border-pink-200 transition-all duration-200 hover:shadow-md"
+              className="bg-white/80 hover:bg-white text-gray-700 px-4 py-2 rounded-lg border border-green-200 transition-all duration-200 hover:shadow-md"
             >
               View Profile
             </button>
@@ -272,7 +240,7 @@ const AdminDashboard = () => {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Total Users Card */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-blue-100 rounded-xl">
                 <Users className="h-6 w-6 text-blue-600" />
@@ -289,7 +257,7 @@ const AdminDashboard = () => {
           </div>
 
           {/* Active Users Card */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-green-100 rounded-xl">
                 <Activity className="h-6 w-6 text-green-600" />
@@ -306,7 +274,7 @@ const AdminDashboard = () => {
           </div>
 
           {/* Premium Users Card */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-yellow-100 rounded-xl">
                 <Crown className="h-6 w-6 text-yellow-600" />
@@ -323,7 +291,7 @@ const AdminDashboard = () => {
           </div>
 
           {/* Learning Content Card */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-purple-100 rounded-xl">
                 <BookOpen className="h-6 w-6 text-purple-600" />
@@ -344,10 +312,10 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Management Tools - Left Column */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center space-x-3 mb-6">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Settings className="h-6 w-6 text-blue-600" />
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Settings className="h-6 w-6 text-green-600" />
                 </div>
                 <h2 className="text-xl font-bold text-gray-900">Management Tools</h2>
               </div>
@@ -358,14 +326,14 @@ const AdminDashboard = () => {
                     <Link
                       key={feature.id}
                       to={feature.path}
-                      className="group p-4 bg-gray-50 hover:bg-blue-50 rounded-xl border border-gray-200 hover:border-blue-200 transition-all duration-200 hover:shadow-sm"
+                      className="group p-4 bg-white/70 hover:bg-green-50 rounded-xl border border-gray-200 hover:border-green-300 transition-all duration-200 hover:shadow-sm"
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-white rounded-lg group-hover:bg-blue-100 transition-colors">
-                          <IconComponent className="h-5 w-5 text-gray-600 group-hover:text-blue-600" />
+                        <div className="p-2 bg-white rounded-lg group-hover:bg-green-100 transition-colors">
+                          <IconComponent className="h-5 w-5 text-gray-600 group-hover:text-green-600" />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                          <h3 className="font-semibold text-gray-900 group-hover:text-green-700 transition-colors">
                             {feature.title}
                           </h3>
                           <p className="text-sm text-gray-500">{feature.description}</p>
@@ -387,10 +355,10 @@ const AdminDashboard = () => {
           {/* Sidebar - Right Column */}
           <div className="space-y-6">
             {/* Weather Card */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Globe className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Globe className="h-5 w-5 text-green-600" />
                 </div>
                 <h3 className="font-semibold text-gray-900">Today's Weather</h3>
               </div>
@@ -398,7 +366,7 @@ const AdminDashboard = () => {
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <Activity className="h-5 w-5 text-green-600" />
@@ -425,7 +393,7 @@ const AdminDashboard = () => {
 
             {/* Admin Notifications */}
             {notifications.length > 0 && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
                     <div className="p-2 bg-green-100 rounded-lg">
@@ -435,7 +403,7 @@ const AdminDashboard = () => {
                   </div>
                   <Link
                     to="/admin/notifications"
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-sm text-green-600 hover:text-green-700 font-medium"
                   >
                     Manage
                   </Link>
@@ -517,7 +485,7 @@ const AdminDashboard = () => {
 
             {/* System Alerts */}
             {systemAlerts.length > 0 && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center space-x-3 mb-4">
                   <div className="p-2 bg-amber-100 rounded-lg">
                     <AlertTriangle className="h-5 w-5 text-amber-600" />

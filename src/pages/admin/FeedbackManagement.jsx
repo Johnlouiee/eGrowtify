@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import AdminHeader from '../../components/AdminHeader'
 
 const FeedbackManagement = () => {
   const [feedback, setFeedback] = useState([])
@@ -149,7 +150,7 @@ const FeedbackManagement = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800'
-      case 'in_progress': return 'bg-blue-100 text-blue-800'
+      case 'in_progress': return 'bg-green-100 text-green-800'
       case 'resolved': return 'bg-green-100 text-green-800'
       case 'closed': return 'bg-gray-100 text-gray-800'
       default: return 'bg-gray-100 text-gray-800'
@@ -169,10 +170,10 @@ const FeedbackManagement = () => {
 
   const getCategoryColor = (category) => {
     const colors = {
-      general: 'bg-blue-100 text-blue-800',
+      general: 'bg-green-100 text-green-800',
       bug: 'bg-red-100 text-red-800',
       feature: 'bg-green-100 text-green-800',
-      improvement: 'bg-purple-100 text-purple-800',
+      improvement: 'bg-emerald-100 text-emerald-800',
       other: 'bg-gray-100 text-gray-800'
     }
     return colors[category] || colors.other
@@ -262,30 +263,13 @@ const FeedbackManagement = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Link 
-                to="/admin" 
-                className="flex items-center text-gray-600 hover:text-gray-900 mr-6"
-              >
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                Back to Admin Dashboard
-              </Link>
-              <div className="flex items-center">
-                <div className="bg-green-100 p-2 rounded-full mr-3">
-                  <MessageSquare className="h-8 w-8 text-green-600" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Feedback Management</h1>
-                  <p className="text-sm text-green-600">Review and respond to user feedback</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AdminHeader
+        title="Feedback Management"
+        subtitle="Review and respond to user feedback"
+        icon={MessageSquare}
+        iconColor="from-green-600 to-emerald-600"
+        showBackButton={true}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Statistics Dashboard */}
@@ -294,7 +278,7 @@ const FeedbackManagement = () => {
           const categoryStats = getCategoryStats()
           return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow p-6">
                 <div className="flex items-center">
                   <div className="p-2 bg-green-100 rounded-lg">
                     <MessageCircle className="h-6 w-6 text-green-600" />
@@ -306,7 +290,7 @@ const FeedbackManagement = () => {
                 </div>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow p-6">
                 <div className="flex items-center">
                   <div className="p-2 bg-yellow-100 rounded-lg">
                     <Clock className="h-6 w-6 text-yellow-600" />
@@ -318,7 +302,7 @@ const FeedbackManagement = () => {
                 </div>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow p-6">
                 <div className="flex items-center">
                   <div className="p-2 bg-green-100 rounded-lg">
                     <CheckCircle className="h-6 w-6 text-green-600" />
@@ -330,10 +314,10 @@ const FeedbackManagement = () => {
                 </div>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow p-6">
                 <div className="flex items-center">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <Star className="h-6 w-6 text-purple-600" />
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <Star className="h-6 w-6 text-green-600" />
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Avg Rating</p>
@@ -349,7 +333,7 @@ const FeedbackManagement = () => {
         {(() => {
           const categoryStats = getCategoryStats()
           return (
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow p-6 mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Feedback by Category</h3>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {Object.entries(categoryStats).map(([category, count]) => (
@@ -473,7 +457,7 @@ const FeedbackManagement = () => {
         )}
 
         {/* Feedback List */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-900">
@@ -492,7 +476,7 @@ const FeedbackManagement = () => {
           
           <div className="divide-y divide-gray-200">
             {filteredFeedback.map((item) => (
-              <div key={item.id} className={`p-6 hover:bg-gray-50 ${selectedFeedbacks.includes(item.id) ? 'bg-blue-50' : ''}`}>
+              <div key={item.id} className={`p-6 hover:bg-gray-50 ${selectedFeedbacks.includes(item.id) ? 'bg-green-50' : ''}`}>
                 <div className="flex justify-between items-start">
                   <div className="flex items-start space-x-3 flex-1">
                     <input

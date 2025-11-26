@@ -439,7 +439,7 @@ const ManageNotifications = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                         {notification.type}
                       </span>
                     </td>
@@ -529,7 +529,7 @@ const ManageNotifications = () => {
                         <h3 className="text-lg font-semibold text-slate-900 mb-2">{notification.title}</h3>
                         <p className="text-slate-600 mb-3">{notification.message}</p>
                         <div className="flex items-center space-x-3">
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                             {notification.type}
                           </span>
                           <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(notification.priority)}`}>
@@ -631,8 +631,8 @@ const ManageNotifications = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-slate-50 rounded-xl p-4">
                       <div className="flex items-center space-x-2 mb-2">
-                        <div className="p-1 bg-blue-100 rounded-lg">
-                          <MessageSquare className="h-4 w-4 text-blue-600" />
+                        <div className="p-1 bg-green-100 rounded-lg">
+                          <MessageSquare className="h-4 w-4 text-green-600" />
                         </div>
                         <label className="text-sm font-semibold text-slate-700">Type</label>
                   </div>
@@ -667,8 +667,8 @@ const ManageNotifications = () => {
                     
                     <div className="bg-slate-50 rounded-xl p-4">
                       <div className="flex items-center space-x-2 mb-2">
-                        <div className="p-1 bg-blue-100 rounded-lg">
-                          <Clock className="h-4 w-4 text-blue-600" />
+                        <div className="p-1 bg-green-100 rounded-lg">
+                          <Clock className="h-4 w-4 text-green-600" />
                         </div>
                         <label className="text-sm font-semibold text-slate-700">Created</label>
                       </div>

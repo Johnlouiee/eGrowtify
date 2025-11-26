@@ -111,9 +111,9 @@ const ManageSubscription = () => {
               `${plan.grid_planner_size} Grid Planner`,
               plan.plan_type === 'premium' ? 'Priority Support' : 'Basic Support'
             ],
-            color: plan.plan_type === 'premium' ? 'bg-purple-500' : 'bg-gray-500',
-            borderColor: plan.plan_type === 'premium' ? 'border-purple-200' : 'border-gray-200',
-            bgColor: plan.plan_type === 'premium' ? 'bg-purple-50' : 'bg-gray-50',
+            color: plan.plan_type === 'premium' ? 'bg-green-500' : 'bg-gray-500',
+            borderColor: plan.plan_type === 'premium' ? 'border-green-200' : 'border-gray-200',
+            bgColor: plan.plan_type === 'premium' ? 'bg-green-50' : 'bg-gray-50',
             subscribers: subscribers.filter(s => s.subscribed === (plan.plan_type === 'premium')).length,
             popular: plan.plan_type === 'premium',
             ...plan
@@ -137,9 +137,9 @@ const ManageSubscription = () => {
               name: 'Premium Plan',
               price: 150,
               features: ['Unlimited plant tracking', 'Advanced AI recognition', 'Priority support', 'Exclusive content', 'Expert consultations', 'Custom garden plans'],
-              color: 'bg-purple-500',
-              borderColor: 'border-purple-200',
-              bgColor: 'bg-purple-50',
+              color: 'bg-green-500',
+              borderColor: 'border-green-200',
+              bgColor: 'bg-green-50',
               subscribers: 45,
               popular: true
             }
@@ -447,12 +447,12 @@ const ManageSubscription = () => {
             icon={DollarSign}
             iconColor="from-purple-500 to-purple-600"
             bgColor="from-purple-500/5 to-violet-500/5"
-            borderColor="hover:border-purple-300/50"
+            borderColor="hover:border-green-300/50"
             shadowColor="hover:shadow-purple-500/10"
             trend={true}
             trendIcon={DollarSign}
             trendText={`$${subscriptionStats.averageRevenuePerUser} ARPU`}
-            trendColor="text-purple-600"
+            trendColor="text-green-600"
           />
           
           <AdminStatsCard
@@ -527,7 +527,7 @@ const ManageSubscription = () => {
         />
 
         {/* Subscribers Display */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-900">
@@ -557,7 +557,7 @@ const ManageSubscription = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                      <input type="checkbox" className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
                     </th>
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
@@ -709,7 +709,7 @@ const ManageSubscription = () => {
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredSubscribers.map((subscriber) => (
-                  <div key={subscriber.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                  <div key={subscriber.id} className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center">
                         <div className="h-12 w-12 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
@@ -773,7 +773,7 @@ const ManageSubscription = () => {
                           {subscriber.subscribed ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                         </button>
                         <button
-                          className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                          className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
                           title="View Details"
                         >
                           <Eye className="h-4 w-4" />
@@ -843,7 +843,7 @@ const ManageSubscription = () => {
                           {subscriber.subscribed ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                         </button>
                         <button
-                          className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                          className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
                           title="View Details"
                         >
                           <Eye className="h-4 w-4" />
@@ -860,13 +860,9 @@ const ManageSubscription = () => {
         {/* Enhanced Subscription Plans Management */}
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-gray-900">Subscription Plans</h3>
-                <button className="flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-md hover:shadow-lg">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Plan
-                </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {subscriptionPlans.map((plan) => (
@@ -925,7 +921,7 @@ const ManageSubscription = () => {
 
           {/* Recent Activity Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                 <Activity className="h-5 w-5 mr-2 text-green-600" />
                 Recent Activity
@@ -967,7 +963,7 @@ const ManageSubscription = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Avg. Revenue/User</span>
-                  <span className="text-sm font-semibold text-blue-600">$8.50</span>
+                  <span className="text-sm font-semibold text-green-600">$8.50</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Churn Rate</span>
@@ -975,7 +971,7 @@ const ManageSubscription = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Lifetime Value</span>
-                  <span className="text-sm font-semibold text-purple-600">$127</span>
+                  <span className="text-sm font-semibold text-green-600">$127</span>
                 </div>
               </div>
             </div>
@@ -986,7 +982,7 @@ const ManageSubscription = () => {
       {/* Edit Plan Modal */}
       {showEditPlanModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-2xl font-bold text-gray-900">Edit Subscription Plan</h3>
@@ -1080,7 +1076,7 @@ const ManageSubscription = () => {
       {/* Analytics Modal */}
       {showAnalyticsModal && analyticsData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-2xl font-bold text-gray-900">
@@ -1103,10 +1099,10 @@ const ManageSubscription = () => {
                   </div>
                   <p className="text-2xl font-bold text-gray-900">{analyticsData.totalSubscribers || 0}</p>
                 </div>
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 rounded-lg border border-purple-200">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-600">Monthly Revenue</span>
-                    <DollarSign className="h-5 w-5 text-purple-600" />
+                    <DollarSign className="h-5 w-5 text-green-600" />
                   </div>
                   <p className="text-2xl font-bold text-gray-900">
                     ₱{analyticsData.monthlyRevenue?.toLocaleString() || 0}
@@ -1119,7 +1115,7 @@ const ManageSubscription = () => {
                   </div>
                   <p className="text-2xl font-bold text-gray-900">{analyticsData.churnRate || 0}%</p>
                 </div>
-                <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-lg border border-blue-200">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-600">Conversion Rate</span>
                     <Target className="h-5 w-5 text-blue-600" />

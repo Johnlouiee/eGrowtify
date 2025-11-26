@@ -2150,7 +2150,7 @@ const ManageLearningPaths = () => {
                         {selectedPath.modules.map((module) => (
                           <div 
                             key={module.id} 
-                            className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                            className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
                           >
                             {/* Simplified Module Header */}
                             <div className="p-5 border-b border-gray-200">
@@ -2184,7 +2184,7 @@ const ManageLearningPaths = () => {
                                         e.stopPropagation()
                                         openEditModuleModal(module)
                                       }}
-                                    className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center justify-center"
+                                    className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center justify-center"
                                       title="Edit Module"
                                     >
                                     <Edit className="h-4 w-4" />
@@ -2276,7 +2276,7 @@ const ManageLearningPaths = () => {
                         {selectedPath.modules.map((module) => (
                           <div 
                             key={module.id} 
-                            className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                            className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
                           >
                             <div className="p-4">
                               <div className="flex items-center justify-between">
@@ -2309,7 +2309,7 @@ const ManageLearningPaths = () => {
                                         e.stopPropagation()
                                         openEditModuleModal(module)
                                       }}
-                                    className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center justify-center"
+                                    className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center justify-center"
                                     title="Edit Module"
                                     >
                                     <Edit className="h-4 w-4" />
@@ -2382,7 +2382,7 @@ const ManageLearningPaths = () => {
                 
                 <form onSubmit={handleAddModule} className="space-y-8">
                   {/* Enhanced Basic Information */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200/50">
                     <div className="flex items-center space-x-3 mb-6">
                       <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-lg">
                         <BookOpen className="h-5 w-5 text-white" />
@@ -2397,7 +2397,7 @@ const ManageLearningPaths = () => {
                         type="text"
                         value={moduleFormData.title}
                         onChange={(e) => setModuleFormData(prev => ({ ...prev, title: e.target.value }))}
-                          className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
+                          className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
                           placeholder="Enter module title..."
                         required
                       />
@@ -2408,7 +2408,7 @@ const ManageLearningPaths = () => {
                       <select
                         value={moduleFormData.estimatedTime}
                         onChange={(e) => setModuleFormData(prev => ({ ...prev, estimatedTime: e.target.value }))}
-                          className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
+                          className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
                       >
                         <option value="15 min">15 minutes</option>
                         <option value="20 min">20 minutes</option>
@@ -2432,7 +2432,7 @@ const ManageLearningPaths = () => {
                       value={moduleFormData.description}
                       onChange={(e) => setModuleFormData(prev => ({ ...prev, description: e.target.value }))}
                         rows="4"
-                        className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
+                        className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
                         placeholder="Describe what students will learn in this module..."
                       required
                     />
@@ -2592,7 +2592,7 @@ const ManageLearningPaths = () => {
                   </div>
 
                   {/* Enhanced Content Management Section */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200/50">
                     <div className="flex items-center space-x-3 mb-6">
                       <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-lg">
                         <BookOpen className="h-5 w-5 text-white" />
@@ -2711,7 +2711,7 @@ const ManageLearningPaths = () => {
                                   <button
                                     type="button"
                                     onClick={() => openEditLessonModal(lesson)}
-                                    className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                                    className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-xl transition-all duration-200"
                                     title="Edit Lesson"
                                   >
                                     <Edit className="h-4 w-4" />
@@ -2754,7 +2754,7 @@ const ManageLearningPaths = () => {
                               </div>
                               {moduleFormData.quiz.questions && moduleFormData.quiz.questions.length > 0 && (
                                 <div className="flex items-center space-x-4">
-                                  <div className="text-sm text-slate-500 bg-blue-100 px-3 py-1 rounded-full">
+                                  <div className="text-sm text-slate-500 bg-green-100 px-3 py-1 rounded-full">
                                     {moduleFormData.quiz.questions.length} questions
                                   </div>
                                   <div className="text-sm text-slate-500 bg-green-100 px-3 py-1 rounded-full">
@@ -2770,7 +2770,7 @@ const ManageLearningPaths = () => {
                                 <button
                                   type="button"
                                   onClick={() => openEditQuizModal(moduleFormData.quiz)}
-                                  className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                                  className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-xl transition-all duration-200"
                                   title="Edit Quiz"
                                 >
                                   <Edit className="h-4 w-4" />
@@ -2812,7 +2812,7 @@ const ManageLearningPaths = () => {
 
                           {/* New Question Form */}
                           {editingQuestionInline === 'new' && (
-                            <div className="mt-4 mb-4 bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
+                            <div className="mt-4 mb-4 bg-green-50 rounded-lg p-4 border-2 border-green-200">
                               <h6 className="text-sm font-semibold text-slate-700 mb-3">New Question</h6>
                               <div className="space-y-4">
                                 <div>
@@ -2821,7 +2821,7 @@ const ManageLearningPaths = () => {
                                     type="text"
                                     value={questionFormData.question}
                                     onChange={(e) => setQuestionFormData(prev => ({ ...prev, question: e.target.value }))}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                                     placeholder="Enter question"
                                   />
                       </div>
@@ -2835,7 +2835,7 @@ const ManageLearningPaths = () => {
                                         name="new-question-correct"
                                         checked={questionFormData.correct === optIndex}
                                         onChange={() => setQuestionFormData(prev => ({ ...prev, correct: optIndex }))}
-                                        className="w-4 h-4 text-blue-600"
+                                        className="w-4 h-4 text-green-600"
                                       />
                                       <input
                                         type="text"
@@ -2845,7 +2845,7 @@ const ManageLearningPaths = () => {
                                           newOptions[optIndex] = e.target.value
                                           setQuestionFormData(prev => ({ ...prev, options: newOptions }))
                                         }}
-                                        className="flex-1 border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="flex-1 border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                                         placeholder={`Option ${optIndex + 1}`}
                                       />
                                       {questionFormData.options.length > 2 && (
@@ -2874,7 +2874,7 @@ const ManageLearningPaths = () => {
                                         options: [...prev.options, '']
                                       }))
                                     }}
-                                    className="text-sm text-blue-600 hover:text-blue-700 flex items-center mt-2"
+                                    className="text-sm text-green-600 hover:text-green-700 flex items-center mt-2"
                                   >
                                     <Plus className="h-4 w-4 mr-1" />
                                     Add option
@@ -2886,7 +2886,7 @@ const ManageLearningPaths = () => {
                                   <textarea
                                     value={questionFormData.explanation}
                                     onChange={(e) => setQuestionFormData(prev => ({ ...prev, explanation: e.target.value }))}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                                     placeholder="Explain why this answer is correct..."
                                     rows="2"
                                   />
@@ -2978,7 +2978,7 @@ const ManageLearningPaths = () => {
                                       type="checkbox"
                                       checked={questionFormData.required !== undefined ? questionFormData.required : true}
                                       onChange={(e) => setQuestionFormData(prev => ({ ...prev, required: e.target.checked }))}
-                                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                      className="w-4 h-4 text-green-600 rounded focus:ring-blue-500"
                                     />
                                     <span className="text-sm text-gray-600">Required</span>
                                   </label>
@@ -3025,7 +3025,7 @@ const ManageLearningPaths = () => {
                                           type="text"
                                           value={questionFormData.question}
                                           onChange={(e) => setQuestionFormData(prev => ({ ...prev, question: e.target.value }))}
-                                          className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                          className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                                           placeholder="Enter question"
                                         />
                                       </div>
@@ -3039,7 +3039,7 @@ const ManageLearningPaths = () => {
                                               name={`edit-question-${question.id}`}
                                               checked={questionFormData.correct === optIndex}
                                               onChange={() => setQuestionFormData(prev => ({ ...prev, correct: optIndex }))}
-                                              className="w-4 h-4 text-blue-600"
+                                              className="w-4 h-4 text-green-600"
                                             />
                                             <input
                                               type="text"
@@ -3049,7 +3049,7 @@ const ManageLearningPaths = () => {
                                                 newOptions[optIndex] = e.target.value
                                                 setQuestionFormData(prev => ({ ...prev, options: newOptions }))
                                               }}
-                                              className="flex-1 border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                              className="flex-1 border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                                               placeholder={`Option ${optIndex + 1}`}
                                             />
                                             {questionFormData.options.length > 2 && (
@@ -3078,7 +3078,7 @@ const ManageLearningPaths = () => {
                                               options: [...prev.options, '']
                                             }))
                                           }}
-                                          className="text-sm text-blue-600 hover:text-blue-700 flex items-center mt-2"
+                                          className="text-sm text-green-600 hover:text-green-700 flex items-center mt-2"
                                         >
                                           <Plus className="h-4 w-4 mr-1" />
                                           Add option
@@ -3090,7 +3090,7 @@ const ManageLearningPaths = () => {
                                         <textarea
                                           value={questionFormData.explanation}
                                           onChange={(e) => setQuestionFormData(prev => ({ ...prev, explanation: e.target.value }))}
-                                          className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                          className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                                           placeholder="Explain why this answer is correct..."
                                           rows="2"
                                         />
@@ -3204,7 +3204,7 @@ const ManageLearningPaths = () => {
                                             type="checkbox"
                                             checked={questionFormData.required !== undefined ? questionFormData.required : true}
                                             onChange={(e) => setQuestionFormData(prev => ({ ...prev, required: e.target.checked }))}
-                                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                            className="w-4 h-4 text-green-600 rounded focus:ring-blue-500"
                                           />
                                           <span className="text-sm text-gray-600">Required</span>
                                         </label>
@@ -3270,7 +3270,7 @@ const ManageLearningPaths = () => {
                                                 image: question.image || null
                                               })
                                             }}
-                                            className="text-sm font-medium text-blue-600 hover:text-blue-700 cursor-pointer"
+                                            className="text-sm font-medium text-green-600 hover:text-green-700 cursor-pointer"
                                           >
                                             Q{index + 1}:
                                           </button>
@@ -3319,7 +3319,7 @@ const ManageLearningPaths = () => {
                                               image: question.image || null
                                             })
                                           }}
-                                          className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                                          className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-xl transition-all duration-200"
                                           title="Edit Question"
                                         >
                                           <Edit className="h-4 w-4" />
@@ -3415,7 +3415,7 @@ const ManageLearningPaths = () => {
                 
                 <form onSubmit={handleEditModule} className="space-y-8">
                   {/* Enhanced Basic Information */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200/50">
                     <div className="flex items-center space-x-3 mb-6">
                       <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-lg">
                         <BookOpen className="h-5 w-5 text-white" />
@@ -3430,7 +3430,7 @@ const ManageLearningPaths = () => {
                           type="text"
                           value={moduleFormData.title}
                           onChange={(e) => setModuleFormData(prev => ({ ...prev, title: e.target.value }))}
-                          className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
+                          className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
                           placeholder="Enter module title..."
                           required
                         />
@@ -3441,7 +3441,7 @@ const ManageLearningPaths = () => {
                         <select
                           value={moduleFormData.estimatedTime}
                           onChange={(e) => setModuleFormData(prev => ({ ...prev, estimatedTime: e.target.value }))}
-                          className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
+                          className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
                         >
                           <option value="15 min">15 minutes</option>
                           <option value="20 min">20 minutes</option>
@@ -3465,7 +3465,7 @@ const ManageLearningPaths = () => {
                         value={moduleFormData.description}
                         onChange={(e) => setModuleFormData(prev => ({ ...prev, description: e.target.value }))}
                         rows="4"
-                        className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
+                        className="w-full border-2 border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/50 backdrop-blur-sm transition-all duration-200 text-lg"
                         placeholder="Describe what students will learn in this module..."
                         required
                       />
@@ -3625,7 +3625,7 @@ const ManageLearningPaths = () => {
                   </div>
 
                   {/* Enhanced Content Management Section */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200/50">
                     <div className="flex items-center space-x-3 mb-6">
                       <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-lg">
                         <BookOpen className="h-5 w-5 text-white" />
@@ -3739,7 +3739,7 @@ const ManageLearningPaths = () => {
                                       type="text"
                                       value={lessonFormData.title}
                                       onChange={(e) => setLessonFormData(prev => ({ ...prev, title: e.target.value }))}
-                                      className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                                       placeholder="Enter lesson title"
                                     />
                                   </div>
@@ -3749,7 +3749,7 @@ const ManageLearningPaths = () => {
                                       value={lessonFormData.content}
                                       onChange={(e) => setLessonFormData(prev => ({ ...prev, content: e.target.value }))}
                                       rows="4"
-                                      className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                                       placeholder="Enter lesson content"
                                     />
                                   </div>
@@ -3833,7 +3833,7 @@ const ManageLearningPaths = () => {
                                 type="text"
                                 value={quizFormData.title}
                                 onChange={(e) => setQuizFormData(prev => ({ ...prev, title: e.target.value }))}
-                                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                                 placeholder="Enter quiz title"
                               />
                             </div>
@@ -3988,7 +3988,7 @@ const ManageLearningPaths = () => {
                 
                 <form onSubmit={showEditLessonModal ? handleEditLesson : handleAddLesson} className="space-y-8">
                   {/* Basic Information */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200/50">
                     <h4 className="text-xl font-bold text-slate-900 mb-6">Lesson Information</h4>
                     
                     <div className="space-y-6">
@@ -4274,7 +4274,7 @@ const ManageLearningPaths = () => {
                   </div>
 
                   {/* Questions Builder - Google Forms Style */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200/50">
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center space-x-3">
                         <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg shadow-lg">
@@ -4343,7 +4343,7 @@ const ManageLearningPaths = () => {
                                     )
                                   }))
                                 }}
-                                className="border border-gray-300 rounded px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="border border-gray-300 rounded px-3 py-1 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
                               >
                                 <option value="multiple_choice">Multiple choice</option>
                               </select>
@@ -4405,7 +4405,7 @@ const ManageLearningPaths = () => {
                                         )
                                       }))
                                     }}
-                                    className="w-4 h-4 text-blue-600"
+                                    className="w-4 h-4 text-green-600"
                                   />
                                   <input
                                     type="text"
@@ -4465,7 +4465,7 @@ const ManageLearningPaths = () => {
                                     )
                                   }))
                                 }}
-                                className="ml-7 text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                                className="ml-7 text-sm text-green-600 hover:text-green-700 flex items-center"
                               >
                                 <Plus className="h-4 w-4 mr-1" />
                                 Add option
@@ -4538,7 +4538,7 @@ const ManageLearningPaths = () => {
                                   )
                                 }))
                               }}
-                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                               placeholder="Explain why this answer is correct..."
                               rows="2"
                             />
@@ -4598,7 +4598,7 @@ const ManageLearningPaths = () => {
                                       )
                                     }))
                                   }}
-                                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                  className="w-4 h-4 text-green-600 rounded focus:ring-blue-500"
                                 />
                               </label>
                             </div>
@@ -4675,13 +4675,13 @@ const ManageLearningPaths = () => {
                         <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
                           <div className="flex items-start space-x-3">
                             <div className="flex-shrink-0">
-                              <svg className="h-5 w-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                              <svg className="h-5 w-5 text-green-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                               </svg>
                             </div>
                             <div>
                               <h6 className="text-sm font-medium text-blue-800">How to add images:</h6>
-                              <p className="text-sm text-blue-700 mt-1">
+                              <p className="text-sm text-green-700 mt-1">
                                 1. Select the question number you want to add an image to<br/>
                                 2. Click "Choose Image" to select an image file<br/>
                                 3. The image will be associated with that specific question
@@ -4823,7 +4823,7 @@ const ManageLearningPaths = () => {
                         <div key={lesson.id} className="border border-gray-200 rounded-lg p-4">
                           <div className="flex items-start">
                             <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                              <span className="text-sm font-medium text-blue-600">{index + 1}</span>
+                              <span className="text-sm font-medium text-green-600">{index + 1}</span>
                             </div>
                             <div className="flex-1">
                               <h6 className="font-medium text-gray-900">{lesson.title}</h6>

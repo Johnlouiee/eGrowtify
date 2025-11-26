@@ -10,6 +10,38 @@ import re
 
 auth = Blueprint('auth', __name__)
 
+def log_history_change(table_name, record_id, action, old_values, new_values, changed_by):
+    """Log history changes - accesses _HISTORY_LOGS from views module"""
+    try:
+        # Import at function level to avoid circular imports
+        from . import views
+        
+        field_changes = []
+        if old_values and new_values:
+            for key in new_values:
+                if key in old_values and old_values[key] != new_values[key]:
+                    field_changes.append(key)
+        elif new_values:
+            field_changes = list(new_values.keys())
+        elif old_values:
+            field_changes = list(old_values.keys())
+        
+        history_log = {
+            'id': len(views._HISTORY_LOGS) + 1,
+            'table_name': table_name,
+            'record_id': record_id,
+            'action': action,
+            'old_values': old_values,
+            'new_values': new_values,
+            'changed_by': changed_by,
+            'timestamp': datetime.now().isoformat(),
+            'field_changes': field_changes
+        }
+        views._HISTORY_LOGS.append(history_log)
+        print(f"📋 HISTORY LOG: {table_name} - {action} - Record {record_id} by {changed_by}")
+    except Exception as e:
+        print(f"Error logging history change: {str(e)}")
+
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -35,6 +67,19 @@ def login():
                 return jsonify({"success": False, "message": "Account is inactive. Please contact support."}), 401
             else:
                 login_user(user)
+                
+                # Log login to history
+                try:
+                    log_history_change(
+                        table_name='users',
+                        record_id=user.id,
+                        action='LOGIN',
+                        old_values={'last_login': None},
+                        new_values={'last_login': datetime.now().isoformat()},
+                        changed_by=user.email or f"user_{user.id}"
+                    )
+                except Exception as e:
+                    print(f"Error logging login history: {str(e)}")
                 
                 # Return user info
                 return jsonify({
@@ -233,7 +278,25 @@ def register_alias():
 @auth.route('/auth/logout', methods=['POST'])
 @login_required
 def logout_alias():
+    # Get user info before logout
+    user_id = current_user.id
+    user_email = current_user.email or f"user_{user_id}"
+    
     logout_user()
+    
+    # Log logout to history
+    try:
+        log_history_change(
+            table_name='users',
+            record_id=user_id,
+            action='LOGOUT',
+            old_values={'session_active': True},
+            new_values={'session_active': False},
+            changed_by=user_email
+        )
+    except Exception as e:
+        print(f"Error logging logout history: {str(e)}")
+    
     return jsonify({"success": True, "message": "Logged out successfully"})
 
 @auth.route('/verify-email', methods=['GET', 'POST'])
@@ -383,7 +446,25 @@ def admin_register():
 @auth.route('/logout')
 @login_required
 def logout():
+    # Get user info before logout
+    user_id = current_user.id
+    user_email = current_user.email or f"user_{user_id}"
+    
     logout_user()
+    
+    # Log logout to history
+    try:
+        log_history_change(
+            table_name='users',
+            record_id=user_id,
+            action='LOGOUT',
+            old_values={'session_active': True},
+            new_values={'session_active': False},
+            changed_by=user_email
+        )
+    except Exception as e:
+        print(f"Error logging logout history: {str(e)}")
+    
     return jsonify({"success": True, "message": "Logged out successfully!"})
 
 @auth.route('/change-password', methods=['PUT'])

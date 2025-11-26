@@ -245,6 +245,8 @@ const Reports = () => {
     switch (action) {
       case 'user_login':
       case 'user_logout':
+      case 'LOGIN':
+      case 'LOGOUT':
         return User
       case 'subscription_upgrade':
       case 'subscription_created':
@@ -309,14 +311,14 @@ const Reports = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-gradient-to-r from-green-100 via-emerald-100 to-teal-100 border-b border-green-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="p-3 bg-blue-100 rounded-xl">
-                <BarChart3 className="h-8 w-8 text-blue-600" />
+              <div className="p-3 bg-green-100 rounded-xl">
+                <BarChart3 className="h-8 w-8 text-green-600" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
@@ -327,7 +329,7 @@ const Reports = () => {
               <select
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
               >
                 <option value="1d">Last 24 hours</option>
                 <option value="7d">Last 7 days</option>
@@ -336,7 +338,7 @@ const Reports = () => {
               </select>
               <button
                 onClick={exportData}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-colors shadow-md hover:shadow-lg"
               >
                 <Download className="h-4 w-4" />
                 <span>Export</span>
@@ -349,16 +351,16 @@ const Reports = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Total Activities</p>
                 <p className="text-2xl font-bold text-gray-900">{summaryStats.totalActivities}</p>
               </div>
-              <Activity className="h-8 w-8 text-blue-600" />
+              <Activity className="h-8 w-8 text-green-600" />
             </div>
           </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">History Records</p>
@@ -367,16 +369,16 @@ const Reports = () => {
               <History className="h-8 w-8 text-green-600" />
             </div>
           </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Total Subscriptions</p>
                 <p className="text-2xl font-bold text-gray-900">{summaryStats.totalSubscriptions}</p>
               </div>
-              <CreditCard className="h-8 w-8 text-purple-600" />
+              <CreditCard className="h-8 w-8 text-green-600" />
             </div>
           </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Active</p>
@@ -385,7 +387,7 @@ const Reports = () => {
               <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
           </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Cancelled</p>
@@ -397,7 +399,7 @@ const Reports = () => {
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 mb-6">
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-6">
               {tabs.map((tab) => {
@@ -408,7 +410,7 @@ const Reports = () => {
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                       activeTab === tab.id
-                        ? 'border-blue-500 text-blue-600'
+                        ? 'border-green-500 text-green-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
@@ -433,12 +435,12 @@ const Reports = () => {
                   placeholder="Search logs..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
                 />
               </div>
               <button
                 onClick={fetchReportsData}
-                className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
               >
                 <RefreshCw className="h-4 w-4" />
                 <span>Refresh</span>
@@ -449,7 +451,7 @@ const Reports = () => {
           {/* Data Table */}
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-green-50/50">
                 <tr>
                   {activeTab === 'activity' && (
                     <>
@@ -483,7 +485,7 @@ const Reports = () => {
                   )}
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white/50 divide-y divide-gray-200">
                 {getPaginatedData().map((item, index) => {
                   const ActionIcon = getActionIcon(item.action)
                   return (
@@ -492,8 +494,8 @@ const Reports = () => {
                         <>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="p-2 bg-blue-100 rounded-lg mr-3">
-                                <ActionIcon className="h-4 w-4 text-blue-600" />
+                              <div className="p-2 bg-green-100 rounded-lg mr-3">
+                                <ActionIcon className="h-4 w-4 text-green-600" />
                               </div>
                               <div>
                                 <div className="text-sm font-medium text-gray-900">{item.user_name}</div>
@@ -556,8 +558,8 @@ const Reports = () => {
                         <>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="p-2 bg-purple-100 rounded-lg mr-3">
-                                <Crown className="h-4 w-4 text-purple-600" />
+                              <div className="p-2 bg-green-100 rounded-lg mr-3">
+                                <Crown className="h-4 w-4 text-green-600" />
                               </div>
                               <div>
                                 <div className="text-sm font-medium text-gray-900">{item.user_name}</div>
@@ -595,7 +597,7 @@ const Reports = () => {
           </div>
 
           {/* Pagination */}
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+          <div className="bg-white/80 backdrop-blur-sm px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
             <div className="flex-1 flex justify-between sm:hidden">
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}

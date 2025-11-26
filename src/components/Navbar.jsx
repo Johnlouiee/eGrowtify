@@ -105,14 +105,6 @@ const Navbar = () => {
                             <span>Subscriptions</span>
                           </Link>
                           <Link 
-                            to="/admin/seasonal-content" 
-                            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={() => setIsUserMenuOpen(false)}
-                          >
-                            <Calendar className="h-4 w-4" />
-                            <span>Seasonal Content</span>
-                          </Link>
-                          <Link 
                             to="/admin/learning-paths" 
                             className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                             onClick={() => setIsUserMenuOpen(false)}

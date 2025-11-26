@@ -6,7 +6,7 @@ const AdminHeader = ({
   title, 
   subtitle, 
   icon: Icon, 
-  iconColor = 'from-blue-600 to-indigo-600',
+  iconColor = 'from-green-600 to-emerald-600',
   onRefresh,
   showBackButton = true,
   backTo = '/admin',
@@ -54,7 +54,7 @@ const AdminHeader = ({
               <button
                 key={index}
                 onClick={action.onClick}
-                className={`flex items-center px-4 py-2 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl ${action.className || 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700'}`}
+                className={`flex items-center px-4 py-2 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl ${action.className || 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700'}`}
               >
                 {action.icon && <action.icon className="h-4 w-4 mr-2" />}
                 <span className="text-sm font-medium">{action.text}</span>

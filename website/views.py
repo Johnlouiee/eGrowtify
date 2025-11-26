@@ -6270,9 +6270,23 @@ def admin_api_history_logs():
         # Get real history logs from memory cache
         history_logs = _HISTORY_LOGS.copy()
         
+        # Filter by date range
+        filtered_logs = []
+        for log in history_logs:
+            try:
+                log_timestamp = datetime.fromisoformat(log.get('timestamp', ''))
+                if log_timestamp >= start_date:
+                    filtered_logs.append(log)
+            except (ValueError, TypeError):
+                # If timestamp parsing fails, include the log anyway
+                filtered_logs.append(log)
+        
+        # Sort by timestamp (newest first)
+        filtered_logs.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        
         # Add some mock data if no real logs exist yet
-        if not history_logs:
-            history_logs = [
+        if not filtered_logs:
+            filtered_logs = [
                 {
                     'id': 1,
                     'table_name': 'users',
@@ -6288,8 +6302,8 @@ def admin_api_history_logs():
         
         return jsonify({
             "success": True,
-            "logs": history_logs,
-            "total": len(history_logs),
+            "logs": filtered_logs,
+            "total": len(filtered_logs),
             "date_range": date_range
         })
         
