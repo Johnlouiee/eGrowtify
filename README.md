@@ -116,14 +116,16 @@ The backend will run on `http://localhost:5000`
 ### 3. Frontend Setup (React)
 
 ```bash
-# Install dependencies
+# IMPORTANT: Install dependencies first (required before running dev server)
 npm install
 
 # Start development server
 npm run dev
 ```
 
-The frontend will run on `http://localhost:3000`
+**⚠️ Important:** You MUST run `npm install` first after cloning the repository. This installs all required dependencies including `cross-env` which is needed for the dev script to work.
+
+The frontend will run on `http://localhost:5173` (Vite default port)
 
 ## 🗄️ Database Setup
 
@@ -209,6 +211,29 @@ This project is licensed under the MIT License.
 ## 🆘 Support
 
 For support, email support@egrowtify.com or create an issue in the repository.
+
+## 🔧 Troubleshooting
+
+### "cross-env is not recognized" Error
+
+If you see this error when running `npm run dev`:
+
+```
+cross-env is not recognized as an internal or external command
+```
+
+**Solution:**
+1. Make sure you've run `npm install` first (this installs all dependencies)
+2. Delete `node_modules` folder and `package-lock.json` if they exist
+3. Run `npm install` again to reinstall all dependencies
+4. Try `npm run dev` again
+
+This error typically occurs when:
+- Dependencies haven't been installed yet (`npm install` wasn't run)
+- The `node_modules` folder is missing or corrupted
+- You're in the wrong directory
+
+**Note:** After cloning the repository, you MUST run `npm install` before running `npm run dev`.
 
 ## 🔐 Environment Variables
 
