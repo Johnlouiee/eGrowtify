@@ -3544,6 +3544,109 @@ def upload_plant_image():
                 "reasoning": f"AI analysis failed: {str(ai_error)}"
             }
         
+        # Determine health status from care_suggestions
+        def determine_health_status(care_suggestions_dict):
+            """Determine health status from care suggestions"""
+            if not care_suggestions_dict:
+                return 'Unknown'
+            
+            reasoning = care_suggestions_dict.get('reasoning', '').lower()
+            needs_water = care_suggestions_dict.get('needs_water', False)
+            needs_fertilize = care_suggestions_dict.get('needs_fertilize', False)
+            needs_prune = care_suggestions_dict.get('needs_prune', False)
+            
+            # Check for explicit healthy indicators FIRST (highest priority)
+            # These are strong positive indicators that override everything else
+            strong_healthy_indicators = [
+                'appears healthy', 'looks healthy', 'healthy and', 'healthy and green',
+                'healthy and vibrant', 'no visible signs of', 'no visible signs',
+                'no clear signs of', 'no clear signs', 'no signs of dehydration',
+                'no signs of nutrient deficiency', 'no signs of disease',
+                'ripe and abundant', 'abundant', 'thriving', 'flourishing',
+                'in good health', 'good condition', 'excellent condition'
+            ]
+            
+            has_strong_healthy = any(indicator in reasoning for indicator in strong_healthy_indicators)
+            
+            # Check for negative health indicators (but only if not explicitly healthy)
+            urgent_indicators = [
+                'urgent', 'health issues detected', 'mold detected', 'rot detected', 
+                'disease detected', 'spoilage detected', 'fungal infection', 
+                'powdery mildew', 'immediate attention', 'critical'
+            ]
+            
+            # Check for negative context phrases (e.g., "no signs of", "no visible")
+            # If these are present, we should NOT count damage indicators
+            negative_context_phrases = [
+                'no visible signs of', 'no visible signs', 'no clear signs of',
+                'no clear signs', 'no signs of', 'no evidence of', 'no indication of',
+                'no sign of', 'no symptoms of', 'no trace of'
+            ]
+            
+            has_negative_context = any(phrase in reasoning for phrase in negative_context_phrases)
+            
+            # Check for damage indicators (but exclude if mentioned in negative context)
+            damage_indicators = [
+                'shriveled', 'damaged', 'decay', 'dehydration', 'wilted', 
+                'brown spots', 'black spots', 'mushy', 'dying', 'dying leaves'
+            ]
+            
+            # Only check for damage if NOT in negative context
+            # For example, "no signs of dehydration" should NOT count as damage
+            has_damage = False
+            if not has_negative_context:
+                has_damage = any(indicator in reasoning for indicator in damage_indicators)
+            
+            has_urgent_issues = any(indicator in reasoning for indicator in urgent_indicators)
+            
+            # Additional healthy indicators (weaker, but still positive)
+            healthy_indicators = [
+                'no problems', 'no issues', 'fresh', 'ripe', 'vibrant',
+                'no damage', 'no disease', 'no mold', 'no rot', 'green leaves',
+                'healthy leaves', 'leaves appear healthy', 'leaves are healthy'
+            ]
+            
+            has_healthy_indicators = any(indicator in reasoning for indicator in healthy_indicators)
+            
+            # Priority logic:
+            # 1. If explicitly healthy (strong indicators), it's Healthy
+            # 2. If urgent issues AND not explicitly healthy, it's Unhealthy
+            # 3. If damage indicators (and not in negative context) AND not explicitly healthy, it's Unhealthy
+            # 4. If healthy indicators (weaker) AND no urgent/damage, it's Healthy
+            # 5. If needs care actions, it's Needs Care
+            # 6. Otherwise Unknown
+            
+            if has_strong_healthy:
+                # Explicitly healthy - override everything
+                return 'Healthy'
+            elif has_urgent_issues:
+                # Urgent issues always mean unhealthy
+                return 'Unhealthy'
+            elif has_damage and not has_strong_healthy:
+                # Damage indicators (when not in negative context) mean unhealthy
+                return 'Unhealthy'
+            elif has_healthy_indicators and not has_urgent_issues and not has_damage:
+                # Positive indicators without negative ones
+                return 'Healthy'
+            elif needs_water or needs_fertilize or needs_prune:
+                # Needs care but not explicitly unhealthy
+                return 'Needs Care'
+            else:
+                return 'Unknown'
+        
+        # Get previous health status
+        old_care_suggestions = None
+        old_health_status = 'Unknown'
+        if grid_space.care_suggestions:
+            try:
+                old_care_suggestions = json.loads(grid_space.care_suggestions)
+                old_health_status = determine_health_status(old_care_suggestions)
+            except:
+                pass
+        
+        # Determine new health status
+        new_health_status = determine_health_status(care_suggestions)
+        
         # Store care suggestions in grid space
         grid_space.care_suggestions = json.dumps(care_suggestions)
         grid_space.ai_analyzed = True
@@ -3553,6 +3656,39 @@ def upload_plant_image():
         print(f"🗄️ Stored care suggestions: {care_suggestions}")
         print(f"🤖 Marked as AI analyzed: {grid_space.ai_analyzed}")
         print(f"📅 Updated last_updated timestamp")
+        
+        # Track health status update (both changes and same status)
+        # Only log if this is not the first analysis (old_health_status was not 'Unknown')
+        if old_health_status != 'Unknown':
+            from website.models import ActivityLog
+            from datetime import date
+            
+            plant_name = grid_space.plant.name if grid_space.plant else 'Unknown Plant'
+            
+            # Create description based on whether status changed or stayed the same
+            if old_health_status != new_health_status:
+                health_change_description = f"Health status changed from {old_health_status} to {new_health_status}"
+            else:
+                health_change_description = f"Health status remains {new_health_status}"
+            
+            # Add reasoning context if available
+            if care_suggestions.get('reasoning'):
+                health_change_description += f": {care_suggestions['reasoning'][:150]}"
+            
+            health_log = ActivityLog(
+                user_id=current_user.id,
+                garden_id=garden.id,
+                space_id=grid_space.id,
+                plant_id=grid_space.plant_id,
+                action='health_change',
+                action_date=date.today(),
+                notes=health_change_description
+            )
+            db.session.add(health_log)
+            if old_health_status != new_health_status:
+                print(f"📊 Health status change logged: {old_health_status} → {new_health_status}")
+            else:
+                print(f"📊 Health status update logged: {new_health_status} (unchanged)")
         
         print("💾 Committing to database...")
         db.session.commit()
@@ -4408,6 +4544,48 @@ def get_completed_actions():
         })
         
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/plant-activity-logs', methods=['GET'])
+@login_required
+def get_plant_activity_logs():
+    """Get activity logs for a specific grid space/plant"""
+    try:
+        from website.models import ActivityLog, GridSpace, Plant
+        
+        space_id = request.args.get('space_id', type=int)
+        plant_id = request.args.get('plant_id', type=int)
+        
+        if not space_id and not plant_id:
+            return jsonify({"error": "space_id or plant_id is required"}), 400
+        
+        # Build query
+        query = ActivityLog.query.filter_by(user_id=current_user.id)
+        
+        if space_id:
+            query = query.filter_by(space_id=space_id)
+        if plant_id:
+            query = query.filter_by(plant_id=plant_id)
+        
+        # Order by most recent first
+        activity_logs = query.order_by(ActivityLog.created_at.desc()).all()
+        
+        # Enhance with plant and space info
+        logs_data = []
+        for log in activity_logs:
+            log_dict = log.to_dict()
+            if log.space:
+                log_dict['grid_position'] = log.space.grid_position
+            if log.plant:
+                log_dict['plant_name'] = log.plant.name
+            logs_data.append(log_dict)
+        
+        return jsonify({
+            "success": True,
+            "activity_logs": logs_data
+        })
+    except Exception as e:
+        print(f"Error fetching plant activity logs: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @views.route('/features')

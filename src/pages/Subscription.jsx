@@ -11,7 +11,7 @@ const Subscription = () => {
   const [showCheckout, setShowCheckout] = useState(false)
   const [showSubscriptionDetails, setShowSubscriptionDetails] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState('gcash')
+  const [paymentMethod, setPaymentMethod] = useState('demo')
   const [gcashNumber, setGcashNumber] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState('')
@@ -95,20 +95,6 @@ const Subscription = () => {
     try {
       setIsProcessing(true)
       setError('')
-      
-      // Validate GCash number if GCash is selected
-      if (paymentMethod === 'gcash' && !gcashNumber.trim()) {
-        setError('Please enter your GCash mobile number')
-        setIsProcessing(false)
-        return
-      }
-
-      const cleanedGcashNumber = gcashNumber.replace(/\s/g, '')
-      if (paymentMethod === 'gcash' && (!/^09\d{9}$/.test(cleanedGcashNumber) || cleanedGcashNumber.length !== 11)) {
-        setError('Please enter a valid GCash mobile number (11 digits: 09XX XXX XXXX)')
-        setIsProcessing(false)
-        return
-      }
       
       // Process subscription upgrade via backend
       console.log('💰 SUBSCRIPTION: Processing Premium upgrade')
@@ -761,134 +747,31 @@ const Subscription = () => {
                 <p className="text-sm text-gray-600 mt-1">₱{priceDisplay.amount} per month, cancel anytime</p>
               </div>
               <div className="p-6 space-y-6">
-                {/* Payment Notice */}
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">₱</span>
-                    </div>
-                    <span className="text-sm font-medium text-blue-800">Secure Payment</span>
+                {/* Subscription Plan Info */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-900">Premium Plan</span>
+                    <span className="text-lg font-bold text-green-600">₱{priceDisplay.amount}</span>
                   </div>
-                  <p className="text-xs text-blue-700">
-                    Your payment will be processed securely. Your subscription will be activated immediately upon successful payment.
+                  <p className="text-xs text-gray-600 mt-2">
+                    Get unlimited AI analyses, advanced features, and priority support. Cancel anytime.
                   </p>
                 </div>
                 
                 {/* Payment Method Selector */}
-                <div>
-                  <div className="text-sm font-medium text-gray-900 mb-3">Select payment method</div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <button onClick={() => setPaymentMethod('gcash')} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm relative ${paymentMethod === 'gcash' ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 bg-white'}`}>
-                      <Wallet className="h-4 w-4" />
-                      <span>GCash</span>
-                      <div className="absolute -top-1 -right-1 bg-green-500 text-white text-xs px-1 rounded-full">Recommended</div>
-                    </button>
-                    <button onClick={() => setPaymentMethod('paymaya')} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${paymentMethod === 'paymaya' ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 bg-white'}`}>
-                      <Smartphone className="h-4 w-4" />
-                      <span>PayMaya</span>
-                    </button>
-                    <button onClick={() => setPaymentMethod('credit')} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${paymentMethod === 'credit' ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 bg-white'}`}>
-                      <CreditCard className="h-4 w-4" />
-                      <span>Credit Card</span>
-                    </button>
-                    <button onClick={() => setPaymentMethod('debit')} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${paymentMethod === 'debit' ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 bg-white'}`}>
-                      <CreditCard className="h-4 w-4" />
-                      <span>Debit Card</span>
-                    </button>
-                  </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Payment Method</label>
+                  <select 
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-primary-400 focus:ring-primary-400"
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  >
+                    <option value="demo">Demo Payment (Instant)</option>
+                    <option value="gcash">GCash</option>
+                    <option value="paymaya">PayMaya</option>
+                  </select>
                 </div>
 
-                {/* Dynamic Payment Fields */}
-                {(paymentMethod === 'credit' || paymentMethod === 'debit') && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Cardholder Name</label>
-                      <input type="text" placeholder="Jane D. Doe" className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400" />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
-                        <input type="text" placeholder="4242 4242 4242 4242" className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Expiry</label>
-                          <input type="text" placeholder="MM/YY" className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">CVC</label>
-                          <input type="text" placeholder="123" className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400" />
-                        </div>
-                      </div>
-                    </div>
-                    {paymentMethod === 'credit' && (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <p className="text-sm text-yellow-700">Processing fee: ₱5.00 (Total: ₱155.00)</p>
-                      </div>
-                    )}
-                    {paymentMethod === 'debit' && (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <p className="text-sm text-yellow-700">Processing fee: ₱3.00 (Total: ₱153.00)</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {paymentMethod === 'gcash' && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">GCash Mobile Number</label>
-                      <input
-                        type="tel"
-                        value={gcashNumber}
-                        onChange={(e) => {
-                          // Remove all non-digit characters
-                          let digitsOnly = e.target.value.replace(/\D/g, '')
-                          // Limit to 11 digits
-                          if (digitsOnly.length > 11) digitsOnly = digitsOnly.slice(0, 11)
-                          // Format with spaces: 09XX XXX XXXX
-                          let formatted = digitsOnly
-                          if (digitsOnly.length > 4) {
-                            formatted = digitsOnly.slice(0, 4) + ' ' + digitsOnly.slice(4)
-                          }
-                          if (digitsOnly.length > 7) {
-                            formatted = digitsOnly.slice(0, 4) + ' ' + digitsOnly.slice(4, 7) + ' ' + digitsOnly.slice(7)
-                          }
-                          setGcashNumber(formatted)
-                        }}
-                        placeholder="09XX XXX XXXX"
-                        maxLength={13} // 11 digits + 2 spaces = 13 characters
-                        className="w-full px-4 py-2 rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400"
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500">Youll be redirected to GCash to authorize the payment.</p>
-                  </div>
-                )}
-
-                {paymentMethod === 'paymaya' && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">PayMaya Mobile Number</label>
-                      <input type="tel" placeholder="09XX XXX XXXX" className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400" />
-                    </div>
-                    <p className="text-xs text-gray-500">Youll be redirected to PayMaya to authorize the payment.</p>
-                  </div>
-                )}
-
-                {paymentMethod === 'other' && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Select Provider</label>
-                      <select className="w-full rounded-lg border-gray-300 focus:border-primary-400 focus:ring-primary-400">
-                        <option value="maya-bank">Maya Bank</option>
-                        <option value="grabpay">GrabPay</option>
-                        <option value="paypal">PayPal</option>
-                        <option value="bank-transfer">Bank Transfer</option>
-                      </select>
-                    </div>
-                    <p className="text-xs text-gray-500">Well show the right steps after you choose a provider.</p>
-                  </div>
-                )}
 
                 {error && (
                   <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
@@ -908,14 +791,15 @@ const Subscription = () => {
                     // Process subscription via backend
                     console.log('💰 SUBSCRIPTION: Processing Premium subscription')
                     console.log('💰 SUBSCRIPTION: Amount: ₱150/month')
+                    console.log('💰 SUBSCRIPTION: Payment method: demo')
                     
                     // Show payment processing message
-                    toast.success('Processing subscription payment...')
+                    toast.success('Processing demo payment...')
                     
-                    // Call backend subscription endpoint
+                    // Call backend subscription endpoint with demo payment
                     const response = await axios.post('/api/subscription/upgrade', {
                       plan_type: 'premium',
-                      payment_method: paymentMethod
+                      payment_method: 'demo' // Always use demo payment
                     })
                     
                     console.log('💰 SUBSCRIPTION: Backend response:', response.data)
@@ -940,7 +824,7 @@ const Subscription = () => {
                   } finally {
                     setIsProcessing(false)
                   }
-                }} className={`btn-primary ${isProcessing || (paymentMethod === 'gcash' && !gcashNumber.trim()) ? 'opacity-70 cursor-not-allowed' : ''}`} disabled={isProcessing || (paymentMethod === 'gcash' && !gcashNumber.trim())}>
+                }} className={`btn-primary ${isProcessing ? 'opacity-70 cursor-not-allowed' : ''}`} disabled={isProcessing}>
                   {isProcessing ? 'Processing Payment…' : `Pay ₱${priceDisplay.amount}`}
                 </button>
               </div>

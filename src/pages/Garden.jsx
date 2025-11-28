@@ -129,6 +129,7 @@ const Garden = () => {
   const [selectedImage, setSelectedImage] = useState(null)
   const [showImageModal, setShowImageModal] = useState(false)
   const gridPlannerRef = useRef()
+  const [showGridPlannerModal, setShowGridPlannerModal] = useState(false)
   
   // AI Recognition usage state
   const [aiUsage, setAiUsage] = useState(null)
@@ -1404,12 +1405,16 @@ const Garden = () => {
                 </div>
               )}
               
-              <GridPlanner 
-                ref={gridPlannerRef}
-                selectedGarden={selectedGarden} 
-                onGardenUpdate={fetchGardens}
-                onPlantUpdate={refreshAlerts}
-              />
+              {/* Grid Planner Button */}
+              <div className="mt-4">
+                <button
+                  onClick={() => setShowGridPlannerModal(true)}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  <MapPin className="h-5 w-5" />
+                  <span>Open Grid Planner</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1918,6 +1923,33 @@ const Garden = () => {
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Grid Planner Modal */}
+      {showGridPlannerModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-xl font-semibold text-gray-900">Grid Planner</h3>
+              <button
+                onClick={() => setShowGridPlannerModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-4">
+              <GridPlanner 
+                ref={gridPlannerRef}
+                selectedGarden={selectedGarden} 
+                onGardenUpdate={fetchGardens}
+                onPlantUpdate={refreshAlerts}
+              />
             </div>
           </div>
         </div>
