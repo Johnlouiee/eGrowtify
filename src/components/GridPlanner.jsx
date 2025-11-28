@@ -1,5 +1,5 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
-import { Plus, ShoppingCart, Leaf, MapPin, Trash2, Edit, Droplets, Scissors, Sun, Crown, ArrowRight, Camera, Upload } from 'lucide-react'
+import { Plus, ShoppingCart, Leaf, MapPin, Trash2, Edit, Droplets, Scissors, Sun, Crown, ArrowRight, Camera, Upload, History, Clock, X } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
@@ -26,6 +26,10 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
   const [uploadingImage, setUploadingImage] = useState(null)
   const [updatingPlant, setUpdatingPlant] = useState(null)
   const [selectedPlantSpace, setSelectedPlantSpace] = useState(null)
+  const [showPlantDetailsModal, setShowPlantDetailsModal] = useState(false)
+  const [showHistoryModal, setShowHistoryModal] = useState(false)
+  const [activityLogs, setActivityLogs] = useState([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
   // Removed indoor/outdoor toggle - only outdoor mode supported
   const isIndoorGrid = false
 
@@ -841,7 +845,34 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
   const handlePlantSelect = (space) => {
     if (space.plant_id) {
       setSelectedPlantSpace(space)
+      setShowPlantDetailsModal(true)
     }
+  }
+
+  const fetchActivityLogs = async (spaceId, plantId) => {
+    setLoadingHistory(true)
+    try {
+      const response = await axios.get('/api/plant-activity-logs', {
+        params: {
+          space_id: spaceId,
+          plant_id: plantId
+        }
+      })
+      if (response.data.success) {
+        setActivityLogs(response.data.activity_logs || [])
+      }
+    } catch (error) {
+      console.error('Error fetching activity logs:', error)
+      toast.error('Failed to load plant history')
+      setActivityLogs([])
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
+
+  const handleShowHistory = (space) => {
+    fetchActivityLogs(space.id, space.plant_id)
+    setShowHistoryModal(true)
   }
 
   const handleImageUpload = async (e, space) => {
@@ -1270,311 +1301,6 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
           })()}
         </div>
 
-        {/* Selected Plant Details */}
-        {selectedPlantSpace ? (
-          <div className="mt-4">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-medium text-gray-700">Selected Plant Details</h4>
-              <button
-                onClick={() => setSelectedPlantSpace(null)}
-                className="text-gray-400 hover:text-gray-600 text-sm"
-              >
-                ✕ Close
-              </button>
-            </div>
-            {(() => {
-              const space = selectedPlantSpace
-                const plant = plants.find(p => p.id === space.plant_id)
-                return (
-                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-2">
-                      <Leaf className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium">{plant?.name || 'Plant'}</span>
-                      <span className="text-xs text-gray-500">({space.grid_position})</span>
-                    </div>
-                    <button
-                      onClick={() => handleRemovePlant(space)}
-                      className="p-1 text-red-600 hover:bg-red-100 rounded"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                    
-                    {/* Image Preview and Upload */}
-                    <div className="mb-3">
-                      {(space.image_path || plant?.latest_image) ? (
-                        <div className="flex items-center space-x-3">
-                          <img
-                            src={`/${space.image_path || plant?.latest_image}`}
-                            alt="Plant preview"
-                            className="w-16 h-16 object-cover rounded-lg border border-gray-300"
-                            onError={(e) => {
-                              console.log('Image load error:', space.image_path || plant?.latest_image)
-                              e.target.style.display = 'none'
-                              if (e.target.nextSibling) {
-                                e.target.nextSibling.style.display = 'flex'
-                              }
-                            }}
-                          />
-                          <div className="flex-1">
-                            <label className="flex items-center space-x-2 text-xs text-gray-600 cursor-pointer hover:text-gray-800">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => handleImageUpload(e, space)}
-                                className="hidden"
-                                id={`upload-${space.id}`}
-                                disabled={uploadingImage === space.id}
-                              />
-                              <Camera className="h-3 w-3" />
-                              <span>
-                                {uploadingImage === space.id ? 'Uploading...' : 'Update Image'}
-                              </span>
-                            </label>
-                          </div>
-                        </div>
-                      ) : (
-                        <label className="flex items-center space-x-2 text-xs text-gray-600 cursor-pointer hover:text-gray-800">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleImageUpload(e, space)}
-                            className="hidden"
-                            id={`upload-${space.id}`}
-                            disabled={uploadingImage === space.id}
-                          />
-                          <Camera className="h-3 w-3" />
-                          <span>
-                            {uploadingImage === space.id ? 'Uploading...' : 'Upload Plant Image'}
-                          </span>
-                        </label>
-                      )}
-                    </div>
-                    
-                    {/* Last Updated Picture Box */}
-                    {(space.image_path || plant?.latest_image) && (
-                      <div className="mb-3 p-2 bg-gray-50 border border-gray-200 rounded-lg">
-                        <div className="text-xs font-medium text-gray-800 mb-2">📸 Plant Image</div>
-                        <div className="flex items-center space-x-3">
-                          <img
-                            src={`/${space.image_path || plant?.latest_image}`}
-                            alt="Plant image"
-                            className="w-20 h-20 object-cover rounded-lg border border-gray-300"
-                          />
-                          <div className="flex-1">
-                            <div className="text-xs text-gray-600">
-                              {space.last_updated ? 
-                                `Updated: ${new Date(space.last_updated).toLocaleDateString()}` : 
-                                space.image_path ? 'Grid space image' : 'Original plant image'
-                              }
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {space.last_updated ? 
-                                `Time: ${new Date(space.last_updated).toLocaleTimeString()}` : 
-                                ''
-                              }
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* AI Care Suggestions */}
-                    {space.care_suggestions && (space.care_suggestions.confidence > 0.3 || space.care_suggestions.reasoning) && (
-                      <div className={`mb-3 p-2 border rounded-lg ${
-                        space.care_suggestions.needs_water && 
-                        space.care_suggestions.reasoning && 
-                        (space.care_suggestions.reasoning.toLowerCase().includes('urgent') ||
-                         space.care_suggestions.reasoning.toLowerCase().includes('health issues detected') ||
-                         space.care_suggestions.reasoning.toLowerCase().includes('mold detected') ||
-                         space.care_suggestions.reasoning.toLowerCase().includes('rot detected') ||
-                         space.care_suggestions.reasoning.toLowerCase().includes('disease detected'))
-                          ? 'bg-red-50 border-red-200' 
-                          : 'bg-blue-50 border-blue-200'
-                      }`}>
-                        <div className="flex items-center justify-between mb-1">
-                          <div className={`text-xs font-medium ${
-                            space.care_suggestions.needs_water && 
-                            space.care_suggestions.reasoning && 
-                            (space.care_suggestions.reasoning.toLowerCase().includes('urgent') ||
-                             space.care_suggestions.reasoning.toLowerCase().includes('health issues detected') ||
-                             space.care_suggestions.reasoning.toLowerCase().includes('mold detected') ||
-                             space.care_suggestions.reasoning.toLowerCase().includes('rot detected') ||
-                             space.care_suggestions.reasoning.toLowerCase().includes('disease detected'))
-                              ? 'text-red-800' 
-                              : 'text-blue-800'
-                          }`}>
-                            {space.care_suggestions.needs_water && 
-                             space.care_suggestions.reasoning && 
-                             (space.care_suggestions.reasoning.toLowerCase().includes('urgent') ||
-                              space.care_suggestions.reasoning.toLowerCase().includes('health issues detected') ||
-                              space.care_suggestions.reasoning.toLowerCase().includes('mold detected') ||
-                              space.care_suggestions.reasoning.toLowerCase().includes('rot detected') ||
-                              space.care_suggestions.reasoning.toLowerCase().includes('disease detected'))
-                              ? '🚨 Urgent Care Needed' 
-                              : '🤖 AI Analysis'
-                            }
-                          </div>
-                          <div className={`text-xs ${
-                            space.care_suggestions.needs_water && 
-                            space.care_suggestions.reasoning && 
-                            (space.care_suggestions.reasoning.toLowerCase().includes('urgent') ||
-                             space.care_suggestions.reasoning.toLowerCase().includes('health issues detected') ||
-                             space.care_suggestions.reasoning.toLowerCase().includes('mold detected') ||
-                             space.care_suggestions.reasoning.toLowerCase().includes('rot detected') ||
-                             space.care_suggestions.reasoning.toLowerCase().includes('disease detected'))
-                              ? 'text-red-600' 
-                              : 'text-blue-600'
-                          }`}>
-                            Confidence: {Math.round(space.care_suggestions.confidence * 100)}%
-                          </div>
-                        </div>
-                        <div className={`text-xs mb-2 ${
-                          space.care_suggestions.needs_water && 
-                          space.care_suggestions.reasoning && 
-                          (space.care_suggestions.reasoning.toLowerCase().includes('urgent') ||
-                           space.care_suggestions.reasoning.toLowerCase().includes('health issues detected') ||
-                           space.care_suggestions.reasoning.toLowerCase().includes('mold detected') ||
-                           space.care_suggestions.reasoning.toLowerCase().includes('rot detected') ||
-                           space.care_suggestions.reasoning.toLowerCase().includes('disease detected'))
-                            ? 'text-red-700' 
-                            : 'text-blue-700'
-                        }`}>
-                          {space.care_suggestions.reasoning}
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {space.care_suggestions.needs_water && (
-                            <span className={`inline-flex items-center px-2 py-1 rounded text-xs ${
-                              space.care_suggestions.reasoning && 
-                              (space.care_suggestions.reasoning.toLowerCase().includes('urgent') ||
-                               space.care_suggestions.reasoning.toLowerCase().includes('health issues detected') ||
-                               space.care_suggestions.reasoning.toLowerCase().includes('mold detected') ||
-                               space.care_suggestions.reasoning.toLowerCase().includes('rot detected') ||
-                               space.care_suggestions.reasoning.toLowerCase().includes('disease detected'))
-                                ? 'bg-red-100 text-red-800' 
-                                : 'bg-blue-100 text-blue-800'
-                            }`}>
-                              💧 {space.care_suggestions.reasoning && 
-                                   (space.care_suggestions.reasoning.toLowerCase().includes('urgent') ||
-                                    space.care_suggestions.reasoning.toLowerCase().includes('health issues detected') ||
-                                    space.care_suggestions.reasoning.toLowerCase().includes('mold detected') ||
-                                    space.care_suggestions.reasoning.toLowerCase().includes('rot detected') ||
-                                    space.care_suggestions.reasoning.toLowerCase().includes('disease detected'))
-                                    ? 'Urgent Care Needed' 
-                                    : 'Needs Water'
-                              }
-                            </span>
-                          )}
-                          {space.care_suggestions.needs_fertilize && (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800">
-                              ☀️ Needs Fertilizer
-                            </span>
-                          )}
-                          {space.care_suggestions.needs_prune && (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-red-100 text-red-800">
-                              ✂️ Needs Pruning
-                            </span>
-                          )}
-                          {!space.care_suggestions.needs_water && !space.care_suggestions.needs_fertilize && !space.care_suggestions.needs_prune && (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800">
-                              🌱 Plant looks healthy!
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Analysis Status */}
-                    {space.care_suggestions && (space.care_suggestions.confidence > 0.3 || space.care_suggestions.reasoning) && (
-                      <div className="mb-3 p-2 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="text-xs font-medium text-green-800 mb-1">📊 Analysis Status</div>
-                        <div className="text-xs text-green-700">
-                          {space.last_updated ? 
-                            `Last analyzed: ${new Date(space.last_updated).toLocaleDateString()} at ${new Date(space.last_updated).toLocaleTimeString()}` : 
-                            'Analysis pending'
-                          }
-                        </div>
-                        <div className="text-xs text-green-600 mt-1">
-                          {space.care_suggestions.needs_water || space.care_suggestions.needs_fertilize || space.care_suggestions.needs_prune ? 
-                            '⚠️ Plant needs attention' : 
-                            '✅ Plant is healthy'
-                          }
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Smart Update Actions Based on AI Analysis */}
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-500">AI Suggested Actions:</span>
-                      <div className="flex flex-wrap gap-1">
-                        {/* Show Water button only if AI suggests it needs water */}
-                        {space.care_suggestions && space.care_suggestions.needs_water && (
-                          <button
-                            onClick={() => handlePlantUpdate(space, 'water')}
-                            disabled={updatingPlant === space.id}
-                            className="flex items-center space-x-1 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 disabled:opacity-50 border border-blue-200"
-                          >
-                            <Droplets className="h-3 w-3" />
-                            <span>Water</span>
-                          </button>
-                        )}
-                        
-                        {/* Show Fertilize button only if AI suggests it needs fertilizer */}
-                        {space.care_suggestions && space.care_suggestions.needs_fertilize && (
-                          <button
-                            onClick={() => handlePlantUpdate(space, 'fertilize')}
-                            disabled={updatingPlant === space.id}
-                            className="flex items-center space-x-1 px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 disabled:opacity-50 border border-yellow-200"
-                          >
-                            <Sun className="h-3 w-3" />
-                            <span>Fertilize</span>
-                          </button>
-                        )}
-                        
-                        {/* Show Prune button only if AI suggests it needs pruning */}
-                        {space.care_suggestions && space.care_suggestions.needs_prune && (
-                          <button
-                            onClick={() => handlePlantUpdate(space, 'prune')}
-                            disabled={updatingPlant === space.id}
-                            className="flex items-center space-x-1 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50 border border-red-200"
-                          >
-                            <Scissors className="h-3 w-3" />
-                            <span>Prune</span>
-                          </button>
-                        )}
-                        
-                        {/* Show "Plant looks healthy" message if no care needed */}
-                        {space.care_suggestions && 
-                         !space.care_suggestions.needs_water && 
-                         !space.care_suggestions.needs_fertilize && 
-                         !space.care_suggestions.needs_prune && (
-                          <span className="inline-flex items-center px-2 py-1 text-xs bg-green-100 text-green-700 rounded border border-green-200">
-                            <span className="mr-1">🌱</span>
-                            <span>No care needed</span>
-                          </span>
-                        )}
-                        
-                        {/* Show message if no AI analysis available */}
-                        {(!space.care_suggestions || space.care_suggestions.confidence <= 0.1) && (
-                          <span className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded border border-gray-200">
-                            <span className="mr-1">📷</span>
-                            <span>Upload image for AI suggestions</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })()}
-          </div>
-        ) : (
-          gridSpaces.filter(space => space.plant_id).length > 0 && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
-              <p className="text-sm text-gray-600">👆 Click on a planted space in the grid to view details</p>
-            </div>
-          )
-        )}
       </div>
 
       {/* Purchase Modal */}
@@ -1760,6 +1486,424 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                 </button>
               </div>
             </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Plant Details Modal */}
+      {showPlantDetailsModal && selectedPlantSpace && (() => {
+        const space = selectedPlantSpace
+        const plant = plants.find(p => p.id === space.plant_id)
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-auto">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <Leaf className="h-5 w-5 text-green-600" />
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    {plant?.name || 'Plant'} ({space.grid_position})
+                  </h3>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleRemovePlant(space)}
+                    className="p-2 text-red-600 hover:bg-red-100 rounded transition-colors"
+                    title="Remove plant"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowPlantDetailsModal(false)
+                      setSelectedPlantSpace(null)
+                    }}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Plant Image */}
+                <div>
+                  {(space.image_path || plant?.latest_image) ? (
+                    <div className="mb-3">
+                      <img
+                        src={`/${space.image_path || plant?.latest_image}`}
+                        alt="Plant image"
+                        className="w-full h-64 object-cover rounded-lg border border-gray-300"
+                        onError={(e) => {
+                          e.target.style.display = 'none'
+                        }}
+                      />
+                      <div className="mt-2 text-xs text-gray-600">
+                        {space.last_updated ? 
+                          `Updated: ${new Date(space.last_updated).toLocaleDateString()} at ${new Date(space.last_updated).toLocaleTimeString()}` : 
+                          space.image_path ? 'Grid space image' : 'Original plant image'
+                        }
+                      </div>
+                    </div>
+                  ) : null}
+                  
+                  <label className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer hover:text-gray-900 border border-gray-300 rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, space)}
+                      className="hidden"
+                      id={`upload-modal-${space.id}`}
+                      disabled={uploadingImage === space.id}
+                    />
+                    <Camera className="h-4 w-4" />
+                    <span>
+                      {uploadingImage === space.id ? 'Uploading...' : ((space.image_path || plant?.latest_image) ? 'Update Image' : 'Upload Plant Image')}
+                    </span>
+                  </label>
+                </div>
+
+                {/* AI Care Suggestions */}
+                {space.care_suggestions && (space.care_suggestions.confidence > 0.3 || space.care_suggestions.reasoning) && (
+                  <div className={`p-4 border rounded-lg ${
+                    space.care_suggestions.needs_water && 
+                    space.care_suggestions.reasoning && 
+                    (space.care_suggestions.reasoning.toLowerCase().includes('urgent') ||
+                     space.care_suggestions.reasoning.toLowerCase().includes('health issues detected') ||
+                     space.care_suggestions.reasoning.toLowerCase().includes('mold detected') ||
+                     space.care_suggestions.reasoning.toLowerCase().includes('rot detected') ||
+                     space.care_suggestions.reasoning.toLowerCase().includes('disease detected'))
+                      ? 'bg-red-50 border-red-200' 
+                      : 'bg-blue-50 border-blue-200'
+                  }`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className={`text-sm font-medium ${
+                        space.care_suggestions.needs_water && 
+                        space.care_suggestions.reasoning && 
+                        (space.care_suggestions.reasoning.toLowerCase().includes('urgent') ||
+                         space.care_suggestions.reasoning.toLowerCase().includes('health issues detected') ||
+                         space.care_suggestions.reasoning.toLowerCase().includes('mold detected') ||
+                         space.care_suggestions.reasoning.toLowerCase().includes('rot detected') ||
+                         space.care_suggestions.reasoning.toLowerCase().includes('disease detected'))
+                          ? 'text-red-800' 
+                          : 'text-blue-800'
+                      }`}>
+                        {space.care_suggestions.needs_water && 
+                         space.care_suggestions.reasoning && 
+                         (space.care_suggestions.reasoning.toLowerCase().includes('urgent') ||
+                          space.care_suggestions.reasoning.toLowerCase().includes('health issues detected') ||
+                          space.care_suggestions.reasoning.toLowerCase().includes('mold detected') ||
+                          space.care_suggestions.reasoning.toLowerCase().includes('rot detected') ||
+                          space.care_suggestions.reasoning.toLowerCase().includes('disease detected'))
+                          ? '🚨 Urgent Care Needed' 
+                          : '🤖 AI Analysis'
+                        }
+                      </div>
+                      <div className={`text-sm ${
+                        space.care_suggestions.needs_water && 
+                        space.care_suggestions.reasoning && 
+                        (space.care_suggestions.reasoning.toLowerCase().includes('urgent') ||
+                         space.care_suggestions.reasoning.toLowerCase().includes('health issues detected') ||
+                         space.care_suggestions.reasoning.toLowerCase().includes('mold detected') ||
+                         space.care_suggestions.reasoning.toLowerCase().includes('rot detected') ||
+                         space.care_suggestions.reasoning.toLowerCase().includes('disease detected'))
+                          ? 'text-red-600' 
+                          : 'text-blue-600'
+                      }`}>
+                        Confidence: {Math.round(space.care_suggestions.confidence * 100)}%
+                      </div>
+                    </div>
+                    <div className={`text-sm mb-3 ${
+                      space.care_suggestions.needs_water && 
+                      space.care_suggestions.reasoning && 
+                      (space.care_suggestions.reasoning.toLowerCase().includes('urgent') ||
+                       space.care_suggestions.reasoning.toLowerCase().includes('health issues detected') ||
+                       space.care_suggestions.reasoning.toLowerCase().includes('mold detected') ||
+                       space.care_suggestions.reasoning.toLowerCase().includes('rot detected') ||
+                       space.care_suggestions.reasoning.toLowerCase().includes('disease detected'))
+                        ? 'text-red-700' 
+                        : 'text-blue-700'
+                    }`}>
+                      {space.care_suggestions.reasoning}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {space.care_suggestions.needs_water && (
+                        <button
+                          onClick={() => {
+                            handlePlantUpdate(space, 'water')
+                            setShowPlantDetailsModal(false)
+                            setSelectedPlantSpace(null)
+                          }}
+                          disabled={updatingPlant === space.id}
+                          className={`flex items-center space-x-1 px-3 py-2 rounded text-sm font-medium disabled:opacity-50 ${
+                            space.care_suggestions.reasoning && 
+                            (space.care_suggestions.reasoning.toLowerCase().includes('urgent') ||
+                             space.care_suggestions.reasoning.toLowerCase().includes('health issues detected') ||
+                             space.care_suggestions.reasoning.toLowerCase().includes('mold detected') ||
+                             space.care_suggestions.reasoning.toLowerCase().includes('rot detected') ||
+                             space.care_suggestions.reasoning.toLowerCase().includes('disease detected'))
+                              ? 'bg-red-100 text-red-800 hover:bg-red-200 border border-red-200' 
+                              : 'bg-blue-100 text-blue-800 hover:bg-blue-200 border border-blue-200'
+                          }`}
+                        >
+                          <Droplets className="h-4 w-4" />
+                          <span>Water</span>
+                        </button>
+                      )}
+                      {space.care_suggestions.needs_fertilize && (
+                        <button
+                          onClick={() => {
+                            handlePlantUpdate(space, 'fertilize')
+                            setShowPlantDetailsModal(false)
+                            setSelectedPlantSpace(null)
+                          }}
+                          disabled={updatingPlant === space.id}
+                          className="flex items-center space-x-1 px-3 py-2 rounded text-sm font-medium bg-yellow-100 text-yellow-800 hover:bg-yellow-200 disabled:opacity-50 border border-yellow-200"
+                        >
+                          <Sun className="h-4 w-4" />
+                          <span>Fertilize</span>
+                        </button>
+                      )}
+                      {space.care_suggestions.needs_prune && (
+                        <button
+                          onClick={() => {
+                            handlePlantUpdate(space, 'prune')
+                            setShowPlantDetailsModal(false)
+                            setSelectedPlantSpace(null)
+                          }}
+                          disabled={updatingPlant === space.id}
+                          className="flex items-center space-x-1 px-3 py-2 rounded text-sm font-medium bg-red-100 text-red-800 hover:bg-red-200 disabled:opacity-50 border border-red-200"
+                        >
+                          <Scissors className="h-4 w-4" />
+                          <span>Prune</span>
+                        </button>
+                      )}
+                      {!space.care_suggestions.needs_water && !space.care_suggestions.needs_fertilize && !space.care_suggestions.needs_prune && (
+                        <span className="inline-flex items-center px-3 py-2 text-sm font-medium bg-green-100 text-green-800 rounded border border-green-200">
+                          🌱 Plant looks healthy!
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Analysis Status */}
+                {space.care_suggestions && (space.care_suggestions.confidence > 0.3 || space.care_suggestions.reasoning) && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="text-sm font-medium text-green-800 mb-1">📊 Analysis Status</div>
+                    <div className="text-sm text-green-700">
+                      {space.last_updated ? 
+                        `Last analyzed: ${new Date(space.last_updated).toLocaleDateString()} at ${new Date(space.last_updated).toLocaleTimeString()}` : 
+                        'Analysis pending'
+                      }
+                    </div>
+                  </div>
+                )}
+
+                {/* No AI Analysis Message */}
+                {(!space.care_suggestions || space.care_suggestions.confidence <= 0.1) && (
+                  <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                    <p className="text-sm text-gray-600 mb-2">📷 Upload an image to get AI care suggestions</p>
+                  </div>
+                )}
+
+                {/* View History Button */}
+                <div className="pt-4 border-t">
+                  <button
+                    onClick={() => handleShowHistory(space)}
+                    className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    <History className="h-4 w-4" />
+                    <span>View Plant History</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Plant History Modal */}
+      {showHistoryModal && selectedPlantSpace && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-2">
+                <History className="h-5 w-5 text-green-600" />
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Plant History - {plants.find(p => p.id === selectedPlantSpace.plant_id)?.name || 'Plant'} ({selectedPlantSpace.grid_position})
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowHistoryModal(false)
+                  setActivityLogs([])
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {loadingHistory ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+                <p className="mt-2 text-gray-600">Loading history...</p>
+              </div>
+            ) : activityLogs.length > 0 ? (
+              <div className="space-y-3">
+                {activityLogs.map((log) => {
+                  const getActionIcon = (action) => {
+                    if (action === 'water') return <Droplets className="h-4 w-4 text-blue-500" />
+                    if (action === 'fertilize') return <Sun className="h-4 w-4 text-yellow-500" />
+                    if (action === 'prune') return <Scissors className="h-4 w-4 text-red-500" />
+                    if (action === 'health_change') return <Leaf className="h-4 w-4 text-green-600" />
+                    return <Clock className="h-4 w-4 text-gray-500" />
+                  }
+
+                  const getActionColor = (action) => {
+                    if (action === 'water') return 'bg-blue-50 border-blue-200'
+                    if (action === 'fertilize') return 'bg-yellow-50 border-yellow-200'
+                    if (action === 'prune') return 'bg-red-50 border-red-200'
+                    if (action === 'health_change') {
+                      // Determine color based on health status
+                      const notes = log.notes || ''
+                      // Check if status changed or remained the same
+                      const changeMatch = notes.match(/Health status changed from (\w+) to (\w+)/)
+                      const remainsMatch = notes.match(/Health status remains (\w+)/)
+                      
+                      let status = null
+                      if (changeMatch) {
+                        status = changeMatch[2] // New status
+                      } else if (remainsMatch) {
+                        status = remainsMatch[1] // Current status
+                      }
+                      
+                      if (status === 'Unhealthy') return 'bg-red-50 border-red-300'
+                      if (status === 'Healthy') return 'bg-green-50 border-green-300'
+                      if (status === 'Needs Care') return 'bg-yellow-50 border-yellow-300'
+                      return 'bg-purple-50 border-purple-200'
+                    }
+                    return 'bg-gray-50 border-gray-200'
+                  }
+
+                  const getActionLabel = (action) => {
+                    if (action === 'water') return 'Watered'
+                    if (action === 'fertilize') return 'Fertilized'
+                    if (action === 'prune') return 'Pruned'
+                    if (action === 'health_change') {
+                      // Extract health status from notes
+                      const notes = log.notes || ''
+                      // Check for status change
+                      const changeMatch = notes.match(/Health status changed from (\w+) to (\w+)/)
+                      if (changeMatch) {
+                        return `Health Status: ${changeMatch[1]} → ${changeMatch[2]}`
+                      }
+                      // Check for status remains the same
+                      const remainsMatch = notes.match(/Health status remains (\w+)/)
+                      if (remainsMatch) {
+                        return `Health Status: ${remainsMatch[1]} → ${remainsMatch[1]}`
+                      }
+                      return 'Health Status Update'
+                    }
+                    return action
+                  }
+
+                  return (
+                    <div key={log.id} className={`p-4 rounded-lg border ${getActionColor(log.action)}`}>
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 mt-1">
+                          {getActionIcon(log.action)}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className={`font-medium ${
+                              log.action === 'health_change' 
+                                ? (() => {
+                                    const notes = log.notes || ''
+                                    const changeMatch = notes.match(/Health status changed from (\w+) to (\w+)/)
+                                    const remainsMatch = notes.match(/Health status remains (\w+)/)
+                                    
+                                    let status = null
+                                    if (changeMatch) {
+                                      status = changeMatch[2] // New status
+                                    } else if (remainsMatch) {
+                                      status = remainsMatch[1] // Current status
+                                    }
+                                    
+                                    if (status === 'Unhealthy') return 'text-red-800'
+                                    if (status === 'Healthy') return 'text-green-800'
+                                    if (status === 'Needs Care') return 'text-yellow-800'
+                                    return 'text-gray-900'
+                                  })()
+                                : 'text-gray-900'
+                            }`}>
+                              {getActionLabel(log.action)}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {new Date(log.action_date).toLocaleDateString()} 
+                              {log.created_at && (
+                                <span className="ml-2">
+                                  {new Date(log.created_at).toLocaleTimeString()}
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                          {log.notes && (() => {
+                            // Determine text color based on health status for health_change actions
+                            let textColorClass = 'text-gray-700'
+                            if (log.action === 'health_change') {
+                              const notes = log.notes || ''
+                              const changeMatch = notes.match(/Health status changed from (\w+) to (\w+)/)
+                              const remainsMatch = notes.match(/Health status remains (\w+)/)
+                              
+                              let status = null
+                              if (changeMatch) {
+                                status = changeMatch[2] // New status
+                              } else if (remainsMatch) {
+                                status = remainsMatch[1] // Current status
+                              }
+                              
+                              // Set text color based on health status
+                              if (status === 'Unhealthy') {
+                                textColorClass = 'text-red-700 font-medium'
+                              } else if (status === 'Healthy') {
+                                textColorClass = 'text-green-700 font-medium'
+                              } else if (status === 'Needs Care') {
+                                textColorClass = 'text-yellow-700 font-medium'
+                              } else {
+                                textColorClass = 'text-gray-700'
+                              }
+                            }
+                            
+                            return (
+                              <p className={`text-sm mt-1 ${textColorClass}`}>
+                                {log.action === 'health_change' 
+                                  ? log.notes.replace(/Health status (changed from \w+ to \w+|remains \w+):\s*/, '')
+                                  : log.notes
+                                }
+                              </p>
+                            )
+                          })()}
+                          {log.grid_position && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Position: {log.grid_position}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <History className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-600">No activity history found for this plant.</p>
+                <p className="text-sm text-gray-500 mt-2">Activity logs will appear here when you water, fertilize, or prune the plant.</p>
+              </div>
             )}
           </div>
         </div>

@@ -333,7 +333,7 @@ class ActivityLog(db.Model):
     garden_id = db.Column(db.Integer, db.ForeignKey('garden.GARDEN_ID'), nullable=True)
     space_id = db.Column(db.Integer, db.ForeignKey('grid_spaces.SPACE_ID'), nullable=True)
     plant_id = db.Column(db.Integer, db.ForeignKey('plant.PLANT_ID'), nullable=True)
-    action = db.Column(db.String(20), nullable=False)  # 'water', 'fertilize', 'prune'
+    action = db.Column(db.String(20), nullable=False)  # 'water', 'fertilize', 'prune', 'health_change'
     action_date = db.Column(db.Date, nullable=False)
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
