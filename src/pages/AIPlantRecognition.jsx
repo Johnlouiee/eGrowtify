@@ -155,6 +155,71 @@ const getPlantImage = (plantName) => {
   return 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&h=200&fit=crop&crop=center'
 }
 
+// Helper function to get difficulty color (matching SeasonalPlanning)
+const getDifficultyColor = (difficulty) => {
+  switch (difficulty) {
+    case 'Easy': return 'text-green-600 bg-green-50'
+    case 'Medium': return 'text-yellow-600 bg-yellow-50'
+    case 'Hard': return 'text-red-600 bg-red-50'
+    default: return 'text-gray-600 bg-gray-50'
+  }
+}
+
+// Helper function to get plant details for display (with defaults)
+const getPlantDetails = (plantName, description = '') => {
+  // Normalize plant name for matching
+  const normalizedName = plantName.toLowerCase().trim()
+  
+  // Default plant details
+  const defaultDetails = {
+    name: plantName,
+    description: description || `A suitable plant for this soil type.`,
+    difficulty: 'Medium',
+    timing: 'Plant seedlings',
+    care_tips: 'Well-draining soil, full sun, water regularly',
+    harvest_time: 'Varies by plant type'
+  }
+  
+  // Try to match common Philippine plant names to get better details
+  const plantMappings = {
+    'kangkong': { ...defaultDetails, name: 'Kangkong', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun to partial shade, water regularly', harvest_time: '30-45 days' },
+    'water spinach': { ...defaultDetails, name: 'Water Spinach', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun to partial shade, water regularly', harvest_time: '30-45 days' },
+    'talong': { ...defaultDetails, name: 'Talong', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun, water consistently', harvest_time: '60-80 days' },
+    'eggplant': { ...defaultDetails, name: 'Eggplant', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun, water consistently', harvest_time: '60-80 days' },
+    'kamatis': { ...defaultDetails, name: 'Kamatis', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun, water consistently', harvest_time: '60-80 days' },
+    'tomato': { ...defaultDetails, name: 'Tomato', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun, water consistently', harvest_time: '60-80 days' },
+    'sitaw': { ...defaultDetails, name: 'Sitaw', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun, provide support', harvest_time: '50-60 days' },
+    'string beans': { ...defaultDetails, name: 'String Beans', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun, provide support', harvest_time: '50-60 days' },
+    'okra': { ...defaultDetails, name: 'Okra', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun, water regularly', harvest_time: '50-60 days' },
+    'ampalaya': { ...defaultDetails, name: 'Ampalaya', difficulty: 'Medium', care_tips: 'Well-draining soil, full sun, provide support', harvest_time: '60-80 days' },
+    'bitter melon': { ...defaultDetails, name: 'Bitter Melon', difficulty: 'Medium', care_tips: 'Well-draining soil, full sun, provide support', harvest_time: '60-80 days' },
+    'kalabasa': { ...defaultDetails, name: 'Kalabasa', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun, water regularly', harvest_time: '80-100 days' },
+    'squash': { ...defaultDetails, name: 'Squash', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun, water regularly', harvest_time: '80-100 days' },
+    'mango': { ...defaultDetails, name: 'Mango', difficulty: 'Medium', care_tips: 'Well-draining soil, full sun, water deeply', harvest_time: '3-5 years' },
+    'mangga': { ...defaultDetails, name: 'Mangga', difficulty: 'Medium', care_tips: 'Well-draining soil, full sun, water deeply', harvest_time: '3-5 years' },
+    'banana': { ...defaultDetails, name: 'Banana', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun, water regularly', harvest_time: '9-12 months' },
+    'saging': { ...defaultDetails, name: 'Saging', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun, water regularly', harvest_time: '9-12 months' },
+    'papaya': { ...defaultDetails, name: 'Papaya', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun, water regularly', harvest_time: '6-9 months' },
+    'calamansi': { ...defaultDetails, name: 'Calamansi', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun, water regularly', harvest_time: '2-3 years' },
+    'pandan': { ...defaultDetails, name: 'Pandan', difficulty: 'Easy', care_tips: 'Well-draining soil, partial shade, water regularly', harvest_time: 'Ongoing' },
+    'tanglad': { ...defaultDetails, name: 'Tanglad', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun, water regularly', harvest_time: 'Ongoing' },
+    'lemongrass': { ...defaultDetails, name: 'Lemongrass', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun, water regularly', harvest_time: 'Ongoing' },
+    'sampaguita': { ...defaultDetails, name: 'Sampaguita', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun to partial shade, water regularly', harvest_time: 'Ongoing' },
+    'gumamela': { ...defaultDetails, name: 'Gumamela', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun, water regularly', harvest_time: 'Ongoing' },
+    'hibiscus': { ...defaultDetails, name: 'Hibiscus', difficulty: 'Easy', care_tips: 'Well-draining soil, full sun, water regularly', harvest_time: 'Ongoing' }
+  }
+  
+  // Try to find a match
+  for (const [key, details] of Object.entries(plantMappings)) {
+    if (normalizedName.includes(key) || key.includes(normalizedName)) {
+      return { ...details, description: description || details.description }
+    }
+  }
+  
+  // Return default with provided description
+  return { ...defaultDetails, description: description || defaultDetails.description }
+}
+
 const AIPlantRecognition = () => {
   const { isPremium, refreshAuthStatus } = useAuth()
   const navigate = useNavigate()
@@ -181,8 +246,10 @@ const AIPlantRecognition = () => {
     planting_date: new Date().toISOString().split('T')[0]
   })
   const [showPaymentModal, setShowPaymentModal] = useState(false)
-  const [usageStatus, setUsageStatus] = useState(null)
+  const [usageStatus, setUsageStatus] = useState(null) // Plant analysis credits
+  const [soilUsageStatus, setSoilUsageStatus] = useState(null) // Soil analysis credits (separate)
   const [isLoadingUsage, setIsLoadingUsage] = useState(true)
+  const [isLoadingSoilUsage, setIsLoadingSoilUsage] = useState(true)
   const [isPurchasing, setIsPurchasing] = useState(false)
   const fileInputRef = useRef(null)
   const videoRef = useRef(null)
@@ -258,14 +325,23 @@ const AIPlantRecognition = () => {
   useEffect(() => {
     console.log('🔍 Component mounted, isPremium:', isPremium)
     fetchUsageStatus()
+    fetchSoilUsageStatus()
   }, [])
   
   // Re-fetch when premium status changes
   useEffect(() => {
     if (!isPremium) {
       fetchUsageStatus()
+      fetchSoilUsageStatus()
     }
   }, [isPremium])
+  
+  // Re-fetch soil usage when switching to soil mode
+  useEffect(() => {
+    if (analysisMode === 'soil') {
+      fetchSoilUsageStatus()
+    }
+  }, [analysisMode])
 
   // Detect mobile to prioritize camera UX
   React.useEffect(() => {
@@ -279,10 +355,10 @@ const AIPlantRecognition = () => {
     setIsLoadingUsage(true)
     try {
       const response = await axios.get('/api/ai-analysis/usage')
-      console.log('📊 Usage status fetched:', response.data)
+      console.log('📊 Plant usage status fetched:', response.data)
       setUsageStatus(response.data)
     } catch (error) {
-      console.error('❌ Error fetching usage status:', error)
+      console.error('❌ Error fetching plant usage status:', error)
       // Set default values if API fails - always show 3 free for non-premium
       if (!isPremium) {
         setUsageStatus({
@@ -296,6 +372,30 @@ const AIPlantRecognition = () => {
       }
     } finally {
       setIsLoadingUsage(false)
+    }
+  }
+
+  const fetchSoilUsageStatus = async () => {
+    setIsLoadingSoilUsage(true)
+    try {
+      const response = await axios.get('/api/soil-analysis/usage')
+      console.log('🌱 Soil usage status fetched:', response.data)
+      setSoilUsageStatus(response.data)
+    } catch (error) {
+      console.error('❌ Error fetching soil usage status:', error)
+      // Set default values if API fails - always show 3 free for non-premium
+      if (!isPremium) {
+        setSoilUsageStatus({
+          is_premium: false,
+          free_allocation: 3,
+          free_used: 0,
+          free_remaining: 3,
+          purchased_credits: 0,
+          total_remaining: 3
+        })
+      }
+    } finally {
+      setIsLoadingSoilUsage(false)
     }
   }
 
@@ -480,15 +580,15 @@ const AIPlantRecognition = () => {
         if (data.limit_reached || data.needs_payment) {
           console.log('🔴 Limit reached in success response (soil):', data)
           setShowPaymentModal(true)
-          await fetchUsageStatus()
-          toast.error('Free analysis limit reached')
+          await fetchSoilUsageStatus()
+          toast.error('Free soil analysis limit reached')
         } else {
           toast.error(typeof data.error === 'string' ? data.error : 'Unable to analyze soil image')
         }
       } else {
         setSoilResult(data)
         toast.success('Soil analysis completed!')
-        await fetchUsageStatus() // Refresh usage status
+        await fetchSoilUsageStatus() // Refresh soil usage status
       }
     } catch (error) {
       console.log('🔴 Error caught (soil):', error?.response?.status, error?.response?.data)
@@ -510,19 +610,25 @@ const AIPlantRecognition = () => {
   }
 
   const handlePurchaseAnalysis = async () => {
-    // Direct purchase with demo payment (matching Garden feature)
+    // Direct purchase with demo payment - use correct endpoint based on mode
     setIsPurchasing(true)
     try {
-      const response = await axios.post('/api/ai-analysis/purchase', {
+      const endpoint = analysisMode === 'soil' ? '/api/soil-analysis/purchase' : '/api/ai-analysis/purchase'
+      const response = await axios.post(endpoint, {
         quantity: 1,
         payment_method: 'demo' // Demo payment for instant purchase
       })
       
       if (response.data.success) {
-        toast.success(`Successfully purchased 1 analysis for ₱${response.data.total_paid.toFixed(2)}`)
+        const analysisType = analysisMode === 'soil' ? 'soil analysis' : 'analysis'
+        toast.success(`Successfully purchased 1 ${analysisType} for ₱${response.data.total_paid.toFixed(2)}`)
         setShowPaymentModal(false)
-        // Refresh usage status
-        await fetchUsageStatus()
+        // Refresh usage status based on mode
+        if (analysisMode === 'soil') {
+          await fetchSoilUsageStatus()
+        } else {
+          await fetchUsageStatus()
+        }
         // Retry the analysis if an image is selected
         if (selectedImage) {
           if (analysisMode === 'plant') {
@@ -585,88 +691,193 @@ const AIPlantRecognition = () => {
               </button>
             </div>
 
-            {/* AI Recognition Usage Indicator - Matching Garden page style */}
+            {/* AI Recognition Usage Indicator - Show plant or soil credits based on mode */}
             <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              {isLoadingUsage ? (
-                <div className="flex items-center justify-center py-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                  <span className="ml-2 text-sm text-gray-600">Loading usage...</span>
-                </div>
-              ) : usageStatus ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Camera className="h-5 w-5 text-blue-600" />
-                      <span className="text-sm font-medium text-gray-900">AI Recognition Credits</span>
-                    </div>
-                    <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                      usageStatus.total_remaining > 0 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {usageStatus.total_remaining} {usageStatus.total_remaining === 1 ? 'credit' : 'credits'} left
-                    </div>
+              {analysisMode === 'plant' ? (
+                // Plant Analysis Credits
+                isLoadingUsage ? (
+                  <div className="flex items-center justify-center py-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                    <span className="ml-2 text-sm text-gray-600">Loading usage...</span>
                   </div>
-                  
-                  <div className="text-xs text-gray-600 space-y-1">
-                    <div className="flex justify-between">
-                      <span>Free tries:</span>
-                      <span className="font-medium">{usageStatus.free_remaining || 0} / {usageStatus.free_allocation || 3}</span>
+                ) : usageStatus ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Camera className="h-5 w-5 text-blue-600" />
+                        <span className="text-sm font-medium text-gray-900">AI Recognition Credits</span>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                        usageStatus.total_remaining > 0 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {usageStatus.total_remaining} {usageStatus.total_remaining === 1 ? 'credit' : 'credits'} left
+                      </div>
                     </div>
-                    {usageStatus.purchased_credits > 0 && (
+                    
+                    <div className="text-xs text-gray-600 space-y-1">
                       <div className="flex justify-between">
-                        <span>Purchased credits:</span>
-                        <span className="font-medium">{usageStatus.purchased_credits}</span>
+                        <span>Free tries:</span>
+                        <span className="font-medium">{usageStatus.free_remaining || 0} / {usageStatus.free_allocation || 3}</span>
+                      </div>
+                      {usageStatus.purchased_credits > 0 && (
+                        <div className="flex justify-between">
+                          <span>Purchased credits:</span>
+                          <span className="font-medium">{usageStatus.purchased_credits}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {usageStatus.total_remaining === 0 && (
+                      <div className="mt-3 pt-3 border-t border-blue-200">
+                        <p className="text-sm font-medium text-gray-900 mb-2">No credits remaining. Choose an option:</p>
+                        <div className="flex flex-col space-y-2">
+                          <button
+                            onClick={() => setShowPaymentModal(true)}
+                            className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center justify-center space-x-2"
+                          >
+                            <span>💳</span>
+                            <span>Buy 1 Recognition (₱{usageStatus.price_per_analysis?.toFixed(2) || '20.00'})</span>
+                          </button>
+                          <button
+                            onClick={handleSubscribe}
+                            className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center justify-center space-x-2"
+                          >
+                            <span>👑</span>
+                            <span>Subscribe to Premium</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {usageStatus.total_remaining > 2 && (
+                      <div className="mt-2 pt-2 border-t border-blue-200">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => setShowPaymentModal(true)}
+                            className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+                          >
+                            Buy More
+                          </button>
+                          <button
+                            onClick={handleSubscribe}
+                            className="flex-1 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
+                          >
+                            Subscribe
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {usageStatus.total_remaining > 0 && usageStatus.total_remaining <= 2 && (
+                      <div className="mt-2 pt-2 border-t border-blue-200">
+                        <p className="text-xs text-amber-700 mb-2">Running low on credits!</p>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => setShowPaymentModal(true)}
+                            className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+                          >
+                            Buy More
+                          </button>
+                          <button
+                            onClick={handleSubscribe}
+                            className="flex-1 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
+                          >
+                            Subscribe
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
-                  
-                  {usageStatus.total_remaining === 0 && (
-                    <div className="mt-3 pt-3 border-t border-blue-200">
-                      <p className="text-sm font-medium text-gray-900 mb-2">No credits remaining. Choose an option:</p>
-                      <div className="flex flex-col space-y-2">
-                        <button
-                          onClick={() => setShowPaymentModal(true)}
-                          className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center justify-center space-x-2"
-                        >
-                          <span>💳</span>
-                          <span>Buy 1 Recognition (₱{usageStatus.price_per_analysis?.toFixed(2) || '20.00'})</span>
-                        </button>
-                        <button
-                          onClick={handleSubscribe}
-                          className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center justify-center space-x-2"
-                        >
-                          <span>👑</span>
-                          <span>Subscribe to Premium (Unlimited)</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {usageStatus.total_remaining > 0 && usageStatus.total_remaining <= 2 && (
-                    <div className="mt-2 pt-2 border-t border-blue-200">
-                      <p className="text-xs text-amber-700 mb-2">Running low on credits!</p>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => setShowPaymentModal(true)}
-                          className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
-                        >
-                          Buy More
-                        </button>
-                        <button
-                          onClick={handleSubscribe}
-                          className="flex-1 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
-                        >
-                          Subscribe
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                ) : (
+                  <div className="text-sm text-gray-600">
+                    Unable to load usage information. You can still try uploading an image.
+                  </div>
+                )
               ) : (
-                <div className="text-sm text-gray-600">
-                  Unable to load usage information. You can still try uploading an image.
-                </div>
+                // Soil Analysis Credits (separate from plant)
+                isLoadingSoilUsage ? (
+                  <div className="flex items-center justify-center py-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                    <span className="ml-2 text-sm text-gray-600">Loading usage...</span>
+                  </div>
+                ) : soilUsageStatus ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Camera className="h-5 w-5 text-blue-600" />
+                        <span className="text-sm font-medium text-gray-900">Soil Analysis Credits</span>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                        soilUsageStatus.total_remaining > 0 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {soilUsageStatus.total_remaining} {soilUsageStatus.total_remaining === 1 ? 'credit' : 'credits'} left
+                      </div>
+                    </div>
+                    
+                    <div className="text-xs text-gray-600 space-y-1">
+                      <div className="flex justify-between">
+                        <span>Free tries:</span>
+                        <span className="font-medium">{soilUsageStatus.free_remaining || 0} / {soilUsageStatus.free_allocation || 3}</span>
+                      </div>
+                      {soilUsageStatus.purchased_credits > 0 && (
+                        <div className="flex justify-between">
+                          <span>Purchased credits:</span>
+                          <span className="font-medium">{soilUsageStatus.purchased_credits}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {soilUsageStatus.total_remaining === 0 && (
+                      <div className="mt-3 pt-3 border-t border-blue-200">
+                        <p className="text-sm font-medium text-gray-900 mb-2">No credits remaining. Choose an option:</p>
+                        <div className="flex flex-col space-y-2">
+                          <button
+                            onClick={() => setShowPaymentModal(true)}
+                            className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center justify-center space-x-2"
+                          >
+                            <span>💳</span>
+                            <span>Buy 1 Soil Analysis (₱{soilUsageStatus.price_per_analysis?.toFixed(2) || '20.00'})</span>
+                          </button>
+                          <button
+                            onClick={handleSubscribe}
+                            className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center justify-center space-x-2"
+                          >
+                            <span>👑</span>
+                            <span>Subscribe to Premium</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {soilUsageStatus.total_remaining > 0 && soilUsageStatus.total_remaining <= 2 && (
+                      <div className="mt-2 pt-2 border-t border-blue-200">
+                        <p className="text-xs text-amber-700 mb-2">Running low on credits!</p>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => setShowPaymentModal(true)}
+                            className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+                          >
+                            Buy More
+                          </button>
+                          <button
+                            onClick={handleSubscribe}
+                            className="flex-1 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
+                          >
+                            Subscribe
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-600">
+                    Unable to load usage information. You can still try uploading an image.
+                  </div>
+                )
               )}
             </div>
             
@@ -1292,104 +1503,165 @@ const AIPlantRecognition = () => {
             {/* Modal Content */}
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
               {typeof soilResult.suitable_plants === 'object' ? (
-                <div className="space-y-6">
-                  {Object.entries(soilResult.suitable_plants).map(([category, plants]) => (
-                    <div key={category} className="bg-gray-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-900 capitalize mb-4 text-lg">{category}</h4>
-                      {Array.isArray(plants) ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                          {plants.map((plant, index) => {
-                            const plantName = typeof plant === 'string' ? plant : plant.name || plant
-                            return (
-                              <div key={index} className="bg-white rounded-lg p-3 border border-green-200 hover:border-green-300 transition-colors">
-                                <div className="flex flex-col items-center text-center">
-                                  <img 
-                                    src={getPlantImage(plantName)} 
-                                    alt={plantName}
-                                    className="w-20 h-20 rounded-lg object-cover mb-3"
-                                    loading="lazy"
-                                    onError={(e) => {
-                                      // Try a generic plant image if the specific one fails
-                                      if (e.target.src !== 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&h=200&fit=crop&crop=center') {
-                                        e.target.src = 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&h=200&fit=crop&crop=center'
-                                      }
-                                    }}
-                                  />
-                                  <span className="text-sm font-medium text-green-800">{plantName}</span>
+                <div className="space-y-8">
+                  {Object.entries(soilResult.suitable_plants).map(([category, plants]) => {
+                    // Get category emoji and border color
+                    const categoryEmoji = {
+                      vegetables: '🥬',
+                      fruits: '🍎',
+                      herbs: '🌿',
+                      flowers: '🌸',
+                      trees: '🌳'
+                    }[category] || '🌱'
+                    
+                    const borderColor = {
+                      vegetables: 'border-green-200',
+                      fruits: 'border-red-200',
+                      herbs: 'border-purple-200',
+                      flowers: 'border-pink-200',
+                      trees: 'border-blue-200'
+                    }[category] || 'border-green-200'
+                    
+                    return (
+                      <div key={category}>
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">{categoryEmoji} {category.charAt(0).toUpperCase() + category.slice(1)}</h3>
+                        {Array.isArray(plants) ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {plants.map((plant, index) => {
+                              const plantName = typeof plant === 'string' ? plant : plant.name || plant
+                              const plantDescription = typeof plant === 'object' && plant.description ? plant.description : ''
+                              const plantDetails = getPlantDetails(plantName, plantDescription)
+                              
+                              return (
+                                <div key={index} className={`bg-white rounded-lg p-4 border ${borderColor} hover:shadow-md transition-shadow`}>
+                                  <div className="flex items-start justify-between mb-3">
+                                    <h4 className="font-semibold text-gray-900 text-lg">{plantDetails.name}</h4>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(plantDetails.difficulty)}`}>
+                                      {plantDetails.difficulty}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <p className="text-sm text-gray-600 font-medium">📅 {plantDetails.timing}</p>
+                                    
+                                    {plantDetails.description && (
+                                      <p className="text-sm text-gray-700">{plantDetails.description}</p>
+                                    )}
+                                    
+                                    {plantDetails.care_tips && (
+                                      <div className="bg-green-50 p-2 rounded text-xs">
+                                        <span className="font-medium text-green-800">💡 Care Tips:</span>
+                                        <p className="text-green-700 mt-1">{plantDetails.care_tips}</p>
+                                      </div>
+                                    )}
+                                    
+                                    {plantDetails.harvest_time && (
+                                      <p className="text-xs text-gray-500">⏱️ Harvest: {plantDetails.harvest_time}</p>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      ) : typeof plants === 'object' ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {Object.entries(plants).map(([plantName, description]) => (
-                            <div key={plantName} className="bg-white rounded-lg p-4 border border-green-200 hover:border-green-300 transition-colors">
-                              <div className="flex items-start space-x-4">
-                                <img 
-                                  src={getPlantImage(plantName)} 
-                                  alt={plantName}
-                                  className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                                  onError={(e) => {
-                                    e.target.src = 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&h=200&fit=crop&crop=center'
-                                  }}
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-green-800 text-base">{plantName}</div>
-                                  <div className="text-sm text-gray-700 mt-1">{description}</div>
+                              )
+                            })}
+                          </div>
+                        ) : typeof plants === 'object' ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {Object.entries(plants).map(([plantName, description]) => {
+                              const plantDetails = getPlantDetails(plantName, typeof description === 'string' ? description : '')
+                              
+                              return (
+                                <div key={plantName} className={`bg-white rounded-lg p-4 border ${borderColor} hover:shadow-md transition-shadow`}>
+                                  <div className="flex items-start justify-between mb-3">
+                                    <h4 className="font-semibold text-gray-900 text-lg">{plantDetails.name}</h4>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(plantDetails.difficulty)}`}>
+                                      {plantDetails.difficulty}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <p className="text-sm text-gray-600 font-medium">📅 {plantDetails.timing}</p>
+                                    
+                                    {plantDetails.description && (
+                                      <p className="text-sm text-gray-700">{plantDetails.description}</p>
+                                    )}
+                                    
+                                    {plantDetails.care_tips && (
+                                      <div className="bg-green-50 p-2 rounded text-xs">
+                                        <span className="font-medium text-green-800">💡 Care Tips:</span>
+                                        <p className="text-green-700 mt-1">{plantDetails.care_tips}</p>
+                                      </div>
+                                    )}
+                                    
+                                    {plantDetails.harvest_time && (
+                                      <p className="text-xs text-gray-500">⏱️ Harvest: {plantDetails.harvest_time}</p>
+                                    )}
+                                  </div>
                                 </div>
+                              )
+                            })}
+                          </div>
+                        ) : (
+                          <div className={`bg-white rounded-lg p-4 border ${borderColor}`}>
+                            <div className="flex items-start justify-between mb-3">
+                              <h4 className="font-semibold text-gray-900 text-lg">{String(plants)}</h4>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor('Medium')}`}>
+                                Medium
+                              </span>
+                            </div>
+                            <div className="space-y-2">
+                              <p className="text-sm text-gray-600 font-medium">📅 Plant seedlings</p>
+                              <p className="text-sm text-gray-700">A suitable plant for this soil type.</p>
+                              <div className="bg-green-50 p-2 rounded text-xs">
+                                <span className="font-medium text-green-800">💡 Care Tips:</span>
+                                <p className="text-green-700 mt-1">Well-draining soil, full sun, water regularly</p>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="bg-white rounded-lg p-3 border border-green-200">
-                          <div className="flex flex-col items-center text-center">
-                            <img 
-                              src={getPlantImage(String(plants))} 
-                              alt={String(plants)}
-                              className="w-20 h-20 rounded-lg object-cover mb-3"
-                              onError={(e) => {
-                                e.target.src = 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&h=200&fit=crop&crop=center'
-                              }}
-                            />
-                            <span className="text-sm font-medium text-green-800">{String(plants)}</span>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               ) : Array.isArray(soilResult.suitable_plants) ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {soilResult.suitable_plants.map((p, i) => (
-                    <div key={i} className="bg-white rounded-lg p-3 border border-green-200 hover:border-green-300 transition-colors">
-                      <div className="flex flex-col items-center text-center">
-                        <img 
-                          src={getPlantImage(p)} 
-                          alt={p}
-                          className="w-20 h-20 rounded-lg object-cover mb-3"
-                          onError={(e) => {
-                            e.target.src = 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&h=200&fit=crop&crop=center'
-                          }}
-                        />
-                        <span className="text-sm font-medium text-green-800">{p}</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {soilResult.suitable_plants.map((p, i) => {
+                    const plantDetails = getPlantDetails(p)
+                    return (
+                      <div key={i} className="bg-white rounded-lg p-4 border border-green-200 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between mb-3">
+                          <h4 className="font-semibold text-gray-900 text-lg">{plantDetails.name}</h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(plantDetails.difficulty)}`}>
+                            {plantDetails.difficulty}
+                          </span>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <p className="text-sm text-gray-600 font-medium">📅 {plantDetails.timing}</p>
+                          <p className="text-sm text-gray-700">{plantDetails.description}</p>
+                          <div className="bg-green-50 p-2 rounded text-xs">
+                            <span className="font-medium text-green-800">💡 Care Tips:</span>
+                            <p className="text-green-700 mt-1">{plantDetails.care_tips}</p>
+                          </div>
+                          <p className="text-xs text-gray-500">⏱️ Harvest: {plantDetails.harvest_time}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 <div className="bg-white rounded-lg p-4 border border-green-200">
-                  <div className="flex flex-col items-center text-center">
-                    <img 
-                      src={getPlantImage(String(soilResult.suitable_plants))} 
-                      alt={String(soilResult.suitable_plants)}
-                      className="w-20 h-20 rounded-lg object-cover mb-3"
-                      onError={(e) => {
-                        e.target.src = 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&h=200&fit=crop&crop=center'
-                      }}
-                    />
-                    <span className="text-sm font-medium text-green-800">{String(soilResult.suitable_plants)}</span>
+                  <div className="flex items-start justify-between mb-3">
+                    <h4 className="font-semibold text-gray-900 text-lg">{String(soilResult.suitable_plants)}</h4>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor('Medium')}`}>
+                      Medium
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600 font-medium">📅 Plant seedlings</p>
+                    <p className="text-sm text-gray-700">A suitable plant for this soil type.</p>
+                    <div className="bg-green-50 p-2 rounded text-xs">
+                      <span className="font-medium text-green-800">💡 Care Tips:</span>
+                      <p className="text-green-700 mt-1">Well-draining soil, full sun, water regularly</p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1507,15 +1779,23 @@ const AIPlantRecognition = () => {
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-xl font-semibold mb-4">Purchase AI Recognition</h3>
+            <h3 className="text-xl font-semibold mb-4">
+              {analysisMode === 'soil' ? 'Purchase Soil Analysis' : 'Purchase AI Recognition'}
+            </h3>
             <div className="space-y-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-900">1x AI Recognition</span>
-                  <span className="text-lg font-bold text-green-600">₱{usageStatus?.price_per_analysis?.toFixed(2) || '20.00'}</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {analysisMode === 'soil' ? '1x Soil Analysis' : '1x AI Recognition'}
+                  </span>
+                  <span className="text-lg font-bold text-green-600">
+                    ₱{(analysisMode === 'soil' ? soilUsageStatus : usageStatus)?.price_per_analysis?.toFixed(2) || '20.00'}
+                  </span>
                 </div>
                 <p className="text-xs text-gray-600 mt-2">
-                  Get instant plant identification with AI-powered recognition. This is a one-time purchase.
+                  {analysisMode === 'soil' 
+                    ? 'Get comprehensive soil analysis with AI-powered insights. This is a one-time purchase.'
+                    : 'Get instant plant identification with AI-powered recognition. This is a one-time purchase.'}
                 </p>
               </div>
               
@@ -1534,7 +1814,7 @@ const AIPlantRecognition = () => {
                   disabled={isPurchasing}
                   className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isPurchasing ? 'Processing...' : `Pay ₱${usageStatus?.price_per_analysis?.toFixed(2) || '20.00'}`}
+                  {isPurchasing ? 'Processing...' : `Pay ₱${(analysisMode === 'soil' ? soilUsageStatus : usageStatus)?.price_per_analysis?.toFixed(2) || '20.00'}`}
                 </button>
                 <button
                   onClick={() => setShowPaymentModal(false)}
@@ -1553,7 +1833,7 @@ const AIPlantRecognition = () => {
                   }}
                   className="w-full text-sm text-purple-600 hover:text-purple-800 font-medium"
                 >
-                  👑 Or subscribe to Premium for unlimited recognition →
+                  👑 Or subscribe to Premium →
                 </button>
               </div>
             </div>

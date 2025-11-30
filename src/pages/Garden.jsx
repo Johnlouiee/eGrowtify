@@ -117,7 +117,7 @@ const Garden = () => {
   const [plantForm, setPlantForm] = useState({
     name: '',
     type: '',
-    environment: '',
+    environment: 'outdoor', // Always outdoor for new plants
     care_guide: '',
     ideal_soil_type: '',
     garden_id: '',
@@ -662,7 +662,7 @@ const Garden = () => {
       }
       
       setPlantForm({
-        name: '', type: '', environment: '', care_guide: '', ideal_soil_type: '',
+        name: '', type: '', environment: 'outdoor', care_guide: '', ideal_soil_type: '',
         garden_id: '', planting_date: new Date().toISOString().split('T')[0]
       })
       setPlantImage(null)
@@ -1667,7 +1667,31 @@ const Garden = () => {
                                   className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center justify-center space-x-2"
                                 >
                                   <span>👑</span>
-                                  <span>Subscribe to Premium (Unlimited)</span>
+                                  <span>Subscribe to Premium</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {aiUsage.total_remaining > 2 && (
+                            <div className="mt-2 pt-2 border-t border-blue-200">
+                              <div className="flex space-x-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPaymentModal(true)}
+                                  className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+                                >
+                                  Buy More
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShowAddPlant(false)
+                                    navigate('/subscription')
+                                  }}
+                                  className="flex-1 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
+                                >
+                                  Subscribe
                                 </button>
                               </div>
                             </div>
@@ -1725,15 +1749,11 @@ const Garden = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Environment</label>
-                  <select
-                    value={plantForm.environment}
-                    onChange={(e) => setPlantForm({...plantForm, environment: e.target.value})}
-                    className="input-field"
-                    required
-                  >
-                    <option value="">Select Environment</option>
-                    <option value="outdoor">Outdoor</option>
-                  </select>
+                  <div className="p-3 rounded-lg border-2 border-green-500 bg-green-50 text-green-700 flex items-center justify-center space-x-2">
+                    <Sun className="h-4 w-4" />
+                    <span className="font-medium">Outdoor</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">Only outdoor gardening is supported</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Garden</label>
@@ -1886,7 +1906,7 @@ const Garden = () => {
                   }}
                   className="w-full text-sm text-purple-600 hover:text-purple-800 font-medium"
                 >
-                  👑 Or subscribe to Premium for unlimited recognition →
+                  👑 Or subscribe to Premium →
                 </button>
               </div>
             </div>
