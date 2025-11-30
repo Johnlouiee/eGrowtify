@@ -15,6 +15,10 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
   const [loading, setLoading] = useState(false)
   const [selectedSpace, setSelectedSpace] = useState(null)
   const [showPlantModal, setShowPlantModal] = useState(false)
+  const [usageStatus, setUsageStatus] = useState(null)
+  const [isLoadingUsage, setIsLoadingUsage] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [isPurchasing, setIsPurchasing] = useState(false)
 
   const [plantForm, setPlantForm] = useState({
     plant_id: '',
@@ -37,6 +41,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
     if (selectedGarden) {
       fetchGridSpaces()
       checkPaymentStatus()
+      fetchUsageStatus()
     }
   }, [selectedGarden])
 
@@ -870,6 +875,31 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
     }
   }
 
+  const fetchUsageStatus = async () => {
+    setIsLoadingUsage(true)
+    try {
+      const response = await axios.get('/api/ai-analysis/usage')
+      console.log('📊 Usage status fetched:', response.data)
+      setUsageStatus(response.data)
+    } catch (error) {
+      console.error('❌ Error fetching usage status:', error)
+      // Set default values if API fails - always show 3 free for non-premium
+      if (!isPremium) {
+        setUsageStatus({
+          is_premium: false,
+          free_allocation: 3,
+          free_used: 0,
+          free_remaining: 3,
+          purchased_credits: 0,
+          total_remaining: 3,
+          price_per_analysis: 20.00
+        })
+      }
+    } finally {
+      setIsLoadingUsage(false)
+    }
+  }
+
   const handleShowHistory = (space) => {
     fetchActivityLogs(space.id, space.plant_id)
     setShowHistoryModal(true)
@@ -878,6 +908,13 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
   const handleImageUpload = async (e, space) => {
     const file = e.target.files[0]
     if (!file) return
+
+    // Check if user has credits (unless premium)
+    if (!isPremium && usageStatus && usageStatus.total_remaining === 0) {
+      toast.error('No credits remaining. Please purchase credits or subscribe to Premium.')
+      setShowPaymentModal(true)
+      return
+    }
 
     console.log('🔄 Starting image upload...', { file: file.name, spaceId: space.id })
     setUploadingImage(space.id)
@@ -929,6 +966,9 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       await fetchGridSpaces()
       await fetchPlants()
       
+      // Refresh usage status after successful upload
+      await fetchUsageStatus()
+      
       // Notify parent component to refresh alerts
       if (onPlantUpdate) {
         onPlantUpdate()
@@ -937,10 +977,47 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
       console.error('❌ Error uploading image:', error)
       console.error('❌ Error response:', error.response?.data)
       console.error('❌ Error status:', error.response?.status)
-      toast.error(`Failed to upload plant image: ${error.response?.data?.error || error.message}`)
+      
+      // Check if limit reached (402 Payment Required)
+      if (error?.response?.status === 402) {
+        setShowPaymentModal(true)
+        await fetchUsageStatus()
+        toast.error('Free analysis limit reached')
+      } else {
+        toast.error(`Failed to upload plant image: ${error.response?.data?.error || error.message}`)
+      }
     } finally {
       setUploadingImage(null)
     }
+  }
+
+  const handlePurchaseAnalysis = async () => {
+    setIsPurchasing(true)
+    try {
+      const response = await axios.post('/api/ai-analysis/purchase', {
+        quantity: 1,
+        payment_method: 'demo' // Demo payment for instant purchase
+      })
+      
+      if (response.data.success) {
+        toast.success(`Successfully purchased 1 analysis for ₱${response.data.total_paid.toFixed(2)}`)
+        setShowPaymentModal(false)
+        // Refresh usage status
+        await fetchUsageStatus()
+      } else {
+        toast.error(response.data.error || 'Purchase failed')
+      }
+    } catch (error) {
+      console.error('Error purchasing analysis:', error)
+      toast.error(error.response?.data?.error || 'Failed to purchase analysis')
+    } finally {
+      setIsPurchasing(false)
+    }
+  }
+
+  const handleSubscribe = () => {
+    setShowPaymentModal(false)
+    navigate('/subscription')
   }
 
   const handlePlantUpdate = async (space, action) => {
@@ -1528,6 +1605,110 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
               </div>
 
               <div className="space-y-4">
+                {/* AI Recognition Usage Indicator */}
+                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  {isLoadingUsage ? (
+                    <div className="flex items-center justify-center py-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                      <span className="ml-2 text-sm text-gray-600">Loading usage...</span>
+                    </div>
+                  ) : usageStatus ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Camera className="h-5 w-5 text-blue-600" />
+                          <span className="text-sm font-medium text-gray-900">AI Recognition Credits</span>
+                        </div>
+                        <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                          usageStatus.total_remaining > 0 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {usageStatus.total_remaining} {usageStatus.total_remaining === 1 ? 'credit' : 'credits'} left
+                        </div>
+                      </div>
+                      
+                      <div className="text-xs text-gray-600 space-y-1">
+                        <div className="flex justify-between">
+                          <span>Free tries:</span>
+                          <span className="font-medium">{usageStatus.free_remaining || 0} / {usageStatus.free_allocation || (isPremium || usageStatus.is_premium ? 10 : 3)}</span>
+                        </div>
+                        {usageStatus.purchased_credits > 0 && (
+                          <div className="flex justify-between">
+                            <span>Purchased credits:</span>
+                            <span className="font-medium">{usageStatus.purchased_credits}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {usageStatus.total_remaining === 0 && (
+                        <div className="mt-3 pt-3 border-t border-blue-200">
+                          <p className="text-sm font-medium text-gray-900 mb-2">No credits remaining. Choose an option:</p>
+                          <div className="flex flex-col space-y-2">
+                            <button
+                              onClick={() => setShowPaymentModal(true)}
+                              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center justify-center space-x-2"
+                            >
+                              <span>💳</span>
+                              <span>Buy 1 Recognition (₱{usageStatus.price_per_analysis?.toFixed(2) || '20.00'})</span>
+                            </button>
+                            <button
+                              onClick={handleSubscribe}
+                              className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center justify-center space-x-2"
+                            >
+                              <span>👑</span>
+                              <span>Subscribe to Premium</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {usageStatus.total_remaining > 2 && (
+                        <div className="mt-2 pt-2 border-t border-blue-200">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => setShowPaymentModal(true)}
+                              className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+                            >
+                              Buy More
+                            </button>
+                            <button
+                              onClick={handleSubscribe}
+                              className="flex-1 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
+                            >
+                              Subscribe
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {usageStatus.total_remaining > 0 && usageStatus.total_remaining <= 2 && (
+                        <div className="mt-2 pt-2 border-t border-blue-200">
+                          <p className="text-xs text-amber-700 mb-2">Running low on credits!</p>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => setShowPaymentModal(true)}
+                              className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+                            >
+                              Buy More
+                            </button>
+                            <button
+                              onClick={handleSubscribe}
+                              className="flex-1 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
+                            >
+                              Subscribe
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-600">
+                      Unable to load usage information. You can still try uploading an image.
+                    </div>
+                  )}
+                </div>
+
                 {/* Plant Image */}
                 <div>
                   {(space.image_path || plant?.latest_image) ? (
@@ -1556,7 +1737,7 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                       onChange={(e) => handleImageUpload(e, space)}
                       className="hidden"
                       id={`upload-modal-${space.id}`}
-                      disabled={uploadingImage === space.id}
+                      disabled={uploadingImage === space.id || (!isPremium && usageStatus && usageStatus.total_remaining === 0)}
                     />
                     <Camera className="h-4 w-4" />
                     <span>
@@ -1724,6 +1905,64 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
           </div>
         )
       })()}
+
+      {/* Payment Modal for One-Time Analysis Purchase */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-xl font-semibold mb-4">Purchase AI Recognition</h3>
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-900">1x AI Recognition</span>
+                  <span className="text-lg font-bold text-green-600">₱{usageStatus?.price_per_analysis?.toFixed(2) || '20.00'}</span>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">
+                  Get instant plant identification with AI-powered recognition. This is a one-time purchase.
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Payment Method</label>
+                <select className="input-field" defaultValue="demo">
+                  <option value="demo">Demo Payment (Instant)</option>
+                  <option value="gcash">GCash</option>
+                  <option value="paymaya">PayMaya</option>
+                </select>
+              </div>
+              
+              <div className="flex space-x-4 pt-4">
+                <button
+                  onClick={handlePurchaseAnalysis}
+                  disabled={isPurchasing}
+                  className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isPurchasing ? 'Processing...' : `Pay ₱${usageStatus?.price_per_analysis?.toFixed(2) || '20.00'}`}
+                </button>
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="flex-1 btn-secondary"
+                  disabled={isPurchasing}
+                >
+                  Cancel
+                </button>
+              </div>
+              
+              <div className="pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    setShowPaymentModal(false)
+                    handleSubscribe()
+                  }}
+                  className="w-full text-sm text-purple-600 hover:text-purple-800 font-medium"
+                >
+                  👑 Or subscribe to Premium →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Plant History Modal */}
       {showHistoryModal && selectedPlantSpace && (

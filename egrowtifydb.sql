@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 24, 2025 at 02:34 PM
+-- Generation Time: Nov 30, 2025 at 03:40 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -73,7 +73,61 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `garden_id`, `space_id`, `plant_id
 (69, 21, 20, 222, 89, 'prune', '2025-11-24 00:00:00', 'Completed pruneing for Sunflower', '2025-11-24 12:55:58'),
 (70, 21, 20, 227, 88, 'fertilize', '2025-11-24 00:00:00', 'Completed fertilizeing for Sunflower', '2025-11-24 13:19:22'),
 (71, 21, 20, 314, 93, 'water', '2025-11-24 00:00:00', 'Completed watering for Grape', '2025-11-24 13:24:16'),
-(72, 21, 21, 351, 96, 'prune', '2025-11-24 00:00:00', 'Completed pruneing for Strawberry', '2025-11-24 13:31:49');
+(72, 21, 21, 351, 96, 'prune', '2025-11-24 00:00:00', 'Completed pruneing for Strawberry', '2025-11-24 13:31:49'),
+(73, 18, 19, 210, 85, 'water', '2025-11-28 00:00:00', 'Completed watering for Grape', '2025-11-28 11:08:15'),
+(74, 18, 19, 212, 97, 'water', '2025-11-28 00:00:00', 'Completed watering for Strawberry', '2025-11-28 11:08:16'),
+(75, 18, 19, 210, 85, 'prune', '2025-11-28 00:00:00', 'Completed pruneing for Grape', '2025-11-28 11:08:19'),
+(76, 18, 19, 212, 97, 'prune', '2025-11-28 00:00:00', 'Completed pruneing for Strawberry', '2025-11-28 11:08:21'),
+(77, 18, 19, 214, 98, 'prune', '2025-11-28 00:00:00', 'Completed pruneing for Sunflower', '2025-11-28 11:33:13'),
+(78, 18, 19, 210, 85, 'health_change', '2025-11-28 00:00:00', 'Health status changed from Healthy to Unhealthy: The grapes appear shriveled and dehydrated, indicating water needs. Additionally, there are some dam', '2025-11-28 12:05:45'),
+(79, 18, 19, 210, 85, 'health_change', '2025-11-28 00:00:00', 'Health status changed from Unhealthy to Unknown: The leaves and grapes appear healthy and vibrant with no clear signs of wilt, yellowing, or damage.', '2025-11-28 12:06:18'),
+(80, 18, 24, 434, 102, 'health_change', '2025-11-28 00:00:00', 'Health status changed from Needs Care to Unhealthy: The leaves appear healthy and green, and the strawberries are ripe and abundant. There are no visible signs of dehydration, nutrient deficiency, or da', '2025-11-28 12:14:05'),
+(81, 18, 24, 434, 102, 'health_change', '2025-11-28 00:00:00', 'Health status changed from Healthy to Needs Care: Presence of a rotting strawberry indicates need for pruning.', '2025-11-28 12:18:30'),
+(82, 18, 24, 434, 102, 'prune', '2025-11-28 00:00:00', 'Completed pruneing for Strawberry', '2025-11-28 12:19:10'),
+(83, 18, 24, 434, 102, 'health_change', '2025-11-28 00:00:00', 'Health status changed from Needs Care to Healthy: The strawberry plant shows healthy green leaves and vibrant fruit, indicating proper hydration and nutrition. There are no visible signs of wilting, n', '2025-11-28 12:19:35'),
+(84, 18, 24, 444, 103, 'prune', '2025-11-28 00:00:00', 'Completed pruneing for Grape', '2025-11-28 12:23:04'),
+(85, 18, 24, 444, 103, 'water', '2025-11-28 00:00:00', 'Completed watering for Grape', '2025-11-28 12:23:07'),
+(86, 18, 24, 444, 103, 'health_change', '2025-11-28 00:00:00', 'Health status changed from Unhealthy to Unknown: AI analysis completed but response format unclear: I\'m unable to analyze images of grape plants. The image provided contains strawberries. Can you pro', '2025-11-28 12:23:32'),
+(87, 18, 24, 444, 103, 'health_change', '2025-11-28 00:00:00', 'Health status changed from Unhealthy to Unknown: AI analysis completed but response format unclear: I\'m sorry, I can\'t assist with that....', '2025-11-28 12:24:41'),
+(88, 18, 24, 434, 102, 'health_change', '2025-11-28 00:00:00', 'Health status changed from Healthy to Unhealthy: The image shows a fruiting strawberry plant with one healthy berry and one shriveled, possibly indicating dehydration or inconsistent watering. Shrive', '2025-11-28 12:26:08'),
+(89, 18, 24, 434, 102, 'water', '2025-11-28 00:00:00', 'Completed watering for Strawberry', '2025-11-28 12:26:21'),
+(90, 18, 24, 434, 102, 'health_change', '2025-11-28 00:00:00', 'Health status changed from Unhealthy to Healthy: The strawberry plant shows healthy, vibrant foliage and ripe fruit, with no visible signs of water stress, nutrient deficiency, or the need for prunin', '2025-11-28 12:26:40'),
+(91, 18, 24, 434, 102, 'health_change', '2025-11-28 00:00:00', 'Health status remains Healthy: The strawberry plant has healthy, lush green leaves and vibrant red fruit, indicating it is well-watered, adequately fertilized, and does not require ', '2025-11-28 12:29:17'),
+(92, 18, 24, 434, 102, 'health_change', '2025-11-28 00:00:00', 'Health status changed from Healthy to Unhealthy: The image shows one strawberry with signs of dehydration and wilting. There is also a decaying strawberry present, indicating a need for pruning.', '2025-11-28 12:29:34'),
+(93, 18, 24, 437, 105, 'health_change', '2025-11-28 00:00:00', 'Health status changed from Healthy to Unhealthy: The grapes appear shriveled and dehydrated, which indicates a need for water. Some grapes are damaged, suggesting a need for pruning.', '2025-11-28 12:50:08'),
+(94, 18, 24, 437, 105, 'water', '2025-11-28 00:00:00', 'Completed watering for Grape', '2025-11-28 12:50:39'),
+(95, 18, 24, 437, 105, 'prune', '2025-11-28 00:00:00', 'Completed pruneing for Grape', '2025-11-28 12:50:41'),
+(96, 18, 24, 437, 105, 'health_change', '2025-11-28 00:00:00', 'Health status changed from Unhealthy to Healthy: The leaves appear healthy and green without signs of wilting, yellowing, or overgrowth.', '2025-11-28 12:51:17'),
+(97, 18, 24, 447, 106, 'prune', '2025-11-28 00:00:00', 'Completed pruneing for Sunflower', '2025-11-28 12:53:04'),
+(98, 18, 24, 447, 106, 'water', '2025-11-28 00:00:00', 'Completed watering for Sunflower', '2025-11-28 12:53:06'),
+(99, 18, 24, 447, 106, 'health_change', '2025-11-28 00:00:00', 'Health status changed from Unhealthy to Healthy: The sunflower appears healthy with vibrant green leaves and no visible signs of wilting, yellowing, or damaged leaves.', '2025-11-28 12:53:23'),
+(100, 19, 25, 455, 107, 'water', '2025-11-30 00:00:00', 'Completed watering for Strawberry', '2025-11-30 00:04:46'),
+(101, 19, 25, 455, 107, 'prune', '2025-11-30 00:00:00', 'Completed pruneing for Strawberry', '2025-11-30 00:04:48'),
+(102, 19, 25, 455, 107, 'health_change', '2025-11-30 00:00:00', 'Health status changed from Unhealthy to Healthy: The strawberry plant shows healthy fruits and leaves, with no visible signs of water stress, nutrient deficiency, or need for pruning.', '2025-11-30 00:05:16'),
+(103, 19, 25, 455, 107, 'health_change', '2025-11-30 00:00:00', 'Health status remains Healthy: The strawberry plant has healthy, green leaves and vibrant red strawberries. No signs of wilting, yellowing, or overgrowth are visible.', '2025-11-30 00:10:29'),
+(104, 19, 25, 455, 107, 'health_change', '2025-11-30 00:00:00', 'Health status changed from Healthy to Unhealthy: The image shows a strawberry plant with damaged and moldy fruit, indicating a need for pruning to remove unhealthy parts.', '2025-11-30 00:11:36'),
+(105, 19, 25, 455, 107, 'health_change', '2025-11-30 00:00:00', 'Health status changed from Unhealthy to Healthy: The strawberry plant appears healthy with vibrant green leaves and well-formed fruit, showing no obvious signs of distress or care needs.', '2025-11-30 00:14:03'),
+(106, 19, 25, 456, 108, 'health_change', '2025-11-30 00:00:00', 'Health status remains Unhealthy: URGENT: Health issues detected (damaged fruit) - The image shows shriveled grapes, which may indicate the need for pruning to remove damaged fruit.', '2025-11-30 01:01:24'),
+(107, 19, 25, 456, 108, 'water', '2025-11-30 00:00:00', 'Completed watering for Grape', '2025-11-30 01:02:10'),
+(108, 19, 25, 456, 108, 'prune', '2025-11-30 00:00:00', 'Completed pruneing for Grape', '2025-11-30 01:02:11'),
+(109, 19, 25, 459, 110, 'health_change', '2025-11-30 00:00:00', 'Health status changed from Needs Care to Healthy: The tomato plant appears healthy with green leaves and vibrant fruit. There are no wilted leaves, yellowing, or evident nutrient deficiencies.', '2025-11-30 01:10:58'),
+(110, 19, 25, 455, 107, 'health_change', '2025-11-30 00:00:00', 'Health status changed from Healthy to Needs Care: The image shows a strawberry plant with a rotten strawberry, indicating the need for pruning to remove the diseased part.', '2025-11-30 01:11:45'),
+(111, 19, 25, 455, 107, 'health_change', '2025-11-30 00:00:00', 'Health status changed from Needs Care to Unhealthy: URGENT: Health issues detected (damaged fruit) - One of the strawberries appears to be rotting, indicating the need to remove damaged fruit.', '2025-11-30 01:26:25'),
+(112, 19, 25, 455, 107, 'health_change', '2025-11-30 00:00:00', 'Health status changed from Unhealthy to Healthy: The strawberry plant displays healthy, vibrant foliage and ripe strawberries without visible signs of distress.', '2025-11-30 01:26:59'),
+(113, 19, 26, 545, 111, 'prune', '2025-11-30 00:00:00', 'Completed pruneing for Strawberry', '2025-11-30 01:34:38'),
+(114, 19, 26, 547, 113, 'water', '2025-11-30 00:00:00', 'Completed watering for Sunflower', '2025-11-30 01:56:57'),
+(115, 19, 26, 546, 112, 'prune', '2025-11-30 00:00:00', 'Completed pruneing for Grape', '2025-11-30 01:56:59'),
+(116, 19, 26, 546, 112, 'water', '2025-11-30 00:00:00', 'Completed watering for Grape', '2025-11-30 01:57:01'),
+(117, 19, 26, 546, 112, 'health_change', '2025-11-30 00:00:00', 'Health status remains Unhealthy: The grape berries appear shriveled, indicating dehydration, and there are damaged grape clusters that suggest they need pruning.', '2025-11-30 01:57:15'),
+(118, 19, 26, 547, 113, 'health_change', '2025-11-30 00:00:00', 'Health status changed from Unhealthy to Healthy: The sunflowers appear healthy with upright stems, vibrant yellow petals, and green foliage.', '2025-11-30 01:58:49'),
+(119, 19, 25, 456, 108, 'health_change', '2025-11-30 00:00:00', 'Health status changed from Unhealthy to Healthy: The leaves appear healthy and vibrant with no signs of wilting, browning, or discoloration. The grapes are plump, indicating good water and nutrient l', '2025-11-30 02:00:10'),
+(120, 19, 26, 546, 112, 'health_change', '2025-11-30 00:00:00', 'Health status changed from Unhealthy to Healthy: The leaves appear green and healthy, with no signs of wilting, yellowing, or damage. The grapes look fresh and plump.', '2025-11-30 02:01:14'),
+(121, 19, 26, 549, 114, 'health_change', '2025-11-30 00:00:00', 'Initial health status: Healthy: The tulips appear healthy with no visible signs of wilting, yellowing, or overgrowth.', '2025-11-30 02:08:58'),
+(122, 19, 26, 550, 116, 'health_change', '2025-11-30 00:00:00', 'Initial health status: Unhealthy: URGENT: Health issues detected (shriveled fruit) - There is a dried, shriveled fruit that appears rotten, indicating the need for pruning.', '2025-11-30 02:10:34'),
+(123, 19, 26, 550, 116, 'prune', '2025-11-30 00:00:00', 'Completed pruneing for Strawberry', '2025-11-30 02:11:10'),
+(124, 19, 26, 550, 116, 'water', '2025-11-30 00:00:00', 'Completed watering for Strawberry', '2025-11-30 02:11:12'),
+(125, 19, 27, 689, 118, 'health_change', '2025-11-30 00:00:00', 'Initial health status: Unhealthy: URGENT: Health issues detected (damaged fruit) - The image shows a strawberry with decayed leaves and a damaged fruit, indicating a need for pruning t', '2025-11-30 02:35:50'),
+(126, 19, 27, 690, 117, 'health_change', '2025-11-30 00:00:00', 'Initial health status: Healthy: The leaves appear healthy and green, with no visible signs of wilting, discoloration, or damage.', '2025-11-30 02:36:31');
 
 -- --------------------------------------------------------
 
@@ -103,6 +157,25 @@ INSERT INTO `admins` (`id`, `username`, `email`, `password_hash`, `full_name`, `
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `admin_notifications`
+--
+
+CREATE TABLE `admin_notifications` (
+  `id` int(11) NOT NULL,
+  `title` varchar(200) NOT NULL,
+  `message` text NOT NULL,
+  `type` varchar(50) DEFAULT NULL,
+  `priority` varchar(20) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `expires_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `ai_analysis_usage`
 --
 
@@ -120,7 +193,9 @@ CREATE TABLE `ai_analysis_usage` (
 --
 
 INSERT INTO `ai_analysis_usage` (`id`, `user_id`, `free_analyses_used`, `purchased_credits`, `created_at`, `updated_at`) VALUES
-(95, 21, 4, 0, '2025-11-24 12:36:39', '2025-11-24 13:31:03');
+(95, 21, 4, 0, '2025-11-24 12:36:39', '2025-11-24 13:31:03'),
+(101, 18, 3, 0, '2025-11-28 11:06:40', '2025-11-28 12:52:04'),
+(105, 19, 3, 0, '2025-11-30 00:02:41', '2025-11-30 02:36:31');
 
 -- --------------------------------------------------------
 
@@ -158,7 +233,57 @@ INSERT INTO `ai_usage_tracking` (`id`, `user_id`, `usage_type`, `image_path`, `a
 (20, 21, 'plant_analysis', NULL, 'Grape', 0.00, 1, '2025-11-24 13:23:35'),
 (21, 21, 'plant_analysis', NULL, 'Pumpkin', 0.00, 1, '2025-11-24 13:29:02'),
 (22, 21, 'plant_analysis', NULL, 'Banana', 0.00, 1, '2025-11-24 13:30:06'),
-(23, 21, 'plant_analysis', NULL, 'Strawberry', 0.00, 1, '2025-11-24 13:31:03');
+(23, 21, 'plant_analysis', NULL, 'Strawberry', 0.00, 1, '2025-11-24 13:31:03'),
+(24, 18, 'plant_analysis', NULL, 'Strawberry', 0.00, 1, '2025-11-28 11:06:44'),
+(25, 18, 'soil_analysis', NULL, 'The soil appears dry, as indicated by its crumbly texture and light color.', 0.00, 1, '2025-11-28 11:19:40'),
+(26, 18, 'plant_analysis', NULL, 'Sunflower', 0.00, 1, '2025-11-28 11:32:16'),
+(27, 18, 'plant_analysis', NULL, 'Pumpkin', 0.00, 1, '2025-11-28 11:35:06'),
+(28, 18, 'plant_analysis', NULL, 'water-lily tulip', 0.00, 1, '2025-11-28 11:36:22'),
+(29, 18, 'plant_analysis', NULL, 'Tomato', 20.00, 0, '2025-11-28 11:37:00'),
+(30, 18, 'plant_analysis', NULL, 'Strawberry', 20.00, 0, '2025-11-28 12:12:32'),
+(31, 18, 'plant_analysis', NULL, 'Grape', 20.00, 0, '2025-11-28 12:20:58'),
+(32, 18, 'plant_analysis', NULL, 'Banana', 20.00, 0, '2025-11-28 12:34:55'),
+(33, 18, 'plant_analysis', NULL, 'Grape', 20.00, 0, '2025-11-28 12:49:02'),
+(34, 18, 'plant_analysis', NULL, 'Sunflower', 20.00, 0, '2025-11-28 12:52:04'),
+(35, 19, 'plant_analysis', NULL, 'Strawberry', 0.00, 1, '2025-11-30 00:02:58'),
+(36, 19, 'plant_analysis', NULL, 'Grape', 0.00, 1, '2025-11-30 00:12:43'),
+(37, 19, 'plant_analysis', 'uploads/plants/space_455_1764461636.jpeg', 'The strawberry plant appears healthy with vibrant green leaves and well-formed fruit, showing no obvious signs of distress or care needs.', 0.00, 1, '2025-11-30 00:14:03'),
+(38, 19, 'soil_analysis', NULL, 'The soil appears dry, indicated by its light color and crumbly texture.', 0.00, 1, '2025-11-30 00:24:42'),
+(39, 19, 'plant_analysis', NULL, 'Sunflower', 20.00, 0, '2025-11-30 00:27:33'),
+(40, 19, 'plant_analysis', NULL, 'Pumpkin', 0.00, 1, '2025-11-30 00:39:35'),
+(41, 19, 'plant_analysis', NULL, 'Tomato', 0.00, 1, '2025-11-30 00:44:47'),
+(42, 19, 'soil_analysis', NULL, 'The soil appears to be moderately moist, indicated by its dark color and slightly clumped texture.', 0.00, 1, '2025-11-30 00:46:35'),
+(43, 19, 'plant_analysis', 'uploads/plants/space_456_1764464419.jpeg', 'The grapes appear shriveled, suggesting dehydration, and there seems to be overgrowth or possibly dead/damaged fruit clusters that need pruning.', 0.00, 1, '2025-11-30 01:00:30'),
+(44, 19, 'plant_analysis', 'uploads/plants/space_456_1764464478.jpeg', 'The image shows shriveled grapes, which may indicate the need for pruning to remove damaged fruit.', 0.00, 1, '2025-11-30 01:01:24'),
+(45, 19, 'plant_analysis', 'uploads/plants/space_458_1764464983.jpeg', 'The sunflowers appear vibrant and healthy with no signs of wilting, yellowing, or damage.', 0.00, 1, '2025-11-30 01:09:47'),
+(46, 19, 'plant_analysis', 'uploads/plants/space_459_1764465014.webp', 'The soil appears dry and some leaves show signs of slight wilting, indicating a need for water.', 0.00, 1, '2025-11-30 01:10:19'),
+(47, 19, 'plant_analysis', 'uploads/plants/space_459_1764465051.webp', 'The tomato plant appears healthy with green leaves and vibrant fruit. There are no wilted leaves, yellowing, or evident nutrient deficiencies.', 0.00, 1, '2025-11-30 01:10:58'),
+(48, 19, 'plant_analysis', 'uploads/plants/space_455_1764465100.jpeg', 'The image shows a strawberry plant with a rotten strawberry, indicating the need for pruning to remove the diseased part.', 0.00, 1, '2025-11-30 01:11:44'),
+(49, 19, 'plant_analysis', 'uploads/plants/space_455_1764465982.jpeg', 'One of the strawberries appears to be rotting, indicating the need to remove damaged fruit.', 0.00, 1, '2025-11-30 01:26:25'),
+(50, 19, 'plant_analysis', 'uploads/plants/space_455_1764466015.jpeg', 'The strawberry plant displays healthy, vibrant foliage and ripe strawberries without visible signs of distress.', 0.00, 1, '2025-11-30 01:26:59'),
+(51, 19, 'plant_analysis', NULL, 'Strawberry', 0.00, 1, '2025-11-30 01:30:56'),
+(52, 19, 'plant_analysis', 'uploads/plants/space_545_1764466441.jpeg', 'The image shows a strawberry plant with a fruit that appears to be rotting, which indicates damage and a need for pruning.', 20.00, 0, '2025-11-30 01:34:13'),
+(53, 19, 'plant_analysis', NULL, 'Grape', 0.00, 1, '2025-11-30 01:54:12'),
+(54, 19, 'plant_analysis', NULL, 'Sunflower', 0.00, 1, '2025-11-30 01:55:02'),
+(55, 19, 'plant_analysis', 'uploads/plants/space_546_1764467752.jpeg', 'The grapes appear shriveled, which can be a sign of dehydration. There are also shriveled and possibly damaged fruits, indicating a need for pruning.', 0.00, 1, '2025-11-30 01:55:56'),
+(56, 19, 'plant_analysis', 'uploads/plants/space_547_1764467778.jpeg', 'The sunflower appears to have wilted petals and possibly dry leaves, indicating dehydration.', 20.00, 0, '2025-11-30 01:56:21'),
+(57, 19, 'plant_analysis', 'uploads/plants/space_546_1764467831.jpeg', 'The grape berries appear shriveled, indicating dehydration, and there are damaged grape clusters that suggest they need pruning.', 20.00, 0, '2025-11-30 01:57:15'),
+(58, 19, 'plant_analysis', 'uploads/plants/space_547_1764467926.jpeg', 'The sunflowers appear healthy with upright stems, vibrant yellow petals, and green foliage.', 20.00, 0, '2025-11-30 01:58:49'),
+(59, 19, 'plant_analysis', 'uploads/plants/space_456_1764468006.jpeg', 'The leaves appear healthy and vibrant with no signs of wilting, browning, or discoloration. The grapes are plump, indicating good water and nutrient levels. There is no visible overgrowth or dead branches.', 20.00, 0, '2025-11-30 02:00:10'),
+(60, 19, 'plant_analysis', 'uploads/plants/space_546_1764468068.jpeg', 'The leaves appear green and healthy, with no signs of wilting, yellowing, or damage. The grapes look fresh and plump.', 20.00, 0, '2025-11-30 02:01:14'),
+(61, 19, 'plant_analysis', NULL, 'water-lily tulip', 20.00, 0, '2025-11-30 02:06:43'),
+(62, 19, 'plant_analysis', NULL, 'Carrot', 20.00, 0, '2025-11-30 02:07:35'),
+(63, 19, 'plant_analysis', 'uploads/plants/space_549_1764468533.jpeg', 'The tulips appear healthy with no visible signs of wilting, yellowing, or overgrowth.', 20.00, 0, '2025-11-30 02:08:58'),
+(64, 19, 'plant_analysis', NULL, 'Strawberry', 20.00, 0, '2025-11-30 02:10:01'),
+(65, 19, 'plant_analysis', 'uploads/plants/space_550_1764468630.jpeg', 'There is a dried, shriveled fruit that appears rotten, indicating the need for pruning.', 20.00, 0, '2025-11-30 02:10:34'),
+(66, 19, 'soil_analysis', NULL, 'The soil appears moderately moist, indicated by its dark color and slight sheen, suggesting adequate water content for most plants.', 0.00, 1, '2025-11-30 02:15:04'),
+(67, 19, 'soil_analysis', NULL, 'Low moisture content; soil appears dry and crumbly, indicating a need for watering.', 20.00, 0, '2025-11-30 02:15:39'),
+(68, 19, 'soil_analysis', NULL, 'Low; soil appears dry with no visible moisture, indicating lack of recent rainfall or irrigation.', 20.00, 0, '2025-11-30 02:16:00'),
+(69, 19, 'soil_analysis', NULL, 'The soil appears to have a moderate moisture level, indicated by its dark color and crumbly texture. It is neither too dry nor too wet.', 20.00, 0, '2025-11-30 02:25:37'),
+(70, 19, 'plant_analysis', NULL, 'Grape', 20.00, 0, '2025-11-30 02:34:20'),
+(71, 19, 'plant_analysis', NULL, 'Strawberry', 20.00, 0, '2025-11-30 02:34:48'),
+(72, 19, 'plant_analysis', 'uploads/plants/space_689_1764470146.jpeg', 'The image shows a strawberry with decayed leaves and a damaged fruit, indicating a need for pruning to remove dead and damaged parts.', 20.00, 0, '2025-11-30 02:35:50'),
+(73, 19, 'plant_analysis', 'uploads/plants/space_690_1764470188.jpeg', 'The leaves appear healthy and green, with no visible signs of wilting, discoloration, or damage.', 20.00, 0, '2025-11-30 02:36:31');
 
 -- --------------------------------------------------------
 
@@ -215,9 +340,13 @@ CREATE TABLE `garden` (
 --
 
 INSERT INTO `garden` (`GARDEN_ID`, `USER_ID`, `NAME`, `GARDEN_TYPE`, `LOCATION_CITY`, `LOCATION_COUNTRY`, `CREATED_AT`, `GRID_SIZE`, `BASE_GRID_SPACES`, `ADDITIONAL_SPACES_PURCHASED`, `USED_GRID_SPACES`) VALUES
-(19, 18, 'rizada', 'mixed', 'Manila', 'Philippines', '2025-11-24 10:21:30', '3x3', 9, 0, 0),
+(19, 18, 'rizada', 'mixed', 'Manila', 'Philippines', '2025-11-24 10:21:30', '3x3', 9, 0, 2),
 (20, 21, 'rizada', 'vegetable', 'Cebu City', 'Philippines', '2025-11-24 11:05:44', '6x6', 36, 0, 3),
-(21, 21, 'purisima', 'mixed', 'Manila', 'Philippines', '2025-11-24 13:29:40', '6x6', 36, 0, 0);
+(21, 21, 'purisima', 'mixed', 'Manila', 'Philippines', '2025-11-24 13:29:40', '6x6', 36, 0, 0),
+(24, 18, 'purisima', 'mixed', 'Cebu City', 'Philippines', '2025-11-28 12:10:44', '3x3', 9, 0, 0),
+(25, 19, 'rizada', 'mixed', 'Cebu City', 'Philippines', '2025-11-30 00:02:08', '3x3', 9, 0, 4),
+(26, 19, 'purisima', 'mixed', 'Cebu City', 'Philippines', '2025-11-30 01:30:29', '3x3', 9, 0, 1),
+(27, 19, 'morales', 'mixed', 'Cebu City', 'Philippines', '2025-11-30 02:26:19', '3x3', 9, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -247,15 +376,12 @@ CREATE TABLE `grid_spaces` (
 --
 
 INSERT INTO `grid_spaces` (`SPACE_ID`, `GARDEN_ID`, `GRID_POSITION`, `PLANT_ID`, `PLANTING_DATE`, `LAST_WATERED`, `LAST_FERTILIZED`, `LAST_PRUNED`, `NOTES`, `IS_ACTIVE`, `CREATED_AT`, `IMAGE_PATH`, `CARE_SUGGESTIONS`, `LAST_UPDATED`) VALUES
-(210, 19, '1,1', 85, '2025-11-24', '2025-11-24', NULL, '2025-11-24', 'Placed via drag and drop', 1, '2025-11-24 10:21:30', 'uploads/plants/space_210_1763980189.jpeg', '{\"needs_water\": true, \"needs_fertilize\": false, \"needs_prune\": true, \"confidence\": 0.85, \"reasoning\": \"Shriveled and dehydrated grapes indicating water stress; presence of damaged grapes that need pruning.\"}', '2025-11-24 10:30:07'),
+(210, 19, '1,1', 85, '2025-11-24', '2025-11-28', NULL, '2025-11-28', 'Placed via drag and drop', 1, '2025-11-24 10:21:30', 'uploads/plants/space_210_1764331714.jpeg', '{\"needs_water\": false, \"needs_fertilize\": false, \"needs_prune\": false, \"confidence\": 0.3, \"reasoning\": \"AI analysis completed but response format unclear: I\'m sorry, I can\'t assist with that....\"}', '2025-11-28 12:08:39'),
 (211, 19, '1,2', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-24 10:21:30', NULL, NULL, '2025-11-24 10:21:30'),
-(212, 19, '1,3', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-24 10:21:30', NULL, NULL, '2025-11-24 10:21:30'),
+(212, 19, '1,3', 97, '2025-11-28', '2025-11-28', NULL, '2025-11-28', 'Placed via drag and drop', 1, '2025-11-24 10:21:30', 'uploads/plants/space_212_1764328063.jpeg', '{\"needs_water\": true, \"needs_fertilize\": false, \"needs_prune\": true, \"confidence\": 0.8, \"reasoning\": \"The soil appears dry, and there is a presence of a moldy or decayed strawberry, indicating potential overgrowth or damaged areas that need pruning.\"}', '2025-11-28 11:08:21'),
 (213, 19, '2,1', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-24 10:21:30', NULL, NULL, '2025-11-24 10:21:30'),
-(214, 19, '2,2', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-24 10:21:30', NULL, NULL, '2025-11-24 10:21:30'),
+(214, 19, '2,2', 98, '2025-11-28', NULL, NULL, '2025-11-28', 'Placed via drag and drop', 1, '2025-11-24 10:21:30', 'uploads/plants/space_214_1764329563.jpeg', '{\"needs_water\": true, \"needs_fertilize\": false, \"needs_prune\": true, \"confidence\": 0.8, \"reasoning\": \"The sunflower has wilted and drooping petals, indicating dehydration. There are also some damaged and shriveled areas on the flower head that suggest the need for pruning.\"}', '2025-11-28 11:33:13'),
 (215, 19, '2,3', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-24 10:21:30', NULL, NULL, '2025-11-24 10:21:30'),
-(216, 19, '3,1', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-24 10:21:30', NULL, NULL, '2025-11-24 10:21:30'),
-(217, 19, '3,2', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-24 10:21:30', NULL, NULL, '2025-11-24 10:21:30'),
-(218, 19, '3,3', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-24 10:21:30', NULL, NULL, '2025-11-24 10:21:30'),
 (219, 20, '1,1', 86, '2025-11-24', '2025-11-24', NULL, '2025-11-24', 'Placed via drag and drop', 1, '2025-11-24 11:05:44', 'uploads/plants/space_219_1763983751.jpeg', '{\"needs_water\": true, \"needs_fertilize\": false, \"needs_prune\": true, \"confidence\": 0.9, \"reasoning\": \"The grapes appear shriveled, suggesting dehydration. Some leaves look healthy, but the presence of shriveled grapes indicates that the plant may require pruning to remove affected parts.\"}', '2025-11-24 11:29:38'),
 (220, 20, '1,2', 87, '2025-11-24', '2025-11-24', NULL, '2025-11-24', 'Placed via drag and drop', 1, '2025-11-24 11:05:44', 'uploads/plants/space_220_1763984436.jpeg', '{\"needs_water\": true, \"needs_fertilize\": false, \"needs_prune\": true, \"confidence\": 0.9, \"reasoning\": \"URGENT: Health issues detected (damaged fruit) - One of the strawberries appears to be decaying, indicating the presence of a dead or damaged fruit that needs pruning.\"}', '2025-11-24 11:41:16'),
 (221, 20, '1,3', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-24 11:05:44', NULL, NULL, '2025-11-24 11:05:44'),
@@ -327,7 +453,46 @@ INSERT INTO `grid_spaces` (`SPACE_ID`, `GARDEN_ID`, `GRID_POSITION`, `PLANT_ID`,
 (368, 21, '6,3', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-24 13:29:41', NULL, NULL, '2025-11-24 13:29:41'),
 (369, 21, '6,4', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-24 13:29:41', NULL, NULL, '2025-11-24 13:29:41'),
 (370, 21, '6,5', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-24 13:29:41', NULL, NULL, '2025-11-24 13:29:41'),
-(371, 21, '6,6', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-24 13:29:41', NULL, NULL, '2025-11-24 13:29:41');
+(371, 21, '6,6', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-24 13:29:41', NULL, NULL, '2025-11-24 13:29:41'),
+(372, 19, '1,4', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-28 11:17:58', NULL, NULL, '2025-11-28 11:17:58'),
+(373, 19, '1,5', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-28 11:17:58', NULL, NULL, '2025-11-28 11:17:58'),
+(374, 19, '1,6', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-28 11:17:58', NULL, NULL, '2025-11-28 11:17:58'),
+(431, 24, '1,1', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-28 12:10:44', NULL, NULL, '2025-11-28 12:10:44'),
+(434, 24, '1,2', 102, '2025-11-28', '2025-11-28', NULL, '2025-11-28', 'Placed via drag and drop', 1, '2025-11-28 12:10:44', 'uploads/plants/space_434_1764332970.jpeg', '{\"needs_water\": true, \"needs_fertilize\": false, \"needs_prune\": true, \"confidence\": 0.8, \"reasoning\": \"The image shows one strawberry with signs of dehydration and wilting. There is also a decaying strawberry present, indicating a need for pruning.\"}', '2025-11-28 12:29:34'),
+(437, 24, '1,3', 105, '2025-11-28', '2025-11-28', NULL, '2025-11-28', 'Placed via drag and drop', 1, '2025-11-28 12:10:44', 'uploads/plants/space_437_1764334273.jpeg', '{\"needs_water\": false, \"needs_fertilize\": false, \"needs_prune\": false, \"confidence\": 0.9, \"reasoning\": \"The leaves appear healthy and green without signs of wilting, yellowing, or overgrowth.\"}', '2025-11-28 12:51:17'),
+(439, 24, '2,1', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-28 12:10:44', NULL, NULL, '2025-11-28 12:10:44'),
+(444, 24, '2,2', 103, '2025-11-28', '2025-11-28', NULL, '2025-11-28', 'Placed via drag and drop', 1, '2025-11-28 12:10:44', 'uploads/plants/space_444_1764332678.jpeg', '{\"needs_water\": false, \"needs_fertilize\": false, \"needs_prune\": false, \"confidence\": 0.3, \"reasoning\": \"AI analysis completed but response format unclear: I\'m sorry, I can\'t assist with that....\"}', '2025-11-28 12:24:41'),
+(447, 24, '2,3', 106, '2025-11-28', '2025-11-28', NULL, '2025-11-28', 'Placed via drag and drop', 1, '2025-11-28 12:10:44', 'uploads/plants/space_447_1764334399.jpeg', '{\"needs_water\": false, \"needs_fertilize\": false, \"needs_prune\": false, \"confidence\": 0.9, \"reasoning\": \"The sunflower appears healthy with vibrant green leaves and no visible signs of wilting, yellowing, or damaged leaves.\"}', '2025-11-28 12:53:23'),
+(449, 24, '3,1', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-28 12:10:44', NULL, NULL, '2025-11-28 12:10:44'),
+(451, 24, '3,2', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-28 12:10:44', NULL, NULL, '2025-11-28 12:10:44'),
+(452, 24, '3,3', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-28 12:10:44', NULL, NULL, '2025-11-28 12:10:44'),
+(455, 25, '1,1', 107, '2025-11-30', '2025-11-30', NULL, '2025-11-30', 'Placed via drag and drop', 1, '2025-11-30 00:02:08', 'uploads/plants/space_455_1764466015.jpeg', '{\"needs_water\": false, \"needs_fertilize\": false, \"needs_prune\": false, \"confidence\": 0.9, \"reasoning\": \"The strawberry plant displays healthy, vibrant foliage and ripe strawberries without visible signs of distress.\"}', '2025-11-30 01:26:59'),
+(456, 25, '1,2', 108, '2025-11-30', '2025-11-30', NULL, '2025-11-30', 'Placed via drag and drop', 1, '2025-11-30 00:02:08', 'uploads/plants/space_456_1764468006.jpeg', '{\"needs_water\": false, \"needs_fertilize\": false, \"needs_prune\": false, \"confidence\": 0.9, \"reasoning\": \"The leaves appear healthy and vibrant with no signs of wilting, browning, or discoloration. The grapes are plump, indicating good water and nutrient levels. There is no visible overgrowth or dead bran...\"}', '2025-11-30 02:00:10'),
+(457, 25, '1,3', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-30 00:02:08', NULL, NULL, '2025-11-30 00:02:08'),
+(458, 25, '2,1', 109, '2025-11-30', NULL, NULL, NULL, 'Placed via drag and drop', 1, '2025-11-30 00:02:08', 'uploads/plants/space_458_1764464983.jpeg', '{\"needs_water\": false, \"needs_fertilize\": false, \"needs_prune\": false, \"confidence\": 0.9, \"reasoning\": \"The sunflowers appear vibrant and healthy with no signs of wilting, yellowing, or damage.\"}', '2025-11-30 01:09:47'),
+(459, 25, '2,2', 110, '2025-11-30', NULL, NULL, NULL, 'Placed via drag and drop', 1, '2025-11-30 00:02:08', 'uploads/plants/space_459_1764465051.webp', '{\"needs_water\": false, \"needs_fertilize\": false, \"needs_prune\": false, \"confidence\": 0.8, \"reasoning\": \"The tomato plant appears healthy with green leaves and vibrant fruit. There are no wilted leaves, yellowing, or evident nutrient deficiencies.\"}', '2025-11-30 01:10:58'),
+(460, 25, '2,3', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-30 00:02:08', NULL, NULL, '2025-11-30 00:02:08'),
+(464, 25, '1,4', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-30 00:37:41', NULL, NULL, '2025-11-30 00:37:41'),
+(465, 25, '1,5', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-30 00:37:41', NULL, NULL, '2025-11-30 00:37:41'),
+(466, 25, '1,6', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-30 00:37:41', NULL, NULL, '2025-11-30 00:37:41'),
+(545, 26, '1,1', 111, '2025-11-30', NULL, NULL, '2025-11-30', 'Placed via drag and drop', 1, '2025-11-30 01:30:29', 'uploads/plants/space_545_1764466441.jpeg', '{\"needs_water\": false, \"needs_fertilize\": false, \"needs_prune\": true, \"confidence\": 0.8, \"reasoning\": \"The image shows a strawberry plant with a fruit that appears to be rotting, which indicates damage and a need for pruning.\"}', '2025-11-30 01:34:38'),
+(546, 26, '1,2', 112, '2025-11-30', '2025-11-30', NULL, '2025-11-30', 'Placed via drag and drop', 1, '2025-11-30 01:30:29', 'uploads/plants/space_546_1764468068.jpeg', '{\"needs_water\": false, \"needs_fertilize\": false, \"needs_prune\": false, \"confidence\": 0.9, \"reasoning\": \"The leaves appear green and healthy, with no signs of wilting, yellowing, or damage. The grapes look fresh and plump.\"}', '2025-11-30 02:01:14'),
+(547, 26, '1,3', 113, '2025-11-30', '2025-11-30', NULL, NULL, 'Placed via drag and drop', 1, '2025-11-30 01:30:29', 'uploads/plants/space_547_1764467926.jpeg', '{\"needs_water\": false, \"needs_fertilize\": false, \"needs_prune\": false, \"confidence\": 0.9, \"reasoning\": \"The sunflowers appear healthy with upright stems, vibrant yellow petals, and green foliage.\"}', '2025-11-30 01:58:49'),
+(548, 26, '1,4', 115, '2025-11-30', NULL, NULL, NULL, 'Placed via drag and drop', 1, '2025-11-30 01:30:29', NULL, NULL, '2025-11-30 01:30:29'),
+(549, 26, '1,5', 114, '2025-11-30', NULL, NULL, NULL, 'Placed via drag and drop', 1, '2025-11-30 01:30:29', 'uploads/plants/space_549_1764468533.jpeg', '{\"needs_water\": false, \"needs_fertilize\": false, \"needs_prune\": false, \"confidence\": 0.8, \"reasoning\": \"The tulips appear healthy with no visible signs of wilting, yellowing, or overgrowth.\"}', '2025-11-30 02:08:58'),
+(550, 26, '1,6', 116, '2025-11-30', '2025-11-30', NULL, '2025-11-30', 'Placed via drag and drop', 1, '2025-11-30 01:30:29', 'uploads/plants/space_550_1764468630.jpeg', '{\"needs_water\": true, \"needs_fertilize\": false, \"needs_prune\": true, \"confidence\": 0.9, \"reasoning\": \"URGENT: Health issues detected (shriveled fruit) - There is a dried, shriveled fruit that appears rotten, indicating the need for pruning.\"}', '2025-11-30 02:11:12'),
+(551, 26, '2,1', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-30 01:30:29', NULL, NULL, '2025-11-30 01:30:29'),
+(552, 26, '2,2', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-30 01:30:29', NULL, NULL, '2025-11-30 01:30:29'),
+(553, 26, '2,3', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-30 01:30:29', NULL, NULL, '2025-11-30 01:30:29'),
+(689, 27, '1,1', 118, '2025-11-30', NULL, NULL, NULL, 'Placed via drag and drop', 1, '2025-11-30 02:26:19', 'uploads/plants/space_689_1764470146.jpeg', '{\"needs_water\": true, \"needs_fertilize\": false, \"needs_prune\": true, \"confidence\": 0.8, \"reasoning\": \"URGENT: Health issues detected (damaged fruit) - The image shows a strawberry with decayed leaves and a damaged fruit, indicating a need for pruning to remove dead and damaged parts.\"}', '2025-11-30 02:35:50'),
+(690, 27, '1,2', 117, '2025-11-30', NULL, NULL, NULL, 'Placed via drag and drop', 1, '2025-11-30 02:26:19', 'uploads/plants/space_690_1764470188.jpeg', '{\"needs_water\": false, \"needs_fertilize\": false, \"needs_prune\": false, \"confidence\": 0.9, \"reasoning\": \"The leaves appear healthy and green, with no visible signs of wilting, discoloration, or damage.\"}', '2025-11-30 02:36:31'),
+(691, 27, '1,3', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-30 02:26:19', NULL, NULL, '2025-11-30 02:26:19'),
+(692, 27, '2,1', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-30 02:26:19', NULL, NULL, '2025-11-30 02:26:19'),
+(693, 27, '2,2', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-30 02:26:19', NULL, NULL, '2025-11-30 02:26:19'),
+(694, 27, '2,3', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-30 02:26:19', NULL, NULL, '2025-11-30 02:26:19'),
+(695, 27, '3,1', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-30 02:26:19', NULL, NULL, '2025-11-30 02:26:19'),
+(696, 27, '3,2', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-30 02:26:19', NULL, NULL, '2025-11-30 02:26:19'),
+(697, 27, '3,3', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-30 02:26:19', NULL, NULL, '2025-11-30 02:26:19');
 
 -- --------------------------------------------------------
 
@@ -370,25 +535,6 @@ CREATE TABLE `notifications` (
   `priority` varchar(20) DEFAULT 'medium',
   `status` varchar(20) DEFAULT 'pending',
   `created_at` datetime DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `admin_notifications`
---
-
-CREATE TABLE `admin_notifications` (
-  `id` int(11) NOT NULL,
-  `title` varchar(200) NOT NULL,
-  `message` text NOT NULL,
-  `type` varchar(50) DEFAULT 'Update',
-  `priority` varchar(20) DEFAULT 'Medium',
-  `is_active` tinyint(1) DEFAULT 1,
-  `created_by` int(11) DEFAULT NULL,
-  `created_at` datetime DEFAULT current_timestamp(),
-  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `expires_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -524,7 +670,29 @@ INSERT INTO `plant` (`PLANT_ID`, `NAME`, `TYPE`, `ENVIRONMENT`, `CARE_GUIDE`, `I
 (93, 'Grape', 'fruit', 'outdoor', '💧 Watering: Water as needed; keep soil appropriate for species\r\n\r\n☀️ Sunlight: Provide suitable sun exposure for species\r\n\r\n🌱 Soil: Well-draining soil is recommended', 'Well-drained, loamy soil with good organic content is best.', 7, 30, 60, 'uploads/plants/plant_1763990622_grape.jpg.jpeg', '2025-11-24 13:23:42'),
 (94, 'Pumpkin', 'vegetable', 'outdoor', '💧 Watering: Water as needed; keep soil appropriate for species\r\n\r\n☀️ Sunlight: Provide suitable sun exposure for species\r\n\r\n🌱 Soil: Well-draining soil is recommended', '', NULL, NULL, NULL, 'uploads/plants/plant_1763990965_pumpkin.jpg.jpeg', '2025-11-24 13:29:25'),
 (95, 'Banana', 'fruit', 'outdoor', '💧 Watering: Water as needed; keep soil appropriate for species\r\n\r\n☀️ Sunlight: Provide suitable sun exposure for species\r\n\r\n🌱 Soil: Well-draining soil is recommended', '', NULL, NULL, NULL, 'uploads/plants/plant_1763991009_banana3.jpg.jpeg', '2025-11-24 13:30:09'),
-(96, 'Strawberry', 'fruit', 'outdoor', '💧 Watering: Deep soak 1–2x/week; water soil not foliage\r\n\r\n☀️ Sunlight: Full sun (5–6+ hours)\r\n\r\n🌱 Soil: Rich, well‑drained; regular feeding during bloom\r\n\r\n📈 Growth Stage: Flowering shrub\r\n\r\n⚠️ Common Issues: Black spot, Powdery mildew, Aphids', 'Use well-draining, slightly acidic soil enriched with organic matter.', 7, 30, 60, 'uploads/plants/plant_1763991075_strawberry.jpg.jpeg', '2025-11-24 13:31:15');
+(96, 'Strawberry', 'fruit', 'outdoor', '💧 Watering: Deep soak 1–2x/week; water soil not foliage\r\n\r\n☀️ Sunlight: Full sun (5–6+ hours)\r\n\r\n🌱 Soil: Rich, well‑drained; regular feeding during bloom\r\n\r\n📈 Growth Stage: Flowering shrub\r\n\r\n⚠️ Common Issues: Black spot, Powdery mildew, Aphids', 'Use well-draining, slightly acidic soil enriched with organic matter.', 7, 30, 60, 'uploads/plants/plant_1763991075_strawberry.jpg.jpeg', '2025-11-24 13:31:15'),
+(97, 'Strawberry', 'fruit', 'outdoor', '💧 Watering: Deep soak 1–2x/week; water soil not foliage\r\n\r\n☀️ Sunlight: Full sun (5–6+ hours)\r\n\r\n🌱 Soil: Rich, well‑drained; regular feeding during bloom\r\n\r\n📈 Growth Stage: Flowering shrub\r\n\r\n⚠️ Common Issues: Black spot, Powdery mildew, Aphids', '', NULL, NULL, NULL, 'uploads/plants/plant_1764328017_strawberry.jpg.jpeg', '2025-11-28 11:06:57'),
+(98, 'Sunflower', 'flower', 'outdoor', '💧 Watering: Deep watering; drought tolerant once established\r\n\r\n☀️ Sunlight: Full sun\r\n\r\n🌱 Soil: Well‑draining; stake tall varieties\r\n\r\n📈 Growth Stage: Annual flowering\r\n\r\n⚠️ Common Issues: Birds/squirrels on seeds, Downy mildew', '', NULL, NULL, NULL, 'uploads/plants/plant_1764329543_sunflower.jpg.jpeg', '2025-11-28 11:32:23'),
+(99, 'Pumpkin', 'vegetable', 'outdoor', '💧 Watering: Water as needed; keep soil appropriate for species\r\n\r\n☀️ Sunlight: Provide suitable sun exposure for species\r\n\r\n🌱 Soil: Well-draining soil is recommended', 'Well-drained, fertile soil with a pH between 6.0 and 6.8 is ideal.', 7, 30, 60, 'uploads/plants/plant_1764329715_sas.jpg.jpeg', '2025-11-28 11:35:15'),
+(100, 'water-lily tulip', 'flower', 'outdoor', '💧 Watering: Moderate during growth; dry summer dormancy\r\n\r\n☀️ Sunlight: Full sun\r\n\r\n🌱 Soil: Well‑drained; avoid waterlogged bulbs\r\n\r\n📈 Growth Stage: Bulb (cool season)\r\n\r\n⚠️ Common Issues: Bulb rot, Aphids, Deer/rabbit browsing', 'Use well-drained, sandy or loamy soil. Ensure good drainage to prevent bulb rot.', 7, 30, 60, 'uploads/plants/plant_1764329789_tulip.jpg.jpeg', '2025-11-28 11:36:29'),
+(101, 'Tomato', 'vegetable', 'outdoor', '💧 Watering: Deeply 1–2x/week; keep evenly moist, avoid wet foliage\r\n\r\n☀️ Sunlight: Full sun (6–8+ hours)\r\n\r\n🌱 Soil: Rich, well‑drained soil with compost; pH 6.0–6.8\r\n\r\n📈 Growth Stage: Vegetative/fruiting (warm-season annual)\r\n\r\n⚠️ Common Issues: Blossom end rot, Early blight, Aphids, Split fruit', 'Maintain well-draining soil rich in organic matter.', 7, 30, 60, 'uploads/plants/plant_1764329833_tomato.webp.webp', '2025-11-28 11:37:13'),
+(102, 'Strawberry', 'fruit', 'outdoor', '💧 Watering: Deep soak 1–2x/week; water soil not foliage\r\n\r\n☀️ Sunlight: Full sun (5–6+ hours)\r\n\r\n🌱 Soil: Rich, well‑drained; regular feeding during bloom\r\n\r\n📈 Growth Stage: Flowering shrub\r\n\r\n⚠️ Common Issues: Black spot, Powdery mildew, Aphids', '', NULL, NULL, NULL, 'uploads/plants/plant_1764331956_strawberry.jpg.jpeg', '2025-11-28 12:12:36'),
+(103, 'Grape', 'fruit', 'outdoor', '💧 Watering: Water as needed; keep soil appropriate for species\r\n\r\n☀️ Sunlight: Provide suitable sun exposure for species\r\n\r\n🌱 Soil: Well-draining soil is recommended', 'Well-draining, loamy soil with good organic matter content is ideal. Maintain a slightly acidic to n', 7, 30, 60, 'uploads/plants/plant_1764332488_grape.jpg.jpeg', '2025-11-28 12:21:28'),
+(104, 'Banana', 'fruit', 'outdoor', '💧 Watering: Water as needed; keep soil appropriate for species\r\n\r\n☀️ Sunlight: Provide suitable sun exposure for species\r\n\r\n🌱 Soil: Well-draining soil is recommended', 'Use well-draining, rich soil with good organic content.', 7, 30, 60, 'uploads/plants/plant_1764333304_banana3.jpg.jpeg', '2025-11-28 12:35:04'),
+(105, 'Grape', 'fruit', 'outdoor', '💧 Watering: Water as needed; keep soil appropriate for species\r\n\r\n☀️ Sunlight: Provide suitable sun exposure for species\r\n\r\n🌱 Soil: Well-draining soil is recommended', '', NULL, NULL, NULL, 'uploads/plants/plant_1764334152_grape.jpg.jpeg', '2025-11-28 12:49:12'),
+(106, 'Sunflower', 'flower', 'outdoor', '💧 Watering: Deep watering; drought tolerant once established\r\n\r\n☀️ Sunlight: Full sun\r\n\r\n🌱 Soil: Well‑draining; stake tall varieties\r\n\r\n📈 Growth Stage: Annual flowering\r\n\r\n⚠️ Common Issues: Birds/squirrels on seeds, Downy mildew', 'Prefers well-drained, nutrient-rich soil.', 7, 30, 60, 'uploads/plants/plant_1764334349_sunflower.jpg.jpeg', '2025-11-28 12:52:29'),
+(107, 'Strawberry', 'fruit', 'outdoor', '💧 Watering: Deep soak 1–2x/week; water soil not foliage\r\n\r\n☀️ Sunlight: Full sun (5–6+ hours)\r\n\r\n🌱 Soil: Rich, well‑drained; regular feeding during bloom\r\n\r\n📈 Growth Stage: Flowering shrub\r\n\r\n⚠️ Common Issues: Black spot, Powdery mildew, Aphids', '', NULL, NULL, NULL, 'uploads/plants/plant_1764461039_strawberry.jpg.jpeg', '2025-11-30 00:03:59'),
+(108, 'Grape', 'fruit', 'outdoor', '💧 Watering: Water as needed; keep soil appropriate for species\r\n\r\n☀️ Sunlight: Provide suitable sun exposure for species\r\n\r\n🌱 Soil: Well-draining soil is recommended', '', NULL, NULL, NULL, 'uploads/plants/plant_1764461574_grape.jpg.jpeg', '2025-11-30 00:12:54'),
+(109, 'Sunflower', 'flower', 'outdoor', '💧 Watering: Deep watering; drought tolerant once established\r\n\r\n☀️ Sunlight: Full sun\r\n\r\n🌱 Soil: Well‑draining; stake tall varieties\r\n\r\n📈 Growth Stage: Annual flowering\r\n\r\n⚠️ Common Issues: Birds/squirrels on seeds, Downy mildew', 'Use well-draining soil with a neutral to slightly acidic pH.', 7, 30, 60, 'uploads/plants/plant_1764462526_sunflower.jpg.jpeg', '2025-11-30 00:28:46'),
+(110, 'Tomato', 'vegetable', 'outdoor', '💧 Watering: Deeply 1–2x/week; keep evenly moist, avoid wet foliage\r\n\r\n☀️ Sunlight: Full sun (6–8+ hours)\r\n\r\n🌱 Soil: Rich, well‑drained soil with compost; pH 6.0–6.8\r\n\r\n📈 Growth Stage: Vegetative/fruiting (warm-season annual)\r\n\r\n⚠️ Common Issues: Blossom end rot, Early blight, Aphids, Split fruit', '', NULL, NULL, NULL, 'uploads/plants/plant_1764463519_tomato.webp.webp', '2025-11-30 00:45:19'),
+(111, 'Strawberry', 'fruit', 'outdoor', '💧 Watering: Deep soak 1–2x/week; water soil not foliage\r\n\r\n☀️ Sunlight: Full sun (5–6+ hours)\r\n\r\n🌱 Soil: Rich, well‑drained; regular feeding during bloom\r\n\r\n📈 Growth Stage: Flowering shrub\r\n\r\n⚠️ Common Issues: Black spot, Powdery mildew, Aphids', '', NULL, NULL, NULL, 'uploads/plants/plant_1764466259_strawberry.jpg.jpeg', '2025-11-30 01:30:59'),
+(112, 'Grape', 'fruit', 'outdoor', '💧 Watering: Water as needed; keep soil appropriate for species\r\n\r\n☀️ Sunlight: Provide suitable sun exposure for species\r\n\r\n🌱 Soil: Well-draining soil is recommended', 'Maintain well-drained, fertile soil with good organic content.', 7, 30, 60, 'uploads/plants/plant_1764467664_grape.jpg.jpeg', '2025-11-30 01:54:24'),
+(113, 'Sunflower', 'flower', 'outdoor', '💧 Watering: Deep watering; drought tolerant once established\r\n\r\n☀️ Sunlight: Full sun\r\n\r\n🌱 Soil: Well‑draining; stake tall varieties\r\n\r\n📈 Growth Stage: Annual flowering\r\n\r\n⚠️ Common Issues: Birds/squirrels on seeds, Downy mildew', '', NULL, NULL, NULL, 'uploads/plants/plant_1764467709_sunflower.jpg.jpeg', '2025-11-30 01:55:09'),
+(114, 'water-lily tulip', 'flower', 'outdoor', '💧 Watering: Moderate during growth; dry summer dormancy\r\n\r\n☀️ Sunlight: Full sun\r\n\r\n🌱 Soil: Well‑drained; avoid waterlogged bulbs\r\n\r\n📈 Growth Stage: Bulb (cool season)\r\n\r\n⚠️ Common Issues: Bulb rot, Aphids, Deer/rabbit browsing', 'Well-drained soil is essential. Consider adding organic matter to improve drainage if needed.', 7, 30, 60, 'uploads/plants/plant_1764468410_tulip.jpg.jpeg', '2025-11-30 02:06:50'),
+(115, 'Carrot', 'vegetable', 'outdoor', '💧 Watering: Water as needed; keep soil appropriate for species\r\n\r\n☀️ Sunlight: Provide suitable sun exposure for species\r\n\r\n🌱 Soil: Well-draining soil is recommended', '', NULL, NULL, NULL, 'uploads/plants/plant_1764468483_carrots.jpg.jpeg', '2025-11-30 02:08:03'),
+(116, 'Strawberry', 'fruit', 'outdoor', '💧 Watering: Deep soak 1–2x/week; water soil not foliage\r\n\r\n☀️ Sunlight: Full sun (5–6+ hours)\r\n\r\n🌱 Soil: Rich, well‑drained; regular feeding during bloom\r\n\r\n📈 Growth Stage: Flowering shrub\r\n\r\n⚠️ Common Issues: Black spot, Powdery mildew, Aphids', 'Maintain well-draining, slightly acidic soil with good organic matter content.', 7, 30, 60, 'uploads/plants/plant_1764468609_strawberry.jpg.jpeg', '2025-11-30 02:10:09'),
+(117, 'Grape', 'fruit', 'outdoor', '💧 Watering: Water as needed; keep soil appropriate for species\r\n\r\n☀️ Sunlight: Provide suitable sun exposure for species\r\n\r\n🌱 Soil: Well-draining soil is recommended', '', NULL, NULL, NULL, 'uploads/plants/plant_1764470064_grape.jpg.jpeg', '2025-11-30 02:34:24'),
+(118, 'Strawberry', 'fruit', 'outdoor', '💧 Watering: Deep soak 1–2x/week; water soil not foliage\r\n\r\n☀️ Sunlight: Full sun (5–6+ hours)\r\n\r\n🌱 Soil: Rich, well‑drained; regular feeding during bloom\r\n\r\n📈 Growth Stage: Flowering shrub\r\n\r\n⚠️ Common Issues: Black spot, Powdery mildew, Aphids', 'Maintain well-draining, slightly acidic soil rich in organic matter.', 7, 30, 60, 'uploads/plants/plant_1764470103_strawberry.jpg.jpeg', '2025-11-30 02:35:03');
 
 -- --------------------------------------------------------
 
@@ -559,7 +727,57 @@ INSERT INTO `planttracking` (`TRACKING_ID`, `GARDEN_ID`, `PLANT_ID`, `PLANTING_D
 (84, 20, 93, '2025-11-24', NULL, NULL, NULL, NULL),
 (85, 20, 94, '2025-11-24', NULL, NULL, NULL, NULL),
 (86, 21, 95, '2025-11-24', NULL, NULL, NULL, NULL),
-(87, 21, 96, '2025-11-24', NULL, NULL, NULL, NULL);
+(87, 21, 96, '2025-11-24', NULL, NULL, NULL, NULL),
+(88, 19, 97, '2025-11-28', NULL, NULL, NULL, NULL),
+(89, 19, 98, '2025-11-28', NULL, NULL, NULL, NULL),
+(90, 19, 99, '2025-11-28', NULL, NULL, NULL, NULL),
+(91, 19, 100, '2025-11-28', NULL, NULL, NULL, NULL),
+(92, 19, 101, '2025-11-28', NULL, NULL, NULL, NULL),
+(93, 24, 102, '2025-11-28', NULL, NULL, NULL, NULL),
+(94, 24, 103, '2025-11-28', NULL, NULL, NULL, NULL),
+(95, 24, 104, '2025-11-28', NULL, NULL, NULL, NULL),
+(96, 24, 105, '2025-11-28', NULL, NULL, NULL, NULL),
+(97, 24, 106, '2025-11-28', NULL, NULL, NULL, NULL),
+(98, 25, 107, '2025-11-30', NULL, NULL, NULL, NULL),
+(99, 25, 108, '2025-11-30', NULL, NULL, NULL, NULL),
+(100, 25, 109, '2025-11-30', NULL, NULL, NULL, NULL),
+(101, 25, 110, '2025-11-30', NULL, NULL, NULL, NULL),
+(102, 26, 111, '2025-11-30', NULL, NULL, NULL, NULL),
+(103, 26, 112, '2025-11-30', NULL, NULL, NULL, NULL),
+(104, 26, 113, '2025-11-30', NULL, NULL, NULL, NULL),
+(105, 26, 114, '2025-11-30', NULL, NULL, NULL, NULL),
+(106, 26, 115, '2025-11-30', NULL, NULL, NULL, NULL),
+(107, 26, 116, '2025-11-30', NULL, NULL, NULL, NULL),
+(108, 27, 117, '2025-11-30', NULL, NULL, NULL, NULL),
+(109, 27, 118, '2025-11-30', NULL, NULL, NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `plant_history_logs`
+--
+
+CREATE TABLE `plant_history_logs` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `garden_id` int(11) DEFAULT NULL,
+  `space_id` int(11) DEFAULT NULL,
+  `plant_id` int(11) DEFAULT NULL,
+  `change_type` varchar(50) NOT NULL,
+  `change_description` text DEFAULT NULL,
+  `old_value` text DEFAULT NULL,
+  `new_value` text DEFAULT NULL,
+  `change_metadata` text DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `plant_history_logs`
+--
+
+INSERT INTO `plant_history_logs` (`id`, `user_id`, `garden_id`, `space_id`, `plant_id`, `change_type`, `change_description`, `old_value`, `new_value`, `change_metadata`, `created_at`) VALUES
+(1, 18, 19, 210, 85, 'placed', 'Placed Grape at position 1,1', '{\"plant_id\": null}', '{\"plant_id\": 85, \"planting_date\": \"2025-11-24\"}', '{\"planting_date\": \"2025-11-24\", \"notes\": \"Placed via drag and drop\", \"grid_position\": \"1,1\"}', '2025-11-28 11:50:31'),
+(2, 18, 19, 210, 85, 'image_upload', 'Uploaded new image for Grape at position 1,1', '{\"image_path\": \"uploads/plants/space_210_1763980189.jpeg\"}', '{\"image_path\": \"uploads/plants/space_210_1764330640.jpeg\"}', '{\"ai_analysis\": {\"needs_water\": true, \"needs_fertilize\": false, \"needs_prune\": true, \"confidence\": 0.8, \"reasoning\": \"The grapes appear shriveled and some fruit is damaged which indicates dehydration and possible need for pruning.\"}, \"grid_position\": \"1,1\"}', '2025-11-28 11:50:52');
 
 -- --------------------------------------------------------
 
@@ -583,6 +801,28 @@ CREATE TABLE `seasonal_content` (
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `soil_analysis_usage`
+--
+
+CREATE TABLE `soil_analysis_usage` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `free_analyses_used` int(11) DEFAULT NULL,
+  `purchased_credits` int(11) DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `soil_analysis_usage`
+--
+
+INSERT INTO `soil_analysis_usage` (`id`, `user_id`, `free_analyses_used`, `purchased_credits`, `created_at`, `updated_at`) VALUES
+(6, 19, 3, 0, '2025-11-30 00:24:42', '2025-11-30 02:25:37');
 
 -- --------------------------------------------------------
 
@@ -646,8 +886,8 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `email`, `firstname`, `lastname`, `contact`, `password_hash`, `role`, `is_active`, `subscribed`, `subscription_plan`, `email_notifications`, `learning_level`, `created_at`, `updated_at`, `email_verified`, `email_verification_token`, `email_verification_expires`) VALUES
 (6, 'admin@egrowtify.com', 'Admin', 'User', '1234567890', 'pbkdf2:sha256:600000$Dbsx1m6WRozIdWwX$609302e10c362b12ac748f8525d9a9b82e0281fe88853121f91ffbfc95a99504', 'admin', 1, 1, 'basic', 1, 'expert', '2025-10-11 03:11:41', '2025-10-11 03:11:41', 1, NULL, NULL),
-(18, 'jarizada@yahoo.com', 'jan', 'rizada', '09213412341', 'pbkdf2:sha256:600000$8Qm253hzK0wLbZAG$f514c5a0e1b189c16f547e8298717103fc7621ec12ffc4ac171087b8992a6dda', 'user', 1, 0, 'basic', 1, 'beginner', '2025-11-24 10:16:27', '2025-11-24 10:21:03', 1, NULL, NULL),
-(19, 'rizadajohn5@gmail.com', 'john', 'rizada', '09213412431', 'pbkdf2:sha256:600000$6JTgPflprTpzuHx5$3498de3157008a129967147118f4272436801ffab3c5babcfb3ddd8d06a6315f', 'user', 1, 0, 'basic', 1, 'beginner', '2025-11-24 10:51:27', '2025-11-24 10:52:10', 1, NULL, NULL),
+(18, 'jarizada@yahoo.com', 'jan', 'rizada', '09213412341', 'pbkdf2:sha256:600000$8Qm253hzK0wLbZAG$f514c5a0e1b189c16f547e8298717103fc7621ec12ffc4ac171087b8992a6dda', 'user', 1, 0, 'basic', 1, 'beginner', '2025-11-24 10:16:27', '2025-11-28 11:34:14', 1, NULL, NULL),
+(19, 'rizadajohn5@gmail.com', 'john', 'rizada', '09213412431', 'pbkdf2:sha256:600000$6JTgPflprTpzuHx5$3498de3157008a129967147118f4272436801ffab3c5babcfb3ddd8d06a6315f', 'user', 1, 0, 'basic', 1, 'beginner', '2025-11-24 10:51:27', '2025-11-30 01:53:37', 1, NULL, NULL),
 (20, 'johnlouie3211@gmail.com', 'john louie', 'purisima', '09123412342', 'pbkdf2:sha256:600000$uPCAXob9GEHTCmtv$7385e49a9d0a70c40c4e150800b6f8cb34bf57ec92d261b3daca97a6c5e4d0a8', 'user', 1, 0, 'basic', 1, 'beginner', '2025-11-24 10:54:11', '2025-11-24 10:54:24', 1, NULL, NULL),
 (21, 'canamalicht@yahoo.com', 'licht', 'canama', '09213412412', 'pbkdf2:sha256:600000$zJFwNNws8xgF6Oyc$d30d1f3864e90471e77039e1a974f2f57b6ab8a92d3eb47889e7299ba89aefd4', 'user', 1, 1, 'basic', 1, 'beginner', '2025-11-24 10:57:05', '2025-11-24 13:22:05', 1, NULL, NULL);
 
@@ -713,7 +953,14 @@ CREATE TABLE `user_subscriptions` (
 INSERT INTO `user_subscriptions` (`id`, `user_id`, `plan_id`, `start_date`, `end_date`, `status`, `payment_status`, `total_paid`, `created_at`, `updated_at`) VALUES
 (11, 21, 1, '2025-11-24 20:42:55', '2025-12-24 20:42:55', 'cancelled', 'paid', 150.00, '2025-11-24 12:42:55', '2025-11-24 12:46:56'),
 (12, 21, 1, '2025-11-24 20:51:59', '2025-12-24 20:51:59', 'cancelled', 'paid', 150.00, '2025-11-24 12:51:59', '2025-11-24 12:52:23'),
-(13, 21, 1, '2025-11-24 21:22:05', '2025-12-24 21:22:05', 'active', 'paid', 150.00, '2025-11-24 13:22:05', '2025-11-24 13:22:05');
+(13, 21, 1, '2025-11-24 21:22:05', '2025-12-24 21:22:05', 'active', 'paid', 150.00, '2025-11-24 13:22:05', '2025-11-24 13:22:05'),
+(14, 18, 1, '2025-11-28 19:17:58', '2025-12-28 19:17:58', 'cancelled', 'paid', 150.00, '2025-11-28 11:17:58', '2025-11-28 11:20:16'),
+(15, 18, 1, '2025-11-28 19:29:56', '2025-12-28 19:29:56', 'cancelled', 'paid', 150.00, '2025-11-28 11:29:56', '2025-11-28 11:34:14'),
+(16, 19, 1, '2025-11-30 08:37:41', '2025-12-30 08:37:41', 'cancelled', 'paid', 150.00, '2025-11-30 00:37:41', '2025-11-30 00:39:04'),
+(17, 19, 1, '2025-11-30 08:40:07', '2025-12-30 08:40:07', 'cancelled', 'paid', 150.00, '2025-11-30 00:40:07', '2025-11-30 00:40:54'),
+(18, 19, 1, '2025-11-30 08:43:50', '2025-12-30 08:43:50', 'cancelled', 'paid', 150.00, '2025-11-30 00:43:50', '2025-11-30 01:47:29'),
+(19, 19, 1, '2025-11-30 09:50:22', '2025-12-30 09:50:22', 'cancelled', 'paid', 150.00, '2025-11-30 01:50:22', '2025-11-30 01:50:52'),
+(20, 19, 1, '2025-11-30 09:53:11', '2025-12-30 09:53:11', 'cancelled', 'paid', 150.00, '2025-11-30 01:53:11', '2025-11-30 01:53:37');
 
 --
 -- Indexes for dumped tables
@@ -737,6 +984,13 @@ ALTER TABLE `admins`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `username` (`username`),
   ADD UNIQUE KEY `email` (`email`);
+
+--
+-- Indexes for table `admin_notifications`
+--
+ALTER TABLE `admin_notifications`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `created_by` (`created_by`);
 
 --
 -- Indexes for table `ai_analysis_usage`
@@ -797,10 +1051,6 @@ ALTER TABLE `notifications`
   ADD KEY `idx_notifications_user_id` (`user_id`),
   ADD KEY `idx_notifications_due_date` (`due_date`);
 
-ALTER TABLE `admin_notifications`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `created_by` (`created_by`);
-
 --
 -- Indexes for table `payment_methods`
 --
@@ -825,11 +1075,28 @@ ALTER TABLE `planttracking`
   ADD KEY `idx_planttracking_plant_id` (`PLANT_ID`);
 
 --
+-- Indexes for table `plant_history_logs`
+--
+ALTER TABLE `plant_history_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `garden_id` (`garden_id`),
+  ADD KEY `space_id` (`space_id`),
+  ADD KEY `plant_id` (`plant_id`);
+
+--
 -- Indexes for table `seasonal_content`
 --
 ALTER TABLE `seasonal_content`
   ADD PRIMARY KEY (`id`),
   ADD KEY `created_by` (`created_by`);
+
+--
+-- Indexes for table `soil_analysis_usage`
+--
+ALTER TABLE `soil_analysis_usage`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `subscription_plans`
@@ -880,7 +1147,7 @@ ALTER TABLE `user_subscriptions`
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=73;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=127;
 
 --
 -- AUTO_INCREMENT for table `admins`
@@ -889,16 +1156,22 @@ ALTER TABLE `admins`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
+-- AUTO_INCREMENT for table `admin_notifications`
+--
+ALTER TABLE `admin_notifications`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `ai_analysis_usage`
 --
 ALTER TABLE `ai_analysis_usage`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=96;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=106;
 
 --
 -- AUTO_INCREMENT for table `ai_usage_tracking`
 --
 ALTER TABLE `ai_usage_tracking`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
 
 --
 -- AUTO_INCREMENT for table `feedback`
@@ -910,13 +1183,13 @@ ALTER TABLE `feedback`
 -- AUTO_INCREMENT for table `garden`
 --
 ALTER TABLE `garden`
-  MODIFY `GARDEN_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `GARDEN_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- AUTO_INCREMENT for table `grid_spaces`
 --
 ALTER TABLE `grid_spaces`
-  MODIFY `SPACE_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=372;
+  MODIFY `SPACE_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=698;
 
 --
 -- AUTO_INCREMENT for table `learning_path_content`
@@ -931,12 +1204,6 @@ ALTER TABLE `notifications`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
--- AUTO_INCREMENT for table `admin_notifications`
---
-ALTER TABLE `admin_notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `payment_methods`
 --
 ALTER TABLE `payment_methods`
@@ -946,19 +1213,31 @@ ALTER TABLE `payment_methods`
 -- AUTO_INCREMENT for table `plant`
 --
 ALTER TABLE `plant`
-  MODIFY `PLANT_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=97;
+  MODIFY `PLANT_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=119;
 
 --
 -- AUTO_INCREMENT for table `planttracking`
 --
 ALTER TABLE `planttracking`
-  MODIFY `TRACKING_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=88;
+  MODIFY `TRACKING_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=110;
+
+--
+-- AUTO_INCREMENT for table `plant_history_logs`
+--
+ALTER TABLE `plant_history_logs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `seasonal_content`
 --
 ALTER TABLE `seasonal_content`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `soil_analysis_usage`
+--
+ALTER TABLE `soil_analysis_usage`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `subscription_plans`
@@ -988,11 +1267,17 @@ ALTER TABLE `user_shared_concepts`
 -- AUTO_INCREMENT for table `user_subscriptions`
 --
 ALTER TABLE `user_subscriptions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `admin_notifications`
+--
+ALTER TABLE `admin_notifications`
+  ADD CONSTRAINT `admin_notifications_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `ai_analysis_usage`
@@ -1034,12 +1319,6 @@ ALTER TABLE `notifications`
   ADD CONSTRAINT `notifications_ibfk_3` FOREIGN KEY (`garden_id`) REFERENCES `garden` (`GARDEN_ID`) ON DELETE SET NULL;
 
 --
--- Constraints for table `admin_notifications`
---
-ALTER TABLE `admin_notifications`
-  ADD CONSTRAINT `admin_notifications_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
 -- Constraints for table `planttracking`
 --
 ALTER TABLE `planttracking`
@@ -1047,10 +1326,25 @@ ALTER TABLE `planttracking`
   ADD CONSTRAINT `planttracking_ibfk_2` FOREIGN KEY (`PLANT_ID`) REFERENCES `plant` (`PLANT_ID`);
 
 --
+-- Constraints for table `plant_history_logs`
+--
+ALTER TABLE `plant_history_logs`
+  ADD CONSTRAINT `plant_history_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+  ADD CONSTRAINT `plant_history_logs_ibfk_2` FOREIGN KEY (`garden_id`) REFERENCES `garden` (`GARDEN_ID`),
+  ADD CONSTRAINT `plant_history_logs_ibfk_3` FOREIGN KEY (`space_id`) REFERENCES `grid_spaces` (`SPACE_ID`),
+  ADD CONSTRAINT `plant_history_logs_ibfk_4` FOREIGN KEY (`plant_id`) REFERENCES `plant` (`PLANT_ID`);
+
+--
 -- Constraints for table `seasonal_content`
 --
 ALTER TABLE `seasonal_content`
   ADD CONSTRAINT `seasonal_content_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`);
+
+--
+-- Constraints for table `soil_analysis_usage`
+--
+ALTER TABLE `soil_analysis_usage`
+  ADD CONSTRAINT `soil_analysis_usage_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `user_plant_update_usage`

@@ -228,21 +228,151 @@ const SmartAlerts = () => {
     }
   }
 
+  // Helper function to determine health status from care_suggestions (matches backend logic)
+  const determineHealthStatus = (careSuggestions) => {
+    if (!careSuggestions || typeof careSuggestions !== 'object') {
+      return 'Unknown'
+    }
+    
+    const reasoning = (careSuggestions.reasoning || '').toLowerCase()
+    const needsWater = careSuggestions.needs_water || false
+    const needsFertilize = careSuggestions.needs_fertilize || false
+    const needsPrune = careSuggestions.needs_prune || false
+    
+    // Check for explicit healthy indicators FIRST (highest priority)
+    const strongHealthyIndicators = [
+      'appears healthy', 'looks healthy', 'healthy and', 'healthy and green',
+      'healthy and vibrant', 'no visible signs of', 'no visible signs',
+      'no clear signs of', 'no clear signs', 'no signs of dehydration',
+      'no signs of nutrient deficiency', 'no signs of disease',
+      'ripe and abundant', 'abundant', 'thriving', 'flourishing',
+      'in good health', 'good condition', 'excellent condition'
+    ]
+    
+    const hasStrongHealthy = strongHealthyIndicators.some(indicator => reasoning.includes(indicator))
+    
+    // Check for negative health indicators
+    const urgentIndicators = [
+      'urgent', 'health issues detected', 'mold detected', 'rot detected', 
+      'disease detected', 'spoilage detected', 'fungal infection', 
+      'powdery mildew', 'immediate attention', 'critical'
+    ]
+    
+    // Check for negative context phrases
+    const negativeContextPhrases = [
+      'no visible signs of', 'no visible signs', 'no clear signs of',
+      'no clear signs', 'no signs of', 'no evidence of', 'no indication of',
+      'no sign of', 'no symptoms of', 'no trace of'
+    ]
+    
+    const hasNegativeContext = negativeContextPhrases.some(phrase => reasoning.includes(phrase))
+    
+    // Check for damage indicators (but exclude if mentioned in negative context)
+    const damageIndicators = [
+      'shriveled', 'damaged', 'decay', 'dehydration', 'wilted', 
+      'brown spots', 'black spots', 'mushy', 'dying', 'dying leaves'
+    ]
+    
+    const hasDamage = !hasNegativeContext && damageIndicators.some(indicator => reasoning.includes(indicator))
+    const hasUrgentIssues = urgentIndicators.some(indicator => reasoning.includes(indicator))
+    
+    // Additional healthy indicators (weaker, but still positive)
+    const healthyIndicators = [
+      'no problems', 'no issues', 'fresh', 'ripe', 'vibrant',
+      'no damage', 'no disease', 'no mold', 'no rot', 'green leaves',
+      'healthy leaves', 'leaves appear healthy', 'leaves are healthy'
+    ]
+    
+    const hasHealthyIndicators = healthyIndicators.some(indicator => reasoning.includes(indicator))
+    
+    // Priority logic (matches backend)
+    if (hasStrongHealthy) {
+      return 'Healthy'
+    } else if (hasUrgentIssues) {
+      return 'Unhealthy'
+    } else if (hasDamage && !hasStrongHealthy) {
+      return 'Unhealthy'
+    } else if (hasHealthyIndicators && !hasUrgentIssues && !hasDamage) {
+      return 'Healthy'
+    } else if (needsWater || needsFertilize || needsPrune) {
+      return 'Needs Care'
+    } else {
+      return 'Unknown'
+    }
+  }
+
   const fetchProgressReports = async () => {
     try {
       setReportsLoading(true)
       
-      // Fetch plants and alerts data
-      const [plantsResponse, alertsResponse] = await Promise.all([
+      // Fetch gardens, plants, alerts, and grid spaces data
+      const [gardensResponse, alertsResponse] = await Promise.all([
         axios.get('/garden'),
         axios.get('/api/smart-alerts')
       ])
       
-      const plantsData = plantsResponse.data.plants || []
-      // Extract plant objects from the nested structure
-      const allPlants = plantsData.map(item => item.plant || item).filter(Boolean)
+      const gardens = gardensResponse.data.gardens || []
       const allAlerts = alertsResponse.data.alerts || []
       const completedActions = alertsResponse.data.completed_actions || []
+      
+      // Fetch grid spaces for all gardens to get health status
+      const gridSpacesPromises = gardens.map(garden => 
+        axios.get(`/garden/${garden.id}/grid-spaces`).catch(() => ({ data: { grid_spaces: [] } }))
+      )
+      const gridSpacesResponses = await Promise.all(gridSpacesPromises)
+      
+      // Collect all grid spaces with plants
+      const allGridSpaces = []
+      gridSpacesResponses.forEach((response, index) => {
+        const spaces = response.data.grid_spaces || []
+        spaces.forEach(space => {
+          if (space.plant_id) {
+            allGridSpaces.push({
+              ...space,
+              garden_id: gardens[index]?.id
+            })
+          }
+        })
+      })
+      
+      // Determine health status for each plant based on last update (care_suggestions)
+      const plantHealthStatuses = allGridSpaces.map(space => {
+        let careSuggestions = null
+        try {
+          if (space.care_suggestions) {
+            careSuggestions = typeof space.care_suggestions === 'string' 
+              ? JSON.parse(space.care_suggestions) 
+              : space.care_suggestions
+          }
+        } catch (e) {
+          console.error('Error parsing care_suggestions:', e)
+        }
+        
+        return {
+          plant_id: space.plant_id,
+          space_id: space.id,
+          health_status: determineHealthStatus(careSuggestions),
+          last_updated: space.last_updated
+        }
+      })
+      
+      // Count healthy vs unhealthy plants
+      const healthyPlants = plantHealthStatuses.filter(p => p.health_status === 'Healthy')
+      const unhealthyPlants = plantHealthStatuses.filter(p => p.health_status === 'Unhealthy')
+      const needsCarePlants = plantHealthStatuses.filter(p => p.health_status === 'Needs Care')
+      const unknownPlants = plantHealthStatuses.filter(p => p.health_status === 'Unknown')
+      
+      const totalPlants = plantHealthStatuses.length
+      const healthyCount = healthyPlants.length
+      const unhealthyCount = unhealthyPlants.length
+      const needsCareCount = needsCarePlants.length
+      
+      // Calculate growth rate based ONLY on healthy vs unhealthy plants
+      // Exclude "Needs Care" and "Unknown" from the calculation
+      const healthEvaluatedPlants = healthyCount + unhealthyCount
+      const growthRate = healthEvaluatedPlants > 0 
+        ? Math.round((healthyCount / healthEvaluatedPlants) * 100)
+        : 0
       
       // Calculate metrics for weekly report (last 7 days)
       const now = new Date()
@@ -261,44 +391,33 @@ const SmartAlerts = () => {
         return actionDate >= monthAgo
       })
       
-      // Plants needing attention (have pending or overdue alerts)
-      const plantsNeedingAttention = new Set(
-        allAlerts
-          .filter(alert => alert.status === 'pending' || alert.status === 'overdue')
-          .map(alert => alert.plant_name)
-      )
-      
       // Generate insights based on actual data
-      const generateInsights = (completedCount, needsAttentionCount, totalPlants) => {
+      const generateInsights = (completedCount, healthyCount, unhealthyCount, totalPlants) => {
         const insights = []
         
         if (completedCount > 0) {
           insights.push(`${completedCount} care task${completedCount > 1 ? 's' : ''} completed successfully`)
         }
         
-        if (needsAttentionCount > 0) {
-          const plantNames = Array.from(plantsNeedingAttention).slice(0, 3)
-          if (plantNames.length > 0) {
-            insights.push(`${plantNames.join(', ')} ${plantNames.length > 1 ? 'need' : 'needs'} attention`)
-          }
-        } else {
-          insights.push('All plants are in good health')
+        if (healthyCount > 0) {
+          insights.push(`${healthyCount} plant${healthyCount > 1 ? 's are' : ' is'} healthy and thriving`)
         }
         
-        if (totalPlants > 0) {
-          const healthyCount = totalPlants - needsAttentionCount
-          if (healthyCount === totalPlants) {
-            insights.push('Garden maintenance is on track')
-          } else {
-            insights.push(`${healthyCount} out of ${totalPlants} plants are thriving`)
-          }
+        if (unhealthyCount > 0) {
+          insights.push(`${unhealthyCount} plant${unhealthyCount > 1 ? 's need' : ' needs'} immediate attention`)
+        } else if (healthyCount === totalPlants && totalPlants > 0) {
+          insights.push('All plants are in excellent health')
+        }
+        
+        if (totalPlants > 0 && healthyCount === totalPlants) {
+          insights.push('Garden maintenance is on track')
         }
         
         return insights.length > 0 ? insights : ['Garden status is being monitored']
       }
       
       // Generate recommendations based on actual data
-      const generateRecommendations = (needsAttentionCount, alerts) => {
+      const generateRecommendations = (unhealthyCount, needsCareCount, alerts) => {
         const recommendations = []
         const alertTypes = {
           watering: 0,
@@ -314,6 +433,10 @@ const SmartAlerts = () => {
           }
         })
         
+        if (unhealthyCount > 0) {
+          recommendations.push(`Address health issues for ${unhealthyCount} plant${unhealthyCount > 1 ? 's' : ''} immediately`)
+        }
+        
         if (alertTypes.watering > 0) {
           recommendations.push(`Water ${alertTypes.watering} plant${alertTypes.watering > 1 ? 's' : ''} that need${alertTypes.watering === 1 ? 's' : ''} attention`)
         }
@@ -326,7 +449,7 @@ const SmartAlerts = () => {
           recommendations.push(`Prune ${alertTypes.pruning} plant${alertTypes.pruning > 1 ? 's' : ''} for optimal growth`)
         }
         
-        if (needsAttentionCount === 0) {
+        if (unhealthyCount === 0 && needsCareCount === 0) {
           recommendations.push('Continue current care routine')
           recommendations.push('Monitor plant growth and adjust care as needed')
         }
@@ -334,29 +457,24 @@ const SmartAlerts = () => {
         return recommendations.length > 0 ? recommendations : ['Keep up the great work with your garden care']
       }
       
-      // Calculate growth rate (percentage of healthy plants)
-      const totalPlants = allPlants.length
-      const needsAttentionCount = plantsNeedingAttention.size
-      const healthyCount = totalPlants - needsAttentionCount
-      const growthRate = totalPlants > 0 ? Math.round((healthyCount / totalPlants) * 100) : 0
-      
       // Weekly Report
       const weeklyReport = {
         id: 1,
         title: 'Weekly Garden Health Report',
         date: new Date(),
         type: 'weekly',
-        summary: weeklyCompleted.length > 0 
-          ? `Completed ${weeklyCompleted.length} care task${weeklyCompleted.length > 1 ? 's' : ''} this week`
+        summary: totalPlants > 0
+          ? `${healthyCount} out of ${totalPlants} plant${totalPlants > 1 ? 's are' : ' is'} healthy`
           : 'Weekly garden status update',
         metrics: {
           plantsHealthy: healthyCount,
-          plantsNeedingAttention: needsAttentionCount,
+          plantsUnhealthy: unhealthyCount,
+          plantsNeedingCare: needsCareCount,
           tasksCompleted: weeklyCompleted.length,
           growthRate: growthRate
         },
-        insights: generateInsights(weeklyCompleted.length, needsAttentionCount, totalPlants),
-        recommendations: generateRecommendations(needsAttentionCount, allAlerts)
+        insights: generateInsights(weeklyCompleted.length, healthyCount, unhealthyCount, totalPlants),
+        recommendations: generateRecommendations(unhealthyCount, needsCareCount, allAlerts)
       }
       
       // Monthly Report
@@ -365,17 +483,18 @@ const SmartAlerts = () => {
         title: 'Monthly Growth Analysis',
         date: new Date(),
         type: 'monthly',
-        summary: monthlyCompleted.length > 0
-          ? `Completed ${monthlyCompleted.length} care tasks this month`
+        summary: totalPlants > 0
+          ? `${healthyCount} out of ${totalPlants} plant${totalPlants > 1 ? 's are' : ' is'} healthy`
           : 'Monthly garden health overview',
         metrics: {
           plantsHealthy: healthyCount,
-          plantsNeedingAttention: needsAttentionCount,
+          plantsUnhealthy: unhealthyCount,
+          plantsNeedingCare: needsCareCount,
           tasksCompleted: monthlyCompleted.length,
           growthRate: growthRate
         },
-        insights: generateInsights(monthlyCompleted.length, needsAttentionCount, totalPlants),
-        recommendations: generateRecommendations(needsAttentionCount, allAlerts)
+        insights: generateInsights(monthlyCompleted.length, healthyCount, unhealthyCount, totalPlants),
+        recommendations: generateRecommendations(unhealthyCount, needsCareCount, allAlerts)
       }
       
       setProgressReports([weeklyReport, monthlyReport])
@@ -491,7 +610,8 @@ Summary: ${report.summary}
 
 Metrics:
 - Healthy Plants: ${report.metrics.plantsHealthy}
-- Plants Needing Attention: ${report.metrics.plantsNeedingAttention}
+- Unhealthy Plants: ${report.metrics.plantsUnhealthy || 0}
+- Plants Needing Care: ${report.metrics.plantsNeedingCare || 0}
 - Tasks Completed: ${report.metrics.tasksCompleted}
 - Growth Rate: ${report.metrics.growthRate}%
 
@@ -957,9 +1077,9 @@ ${report.recommendations.map(rec => `• ${rec}`).join('\n')}
                         <div className="text-2xl font-bold text-green-600">{report.metrics.plantsHealthy}</div>
                         <div className="text-sm text-gray-600">Healthy Plants</div>
                       </div>
-                      <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                        <div className="text-2xl font-bold text-yellow-600">{report.metrics.plantsNeedingAttention}</div>
-                        <div className="text-sm text-gray-600">Need Attention</div>
+                      <div className="text-center p-3 bg-red-50 rounded-lg">
+                        <div className="text-2xl font-bold text-red-600">{report.metrics.plantsUnhealthy || 0}</div>
+                        <div className="text-sm text-gray-600">Unhealthy Plants</div>
                       </div>
                       <div className="text-center p-3 bg-blue-50 rounded-lg">
                         <div className="text-2xl font-bold text-blue-600">{report.metrics.tasksCompleted}</div>

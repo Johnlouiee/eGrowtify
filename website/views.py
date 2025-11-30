@@ -17,6 +17,7 @@ from .models import (
     UserSubscription,
     AIUsageTracking,
     AIAnalysisUsage,
+    SoilAnalysisUsage,
     Notification
 )
 from datetime import datetime, timedelta, timezone
@@ -58,7 +59,7 @@ def _normalize_tags(raw_tags):
     return ','.join(tags_list)
 
 def _get_or_create_ai_usage(user_id):
-    """Ensure an AIAnalysisUsage record exists for the given user."""
+    """Ensure an AIAnalysisUsage record exists for the given user (plant analyses)."""
     usage = AIAnalysisUsage.query.filter_by(user_id=user_id).first()
     if not usage:
         usage = AIAnalysisUsage(user_id=user_id, free_analyses_used=0, purchased_credits=0)
@@ -66,8 +67,18 @@ def _get_or_create_ai_usage(user_id):
         db.session.flush()
     return usage
 
+def _get_or_create_soil_usage(user_id):
+    """Ensure a SoilAnalysisUsage record exists for the given user (soil analyses)."""
+    from website.models import SoilAnalysisUsage
+    usage = SoilAnalysisUsage.query.filter_by(user_id=user_id).first()
+    if not usage:
+        usage = SoilAnalysisUsage(user_id=user_id, free_analyses_used=0, purchased_credits=0)
+        db.session.add(usage)
+        db.session.flush()
+    return usage
+
 def _check_ai_usage_limit(user_id, is_premium=False):
-    """Check if user can perform an AI analysis. Returns (can_proceed, remaining, needs_payment)"""
+    """Check if user can perform a plant AI analysis. Returns (can_proceed, remaining, needs_payment)"""
     # Premium users get 10 free analyses, basic users get 3
     free_allocation = 10 if is_premium else 3
     
@@ -77,16 +88,35 @@ def _check_ai_usage_limit(user_id, is_premium=False):
     purchased = usage.purchased_credits or 0
     remaining = usage.total_remaining(free_allocation)
     
-    print(f"🔍 Usage check for user {user_id}: is_premium={is_premium}, free_allocation={free_allocation}, free_used={free_used}, purchased={purchased}, remaining={remaining}")
+    print(f"🔍 Plant usage check for user {user_id}: is_premium={is_premium}, free_allocation={free_allocation}, free_used={free_used}, purchased={purchased}, remaining={remaining}")
     
     if remaining > 0:
         return True, remaining, False
     else:
-        print(f"⚠️ Limit reached for user {user_id}: free_used={free_used} (limit={free_allocation}), purchased={purchased}")
+        print(f"⚠️ Plant limit reached for user {user_id}: free_used={free_used} (limit={free_allocation}), purchased={purchased}")
+        return False, 0, True
+
+def _check_soil_usage_limit(user_id, is_premium=False):
+    """Check if user can perform a soil AI analysis. Returns (can_proceed, remaining, needs_payment)"""
+    # Premium users get 10 free analyses, basic users get 3
+    free_allocation = 10 if is_premium else 3
+    
+    usage = _get_or_create_soil_usage(user_id)
+    db.session.flush()  # Ensure usage record is in session
+    free_used = usage.free_analyses_used or 0
+    purchased = usage.purchased_credits or 0
+    remaining = usage.total_remaining(free_allocation)
+    
+    print(f"🌱 Soil usage check for user {user_id}: is_premium={is_premium}, free_allocation={free_allocation}, free_used={free_used}, purchased={purchased}, remaining={remaining}")
+    
+    if remaining > 0:
+        return True, remaining, False
+    else:
+        print(f"⚠️ Soil limit reached for user {user_id}: free_used={free_used} (limit={free_allocation}), purchased={purchased}")
         return False, 0, True
 
 def _track_ai_usage(user_id, usage_type, is_free=True, cost=0.00, image_path=None, analysis_result=None):
-    """Track an AI analysis usage"""
+    """Track a plant AI analysis usage"""
     # Update usage counter
     usage = _get_or_create_ai_usage(user_id)
     if is_free:
@@ -100,6 +130,31 @@ def _track_ai_usage(user_id, usage_type, is_free=True, cost=0.00, image_path=Non
     tracking = AIUsageTracking(
         user_id=user_id,
         usage_type=usage_type,
+        image_path=image_path,
+        analysis_result=analysis_result,
+        cost=float(cost),
+        is_free_usage=is_free
+    )
+    db.session.add(tracking)
+    db.session.flush()
+    
+    return tracking
+
+def _track_soil_usage(user_id, is_free=True, cost=0.00, image_path=None, analysis_result=None):
+    """Track a soil AI analysis usage"""
+    # Update usage counter
+    usage = _get_or_create_soil_usage(user_id)
+    if is_free:
+        usage.free_analyses_used = (usage.free_analyses_used or 0) + 1
+    else:
+        # Deduct from purchased credits
+        if usage.purchased_credits > 0:
+            usage.purchased_credits = usage.purchased_credits - 1
+    
+    # Create tracking record (using same AIUsageTracking table but with soil_analysis type)
+    tracking = AIUsageTracking(
+        user_id=user_id,
+        usage_type='soil_analysis',
         image_path=image_path,
         analysis_result=analysis_result,
         cost=float(cost),
@@ -381,7 +436,7 @@ def ai_plant_recognition():
         return jsonify({"error": "Admins do not have access to the AI recognition feature."}), 403
 
     try:
-        # Check usage limit (premium users have unlimited)
+        # Check usage limit (premium users get 10 free tries, basic users get 3)
         is_premium = getattr(current_user, 'subscribed', False)
         can_proceed, remaining, needs_payment = _check_ai_usage_limit(current_user.id, is_premium)
         
@@ -1348,9 +1403,9 @@ def soil_analysis():
         return jsonify({"error": "Admins do not have access to the soil analysis feature."}), 403
 
     try:
-        # Check usage limit (premium users have unlimited)
+        # Check usage limit (premium users get 10 free tries, basic users get 3)
         is_premium = getattr(current_user, 'subscribed', False)
-        can_proceed, remaining, needs_payment = _check_ai_usage_limit(current_user.id, is_premium)
+        can_proceed, remaining, needs_payment = _check_soil_usage_limit(current_user.id, is_premium)
         
         if not can_proceed:
             return jsonify({
@@ -1512,16 +1567,15 @@ def soil_analysis():
             'ai_analyzed': True
         }
 
-        # Track usage after successful analysis (both premium and basic users)
+        # Track soil usage after successful analysis (both premium and basic users) - separate from plant analysis
         is_premium = getattr(current_user, 'subscribed', False)
         free_allocation = 10 if is_premium else 3
-        usage = _get_or_create_ai_usage(current_user.id)
+        usage = _get_or_create_soil_usage(current_user.id)
         is_free = usage.can_use_free(free_allocation)
         old_free_used = usage.free_analyses_used or 0
         old_purchased = usage.purchased_credits or 0
-        _track_ai_usage(
+        _track_soil_usage(
             current_user.id,
-            'soil_analysis',
             is_free=is_free,
             cost=0.00 if is_free else 20.00,
             analysis_result=str(result.get('moisture_level', ''))[:500]
@@ -2439,6 +2493,118 @@ def get_weather_forecast():
                     'recommendation_color': recommendation_color
                 })
             
+            # Fill in missing days if API only returned 5 days (OpenWeatherMap free tier limit)
+            if len(processed_forecast) < 7:
+                # Get the last date from processed forecast
+                last_date_str = processed_forecast[-1]['date'] if processed_forecast else today
+                last_date = datetime.strptime(last_date_str, '%Y-%m-%d')
+                
+                # Get average values from last few days for extrapolation
+                if len(processed_forecast) >= 3:
+                    recent_temps = [d['temperature']['average'] for d in processed_forecast[-3:]]
+                    recent_humidity = [d['humidity'] for d in processed_forecast[-3:]]
+                    recent_wind = [d['wind_speed'] for d in processed_forecast[-3:]]
+                    recent_scores = [d['planting_score'] for d in processed_forecast[-3:]]
+                    
+                    avg_recent_temp = round(sum(recent_temps) / len(recent_temps))
+                    avg_recent_humidity = round(sum(recent_humidity) / len(recent_humidity))
+                    avg_recent_wind = round(sum(recent_wind) / len(recent_wind))
+                    avg_recent_score = round(sum(recent_scores) / len(recent_scores))
+                else:
+                    # Fallback to last day's values
+                    last_day = processed_forecast[-1] if processed_forecast else None
+                    if last_day:
+                        avg_recent_temp = last_day['temperature']['average']
+                        avg_recent_humidity = last_day['humidity']
+                        avg_recent_wind = last_day['wind_speed']
+                        avg_recent_score = last_day['planting_score']
+                    else:
+                        avg_recent_temp = 28
+                        avg_recent_humidity = 70
+                        avg_recent_wind = 10
+                        avg_recent_score = 6
+                
+                # Generate missing days (6th and 7th day)
+                for i in range(len(processed_forecast), 7):
+                    next_date = last_date + timedelta(days=i - len(processed_forecast) + 1)
+                    next_date_str = next_date.strftime('%Y-%m-%d')
+                    
+                    # Slight variation in temperature (±2°C)
+                    temp_variation = (i % 2) * 2 - 1  # Alternate between -1 and +1
+                    extrapolated_temp = avg_recent_temp + temp_variation
+                    extrapolated_min = extrapolated_temp - 3
+                    extrapolated_max = extrapolated_temp + 3
+                    
+                    # Determine planting score based on extrapolated temperature
+                    planting_score = 6
+                    conditions = []
+                    
+                    if 50 <= extrapolated_temp <= 75:
+                        planting_score = 6
+                        conditions.append("Optimal temperature")
+                    elif 45 <= extrapolated_temp < 50 or 75 < extrapolated_temp <= 80:
+                        planting_score = 5
+                        conditions.append("Good temperature")
+                    elif extrapolated_temp < 45:
+                        planting_score = 3
+                        conditions.append("Too cold for most plants")
+                    else:
+                        planting_score = 4
+                        conditions.append("Hot weather - water frequently")
+                    
+                    if 40 <= avg_recent_humidity <= 70:
+                        planting_score += 2
+                        conditions.append("Good humidity")
+                    elif avg_recent_humidity > 70:
+                        planting_score += 1
+                        conditions.append("High humidity - watch for diseases")
+                    else:
+                        planting_score += 1
+                        conditions.append("Low humidity - water more")
+                    
+                    if avg_recent_wind < 15:
+                        planting_score += 2
+                        conditions.append("Calm conditions")
+                    elif avg_recent_wind < 25:
+                        planting_score += 1
+                        conditions.append("Moderate wind")
+                    else:
+                        planting_score += 0
+                        conditions.append("High winds - avoid planting")
+                    
+                    # Cap score at 8
+                    planting_score = min(planting_score, 8)
+                    
+                    # Determine recommendation
+                    if planting_score >= 6:
+                        recommendation = "Excellent planting day"
+                        recommendation_color = "green"
+                    elif planting_score >= 4:
+                        recommendation = "Good planting day"
+                        recommendation_color = "blue"
+                    elif planting_score >= 2:
+                        recommendation = "Fair planting day"
+                        recommendation_color = "yellow"
+                    else:
+                        recommendation = "Poor planting day"
+                        recommendation_color = "red"
+                    
+                    processed_forecast.append({
+                        'date': next_date_str,
+                        'temperature': {
+                            'average': extrapolated_temp,
+                            'min': extrapolated_min,
+                            'max': extrapolated_max
+                        },
+                        'humidity': avg_recent_humidity,
+                        'wind_speed': avg_recent_wind,
+                        'rain_probability': 0.0,
+                        'conditions': conditions,
+                        'planting_score': planting_score,
+                        'recommendation': recommendation,
+                        'recommendation_color': recommendation_color
+                    })
+            
             return jsonify({
                 "forecast": processed_forecast,
                 "city": city,
@@ -2943,10 +3109,38 @@ def get_grid_spaces(garden_id):
 @views.route('/api/ai-analysis/usage', methods=['GET'])
 @login_required
 def get_ai_usage_status():
-    """Get current AI analysis usage status for the user"""
+    """Get current AI analysis usage status for the user (plant analyses only)"""
     try:
         is_premium = getattr(current_user, 'subscribed', False)
         usage = _get_or_create_ai_usage(current_user.id)
+        # Premium users get 10 free analyses, basic users get 3
+        free_allocation = 10 if is_premium else 3
+        
+        free_used = usage.free_analyses_used or 0
+        free_remaining = max(0, free_allocation - free_used)
+        purchased_credits = usage.purchased_credits or 0
+        total_remaining = usage.total_remaining(free_allocation)
+        
+        return jsonify({
+            "success": True,
+            "is_premium": is_premium,
+            "free_allocation": free_allocation,
+            "free_used": free_used,
+            "free_remaining": free_remaining,
+            "purchased_credits": purchased_credits,
+            "total_remaining": total_remaining,
+            "price_per_analysis": 20.00
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@views.route('/api/soil-analysis/usage', methods=['GET'])
+@login_required
+def get_soil_usage_status():
+    """Get current soil analysis usage status for the user (separate from plant analysis)"""
+    try:
+        is_premium = getattr(current_user, 'subscribed', False)
+        usage = _get_or_create_soil_usage(current_user.id)
         # Premium users get 10 free analyses, basic users get 3
         free_allocation = 10 if is_premium else 3
         
@@ -2981,13 +3175,8 @@ def purchase_ai_analysis():
         if quantity <= 0:
             return jsonify({"success": False, "error": "Invalid quantity"}), 400
         
-        # Premium users don't need to purchase
-        is_premium = getattr(current_user, 'subscribed', False)
-        if is_premium:
-            return jsonify({
-                "success": False,
-                "error": "Premium users have unlimited analyses. No purchase needed."
-            }), 400
+        # Premium users can also purchase additional credits if they use up their 10 free tries
+        # No need to block them from purchasing
         
         # Validate GCash number if GCash payment method is selected
         if payment_method == 'gcash' and not gcash_number:
@@ -3004,11 +3193,62 @@ def purchase_ai_analysis():
         usage.purchased_credits = (usage.purchased_credits or 0) + quantity
         db.session.commit()
         
-        total_remaining = usage.total_remaining()
+        # Calculate total remaining with correct free allocation
+        is_premium = getattr(current_user, 'subscribed', False)
+        free_allocation = 10 if is_premium else 3
+        total_remaining = usage.total_remaining(free_allocation)
         
         return jsonify({
             "success": True,
             "message": f"Successfully purchased {quantity} analysis(es).",
+            "credits_added": quantity,
+            "total_remaining": total_remaining,
+            "price_per_analysis": 20.00,
+            "total_paid": quantity * 20.00
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": f"Purchase failed: {str(e)}"}), 500
+
+@views.route('/api/soil-analysis/purchase', methods=['POST'])
+@login_required
+def purchase_soil_analysis():
+    """Purchase a single soil analysis for ₱20"""
+    try:
+        data = request.get_json() or {}
+        quantity = data.get('quantity', 1)
+        payment_method = data.get('payment_method', 'demo')
+        gcash_number = data.get('gcash_number')
+        
+        if quantity <= 0:
+            return jsonify({"success": False, "error": "Invalid quantity"}), 400
+        
+        # Premium users can also purchase additional credits if they use up their 10 free tries
+        # No need to block them from purchasing
+        
+        # Validate GCash number if GCash payment method is selected
+        if payment_method == 'gcash' and not gcash_number:
+            return jsonify({"success": False, "error": "GCash mobile number is required"}), 400
+        
+        # For demo purposes, simulate successful payment
+        payment_info = f"via {payment_method}"
+        if payment_method == 'gcash' and gcash_number:
+            payment_info += f" (GCash: {gcash_number})"
+        print(f"💰 SOIL ANALYSIS PURCHASE: User {current_user.id} purchasing {quantity} analysis(es) {payment_info}")
+        
+        # Update usage with purchased credits
+        usage = _get_or_create_soil_usage(current_user.id)
+        usage.purchased_credits = (usage.purchased_credits or 0) + quantity
+        db.session.commit()
+        
+        # Calculate total remaining with correct free allocation
+        is_premium = getattr(current_user, 'subscribed', False)
+        free_allocation = 10 if is_premium else 3
+        total_remaining = usage.total_remaining(free_allocation)
+        
+        return jsonify({
+            "success": True,
+            "message": f"Successfully purchased {quantity} soil analysis(es).",
             "credits_added": quantity,
             "total_remaining": total_remaining,
             "price_per_analysis": 20.00,
@@ -3233,6 +3473,24 @@ def upload_plant_image():
         try:
             openai_key = os.getenv('OPENAI_API_KEY')
             if openai_key:
+                # Check usage limit before performing AI analysis (premium users get 10 free tries, basic users get 3)
+                is_premium = getattr(current_user, 'subscribed', False)
+                can_proceed, remaining, needs_payment = _check_ai_usage_limit(current_user.id, is_premium)
+                
+                if not can_proceed:
+                    # Still save the image but without AI analysis
+                    grid_space.care_suggestions = json.dumps(care_suggestions)
+                    db.session.commit()
+                    return jsonify({
+                        "error": "Free analysis limit reached. Please purchase additional analyses or subscribe to Premium.",
+                        "limit_reached": True,
+                        "needs_payment": True,
+                        "remaining": 0,
+                        "price_per_analysis": 20.00,
+                        "image_path": grid_space.image_path,
+                        "care_suggestions": care_suggestions
+                    }), 402  # 402 Payment Required
+                
                 print("🤖 Starting AI analysis...")
                 
                 # Read and base64 encode image for OpenAI Vision
@@ -3325,6 +3583,26 @@ def upload_plant_image():
                                 else:
                                     care_suggestions['reasoning'] = clean_reasoning
                         print(f"✅ AI Analysis completed: {care_suggestions}")
+                        
+                        # Track AI usage after successful analysis
+                        free_allocation = 10 if is_premium else 3
+                        usage = _get_or_create_ai_usage(current_user.id)
+                        is_free = usage.can_use_free(free_allocation)
+                        old_free_used = usage.free_analyses_used or 0
+                        old_purchased = usage.purchased_credits or 0
+                        _track_ai_usage(
+                            current_user.id,
+                            'plant_analysis',
+                            is_free=is_free,
+                            cost=0.00 if is_free else 20.00,
+                            image_path=grid_space.image_path,
+                            analysis_result=str(care_suggestions.get('reasoning', ''))[:500]
+                        )
+                        db.session.flush()  # Ensure usage is saved
+                        db.session.refresh(usage)
+                        new_free_used = usage.free_analyses_used or 0
+                        new_purchased = usage.purchased_credits or 0
+                        print(f"✅ Tracked usage for user {current_user.id} (premium={is_premium}, allocation={free_allocation}): free {old_free_used}→{new_free_used}, purchased {old_purchased}→{new_purchased}")
                         
                         # Enhanced health issue detection - check for negative statements first
                         negative_indicators = ['no signs of', 'no visible', 'no evidence of', 'appears healthy', 'looks healthy', 'no mold', 'no rot', 'no spoilage', 'no disease', 'no problems', 'no issues']
@@ -3497,6 +3775,26 @@ def upload_plant_image():
                                         cleaned_response = cleaned_response.replace('```', '').strip()
                                     
                                     care_suggestions = json.loads(cleaned_response)
+                                    
+                                    # Track AI usage after successful analysis (fallback HTTP method)
+                                    free_allocation = 10 if is_premium else 3
+                                    usage = _get_or_create_ai_usage(current_user.id)
+                                    is_free = usage.can_use_free(free_allocation)
+                                    old_free_used = usage.free_analyses_used or 0
+                                    old_purchased = usage.purchased_credits or 0
+                                    _track_ai_usage(
+                                        current_user.id,
+                                        'plant_analysis',
+                                        is_free=is_free,
+                                        cost=0.00 if is_free else 20.00,
+                                        image_path=grid_space.image_path,
+                                        analysis_result=str(care_suggestions.get('reasoning', ''))[:500]
+                                    )
+                                    db.session.flush()
+                                    db.session.refresh(usage)
+                                    new_free_used = usage.free_analyses_used or 0
+                                    new_purchased = usage.purchased_credits or 0
+                                    print(f"✅ Tracked usage (HTTP fallback) for user {current_user.id}: free {old_free_used}→{new_free_used}, purchased {old_purchased}→{new_purchased}")
                                 except:
                                     care_suggestions = {
                                         "needs_water": False,
@@ -3658,37 +3956,44 @@ def upload_plant_image():
         print(f"📅 Updated last_updated timestamp")
         
         # Track health status update (both changes and same status)
-        # Only log if this is not the first analysis (old_health_status was not 'Unknown')
-        if old_health_status != 'Unknown':
-            from website.models import ActivityLog
-            from datetime import date
-            
-            plant_name = grid_space.plant.name if grid_space.plant else 'Unknown Plant'
-            
-            # Create description based on whether status changed or stayed the same
-            if old_health_status != new_health_status:
-                health_change_description = f"Health status changed from {old_health_status} to {new_health_status}"
-            else:
-                health_change_description = f"Health status remains {new_health_status}"
-            
-            # Add reasoning context if available
-            if care_suggestions.get('reasoning'):
-                health_change_description += f": {care_suggestions['reasoning'][:150]}"
-            
-            health_log = ActivityLog(
-                user_id=current_user.id,
-                garden_id=garden.id,
-                space_id=grid_space.id,
-                plant_id=grid_space.plant_id,
-                action='health_change',
-                action_date=date.today(),
-                notes=health_change_description
-            )
-            db.session.add(health_log)
-            if old_health_status != new_health_status:
-                print(f"📊 Health status change logged: {old_health_status} → {new_health_status}")
-            else:
-                print(f"📊 Health status update logged: {new_health_status} (unchanged)")
+        # Log all health status updates, including the first one
+        from website.models import ActivityLog
+        from datetime import date
+        
+        plant_name = grid_space.plant.name if grid_space.plant else 'Unknown Plant'
+        
+        # Create description based on whether this is the first update or a change
+        if old_health_status == 'Unknown':
+            # First update - log the initial health status
+            health_change_description = f"Initial health status: {new_health_status}"
+        elif old_health_status != new_health_status:
+            # Status changed
+            health_change_description = f"Health status changed from {old_health_status} to {new_health_status}"
+        else:
+            # Status remained the same
+            health_change_description = f"Health status remains {new_health_status}"
+        
+        # Add reasoning context if available
+        if care_suggestions.get('reasoning'):
+            health_change_description += f": {care_suggestions['reasoning'][:150]}"
+        
+        health_log = ActivityLog(
+            user_id=current_user.id,
+            garden_id=garden.id,
+            space_id=grid_space.id,
+            plant_id=grid_space.plant_id,
+            action='health_change',
+            action_date=date.today(),
+            notes=health_change_description
+        )
+        db.session.add(health_log)
+        
+        if old_health_status == 'Unknown':
+            print(f"📊 Initial health status logged: {new_health_status}")
+        elif old_health_status != new_health_status:
+            print(f"📊 Health status change logged: {old_health_status} → {new_health_status}")
+        else:
+            print(f"📊 Health status update logged: {new_health_status} (unchanged)")
         
         print("💾 Committing to database...")
         db.session.commit()

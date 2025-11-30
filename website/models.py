@@ -438,13 +438,13 @@ class Notification(db.Model):
         return f'<Notification {self.id}: {self.title}>'
 
 class AIAnalysisUsage(db.Model):
-    """Track free and purchased AI analysis credits for users."""
+    """Track free and purchased AI analysis credits for plant-related analyses (recognition, updates, adding plants)."""
     __tablename__ = 'ai_analysis_usage'
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
-    free_analyses_used = db.Column(db.Integer, default=0)  # Total free analyses used (plant + soil combined)
-    purchased_credits = db.Column(db.Integer, default=0)  # Purchased single analysis credits
+    free_analyses_used = db.Column(db.Integer, default=0)  # Free plant analyses used
+    purchased_credits = db.Column(db.Integer, default=0)  # Purchased plant analysis credits
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
@@ -452,17 +452,44 @@ class AIAnalysisUsage(db.Model):
     user = db.relationship('User', backref=db.backref('ai_analysis_usage', uselist=False, cascade='all, delete-orphan'))
     
     def total_remaining(self, free_allocation=3):
-        """Calculate total remaining analyses (free + purchased)"""
+        """Calculate total remaining plant analyses (free + purchased)"""
         free_remaining = max(0, free_allocation - (self.free_analyses_used or 0))
         credits = self.purchased_credits or 0
         return free_remaining + credits
     
     def can_use_free(self, free_allocation=3):
-        """Check if user can use a free analysis"""
+        """Check if user can use a free plant analysis"""
         return (self.free_analyses_used or 0) < free_allocation
     
     def __repr__(self):
         return f'<AIAnalysisUsage user={self.user_id} free_used={self.free_analyses_used} purchased={self.purchased_credits}>'
+
+class SoilAnalysisUsage(db.Model):
+    """Track free and purchased AI analysis credits for soil analysis (separate from plant analysis)."""
+    __tablename__ = 'soil_analysis_usage'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
+    free_analyses_used = db.Column(db.Integer, default=0)  # Free soil analyses used
+    purchased_credits = db.Column(db.Integer, default=0)  # Purchased soil analysis credits
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    user = db.relationship('User', backref=db.backref('soil_analysis_usage', uselist=False, cascade='all, delete-orphan'))
+    
+    def total_remaining(self, free_allocation=3):
+        """Calculate total remaining soil analyses (free + purchased)"""
+        free_remaining = max(0, free_allocation - (self.free_analyses_used or 0))
+        credits = self.purchased_credits or 0
+        return free_remaining + credits
+    
+    def can_use_free(self, free_allocation=3):
+        """Check if user can use a free soil analysis"""
+        return (self.free_analyses_used or 0) < free_allocation
+    
+    def __repr__(self):
+        return f'<SoilAnalysisUsage user={self.user_id} free_used={self.free_analyses_used} purchased={self.purchased_credits}>'
 
 class UserSharedConcept(db.Model):
     """User contributed concepts, techniques, and ideas that can be shared across the community."""
