@@ -18,6 +18,8 @@ const IntermediateLearningPath = () => {
   const [completedModules, setCompletedModules] = useState([])
   const [currentLesson, setCurrentLesson] = useState(0)
   const [showQuiz, setShowQuiz] = useState(false)
+  const [showQuizSelection, setShowQuizSelection] = useState(false)
+  const [currentQuiz, setCurrentQuiz] = useState(null)
   const [quizAnswers, setQuizAnswers] = useState({})
   const [moduleProgress, setModuleProgress] = useState({})
   const [showVideo, setShowVideo] = useState(false)
@@ -53,11 +55,32 @@ const IntermediateLearningPath = () => {
           setModules(fallbackModules)
         } else {
           // Use backend data
-          const backendModules = response.data.map(module => ({
-            ...module,
-            icon: TrendingUp,
-            color: 'blue'
-          }))
+          const backendModules = response.data.map(module => {
+            // Ensure quizzes is properly formatted as an array
+            let quizzes = module.quizzes
+            if (quizzes && typeof quizzes === 'string') {
+              try {
+                quizzes = JSON.parse(quizzes)
+              } catch (e) {
+                console.error('Error parsing quizzes:', e)
+                quizzes = []
+              }
+            }
+            // If quizzes is not an array, try to use quiz as fallback
+            if (!Array.isArray(quizzes)) {
+              if (module.quiz) {
+                quizzes = Array.isArray(module.quiz) ? module.quiz : [module.quiz]
+              } else {
+                quizzes = []
+              }
+            }
+            return {
+              ...module,
+              quizzes: quizzes,
+              icon: TrendingUp,
+              color: 'blue'
+            }
+          })
           setModules(backendModules)
         }
       } catch (error) {
@@ -93,8 +116,10 @@ const IntermediateLearningPath = () => {
     })
   }
 
+  // Load progress AFTER modules are loaded and validate against current modules
   useEffect(() => {
-    // Load existing progress from localStorage
+    if (modules.length === 0 || loading) return // Wait for modules to load
+    
     const loadProgress = () => {
       const storageKey = getStorageKey('intermediateProgress')
       const savedProgress = localStorage.getItem(storageKey)
@@ -102,41 +127,84 @@ const IntermediateLearningPath = () => {
       if (savedProgress) {
         try {
           const progressData = JSON.parse(savedProgress)
-          setCompletedModules(progressData.completedModules || [])
-          setModuleProgress(progressData.moduleProgress || {})
-          setQuizAttempts(progressData.quizAttempts || {})
+          
+          // Get current module IDs
+          const currentModuleIds = modules.map(m => m.id)
+          
+          // Validate and filter completed modules - only keep those that exist in current modules
+          const validCompletedModules = (progressData.completedModules || []).filter(
+            moduleId => currentModuleIds.includes(moduleId)
+          )
+          
+          // Validate and filter module progress - only keep those that exist in current modules
+          const validModuleProgress = {}
+          Object.keys(progressData.moduleProgress || {}).forEach(moduleId => {
+            if (currentModuleIds.includes(moduleId)) {
+              validModuleProgress[moduleId] = progressData.moduleProgress[moduleId]
+            }
+          })
+          
+          // Validate and filter quiz attempts - only keep those that exist in current modules
+          const validQuizAttempts = {}
+          Object.keys(progressData.quizAttempts || {}).forEach(moduleId => {
+            if (currentModuleIds.includes(moduleId)) {
+              validQuizAttempts[moduleId] = progressData.quizAttempts[moduleId]
+            }
+          })
+          
+          // Only update if we have valid progress data
+          if (validCompletedModules.length > 0 || Object.keys(validModuleProgress).length > 0 || Object.keys(validQuizAttempts).length > 0) {
+            setCompletedModules(validCompletedModules)
+            setModuleProgress(validModuleProgress)
+            setQuizAttempts(validQuizAttempts)
+          } else {
+            // If no valid progress, initialize empty
+            setCompletedModules([])
+            setModuleProgress({})
+            setQuizAttempts({})
+          }
         } catch (error) {
           console.error('Error loading progress:', error)
           setCompletedModules([])
           setModuleProgress({})
           setQuizAttempts({})
         }
+      } else {
+        // No saved progress, initialize empty
+        setCompletedModules([])
+        setModuleProgress({})
+        setQuizAttempts({})
       }
     }
 
     loadProgress()
-  }, [user]) // Re-run when user changes
+  }, [modules, loading, user]) // Re-run when modules load or user changes
 
   // Save progress whenever completedModules or moduleProgress changes
   useEffect(() => {
+    if (modules.length === 0) return // Don't save if modules haven't loaded yet
+    
     const saveProgress = () => {
       const storageKey = getStorageKey('intermediateProgress')
       const progressData = {
         completedModules,
         moduleProgress,
         quizAttempts,
+        totalModules: modules.length, // Store total module count for accurate progress calculation
         lastUpdated: new Date().toISOString()
       }
       localStorage.setItem(storageKey, JSON.stringify(progressData))
     }
 
     saveProgress()
-  }, [completedModules, moduleProgress, quizAttempts, user])
+  }, [completedModules, moduleProgress, quizAttempts, modules, user])
 
   const startModule = (module) => {
     setCurrentModule(module)
     setCurrentLesson(0)
     setShowQuiz(false)
+    setShowQuizSelection(false)
+    setCurrentQuiz(null)
     setQuizAnswers({})
     setShowQuizResults(false)
     setQuizScore(0)
@@ -145,7 +213,12 @@ const IntermediateLearningPath = () => {
 
   const handleModuleClick = (module) => {
     const isCompleted = isModuleCompleted(module.id)
-    const hasQuizAttempts = quizAttempts[module.id] && quizAttempts[module.id].length > 0
+    // Check if any quiz has been attempted
+    const quizzes = module.quizzes || (module.quiz ? [module.quiz] : [])
+    const hasQuizAttempts = quizzes.some(quiz => {
+      const quizKey = `${module.id}_${quiz.title}`
+      return quizAttempts[quizKey] && quizAttempts[quizKey].length > 0
+    })
     
     if (isCompleted && hasQuizAttempts) {
       setCurrentModule(module)
@@ -157,10 +230,17 @@ const IntermediateLearningPath = () => {
 
   const handleRetakeQuiz = () => {
     setShowRetakeOption(false)
-    setShowQuiz(true)
-    setQuizAnswers({})
-    setShowQuizResults(false)
-    setQuizScore(0)
+    // Show quiz selection if multiple quizzes, otherwise show the quiz directly
+    const quizzes = currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])
+    if (quizzes.length > 1) {
+      setShowQuizSelection(true)
+    } else if (quizzes.length === 1) {
+      setCurrentQuiz(quizzes[0])
+      setShowQuiz(true)
+      setQuizAnswers({})
+      setShowQuizResults(false)
+      setQuizScore(0)
+    }
   }
 
   const handleContinueFromResults = () => {
@@ -178,8 +258,33 @@ const IntermediateLearningPath = () => {
     if (currentLesson < currentModule.lessons.length - 1) {
       setCurrentLesson(currentLesson + 1)
     } else {
-      setShowQuiz(true)
+      // Show quiz selection if there are multiple quizzes, otherwise show the single quiz
+      const quizzes = currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])
+      if (quizzes.length > 1) {
+        setShowQuizSelection(true)
+        setShowQuiz(false) // Ensure showQuiz is false when showing selection
+      } else if (quizzes.length === 1) {
+        setCurrentQuiz(quizzes[0])
+        setShowQuizSelection(false)
+        setShowQuiz(true)
+      } else {
+        // No quizzes available - show message or keep on last lesson
+        toast.error('No quizzes available for this module')
+      }
     }
+  }
+
+  const selectQuiz = (quiz) => {
+    if (!quiz || !quiz.questions || quiz.questions.length === 0) {
+      toast.error('This quiz has no questions')
+      return
+    }
+    setCurrentQuiz(quiz)
+    setShowQuizSelection(false)
+    setShowQuiz(true)
+    setQuizAnswers({})
+    setShowQuizResults(false)
+    setQuizScore(0)
   }
 
   const previousLesson = () => {
@@ -196,8 +301,10 @@ const IntermediateLearningPath = () => {
   }
 
   const submitQuiz = () => {
+    if (!currentQuiz) return
+    
     let score = 0
-    currentModule.quiz.questions.forEach(question => {
+    currentQuiz.questions.forEach(question => {
       if (quizAnswers[question.id] === question.correct) {
         score++
       }
@@ -206,18 +313,20 @@ const IntermediateLearningPath = () => {
     setQuizScore(score)
     setShowQuizResults(true)
     
-    // Record quiz attempt
+    // Record quiz attempt - track by module ID and quiz title
+    const quizKey = `${currentModule.id}_${currentQuiz.title}`
     const attempt = {
       score,
-      totalQuestions: currentModule.quiz.questions.length,
+      totalQuestions: currentQuiz.questions.length,
       answers: { ...quizAnswers },
       timestamp: new Date().toISOString(),
-      attemptNumber: (quizAttempts[currentModule.id]?.length || 0) + 1
+      quizTitle: currentQuiz.title,
+      attemptNumber: (quizAttempts[quizKey]?.length || 0) + 1
     }
     
     setQuizAttempts(prev => ({
       ...prev,
-      [currentModule.id]: [...(prev[currentModule.id] || []), attempt]
+      [quizKey]: [...(prev[quizKey] || []), attempt]
     }))
     
     // Mark module as completed
@@ -238,9 +347,9 @@ const IntermediateLearningPath = () => {
     } else {
       const nextModule = getNextModule()
       if (nextModule && !isModuleLocked(nextModule.id)) {
-        toast.success(`Quiz completed! Score: ${score}/${currentModule.quiz.questions.length}. You can now proceed to the next module!`)
+        toast.success(`Quiz completed! Score: ${score}/${currentQuiz.questions.length}. You can now proceed to the next module!`)
       } else {
-        toast.success(`Quiz completed! Score: ${score}/${currentModule.quiz.questions.length}`)
+        toast.success(`Quiz completed! Score: ${score}/${currentQuiz.questions.length}`)
       }
     }
   }
@@ -411,7 +520,7 @@ const IntermediateLearningPath = () => {
         </div>
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {!showQuiz ? (
+          {!showQuiz && !showQuizSelection ? (
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
               {/* Progress Bar */}
               <div className="bg-gray-200 h-2">
@@ -501,17 +610,78 @@ const IntermediateLearningPath = () => {
                 </div>
               </div>
             </div>
+          ) : showQuizSelection ? (
+            // Quiz Selection Screen
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+              <div className="p-8">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Select a Quiz</h2>
+                  <p className="text-gray-600">Choose which quiz you'd like to take</p>
+                </div>
+
+                <div className="space-y-4">
+                  {(currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])).map((quiz, index) => {
+                    const quizKey = `${currentModule.id}_${quiz.title}`
+                    const attempts = quizAttempts[quizKey] || []
+                    const lastAttempt = attempts.length > 0 ? attempts[attempts.length - 1] : null
+                    
+                    return (
+                      <div key={index} className="border border-gray-200 rounded-lg p-6 hover:border-blue-500 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-1">{quiz.title || `Quiz ${index + 1}`}</h3>
+                            <p className="text-sm text-gray-600">
+                              {quiz.questions?.length || 0} questions
+                              {lastAttempt && (
+                                <span className="ml-2 text-blue-600">
+                                  • Last score: {lastAttempt.score}/{lastAttempt.totalQuestions}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => selectQuiz(quiz)}
+                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                          >
+                            {lastAttempt ? 'Retake' : 'Start Quiz'}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <div className="mt-6 text-center">
+                  <button
+                    onClick={() => {
+                      setShowQuizSelection(false)
+                      setShowQuiz(false)
+                      setCurrentQuiz(null)
+                      // Go back to last lesson
+                      if (currentModule.lessons.length > 0) {
+                        setCurrentLesson(currentModule.lessons.length - 1)
+                      }
+                    }}
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    <ArrowLeft className="h-4 w-4 inline mr-2" />
+                    Back to Lessons
+                  </button>
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
               <div className="p-8">
                 <div className="text-center mb-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Quiz: {currentModule.quiz.title}</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Quiz: {currentQuiz?.title || 'Quiz'}</h2>
                   <p className="text-gray-600">Test your knowledge of this module</p>
                 </div>
 
                 {!showQuizResults ? (
+                  currentQuiz ? (
                   <div className="space-y-6">
-                    {currentModule.quiz.questions.map((question, index) => (
+                    {currentQuiz.questions.map((question, index) => (
                       <div key={question.id} className="border border-gray-200 rounded-lg p-6">
                         <h3 className="text-lg font-medium text-gray-900 mb-4">
                           {index + 1}. {question.question}
@@ -557,13 +727,18 @@ const IntermediateLearningPath = () => {
                     <div className="text-center">
                       <button
                         onClick={submitQuiz}
-                        disabled={Object.keys(quizAnswers).length !== currentModule.quiz.questions.length}
+                        disabled={Object.keys(quizAnswers).length !== currentQuiz.questions.length}
                         className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Submit Quiz
                       </button>
                     </div>
                   </div>
+                  ) : (
+                    <div className="text-center text-gray-500">
+                      <p>No quiz available</p>
+                    </div>
+                  )
                 ) : (
                   <div className="text-center">
                     <div className="mb-6">
@@ -572,12 +747,12 @@ const IntermediateLearningPath = () => {
                       </div>
                       <h3 className="text-2xl font-bold text-gray-900 mb-2">Quiz Complete!</h3>
                       <p className="text-lg text-gray-600">
-                        You scored {quizScore} out of {currentModule.quiz.questions.length}
+                        You scored {quizScore} out of {currentQuiz?.questions?.length || 0}
                       </p>
                     </div>
 
                     <div className="space-y-4 mb-8">
-                      {currentModule.quiz.questions.map((question, index) => (
+                      {currentQuiz?.questions?.map((question, index) => (
                         <div key={question.id} className="border border-gray-200 rounded-lg p-4">
                           <h4 className="font-medium text-gray-900 mb-2">
                             {index + 1}. {question.question}

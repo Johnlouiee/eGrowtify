@@ -189,9 +189,10 @@ const UserDashboard = () => {
         if (beginnerData) {
           try {
             const parsed = JSON.parse(beginnerData)
-            const totalModules = allModules.Beginner.length
+            // Use saved totalModules if available, otherwise fallback to static data
+            const totalModules = parsed.totalModules || allModules.Beginner.length
             const completedModules = parsed.completedModules?.length || 0
-            beginnerProgress = Math.round((completedModules / totalModules) * 100)
+            beginnerProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing beginner progress:', error)
           }
@@ -200,9 +201,10 @@ const UserDashboard = () => {
         if (intermediateData) {
           try {
             const parsed = JSON.parse(intermediateData)
-            const totalModules = allModules.Intermediate.length
+            // Use saved totalModules if available, otherwise fallback to static data
+            const totalModules = parsed.totalModules || allModules.Intermediate.length
             const completedModules = parsed.completedModules?.length || 0
-            intermediateProgress = Math.round((completedModules / totalModules) * 100)
+            intermediateProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing intermediate progress:', error)
           }
@@ -211,9 +213,10 @@ const UserDashboard = () => {
         if (expertData) {
           try {
             const parsed = JSON.parse(expertData)
-            const totalModules = allModules.Expert.length
+            // Use saved totalModules if available, otherwise fallback to static data
+            const totalModules = parsed.totalModules || allModules.Expert.length
             const completedModules = parsed.completedModules?.length || 0
-            expertProgress = Math.round((completedModules / totalModules) * 100)
+            expertProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing expert progress:', error)
           }
@@ -260,9 +263,10 @@ const UserDashboard = () => {
         if (beginnerData) {
           try {
             const parsed = JSON.parse(beginnerData)
-            const totalModules = allModules.Beginner.length
+            // Use saved totalModules if available, otherwise fallback to static data
+            const totalModules = parsed.totalModules || allModules.Beginner.length
             const completedModules = parsed.completedModules?.length || 0
-            beginnerProgress = Math.round((completedModules / totalModules) * 100)
+            beginnerProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing beginner progress:', error)
           }
@@ -271,9 +275,10 @@ const UserDashboard = () => {
         if (intermediateData) {
           try {
             const parsed = JSON.parse(intermediateData)
-            const totalModules = allModules.Intermediate.length
+            // Use saved totalModules if available, otherwise fallback to static data
+            const totalModules = parsed.totalModules || allModules.Intermediate.length
             const completedModules = parsed.completedModules?.length || 0
-            intermediateProgress = Math.round((completedModules / totalModules) * 100)
+            intermediateProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing intermediate progress:', error)
           }
@@ -282,9 +287,10 @@ const UserDashboard = () => {
         if (expertData) {
           try {
             const parsed = JSON.parse(expertData)
-            const totalModules = allModules.Expert.length
+            // Use saved totalModules if available, otherwise fallback to static data
+            const totalModules = parsed.totalModules || allModules.Expert.length
             const completedModules = parsed.completedModules?.length || 0
-            expertProgress = Math.round((completedModules / totalModules) * 100)
+            expertProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing expert progress:', error)
           }
@@ -394,9 +400,10 @@ const UserDashboard = () => {
         if (beginnerData) {
           try {
             const parsed = JSON.parse(beginnerData)
-            const totalModules = allModules.Beginner.length
+            // Use saved totalModules if available, otherwise fallback to static data
+            const totalModules = parsed.totalModules || allModules.Beginner.length
             const completedModules = parsed.completedModules?.length || 0
-            beginnerProgress = Math.round((completedModules / totalModules) * 100)
+            beginnerProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing beginner progress:', error)
           }
@@ -405,9 +412,10 @@ const UserDashboard = () => {
         if (intermediateData) {
           try {
             const parsed = JSON.parse(intermediateData)
-            const totalModules = allModules.Intermediate.length
+            // Use saved totalModules if available, otherwise fallback to static data
+            const totalModules = parsed.totalModules || allModules.Intermediate.length
             const completedModules = parsed.completedModules?.length || 0
-            intermediateProgress = Math.round((completedModules / totalModules) * 100)
+            intermediateProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing intermediate progress:', error)
           }
@@ -416,9 +424,10 @@ const UserDashboard = () => {
         if (expertData) {
           try {
             const parsed = JSON.parse(expertData)
-            const totalModules = allModules.Expert.length
+            // Use saved totalModules if available, otherwise fallback to static data
+            const totalModules = parsed.totalModules || allModules.Expert.length
             const completedModules = parsed.completedModules?.length || 0
-            expertProgress = Math.round((completedModules / totalModules) * 100)
+            expertProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing expert progress:', error)
           }
@@ -495,9 +504,10 @@ const UserDashboard = () => {
         if (beginnerData) {
           try {
             const parsed = JSON.parse(beginnerData)
-            const totalModules = allModules.Beginner.length
+            // Use saved totalModules if available, otherwise fallback to static data
+            const totalModules = parsed.totalModules || allModules.Beginner.length
             const completedModules = parsed.completedModules?.length || 0
-            beginnerProgress = Math.round((completedModules / totalModules) * 100)
+            beginnerProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing beginner progress:', error)
           }
@@ -506,9 +516,10 @@ const UserDashboard = () => {
         if (intermediateData) {
           try {
             const parsed = JSON.parse(intermediateData)
-            const totalModules = allModules.Intermediate.length
+            // Use saved totalModules if available, otherwise fallback to static data
+            const totalModules = parsed.totalModules || allModules.Intermediate.length
             const completedModules = parsed.completedModules?.length || 0
-            intermediateProgress = Math.round((completedModules / totalModules) * 100)
+            intermediateProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing intermediate progress:', error)
           }
@@ -517,9 +528,10 @@ const UserDashboard = () => {
         if (expertData) {
           try {
             const parsed = JSON.parse(expertData)
-            const totalModules = allModules.Expert.length
+            // Use saved totalModules if available, otherwise fallback to static data
+            const totalModules = parsed.totalModules || allModules.Expert.length
             const completedModules = parsed.completedModules?.length || 0
-            expertProgress = Math.round((completedModules / totalModules) * 100)
+            expertProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing expert progress:', error)
           }

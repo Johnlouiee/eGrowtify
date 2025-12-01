@@ -61,7 +61,7 @@ const ManageLearningPaths = () => {
     estimatedTime: '30 min',
     difficulty: 'Beginner',
     lessons: [],
-    quiz: { title: '', questions: [] },
+    quizzes: [], // Changed from single quiz to array of quizzes
     images: [],
     videos: []
   })
@@ -75,7 +75,8 @@ const ManageLearningPaths = () => {
   const [quizFormData, setQuizFormData] = useState({
     title: '',
     questions: [],
-    images: []
+    images: [],
+    videos: []
   })
   const [questionFormData, setQuestionFormData] = useState({
     question: '',
@@ -894,13 +895,15 @@ const ManageLearningPaths = () => {
 
   const openEditModuleModal = (module) => {
     setEditingModule(module)
+    // Convert single quiz to quizzes array for backward compatibility
+    const quizzes = module.quizzes || (module.quiz ? [module.quiz] : [])
     setModuleFormData({
       title: module.title,
       description: module.description,
       estimatedTime: module.estimatedTime,
       difficulty: module.difficulty,
       lessons: module.lessons,
-      quiz: module.quiz,
+      quizzes: quizzes,
       images: module.images || [],
       videos: module.videos || []
     })
@@ -909,39 +912,83 @@ const ManageLearningPaths = () => {
 
   const handleAddModule = async (e) => {
     e.preventDefault()
+    
+    // Validate required fields
+    if (!moduleFormData.title || !moduleFormData.title.trim()) {
+      toast.error('Please enter a module title')
+      return
+    }
+    
+    if (!moduleFormData.description || !moduleFormData.description.trim()) {
+      toast.error('Please enter a module description')
+      return
+    }
+    
     try {
       const newModule = {
         id: `module-${Date.now()}`,
-        ...moduleFormData,
-        lessons: moduleFormData.lessons.map((lesson, index) => ({
+        title: moduleFormData.title.trim(),
+        description: moduleFormData.description.trim(),
+        estimatedTime: moduleFormData.estimatedTime || '30 min',
+        difficulty: moduleFormData.difficulty || selectedPath.difficulty,
+        lessons: (moduleFormData.lessons || []).map((lesson, index) => ({
           id: lesson.id || index + 1,
           ...lesson
         })),
-        quiz: {
-          ...moduleFormData.quiz,
-          questions: moduleFormData.quiz.questions.map((question, index) => ({
+        quizzes: (moduleFormData.quizzes || []).map((quiz, quizIndex) => ({
+          ...quiz,
+          questions: (quiz.questions || []).map((question, index) => ({
             id: question.id || index + 1,
             ...question
           }))
-        }
+        })),
+        // Keep quiz field for backward compatibility (use first quiz if exists)
+        quiz: (moduleFormData.quizzes && moduleFormData.quizzes.length > 0) ? {
+          ...moduleFormData.quizzes[0],
+          questions: (moduleFormData.quizzes[0].questions || []).map((question, index) => ({
+            id: question.id || index + 1,
+            ...question
+          }))
+        } : { title: '', questions: [] },
+        images: moduleFormData.images || [],
+        videos: moduleFormData.videos || []
       }
 
       // Save to backend API
       try {
-        await axios.post(`/api/admin/learning-paths/${selectedPath.difficulty}/modules`, {
+        const response = await axios.post(`/api/admin/learning-paths/${selectedPath.difficulty}/modules`, {
           id: newModule.id,
           module: newModule
         })
+        console.log('Module saved to backend:', response.data)
       } catch (apiError) {
         console.error('Error saving module to backend:', apiError)
-        // Continue with local state update even if API fails
+        if (apiError.response?.status === 400 && apiError.response?.data?.error?.includes('already exists')) {
+          // Module already exists, try updating instead
+          try {
+            await axios.put(`/api/admin/learning-paths/${selectedPath.difficulty}/modules`, {
+              id: newModule.id,
+              module: newModule
+            })
+            console.log('Module updated in backend')
+          } catch (updateError) {
+            console.error('Error updating module in backend:', updateError)
+            toast.error('Module saved locally but failed to sync with server')
+          }
+        } else {
+          toast.error('Module saved locally but failed to sync with server')
+        }
       }
 
       // Update the learning paths state
       setLearningPaths(prevPaths => 
         prevPaths.map(path => 
           path.id === selectedPath.id 
-            ? { ...path, modules: [...path.modules, newModule] }
+            ? { 
+                ...path, 
+                modules: [...(path.modules || []), newModule],
+                modules_count: (path.modules || []).length + 1
+              }
             : path
         )
       )
@@ -956,7 +1003,8 @@ const ManageLearningPaths = () => {
       if (selectedPath) {
         setSelectedPath(prev => ({
           ...prev,
-          modules: [...prev.modules, newModule]
+          modules: [...(prev.modules || []), newModule],
+          modules_count: (prev.modules || []).length + 1
         }))
       }
     } catch (error) {
@@ -975,13 +1023,21 @@ const ManageLearningPaths = () => {
           id: lesson.id || index + 1,
           ...lesson
         })),
-        quiz: {
-          ...moduleFormData.quiz,
-          questions: moduleFormData.quiz.questions.map((question, index) => ({
+        quizzes: (moduleFormData.quizzes || []).map((quiz, quizIndex) => ({
+          ...quiz,
+          questions: (quiz.questions || []).map((question, index) => ({
             id: question.id || index + 1,
             ...question
           }))
-        }
+        })),
+        // Keep quiz field for backward compatibility (use first quiz if exists)
+        quiz: (moduleFormData.quizzes && moduleFormData.quizzes.length > 0) ? {
+          ...moduleFormData.quizzes[0],
+          questions: (moduleFormData.quizzes[0].questions || []).map((question, index) => ({
+            id: question.id || index + 1,
+            ...question
+          }))
+        } : { title: '', questions: [] }
       }
 
       // Save to backend API
@@ -1205,65 +1261,169 @@ const ManageLearningPaths = () => {
 
   // Quiz CRUD Functions
   const openAddQuizModal = () => {
+    // Always open for adding a new quiz
     setQuizFormData({
       title: '',
       questions: [],
-      images: []
+      images: [],
+      videos: []
     })
+    setEditingQuiz(null)
     setShowAddQuizModal(true)
   }
 
   const openEditQuizModal = (quiz) => {
+    // Open modal to edit an existing quiz
     setEditingQuiz(quiz)
     setQuizFormData({
-      title: quiz.title,
+      title: quiz.title || '',
       questions: quiz.questions || [],
-      images: quiz.images || []
+      images: quiz.images || [],
+      videos: quiz.videos || []
     })
     setShowEditQuizModal(true)
   }
 
-  const handleAddQuiz = (e) => {
+  const handleAddQuiz = async (e) => {
     e.preventDefault()
-    // Ensure questions have proper IDs
-    const quizWithIds = {
-      ...quizFormData,
-      questions: quizFormData.questions.map((question, index) => ({
-        ...question,
-        id: question.id || Date.now() + index
-      }))
+    
+    // Validate quiz title
+    if (!quizFormData.title || !quizFormData.title.trim()) {
+      toast.error('Please enter a quiz title')
+      return
     }
     
-    setModuleFormData(prev => ({
-      ...prev,
-      quiz: quizWithIds
-    }))
+    // Validate at least one question
+    if (!quizFormData.questions || quizFormData.questions.length === 0) {
+      toast.error('Please add at least one question to the quiz')
+      return
+    }
+    
+    // Validate each question has content and at least 2 options
+    for (let i = 0; i < quizFormData.questions.length; i++) {
+      const question = quizFormData.questions[i]
+      if (!question.question || !question.question.trim()) {
+        toast.error(`Question ${i + 1} is missing text`)
+        return
+      }
+      const validOptions = (question.options || []).filter(opt => opt && opt.trim() !== '')
+      if (validOptions.length < 2) {
+        toast.error(`Question ${i + 1} needs at least 2 options`)
+        return
+      }
+      if (question.correct === undefined || question.correct === null) {
+        toast.error(`Question ${i + 1} needs a correct answer selected`)
+        return
+      }
+    }
+    
+    try {
+      // Ensure questions have proper IDs and quiz has unique ID
+      const quizWithIds = {
+        id: `quiz-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Unique quiz ID
+        title: quizFormData.title.trim(),
+        questions: quizFormData.questions.map((question, index) => ({
+          id: question.id || Date.now() + index,
+          question: question.question.trim(),
+          options: question.options.filter(opt => opt && opt.trim() !== ''),
+          correct: question.correct,
+          explanation: question.explanation || '',
+          image: question.image || null,
+          video: question.video || null,
+          required: question.required !== undefined ? question.required : true
+        })),
+        images: [], // Not used - images are added directly to questions
+        videos: [] // Not used - videos removed for cleaner UI
+      }
+      
+      // Add quiz to quizzes array
+      const updatedModuleFormData = {
+        ...moduleFormData,
+        quizzes: [...(moduleFormData.quizzes || []), quizWithIds]
+      }
+      
+      setModuleFormData(updatedModuleFormData)
 
-    toast.success('Quiz added successfully!')
-    setShowAddQuizModal(false)
-    resetQuizForm()
+      toast.success('Quiz added successfully!')
+      setShowAddQuizModal(false)
+      resetQuizForm()
+    } catch (error) {
+      console.error('Error adding quiz:', error)
+      toast.error('Failed to add quiz')
+    }
   }
 
-  const handleEditQuiz = (e) => {
+  const handleEditQuiz = async (e) => {
     e.preventDefault()
-    // Ensure questions have proper IDs
-    const quizWithIds = {
-      ...quizFormData,
-      questions: quizFormData.questions.map((question, index) => ({
-        ...question,
-        id: question.id || Date.now() + index
-      }))
+    
+    // Validate quiz title
+    if (!quizFormData.title || !quizFormData.title.trim()) {
+      toast.error('Please enter a quiz title')
+      return
     }
     
-    setModuleFormData(prev => ({
-      ...prev,
-      quiz: quizWithIds
-    }))
+    // Validate at least one question
+    if (!quizFormData.questions || quizFormData.questions.length === 0) {
+      toast.error('Please add at least one question to the quiz')
+      return
+    }
+    
+    // Validate each question has content and at least 2 options
+    for (let i = 0; i < quizFormData.questions.length; i++) {
+      const question = quizFormData.questions[i]
+      if (!question.question || !question.question.trim()) {
+        toast.error(`Question ${i + 1} is missing text`)
+        return
+      }
+      const validOptions = (question.options || []).filter(opt => opt && opt.trim() !== '')
+      if (validOptions.length < 2) {
+        toast.error(`Question ${i + 1} needs at least 2 options`)
+        return
+      }
+      if (question.correct === undefined || question.correct === null) {
+        toast.error(`Question ${i + 1} needs a correct answer selected`)
+        return
+      }
+    }
+    
+    try {
+      // Ensure questions have proper IDs and preserve quiz ID
+      const quizWithIds = {
+        id: editingQuiz.id || `quiz-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Preserve existing ID or create new
+        title: quizFormData.title.trim(),
+        questions: quizFormData.questions.map((question, index) => ({
+          id: question.id || Date.now() + index,
+          question: question.question.trim(),
+          options: question.options.filter(opt => opt && opt.trim() !== ''),
+          correct: question.correct,
+          explanation: question.explanation || '',
+          image: question.image || null,
+          video: question.video || null,
+          required: question.required !== undefined ? question.required : true
+        })),
+        images: [], // Not used - images are added directly to questions
+        videos: [] // Not used - videos removed for cleaner UI
+      }
+      
+      // Update the specific quiz in quizzes array by ID
+      const updatedQuizzes = (moduleFormData.quizzes || []).map(q => 
+        (q.id && editingQuiz.id && q.id === editingQuiz.id) || q === editingQuiz ? quizWithIds : q
+      )
+      const updatedModuleFormData = {
+        ...moduleFormData,
+        quizzes: updatedQuizzes
+      }
+      
+      setModuleFormData(updatedModuleFormData)
 
-    toast.success('Quiz updated successfully!')
-    setShowEditQuizModal(false)
-    setEditingQuiz(null)
-    resetQuizForm()
+      toast.success('Quiz updated successfully!')
+      setShowEditQuizModal(false)
+      setEditingQuiz(null)
+      resetQuizForm()
+    } catch (error) {
+      console.error('Error updating quiz:', error)
+      toast.error('Failed to update quiz')
+    }
   }
 
   // Question CRUD Functions
@@ -1381,7 +1541,7 @@ const ManageLearningPaths = () => {
       estimatedTime: '30 min',
       difficulty: 'Beginner',
       lessons: [],
-      quiz: { title: '', questions: [] },
+      quizzes: [],
       images: [],
       videos: []
     })
@@ -1401,7 +1561,8 @@ const ManageLearningPaths = () => {
     setQuizFormData({
       title: '',
       questions: [],
-      images: []
+      images: [],
+      videos: []
     })
   }
 
@@ -1773,6 +1934,110 @@ const ManageLearningPaths = () => {
     }
   }
 
+  // Quiz Video Upload Function
+  const handleQuizVideoUpload = async (file, questionNumber) => {
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', 'video')
+      formData.append('learning_path', 'true')
+      formData.append('path_difficulty', 'Beginner')
+      formData.append('module_id', 'plant-basics')
+      formData.append('content_type', 'quiz_question')
+      formData.append('content_id', questionNumber)
+      formData.append('question_number', questionNumber)
+      formData.append('title', `Quiz Question ${questionNumber}`)
+      formData.append('description', `Video for quiz question ${questionNumber}`)
+      
+      const response = await axios.post('/api/admin/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      setQuizFormData(prev => ({
+        ...prev,
+        videos: [...prev.videos, {
+          id: response.data.id,
+          url: response.data.fileUrl,
+          name: file.name,
+          size: response.data.size || file.size,
+          type: file.type,
+          questionNumber: questionNumber
+        }]
+      }))
+      
+      toast.success(`Video uploaded successfully for Question ${questionNumber}!`)
+    } catch (error) {
+      console.error('Error uploading video:', error)
+      toast.error('Failed to upload video')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const removeQuizVideo = async (videoId) => {
+    try {
+      const videoToRemove = quizFormData.videos.find(vid => vid.id === videoId)
+      if (videoToRemove) {
+        // Delete file from server
+        await axios.post('/api/admin/delete-file', {
+          fileUrl: videoToRemove.url
+        })
+      }
+      
+      setQuizFormData(prev => ({
+        ...prev,
+        videos: prev.videos.filter(vid => vid.id !== videoId)
+      }))
+      toast.success('Video removed!')
+    } catch (error) {
+      console.error('Error removing video:', error)
+      // Still remove from UI even if server deletion fails
+      setQuizFormData(prev => ({
+        ...prev,
+        videos: prev.videos.filter(vid => vid.id !== videoId)
+      }))
+      toast.success('Video removed from quiz!')
+    }
+  }
+
+  // Quiz-level video upload (not question-specific)
+  const handleQuizLevelVideoUpload = async (file) => {
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', 'video')
+      
+      const response = await axios.post('/api/admin/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      setQuizFormData(prev => ({
+        ...prev,
+        videos: [...prev.videos, {
+          id: response.data.id || `video-${Date.now()}`,
+          url: response.data.fileUrl,
+          name: file.name,
+          size: response.data.size || file.size,
+          type: file.type,
+          isQuizLevel: true // Mark as quiz-level video
+        }]
+      }))
+      
+      toast.success('Quiz video uploaded successfully!')
+    } catch (error) {
+      console.error('Error uploading quiz video:', error)
+      toast.error('Failed to upload video')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   // Handle question image upload (directly to question)
   const handleQuestionImageUpload = async (file, questionIndex) => {
     setUploading(true)
@@ -2124,6 +2389,15 @@ const ManageLearningPaths = () => {
                       </div>
                       
                       <div className="flex items-center space-x-4">
+                        {/* Add Module Button */}
+                        <button
+                          onClick={() => openAddModuleModal(selectedPath)}
+                          className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                          title="Add New Module"
+                        >
+                          <Plus className="h-5 w-5" />
+                          <span className="font-semibold">Add Module</span>
+                        </button>
                         {/* Enhanced View Mode Toggle */}
                         <div className="flex items-center bg-slate-100 rounded-xl p-1 shadow-inner">
                           <button
@@ -3811,8 +4085,7 @@ const ManageLearningPaths = () => {
                     {activeModuleTab === 'quizzes' && (
                       <div className="space-y-6">
                         <div className="flex items-center justify-between">
-                          <h5 className="text-lg font-semibold text-slate-900">Module Quiz</h5>
-                          {!isEditingQuizInline && (
+                          <h5 className="text-lg font-semibold text-slate-900">Module Quizzes ({(moduleFormData.quizzes || []).length})</h5>
                           <button
                             type="button"
                             onClick={openAddQuizModal}
@@ -3821,100 +4094,60 @@ const ManageLearningPaths = () => {
                             <Plus className="h-4 w-4 mr-2" />
                             Add Quiz
                           </button>
-                          )}
                         </div>
                         
-                        {isEditingQuizInline ? (
-                          // Inline Quiz Edit Form
-                          <div className="bg-white rounded-lg p-6 border border-gray-200 space-y-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Quiz Title</label>
-                              <input
-                                type="text"
-                                value={quizFormData.title}
-                                onChange={(e) => setQuizFormData(prev => ({ ...prev, title: e.target.value }))}
-                                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="Enter quiz title"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">Questions ({quizFormData.questions.length})</label>
-                              {quizFormData.questions.length > 0 ? (
-                                <div className="space-y-3">
-                                  {quizFormData.questions.map((q, idx) => (
-                                    <div key={idx} className="p-3 bg-gray-50 rounded border border-gray-200">
-                                      <p className="text-sm font-medium text-gray-900">{q.question}</p>
-                                      <p className="text-xs text-gray-500 mt-1">Correct: Option {q.correct + 1}</p>
+                        {/* Display All Quizzes */}
+                        {(moduleFormData.quizzes || []).length > 0 ? (
+                          <div className="space-y-4">
+                            {(moduleFormData.quizzes || []).map((quiz, index) => (
+                              <div key={quiz.id || `quiz-${index}-${quiz.title}`} className="bg-white rounded-lg p-6 border border-gray-200">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="text-base font-semibold text-gray-900 mb-2">
+                                      {quiz.title || `Quiz ${index + 1}`}
                                     </div>
-                                  ))}
+                                    {quiz.questions && quiz.questions.length > 0 && (
+                                      <div className="text-sm text-gray-500">
+                                        {quiz.questions.length} questions
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Quiz Action Buttons */}
+                                  <div className="flex items-center space-x-2 ml-4">
+                                    <button
+                                      type="button"
+                                      onClick={() => openEditQuizModal(quiz)}
+                                      className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center"
+                                      title="Edit Quiz"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (window.confirm('Are you sure you want to delete this quiz?')) {
+                                          setModuleFormData(prev => ({
+                                            ...prev,
+                                            quizzes: (prev.quizzes || []).filter(q => (q.id || `quiz-${index}`) !== (quiz.id || `quiz-${index}`))
+                                          }))
+                                          toast.success('Quiz deleted successfully!')
+                                        }
+                                      }}
+                                      className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors flex items-center"
+                                      title="Delete Quiz"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
                                 </div>
-                              ) : (
-                                <p className="text-sm text-gray-500">No questions added. Use "Add Quiz" to create questions.</p>
-                              )}
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <button
-                                type="button"
-                                onClick={saveQuizInline}
-                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                              >
-                                Save
-                              </button>
-                              <button
-                                type="button"
-                                onClick={cancelQuizInline}
-                                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-                              >
-                                Cancel
-                              </button>
-                            </div>
+                              </div>
+                            ))}
                           </div>
                         ) : (
-                          // Display Mode
-                          <div className="bg-white rounded-lg p-6 border border-gray-200">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                                <div className="text-base font-semibold text-gray-900 mb-2">
-                                {moduleFormData.quiz.title || 'No quiz added'}
-                              </div>
-                              {moduleFormData.quiz.questions && moduleFormData.quiz.questions.length > 0 && (
-                                  <div className="text-sm text-gray-500">
-                                    {moduleFormData.quiz.questions.length} questions
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* Quiz Action Buttons */}
-                            {moduleFormData.quiz.title && (
-                              <div className="flex items-center space-x-2 ml-4">
-                                <button
-                                  type="button"
-                                    onClick={startEditingQuizInline}
-                                    className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center"
-                                  title="Edit Quiz"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (window.confirm('Are you sure you want to delete this quiz?')) {
-                                      setModuleFormData(prev => ({
-                                        ...prev,
-                                        quiz: { title: '', questions: [], images: [] }
-                                      }))
-                                      toast.success('Quiz deleted successfully!')
-                                    }
-                                  }}
-                                    className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors flex items-center"
-                                  title="Delete Quiz"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
-                            )}
+                          <div className="bg-white rounded-lg p-6 border border-gray-200 text-center">
+                            <p className="text-sm text-gray-500">No quizzes added yet. Click "Add Quiz" to create your first quiz.</p>
                           </div>
-                        </div>
                         )}
                       </div>
                     )}
@@ -4244,7 +4477,8 @@ const ManageLearningPaths = () => {
                       setQuizFormData({
                         title: '',
                         questions: [],
-                        images: []
+                        images: [],
+                        videos: []
                       })
                     }}
                     className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all duration-200"
@@ -4365,25 +4599,6 @@ const ManageLearningPaths = () => {
                                 title="Add image to question"
                               >
                                 <Image className="h-5 w-5" />
-                              </label>
-                              <input
-                                type="file"
-                                accept="video/*"
-                                onChange={(e) => {
-                                  if (e.target.files[0]) {
-                                    handleQuestionVideoUpload(e.target.files[0], qIndex)
-                                    e.target.value = ''
-                                  }
-                                }}
-                                className="hidden"
-                                id={`question-video-${qIndex}`}
-                              />
-                              <label
-                                htmlFor={`question-video-${qIndex}`}
-                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-pointer"
-                                title="Add video to question"
-                              >
-                                <Video className="h-5 w-5" />
                               </label>
                             </div>
                           </div>
@@ -4615,126 +4830,6 @@ const ManageLearningPaths = () => {
                     </div>
                   </div>
 
-                  {/* Quiz Images by Question */}
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200/50">
-                    <div className="flex items-center space-x-3 mb-6">
-                      <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-lg">
-                        <FileImage className="h-5 w-5 text-white" />
-                      </div>
-                      <h4 className="text-xl font-bold text-slate-900">Quiz Images by Question</h4>
-                    </div>
-                    
-                    <div className="space-y-6">
-                      {/* Question Number Selection and Upload */}
-                      <div className="bg-white rounded-2xl p-6 border border-slate-200">
-                        <h5 className="text-lg font-semibold text-slate-900 mb-4">Add Image to Question</h5>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Select Question Number</label>
-                            <select
-                              id="question-number-select"
-                              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            >
-                              <option value="">Choose question number...</option>
-                              {quizFormData.questions.map((q, idx) => (
-                                <option key={q.id} value={idx + 1}>Question {idx + 1}{q.question ? `: ${q.question.substring(0, 30)}...` : ''}</option>
-                              ))}
-                            </select>
-                          </div>
-                          
-                          <div className="flex items-end">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const questionNumber = document.getElementById('question-number-select').value
-                                if (!questionNumber) {
-                                  toast.error('Please select a question number first!')
-                                  return
-                                }
-                                if (e.target.files[0]) {
-                                  handleQuizImageUpload(e.target.files[0], parseInt(questionNumber))
-                                  e.target.value = '' // Reset file input
-                                }
-                              }}
-                              className="hidden"
-                              id="quiz-image-upload"
-                              disabled={uploading}
-                            />
-                            <label
-                              htmlFor="quiz-image-upload"
-                              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 cursor-pointer disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl text-lg font-semibold"
-                            >
-                              <Upload className="h-5 w-5 mr-2" />
-                              {uploading ? 'Uploading...' : 'Choose Image'}
-                            </label>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                          <div className="flex items-start space-x-3">
-                            <div className="flex-shrink-0">
-                              <svg className="h-5 w-5 text-green-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                            <div>
-                              <h6 className="text-sm font-medium text-blue-800">How to add images:</h6>
-                              <p className="text-sm text-green-700 mt-1">
-                                1. Select the question number you want to add an image to<br/>
-                                2. Click "Choose Image" to select an image file<br/>
-                                3. The image will be associated with that specific question
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Display Uploaded Images by Question */}
-                      {quizFormData.images.length > 0 && (
-                        <div className="space-y-4">
-                          <h5 className="text-lg font-semibold text-slate-900">Uploaded Images</h5>
-                          {quizFormData.images.map((image) => (
-                            <div key={image.id} className="relative group bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
-                              <div className="flex items-center space-x-6">
-                                <div className="flex-shrink-0">
-                                  <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-lg">
-                                    <FileImage className="h-8 w-8 text-white" />
-                                  </div>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-3 mb-2">
-                                    <h6 className="text-lg font-semibold text-slate-900">{image.name}</h6>
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                      Question {image.questionNumber}
-                                    </span>
-                                  </div>
-                                  <p className="text-sm text-slate-500 mb-2">
-                                    {(image.size / (1024 * 1024)).toFixed(2)} MB
-                                  </p>
-                                  <div className="flex items-center space-x-4">
-                                    <span className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-                                      Image File
-                                    </span>
-                                    <span className="text-xs text-slate-500 bg-green-100 px-3 py-1 rounded-full">
-                                      Ready to use
-                                    </span>
-                                  </div>
-                                </div>
-                                <button
-                                  onClick={() => removeQuizImage(image.id)}
-                                  className="p-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
-                                >
-                                  <Trash2 className="h-5 w-5" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
                   
                   <div className="flex justify-end space-x-3">
                     <button
