@@ -28,7 +28,7 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `activity_logs` (
-  `id` int(11) NOT NULL,
+  `log_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `garden_id` int(11) NOT NULL,
   `space_id` int(11) DEFAULT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE `activity_logs` (
 -- Dumping data for table `activity_logs`
 --
 
-INSERT INTO `activity_logs` (`id`, `user_id`, `garden_id`, `space_id`, `plant_id`, `action`, `action_date`, `notes`, `created_at`) VALUES
+INSERT INTO `activity_logs` (`log_id`, `user_id`, `garden_id`, `space_id`, `plant_id`, `action`, `action_date`, `notes`, `created_at`) VALUES
 (14, 0, 9, 90, 48, 'water', '2025-11-16 00:00:00', 'Completed watering for Sunflower', '2025-11-16 02:01:08'),
 (15, 0, 9, 94, 50, 'fertilize', '2025-11-16 00:00:00', 'Completed fertilizeing for Pumpkin', '2025-11-16 02:09:07'),
 (16, 0, 9, 94, 50, 'prune', '2025-11-16 00:00:00', 'Completed pruneing for Pumpkin', '2025-11-16 02:09:18'),
@@ -136,7 +136,7 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `garden_id`, `space_id`, `plant_id
 --
 
 CREATE TABLE `admins` (
-  `id` int(11) NOT NULL,
+  `admin_id` int(11) NOT NULL,
   `username` varchar(80) NOT NULL,
   `email` varchar(120) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
@@ -151,7 +151,7 @@ CREATE TABLE `admins` (
 -- Dumping data for table `admins`
 --
 
-INSERT INTO `admins` (`id`, `username`, `email`, `password_hash`, `full_name`, `is_super_admin`, `is_active`, `created_at`, `last_login`) VALUES
+INSERT INTO `admins` (`admin_id`, `username`, `email`, `password_hash`, `full_name`, `is_super_admin`, `is_active`, `created_at`, `last_login`) VALUES
 (1, 'admin', 'admin@egrowtify.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uO6G', 'System Administrator', 1, 1, '2025-10-09 18:03:33', NULL);
 
 -- --------------------------------------------------------
@@ -161,7 +161,7 @@ INSERT INTO `admins` (`id`, `username`, `email`, `password_hash`, `full_name`, `
 --
 
 CREATE TABLE `admin_notifications` (
-  `id` int(11) NOT NULL,
+  `admin_notify_id` int(11) NOT NULL,
   `title` varchar(200) NOT NULL,
   `message` text NOT NULL,
   `type` varchar(50) DEFAULT NULL,
@@ -180,7 +180,7 @@ CREATE TABLE `admin_notifications` (
 --
 
 CREATE TABLE `ai_analysis_usage` (
-  `id` int(11) NOT NULL,
+  `ai_image_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `free_analyses_used` int(11) DEFAULT NULL,
   `purchased_credits` int(11) DEFAULT NULL,
@@ -192,7 +192,7 @@ CREATE TABLE `ai_analysis_usage` (
 -- Dumping data for table `ai_analysis_usage`
 --
 
-INSERT INTO `ai_analysis_usage` (`id`, `user_id`, `free_analyses_used`, `purchased_credits`, `created_at`, `updated_at`) VALUES
+INSERT INTO `ai_analysis_usage` (`ai_image_id`, `user_id`, `free_analyses_used`, `purchased_credits`, `created_at`, `updated_at`) VALUES
 (95, 21, 4, 0, '2025-11-24 12:36:39', '2025-11-24 13:31:03'),
 (101, 18, 3, 0, '2025-11-28 11:06:40', '2025-11-28 12:52:04'),
 (105, 19, 3, 0, '2025-11-30 00:02:41', '2025-11-30 02:36:31');
@@ -204,7 +204,7 @@ INSERT INTO `ai_analysis_usage` (`id`, `user_id`, `free_analyses_used`, `purchas
 --
 
 CREATE TABLE `ai_usage_tracking` (
-  `id` int(11) NOT NULL,
+  `usage_tracking_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `usage_type` varchar(20) NOT NULL,
   `image_path` varchar(500) DEFAULT NULL,
@@ -218,7 +218,7 @@ CREATE TABLE `ai_usage_tracking` (
 -- Dumping data for table `ai_usage_tracking`
 --
 
-INSERT INTO `ai_usage_tracking` (`id`, `user_id`, `usage_type`, `image_path`, `analysis_result`, `cost`, `is_free_usage`, `created_at`) VALUES
+INSERT INTO `ai_usage_tracking` (`usage_tracking_id`, `user_id`, `usage_type`, `image_path`, `analysis_result`, `cost`, `is_free_usage`, `created_at`) VALUES
 (9, 21, 'plant_analysis', NULL, 'Carrot', 0.00, 1, '2025-11-24 12:37:02'),
 (10, 21, 'plant_analysis', NULL, 'Tomato', 0.00, 1, '2025-11-24 12:37:43'),
 (11, 21, 'plant_analysis', NULL, 'tipa', 0.00, 1, '2025-11-24 12:38:22'),
@@ -292,7 +292,7 @@ INSERT INTO `ai_usage_tracking` (`id`, `user_id`, `usage_type`, `image_path`, `a
 --
 
 CREATE TABLE `feedback` (
-  `id` int(11) NOT NULL,
+  `feedback_id` int(11) NOT NULL,
   `user_id` int(11) DEFAULT NULL,
   `subject` varchar(200) NOT NULL,
   `message` text NOT NULL,
@@ -307,7 +307,7 @@ CREATE TABLE `feedback` (
 -- Dumping data for table `feedback`
 --
 
-INSERT INTO `feedback` (`id`, `user_id`, `subject`, `message`, `rating`, `category`, `status`, `admin_response`, `created_at`) VALUES
+INSERT INTO `feedback` (`feedback_id`, `user_id`, `subject`, `message`, `rating`, `category`, `status`, `admin_response`, `created_at`) VALUES
 (1, NULL, 'Great AI Recognition Feature', 'The plant recognition feature is incredibly accurate and helpful for identifying unknown plants in my garden.', 5, 'feature', 'resolved', NULL, '2025-10-09 18:03:33'),
 (2, NULL, 'Smart Alerts Working Perfectly', 'The notification system reminds me exactly when to water and fertilize my plants. Very reliable!', 5, 'feature', 'resolved', NULL, '2025-10-09 18:03:33'),
 (3, NULL, 'User Interface Suggestion', 'Would love to see a dark mode option for the mobile app. Otherwise, everything works great.', 4, 'ui', 'pending', NULL, '2025-10-09 18:03:33'),
@@ -322,7 +322,7 @@ INSERT INTO `feedback` (`id`, `user_id`, `subject`, `message`, `rating`, `catego
 --
 
 CREATE TABLE `garden` (
-  `GARDEN_ID` int(11) NOT NULL,
+  `garden_id` int(11) NOT NULL,
   `USER_ID` int(11) NOT NULL,
   `NAME` varchar(100) NOT NULL,
   `GARDEN_TYPE` varchar(20) NOT NULL,
@@ -339,7 +339,7 @@ CREATE TABLE `garden` (
 -- Dumping data for table `garden`
 --
 
-INSERT INTO `garden` (`GARDEN_ID`, `USER_ID`, `NAME`, `GARDEN_TYPE`, `LOCATION_CITY`, `LOCATION_COUNTRY`, `CREATED_AT`, `GRID_SIZE`, `BASE_GRID_SPACES`, `ADDITIONAL_SPACES_PURCHASED`, `USED_GRID_SPACES`) VALUES
+INSERT INTO `garden` (`garden_id`, `USER_ID`, `NAME`, `GARDEN_TYPE`, `LOCATION_CITY`, `LOCATION_COUNTRY`, `CREATED_AT`, `GRID_SIZE`, `BASE_GRID_SPACES`, `ADDITIONAL_SPACES_PURCHASED`, `USED_GRID_SPACES`) VALUES
 (19, 18, 'rizada', 'mixed', 'Manila', 'Philippines', '2025-11-24 10:21:30', '3x3', 9, 0, 2),
 (20, 21, 'rizada', 'vegetable', 'Cebu City', 'Philippines', '2025-11-24 11:05:44', '6x6', 36, 0, 3),
 (21, 21, 'purisima', 'mixed', 'Manila', 'Philippines', '2025-11-24 13:29:40', '6x6', 36, 0, 0),
@@ -355,7 +355,7 @@ INSERT INTO `garden` (`GARDEN_ID`, `USER_ID`, `NAME`, `GARDEN_TYPE`, `LOCATION_C
 --
 
 CREATE TABLE `grid_spaces` (
-  `SPACE_ID` int(11) NOT NULL,
+  `space_id` int(11) NOT NULL,
   `GARDEN_ID` int(11) NOT NULL,
   `GRID_POSITION` varchar(10) NOT NULL,
   `PLANT_ID` int(11) DEFAULT NULL,
@@ -375,7 +375,7 @@ CREATE TABLE `grid_spaces` (
 -- Dumping data for table `grid_spaces`
 --
 
-INSERT INTO `grid_spaces` (`SPACE_ID`, `GARDEN_ID`, `GRID_POSITION`, `PLANT_ID`, `PLANTING_DATE`, `LAST_WATERED`, `LAST_FERTILIZED`, `LAST_PRUNED`, `NOTES`, `IS_ACTIVE`, `CREATED_AT`, `IMAGE_PATH`, `CARE_SUGGESTIONS`, `LAST_UPDATED`) VALUES
+INSERT INTO `grid_spaces` (`space_id`, `GARDEN_ID`, `GRID_POSITION`, `PLANT_ID`, `PLANTING_DATE`, `LAST_WATERED`, `LAST_FERTILIZED`, `LAST_PRUNED`, `NOTES`, `IS_ACTIVE`, `CREATED_AT`, `IMAGE_PATH`, `CARE_SUGGESTIONS`, `LAST_UPDATED`) VALUES
 (210, 19, '1,1', 85, '2025-11-24', '2025-11-28', NULL, '2025-11-28', 'Placed via drag and drop', 1, '2025-11-24 10:21:30', 'uploads/plants/space_210_1764331714.jpeg', '{\"needs_water\": false, \"needs_fertilize\": false, \"needs_prune\": false, \"confidence\": 0.3, \"reasoning\": \"AI analysis completed but response format unclear: I\'m sorry, I can\'t assist with that....\"}', '2025-11-28 12:08:39'),
 (211, 19, '1,2', NULL, NULL, NULL, NULL, NULL, '', 1, '2025-11-24 10:21:30', NULL, NULL, '2025-11-24 10:21:30'),
 (212, 19, '1,3', 97, '2025-11-28', '2025-11-28', NULL, '2025-11-28', 'Placed via drag and drop', 1, '2025-11-24 10:21:30', 'uploads/plants/space_212_1764328063.jpeg', '{\"needs_water\": true, \"needs_fertilize\": false, \"needs_prune\": true, \"confidence\": 0.8, \"reasoning\": \"The soil appears dry, and there is a presence of a moldy or decayed strawberry, indicating potential overgrowth or damaged areas that need pruning.\"}', '2025-11-28 11:08:21'),
@@ -501,7 +501,7 @@ INSERT INTO `grid_spaces` (`SPACE_ID`, `GARDEN_ID`, `GRID_POSITION`, `PLANT_ID`,
 --
 
 CREATE TABLE `learning_path_content` (
-  `id` int(11) NOT NULL,
+  `content_id` int(11) NOT NULL,
   `path_difficulty` varchar(20) NOT NULL,
   `module_id` varchar(50) NOT NULL,
   `content_type` varchar(20) NOT NULL,
@@ -524,7 +524,7 @@ CREATE TABLE `learning_path_content` (
 --
 
 CREATE TABLE `notifications` (
-  `id` int(11) NOT NULL,
+  `notification_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `type` varchar(50) NOT NULL,
   `title` varchar(200) NOT NULL,
@@ -544,7 +544,7 @@ CREATE TABLE `notifications` (
 --
 
 CREATE TABLE `payment_methods` (
-  `id` int(11) NOT NULL,
+  `payment_method_id` int(11) NOT NULL,
   `method_name` varchar(50) NOT NULL,
   `method_type` varchar(30) NOT NULL,
   `is_priority` tinyint(1) DEFAULT 0,
@@ -558,7 +558,7 @@ CREATE TABLE `payment_methods` (
 -- Dumping data for table `payment_methods`
 --
 
-INSERT INTO `payment_methods` (`id`, `method_name`, `method_type`, `is_priority`, `is_active`, `processing_fee`, `description`, `created_at`) VALUES
+INSERT INTO `payment_methods` (`payment_method_id`, `method_name`, `method_type`, `is_priority`, `is_active`, `processing_fee`, `description`, `created_at`) VALUES
 (1, 'GCash', 'digital_wallet', 1, 1, 0.00, 'GCash - Priority payment method for fast and secure transactions', '2025-10-09 18:03:33'),
 (2, 'PayMaya', 'digital_wallet', 0, 1, 0.00, 'PayMaya - Digital wallet payment option', '2025-10-09 18:03:33'),
 (3, 'Credit Card', 'card', 0, 1, 5.00, 'Credit/Debit Card - Traditional card payment with processing fee', '2025-10-09 18:03:33'),
@@ -571,7 +571,7 @@ INSERT INTO `payment_methods` (`id`, `method_name`, `method_type`, `is_priority`
 --
 
 CREATE TABLE `plant` (
-  `PLANT_ID` int(11) NOT NULL,
+  `plant_id` int(11) NOT NULL,
   `NAME` varchar(100) NOT NULL,
   `TYPE` varchar(20) NOT NULL,
   `ENVIRONMENT` varchar(20) NOT NULL,
@@ -588,7 +588,7 @@ CREATE TABLE `plant` (
 -- Dumping data for table `plant`
 --
 
-INSERT INTO `plant` (`PLANT_ID`, `NAME`, `TYPE`, `ENVIRONMENT`, `CARE_GUIDE`, `IDEAL_SOIL_TYPE`, `WATERING_FREQUENCY`, `FERTILIZING_FREQUENCY`, `PRUNING_FREQUENCY`, `IMAGE_PATH`, `CREATED_AT`) VALUES
+INSERT INTO `plant` (`plant_id`, `NAME`, `TYPE`, `ENVIRONMENT`, `CARE_GUIDE`, `IDEAL_SOIL_TYPE`, `WATERING_FREQUENCY`, `FERTILIZING_FREQUENCY`, `PRUNING_FREQUENCY`, `IMAGE_PATH`, `CREATED_AT`) VALUES
 (1, 'Tomato', 'Vegetable', 'Outdoor', 'Water regularly, full sun, well-draining soil. Stake plants for support. Remove suckers for better fruit production.', 'Well-draining', 2, 14, 7, NULL, '2025-10-10 17:26:21'),
 (2, 'Basil', 'Herb', 'Indoor', 'Keep soil moist, partial sun, rich soil. Pinch off flower buds to encourage leaf growth. Harvest regularly.', 'Rich soil', 1, 7, 3, NULL, '2025-10-10 17:26:21'),
 (3, 'Lettuce', 'Vegetable', 'Indoor', 'Keep cool, regular watering, loamy soil. Harvest outer leaves first. Plant in succession for continuous harvest.', 'Loamy soil', 1, 10, 5, NULL, '2025-10-10 17:26:21'),
@@ -701,7 +701,7 @@ INSERT INTO `plant` (`PLANT_ID`, `NAME`, `TYPE`, `ENVIRONMENT`, `CARE_GUIDE`, `I
 --
 
 CREATE TABLE `planttracking` (
-  `TRACKING_ID` int(11) NOT NULL,
+  `tracking_id` int(11) NOT NULL,
   `GARDEN_ID` int(11) NOT NULL,
   `PLANT_ID` int(11) NOT NULL,
   `PLANTING_DATE` date NOT NULL,
@@ -715,7 +715,7 @@ CREATE TABLE `planttracking` (
 -- Dumping data for table `planttracking`
 --
 
-INSERT INTO `planttracking` (`TRACKING_ID`, `GARDEN_ID`, `PLANT_ID`, `PLANTING_DATE`, `LAST_WATERED`, `LAST_FERTILIZED`, `LAST_PRUNED`, `NOTES`) VALUES
+INSERT INTO `planttracking` (`tracking_id`, `GARDEN_ID`, `PLANT_ID`, `PLANTING_DATE`, `LAST_WATERED`, `LAST_FERTILIZED`, `LAST_PRUNED`, `NOTES`) VALUES
 (76, 19, 85, '2025-11-24', NULL, NULL, NULL, NULL),
 (77, 20, 86, '2025-11-24', NULL, NULL, NULL, NULL),
 (78, 20, 87, '2025-11-24', NULL, NULL, NULL, NULL),
@@ -758,7 +758,7 @@ INSERT INTO `planttracking` (`TRACKING_ID`, `GARDEN_ID`, `PLANT_ID`, `PLANTING_D
 --
 
 CREATE TABLE `plant_history_logs` (
-  `id` int(11) NOT NULL,
+  `plant_history_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `garden_id` int(11) DEFAULT NULL,
   `space_id` int(11) DEFAULT NULL,
@@ -771,11 +771,11 @@ CREATE TABLE `plant_history_logs` (
   `created_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
+--  
 -- Dumping data for table `plant_history_logs`
 --
 
-INSERT INTO `plant_history_logs` (`id`, `user_id`, `garden_id`, `space_id`, `plant_id`, `change_type`, `change_description`, `old_value`, `new_value`, `change_metadata`, `created_at`) VALUES
+INSERT INTO `plant_history_logs` (`plant_history_id`, `user_id`, `garden_id`, `space_id`, `plant_id`, `change_type`, `change_description`, `old_value`, `new_value`, `change_metadata`, `created_at`) VALUES
 (1, 18, 19, 210, 85, 'placed', 'Placed Grape at position 1,1', '{\"plant_id\": null}', '{\"plant_id\": 85, \"planting_date\": \"2025-11-24\"}', '{\"planting_date\": \"2025-11-24\", \"notes\": \"Placed via drag and drop\", \"grid_position\": \"1,1\"}', '2025-11-28 11:50:31'),
 (2, 18, 19, 210, 85, 'image_upload', 'Uploaded new image for Grape at position 1,1', '{\"image_path\": \"uploads/plants/space_210_1763980189.jpeg\"}', '{\"image_path\": \"uploads/plants/space_210_1764330640.jpeg\"}', '{\"ai_analysis\": {\"needs_water\": true, \"needs_fertilize\": false, \"needs_prune\": true, \"confidence\": 0.8, \"reasoning\": \"The grapes appear shriveled and some fruit is damaged which indicates dehydration and possible need for pruning.\"}, \"grid_position\": \"1,1\"}', '2025-11-28 11:50:52');
 
@@ -786,7 +786,7 @@ INSERT INTO `plant_history_logs` (`id`, `user_id`, `garden_id`, `space_id`, `pla
 --
 
 CREATE TABLE `seasonal_content` (
-  `id` int(11) NOT NULL,
+  `seasonal_id` int(11) NOT NULL,
   `season_type` varchar(20) NOT NULL,
   `title` varchar(200) NOT NULL,
   `description` text NOT NULL,
@@ -809,7 +809,7 @@ CREATE TABLE `seasonal_content` (
 --
 
 CREATE TABLE `soil_analysis_usage` (
-  `id` int(11) NOT NULL,
+  `soil_usage_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `free_analyses_used` int(11) DEFAULT NULL,
   `purchased_credits` int(11) DEFAULT NULL,
@@ -821,7 +821,7 @@ CREATE TABLE `soil_analysis_usage` (
 -- Dumping data for table `soil_analysis_usage`
 --
 
-INSERT INTO `soil_analysis_usage` (`id`, `user_id`, `free_analyses_used`, `purchased_credits`, `created_at`, `updated_at`) VALUES
+INSERT INTO `soil_analysis_usage` (`soil_usage_id`, `user_id`, `free_analyses_used`, `purchased_credits`, `created_at`, `updated_at`) VALUES
 (6, 19, 3, 0, '2025-11-30 00:24:42', '2025-11-30 02:25:37');
 
 -- --------------------------------------------------------
@@ -831,7 +831,7 @@ INSERT INTO `soil_analysis_usage` (`id`, `user_id`, `free_analyses_used`, `purch
 --
 
 CREATE TABLE `subscription_plans` (
-  `id` int(11) NOT NULL,
+  `plan_id` int(11) NOT NULL,
   `plan_name` varchar(50) NOT NULL,
   `plan_type` varchar(20) NOT NULL,
   `price` decimal(10,2) NOT NULL,
@@ -850,7 +850,7 @@ CREATE TABLE `subscription_plans` (
 -- Dumping data for table `subscription_plans`
 --
 
-INSERT INTO `subscription_plans` (`id`, `plan_name`, `plan_type`, `price`, `currency`, `grid_planner_size`, `free_ai_analyses`, `free_plant_analyses`, `free_soil_analyses`, `additional_grid_cost`, `additional_ai_cost`, `is_active`, `created_at`) VALUES
+INSERT INTO `subscription_plans` (`plan_id`, `plan_name`, `plan_type`, `price`, `currency`, `grid_planner_size`, `free_ai_analyses`, `free_plant_analyses`, `free_soil_analyses`, `additional_grid_cost`, `additional_ai_cost`, `is_active`, `created_at`) VALUES
 (1, 'Premium Plan', 'premium', 150.00, 'PHP', '6x6', 20, 10, 10, 20.00, 25.00, 1, '2025-10-09 18:03:33'),
 (2, 'Basic Plan', 'basic', 0.00, 'PHP', '3x3', 4, 2, 2, 20.00, 25.00, 1, '2025-10-09 18:03:33');
 
@@ -861,7 +861,7 @@ INSERT INTO `subscription_plans` (`id`, `plan_name`, `plan_type`, `price`, `curr
 --
 
 CREATE TABLE `users` (
-  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
   `email` varchar(120) NOT NULL,
   `firstname` varchar(50) NOT NULL,
   `lastname` varchar(50) NOT NULL,
@@ -884,7 +884,7 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `email`, `firstname`, `lastname`, `contact`, `password_hash`, `role`, `is_active`, `subscribed`, `subscription_plan`, `email_notifications`, `learning_level`, `created_at`, `updated_at`, `email_verified`, `email_verification_token`, `email_verification_expires`) VALUES
+INSERT INTO `users` (`user_id`, `email`, `firstname`, `lastname`, `contact`, `password_hash`, `role`, `is_active`, `subscribed`, `subscription_plan`, `email_notifications`, `learning_level`, `created_at`, `updated_at`, `email_verified`, `email_verification_token`, `email_verification_expires`) VALUES
 (6, 'admin@egrowtify.com', 'Admin', 'User', '1234567890', 'pbkdf2:sha256:600000$Dbsx1m6WRozIdWwX$609302e10c362b12ac748f8525d9a9b82e0281fe88853121f91ffbfc95a99504', 'admin', 1, 1, 'basic', 1, 'expert', '2025-10-11 03:11:41', '2025-10-11 03:11:41', 1, NULL, NULL),
 (18, 'jarizada@yahoo.com', 'jan', 'rizada', '09213412341', 'pbkdf2:sha256:600000$8Qm253hzK0wLbZAG$f514c5a0e1b189c16f547e8298717103fc7621ec12ffc4ac171087b8992a6dda', 'user', 1, 0, 'basic', 1, 'beginner', '2025-11-24 10:16:27', '2025-11-28 11:34:14', 1, NULL, NULL),
 (19, 'rizadajohn5@gmail.com', 'john', 'rizada', '09213412431', 'pbkdf2:sha256:600000$6JTgPflprTpzuHx5$3498de3157008a129967147118f4272436801ffab3c5babcfb3ddd8d06a6315f', 'user', 1, 0, 'basic', 1, 'beginner', '2025-11-24 10:51:27', '2025-11-30 01:53:37', 1, NULL, NULL),
@@ -898,7 +898,7 @@ INSERT INTO `users` (`id`, `email`, `firstname`, `lastname`, `contact`, `passwor
 --
 
 CREATE TABLE `user_plant_update_usage` (
-  `id` int(11) NOT NULL,
+  `user_update_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `free_updates_used` int(11) DEFAULT NULL,
   `purchased_credits` int(11) DEFAULT NULL,
@@ -913,7 +913,7 @@ CREATE TABLE `user_plant_update_usage` (
 --
 
 CREATE TABLE `user_shared_concepts` (
-  `id` int(11) NOT NULL,
+  `user_shared_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `title` varchar(150) NOT NULL,
   `summary` varchar(255) DEFAULT NULL,
@@ -934,7 +934,7 @@ CREATE TABLE `user_shared_concepts` (
 --
 
 CREATE TABLE `user_subscriptions` (
-  `id` int(11) NOT NULL,
+  `subscription_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `plan_id` int(11) NOT NULL,
   `start_date` datetime NOT NULL,
@@ -950,7 +950,7 @@ CREATE TABLE `user_subscriptions` (
 -- Dumping data for table `user_subscriptions`
 --
 
-INSERT INTO `user_subscriptions` (`id`, `user_id`, `plan_id`, `start_date`, `end_date`, `status`, `payment_status`, `total_paid`, `created_at`, `updated_at`) VALUES
+INSERT INTO `user_subscriptions` (`subscription_id`, `user_id`, `plan_id`, `start_date`, `end_date`, `status`, `payment_status`, `total_paid`, `created_at`, `updated_at`) VALUES
 (11, 21, 1, '2025-11-24 20:42:55', '2025-12-24 20:42:55', 'cancelled', 'paid', 150.00, '2025-11-24 12:42:55', '2025-11-24 12:46:56'),
 (12, 21, 1, '2025-11-24 20:51:59', '2025-12-24 20:51:59', 'cancelled', 'paid', 150.00, '2025-11-24 12:51:59', '2025-11-24 12:52:23'),
 (13, 21, 1, '2025-11-24 21:22:05', '2025-12-24 21:22:05', 'active', 'paid', 150.00, '2025-11-24 13:22:05', '2025-11-24 13:22:05'),
@@ -970,7 +970,7 @@ INSERT INTO `user_subscriptions` (`id`, `user_id`, `plan_id`, `start_date`, `end
 -- Indexes for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`log_id`),
   ADD KEY `idx_user_id` (`user_id`),
   ADD KEY `idx_garden_id` (`garden_id`),
   ADD KEY `idx_space_id` (`space_id`),
@@ -981,7 +981,7 @@ ALTER TABLE `activity_logs`
 -- Indexes for table `admins`
 --
 ALTER TABLE `admins`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`admin_id`),
   ADD UNIQUE KEY `username` (`username`),
   ADD UNIQUE KEY `email` (`email`);
 
@@ -989,21 +989,21 @@ ALTER TABLE `admins`
 -- Indexes for table `admin_notifications`
 --
 ALTER TABLE `admin_notifications`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`admin_notify_id`),
   ADD KEY `created_by` (`created_by`);
 
 --
 -- Indexes for table `ai_analysis_usage`
 --
 ALTER TABLE `ai_analysis_usage`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`ai_image_id`),
   ADD UNIQUE KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `ai_usage_tracking`
 --
 ALTER TABLE `ai_usage_tracking`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`usage_tracking_id`),
   ADD KEY `idx_ai_usage_tracking_user_id` (`user_id`),
   ADD KEY `idx_ai_usage_tracking_usage_type` (`usage_type`),
   ADD KEY `idx_ai_usage_tracking_created_at` (`created_at`);
@@ -1012,7 +1012,7 @@ ALTER TABLE `ai_usage_tracking`
 -- Indexes for table `feedback`
 --
 ALTER TABLE `feedback`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`feedback_id`),
   ADD KEY `idx_feedback_user_id` (`user_id`),
   ADD KEY `idx_feedback_status` (`status`);
 
@@ -1020,14 +1020,14 @@ ALTER TABLE `feedback`
 -- Indexes for table `garden`
 --
 ALTER TABLE `garden`
-  ADD PRIMARY KEY (`GARDEN_ID`),
+  ADD PRIMARY KEY (`garden_id`),
   ADD KEY `idx_garden_user_id` (`USER_ID`);
 
 --
 -- Indexes for table `grid_spaces`
 --
 ALTER TABLE `grid_spaces`
-  ADD PRIMARY KEY (`SPACE_ID`),
+  ADD PRIMARY KEY (`space_id`),
   ADD UNIQUE KEY `unique_garden_position` (`GARDEN_ID`,`GRID_POSITION`),
   ADD KEY `PLANT_ID` (`PLANT_ID`);
 
@@ -1035,7 +1035,7 @@ ALTER TABLE `grid_spaces`
 -- Indexes for table `learning_path_content`
 --
 ALTER TABLE `learning_path_content`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`content_id`),
   ADD KEY `idx_path_difficulty` (`path_difficulty`),
   ADD KEY `idx_module_id` (`module_id`),
   ADD KEY `idx_content_type` (`content_type`),
@@ -1045,7 +1045,7 @@ ALTER TABLE `learning_path_content`
 -- Indexes for table `notifications`
 --
 ALTER TABLE `notifications`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`notification_id`),
   ADD KEY `plant_id` (`plant_id`),
   ADD KEY `garden_id` (`garden_id`),
   ADD KEY `idx_notifications_user_id` (`user_id`),
@@ -1055,7 +1055,7 @@ ALTER TABLE `notifications`
 -- Indexes for table `payment_methods`
 --
 ALTER TABLE `payment_methods`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`payment_method_id`),
   ADD UNIQUE KEY `method_name` (`method_name`),
   ADD KEY `idx_payment_methods_is_priority` (`is_priority`),
   ADD KEY `idx_payment_methods_is_active` (`is_active`);
@@ -1064,13 +1064,13 @@ ALTER TABLE `payment_methods`
 -- Indexes for table `plant`
 --
 ALTER TABLE `plant`
-  ADD PRIMARY KEY (`PLANT_ID`);
+  ADD PRIMARY KEY (`plant_id`);
 
 --
 -- Indexes for table `planttracking`
 --
 ALTER TABLE `planttracking`
-  ADD PRIMARY KEY (`TRACKING_ID`),
+  ADD PRIMARY KEY (`tracking_id`),
   ADD KEY `idx_planttracking_garden_id` (`GARDEN_ID`),
   ADD KEY `idx_planttracking_plant_id` (`PLANT_ID`);
 
@@ -1078,7 +1078,7 @@ ALTER TABLE `planttracking`
 -- Indexes for table `plant_history_logs`
 --
 ALTER TABLE `plant_history_logs`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`plant_history_id`),
   ADD KEY `user_id` (`user_id`),
   ADD KEY `garden_id` (`garden_id`),
   ADD KEY `space_id` (`space_id`),
@@ -1088,28 +1088,28 @@ ALTER TABLE `plant_history_logs`
 -- Indexes for table `seasonal_content`
 --
 ALTER TABLE `seasonal_content`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`seasonal_id`),
   ADD KEY `created_by` (`created_by`);
 
 --
 -- Indexes for table `soil_analysis_usage`
 --
 ALTER TABLE `soil_analysis_usage`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`soil_usage_id`),
   ADD UNIQUE KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `subscription_plans`
 --
 ALTER TABLE `subscription_plans`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`plan_id`),
   ADD UNIQUE KEY `plan_name` (`plan_name`);
 
 --
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`user_id`),
   ADD UNIQUE KEY `email` (`email`),
   ADD UNIQUE KEY `email_verification_token` (`email_verification_token`),
   ADD KEY `idx_users_email` (`email`),
@@ -1120,21 +1120,21 @@ ALTER TABLE `users`
 -- Indexes for table `user_plant_update_usage`
 --
 ALTER TABLE `user_plant_update_usage`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`user_update_id`),
   ADD UNIQUE KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `user_shared_concepts`
 --
 ALTER TABLE `user_shared_concepts`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`user_shared_id`),
   ADD KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `user_subscriptions`
 --
 ALTER TABLE `user_subscriptions`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`subscription_id`),
   ADD KEY `idx_user_subscriptions_user_id` (`user_id`),
   ADD KEY `idx_user_subscriptions_plan_id` (`plan_id`),
   ADD KEY `idx_user_subscriptions_status` (`status`);
@@ -1147,127 +1147,127 @@ ALTER TABLE `user_subscriptions`
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=127;
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=127;
 
 --
 -- AUTO_INCREMENT for table `admins`
 --
 ALTER TABLE `admins`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `admin_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `admin_notifications`
 --
 ALTER TABLE `admin_notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `admin_notify_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `ai_analysis_usage`
 --
 ALTER TABLE `ai_analysis_usage`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=106;
+  MODIFY `ai_image_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=106;
 
 --
 -- AUTO_INCREMENT for table `ai_usage_tracking`
 --
 ALTER TABLE `ai_usage_tracking`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
+  MODIFY `usage_tracking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
 
 --
 -- AUTO_INCREMENT for table `feedback`
 --
 ALTER TABLE `feedback`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `feedback_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `garden`
 --
 ALTER TABLE `garden`
-  MODIFY `GARDEN_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `garden_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- AUTO_INCREMENT for table `grid_spaces`
 --
 ALTER TABLE `grid_spaces`
-  MODIFY `SPACE_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=698;
+  MODIFY `space_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=698;
 
 --
 -- AUTO_INCREMENT for table `learning_path_content`
 --
 ALTER TABLE `learning_path_content`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `content_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `payment_methods`
 --
 ALTER TABLE `payment_methods`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `payment_method_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `plant`
 --
 ALTER TABLE `plant`
-  MODIFY `PLANT_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=119;
+  MODIFY `plant_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=119;
 
 --
 -- AUTO_INCREMENT for table `planttracking`
 --
 ALTER TABLE `planttracking`
-  MODIFY `TRACKING_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=110;
+  MODIFY `tracking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=110;
 
 --
 -- AUTO_INCREMENT for table `plant_history_logs`
 --
 ALTER TABLE `plant_history_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `plant_history_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `seasonal_content`
 --
 ALTER TABLE `seasonal_content`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `seasonal_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `soil_analysis_usage`
 --
 ALTER TABLE `soil_analysis_usage`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `soil_usage_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `subscription_plans`
 --
 ALTER TABLE `subscription_plans`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `plan_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `user_plant_update_usage`
 --
 ALTER TABLE `user_plant_update_usage`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `user_update_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `user_shared_concepts`
 --
 ALTER TABLE `user_shared_concepts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `user_shared_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `user_subscriptions`
 --
 ALTER TABLE `user_subscriptions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `subscription_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- Constraints for dumped tables
@@ -1277,93 +1277,93 @@ ALTER TABLE `user_subscriptions`
 -- Constraints for table `admin_notifications`
 --
 ALTER TABLE `admin_notifications`
-  ADD CONSTRAINT `admin_notifications_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+  ADD CONSTRAINT `admin_notifications_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `ai_analysis_usage`
 --
 ALTER TABLE `ai_analysis_usage`
-  ADD CONSTRAINT `ai_analysis_usage_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `ai_analysis_usage_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `ai_usage_tracking`
 --
 ALTER TABLE `ai_usage_tracking`
-  ADD CONSTRAINT `ai_usage_tracking_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `ai_usage_tracking_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `feedback`
 --
 ALTER TABLE `feedback`
-  ADD CONSTRAINT `feedback_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+  ADD CONSTRAINT `feedback_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `garden`
 --
 ALTER TABLE `garden`
-  ADD CONSTRAINT `garden_ibfk_1` FOREIGN KEY (`USER_ID`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `garden_ibfk_1` FOREIGN KEY (`USER_ID`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `grid_spaces`
 --
 ALTER TABLE `grid_spaces`
-  ADD CONSTRAINT `grid_spaces_ibfk_1` FOREIGN KEY (`GARDEN_ID`) REFERENCES `garden` (`GARDEN_ID`) ON DELETE CASCADE,
-  ADD CONSTRAINT `grid_spaces_ibfk_2` FOREIGN KEY (`PLANT_ID`) REFERENCES `plant` (`PLANT_ID`) ON DELETE SET NULL;
+  ADD CONSTRAINT `grid_spaces_ibfk_1` FOREIGN KEY (`GARDEN_ID`) REFERENCES `garden` (`garden_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `grid_spaces_ibfk_2` FOREIGN KEY (`PLANT_ID`) REFERENCES `plant` (`plant_id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `notifications`
 --
 ALTER TABLE `notifications`
-  ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `notifications_ibfk_2` FOREIGN KEY (`plant_id`) REFERENCES `plant` (`PLANT_ID`) ON DELETE SET NULL,
-  ADD CONSTRAINT `notifications_ibfk_3` FOREIGN KEY (`garden_id`) REFERENCES `garden` (`GARDEN_ID`) ON DELETE SET NULL;
+  ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `notifications_ibfk_2` FOREIGN KEY (`plant_id`) REFERENCES `plant` (`plant_id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `notifications_ibfk_3` FOREIGN KEY (`garden_id`) REFERENCES `garden` (`garden_id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `planttracking`
 --
 ALTER TABLE `planttracking`
-  ADD CONSTRAINT `planttracking_ibfk_1` FOREIGN KEY (`GARDEN_ID`) REFERENCES `garden` (`GARDEN_ID`) ON DELETE CASCADE,
-  ADD CONSTRAINT `planttracking_ibfk_2` FOREIGN KEY (`PLANT_ID`) REFERENCES `plant` (`PLANT_ID`);
+  ADD CONSTRAINT `planttracking_ibfk_1` FOREIGN KEY (`GARDEN_ID`) REFERENCES `garden` (`garden_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `planttracking_ibfk_2` FOREIGN KEY (`PLANT_ID`) REFERENCES `plant` (`plant_id`);
 
 --
 -- Constraints for table `plant_history_logs`
 --
 ALTER TABLE `plant_history_logs`
-  ADD CONSTRAINT `plant_history_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  ADD CONSTRAINT `plant_history_logs_ibfk_2` FOREIGN KEY (`garden_id`) REFERENCES `garden` (`GARDEN_ID`),
-  ADD CONSTRAINT `plant_history_logs_ibfk_3` FOREIGN KEY (`space_id`) REFERENCES `grid_spaces` (`SPACE_ID`),
-  ADD CONSTRAINT `plant_history_logs_ibfk_4` FOREIGN KEY (`plant_id`) REFERENCES `plant` (`PLANT_ID`);
+  ADD CONSTRAINT `plant_history_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`),
+  ADD CONSTRAINT `plant_history_logs_ibfk_2` FOREIGN KEY (`garden_id`) REFERENCES `garden` (`garden_id`),
+  ADD CONSTRAINT `plant_history_logs_ibfk_3` FOREIGN KEY (`space_id`) REFERENCES `grid_spaces` (`space_id`),
+  ADD CONSTRAINT `plant_history_logs_ibfk_4` FOREIGN KEY (`plant_id`) REFERENCES `plant` (`plant_id`);
 
 --
 -- Constraints for table `seasonal_content`
 --
 ALTER TABLE `seasonal_content`
-  ADD CONSTRAINT `seasonal_content_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`);
+  ADD CONSTRAINT `seasonal_content_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`);
 
 --
 -- Constraints for table `soil_analysis_usage`
 --
 ALTER TABLE `soil_analysis_usage`
-  ADD CONSTRAINT `soil_analysis_usage_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `soil_analysis_usage_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `user_plant_update_usage`
 --
 ALTER TABLE `user_plant_update_usage`
-  ADD CONSTRAINT `user_plant_update_usage_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `user_plant_update_usage_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `user_shared_concepts`
 --
 ALTER TABLE `user_shared_concepts`
-  ADD CONSTRAINT `user_shared_concepts_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `user_shared_concepts_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `user_subscriptions`
 --
 ALTER TABLE `user_subscriptions`
-  ADD CONSTRAINT `user_subscriptions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `user_subscriptions_ibfk_2` FOREIGN KEY (`plan_id`) REFERENCES `subscription_plans` (`id`);
+  ADD CONSTRAINT `user_subscriptions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `user_subscriptions_ibfk_2` FOREIGN KEY (`plan_id`) REFERENCES `subscription_plans` (`plan_id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
