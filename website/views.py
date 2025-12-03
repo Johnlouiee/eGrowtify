@@ -6072,8 +6072,19 @@ def admin_api_create_notification():
         expires_at = None
         if data.get('expires_at'):
             try:
-                expires_at = datetime.fromisoformat(data['expires_at'].replace('Z', '+00:00'))
-            except:
+                # Frontend sends ISO string with timezone (from toISOString())
+                # Parse it directly - it's already in UTC format
+                date_str = data['expires_at']
+                if date_str.endswith('Z'):
+                    expires_at = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                elif '+' in date_str or date_str.count('-') >= 3:
+                    # It's an ISO string with timezone
+                    expires_at = datetime.fromisoformat(date_str)
+                else:
+                    # Fallback: treat as naive datetime and assume UTC
+                    expires_at = datetime.fromisoformat(date_str).replace(tzinfo=timezone.utc)
+            except Exception as e:
+                print(f"Error parsing expires_at: {e}")
                 pass
         
         notification = Notification(
@@ -6119,8 +6130,19 @@ def admin_api_update_notification(notification_id):
         if 'expires_at' in data:
             if data['expires_at']:
                 try:
-                    notification.expires_at = datetime.fromisoformat(data['expires_at'].replace('Z', '+00:00'))
-                except:
+                    # Frontend sends ISO string with timezone (from toISOString())
+                    # Parse it directly - it's already in UTC format
+                    date_str = data['expires_at']
+                    if date_str.endswith('Z'):
+                        notification.expires_at = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                    elif '+' in date_str or date_str.count('-') >= 3:
+                        # It's an ISO string with timezone
+                        notification.expires_at = datetime.fromisoformat(date_str)
+                    else:
+                        # Fallback: treat as naive datetime and assume UTC
+                        notification.expires_at = datetime.fromisoformat(date_str).replace(tzinfo=timezone.utc)
+                except Exception as e:
+                    print(f"Error parsing expires_at: {e}")
                     notification.expires_at = None
             else:
                 notification.expires_at = None

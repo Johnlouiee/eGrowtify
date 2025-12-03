@@ -905,9 +905,34 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
     setShowHistoryModal(true)
   }
 
+  // Helper function to check if plant was updated today
+  const wasUpdatedToday = (lastUpdated) => {
+    if (!lastUpdated) return false
+    const lastUpdateDate = new Date(lastUpdated)
+    const today = new Date()
+    return (
+      lastUpdateDate.getDate() === today.getDate() &&
+      lastUpdateDate.getMonth() === today.getMonth() &&
+      lastUpdateDate.getFullYear() === today.getFullYear()
+    )
+  }
+
+  // Helper function to get when update will be available again (tomorrow)
+  const getNextAvailableDate = () => {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    return tomorrow.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+  }
+
   const handleImageUpload = async (e, space) => {
     const file = e.target.files[0]
     if (!file) return
+
+    // Check if plant was already updated today
+    if (space.last_updated && wasUpdatedToday(space.last_updated)) {
+      toast.error(`This plant can only be updated once per day. Available again tomorrow.`, { duration: 4000 })
+      return
+    }
 
     // Check if user has credits (unless premium)
     if (!isPremium && usageStatus && usageStatus.total_remaining === 0) {
@@ -1730,18 +1755,56 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                     </div>
                   ) : null}
                   
-                  <label className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer hover:text-gray-900 border border-gray-300 rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                  {/* Daily Update Limit Indicator */}
+                  {space.last_updated && wasUpdatedToday(space.last_updated) && (
+                    <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-start space-x-2">
+                        <Clock className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs font-medium text-amber-800 mb-1">
+                            Daily Update Limit Reached
+                          </p>
+                          <p className="text-xs text-amber-700">
+                            This plant can only be updated once per day. Available again on {getNextAvailableDate()}.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <label className={`flex items-center space-x-2 text-sm border rounded-lg p-3 transition-colors ${
+                    (space.last_updated && wasUpdatedToday(space.last_updated)) || 
+                    uploadingImage === space.id || 
+                    (!isPremium && usageStatus && usageStatus.total_remaining === 0)
+                      ? 'text-gray-400 cursor-not-allowed border-gray-300 bg-gray-50'
+                      : 'text-gray-700 cursor-pointer hover:text-gray-900 border-gray-300 hover:bg-gray-50'
+                  }`}>
                     <input
                       type="file"
                       accept="image/*"
                       onChange={(e) => handleImageUpload(e, space)}
                       className="hidden"
                       id={`upload-modal-${space.id}`}
-                      disabled={uploadingImage === space.id || (!isPremium && usageStatus && usageStatus.total_remaining === 0)}
+                      disabled={
+                        (space.last_updated && wasUpdatedToday(space.last_updated)) ||
+                        uploadingImage === space.id || 
+                        (!isPremium && usageStatus && usageStatus.total_remaining === 0)
+                      }
                     />
-                    <Camera className="h-4 w-4" />
+                    <Camera className={`h-4 w-4 ${
+                      (space.last_updated && wasUpdatedToday(space.last_updated)) || 
+                      uploadingImage === space.id || 
+                      (!isPremium && usageStatus && usageStatus.total_remaining === 0)
+                        ? 'text-gray-400'
+                        : 'text-gray-600'
+                    }`} />
                     <span>
-                      {uploadingImage === space.id ? 'Uploading...' : ((space.image_path || plant?.latest_image) ? 'Update Image' : 'Upload Plant Image')}
+                      {uploadingImage === space.id 
+                        ? 'Uploading...' 
+                        : (space.last_updated && wasUpdatedToday(space.last_updated))
+                          ? 'Update Available Tomorrow'
+                          : ((space.image_path || plant?.latest_image) ? 'Update Image' : 'Upload Plant Image')
+                      }
                     </span>
                   </label>
                 </div>

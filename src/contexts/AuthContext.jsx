@@ -43,21 +43,26 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const refreshAuthStatus = async () => {
-    // Debounce auth status checks - prevent spam
+  const refreshAuthStatus = async (force = false) => {
+    // Debounce auth status checks - prevent spam (unless forced)
     const now = Date.now()
-    if (now - lastAuthCheck < 3000) { // 3 seconds minimum between checks
+    if (!force && now - lastAuthCheck < 3000) { // 3 seconds minimum between checks
       console.log('Auth status check debounced - too soon since last check')
       return
     }
     
     try {
       setLastAuthCheck(now)
+      // Clear cache if forced refresh (e.g., after subscription upgrade)
+      if (force) {
+        authService.clearCache()
+      }
       const response = await authService.getAuthStatus()
       if (response.authenticated) {
         setUser(response.user)
         setIsAdmin(response.is_admin)
         setIsPremium(response.is_premium || false)
+        console.log(`🔐 Auth status refreshed: isPremium=${response.is_premium || false}`)
       }
     } catch (error) {
       console.log('Error refreshing auth status:', error)

@@ -160,6 +160,11 @@ const Garden = () => {
   useEffect(() => {
     if (showAddPlant) {
       fetchAiUsage()
+      // Ensure environment is always set to 'outdoor'
+      setPlantForm(prev => ({
+        ...prev,
+        environment: 'outdoor'
+      }))
     }
   }, [showAddPlant])
 
@@ -636,12 +641,30 @@ const Garden = () => {
           const formData = new FormData()
           formData.append('name', plantForm.name || plantForm.type)
           formData.append('type', plantForm.type)
-          formData.append('environment', plantForm.environment)
+          formData.append('environment', 'outdoor') // Always outdoor
           formData.append('care_guide', plantForm.care_guide || 'General care')
-          formData.append('ideal_soil_type', plantForm.ideal_soil_type)
+          formData.append('ideal_soil_type', plantForm.ideal_soil_type || '')
           formData.append('garden_id', plantForm.garden_id)
-          formData.append('planting_date', plantForm.planting_date)
+          
+          // Ensure planting_date is in YYYY-MM-DD format
+          let plantingDate = plantForm.planting_date
+          if (plantingDate && !/^\d{4}-\d{2}-\d{2}$/.test(plantingDate)) {
+            try {
+              const dateObj = new Date(plantingDate)
+              plantingDate = dateObj.toISOString().split('T')[0]
+            } catch (e) {
+              toast.error('Invalid planting date format. Please use YYYY-MM-DD format.')
+              return
+            }
+          }
+          formData.append('planting_date', plantingDate)
           formData.append('image', plantImage)
+          
+          // Validate required fields before sending
+          if (!plantForm.type || !plantForm.garden_id || !plantingDate) {
+            toast.error('Please fill in all required fields: Type, Garden, and Planting Date')
+            return
+          }
           
           await axios.post('/plant/add', formData, {
             headers: {
@@ -650,12 +673,35 @@ const Garden = () => {
           })
         } else {
           // Send JSON payload without image
+          // Ensure all required fields are included and properly formatted
           const payload = {
-            ...plantForm,
             name: plantForm.name || plantForm.type,
+            type: plantForm.type,
+            environment: 'outdoor', // Always outdoor
+            care_guide: plantForm.care_guide || 'General care',
+            ideal_soil_type: plantForm.ideal_soil_type || '',
             garden_id: Number(plantForm.garden_id),
-            care_guide: plantForm.care_guide || 'General care'
+            planting_date: plantForm.planting_date
           }
+          
+          // Validate required fields before sending
+          if (!payload.type || !payload.garden_id || !payload.planting_date) {
+            toast.error('Please fill in all required fields: Type, Garden, and Planting Date')
+            return
+          }
+          
+          // Ensure planting_date is in YYYY-MM-DD format
+          if (payload.planting_date && !/^\d{4}-\d{2}-\d{2}$/.test(payload.planting_date)) {
+            // Try to convert if it's in a different format
+            try {
+              const dateObj = new Date(payload.planting_date)
+              payload.planting_date = dateObj.toISOString().split('T')[0]
+            } catch (e) {
+              toast.error('Invalid planting date format. Please use YYYY-MM-DD format.')
+              return
+            }
+          }
+          
           await axios.post('/plant/add', payload)
         }
         toast.success('Plant added successfully!')
@@ -1754,6 +1800,8 @@ const Garden = () => {
                     <span className="font-medium">Outdoor</span>
                   </div>
                   <p className="text-xs text-gray-500 mt-2">Only outdoor gardening is supported</p>
+                  {/* Hidden input to ensure environment is always set to outdoor */}
+                  <input type="hidden" value="outdoor" onChange={() => {}} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Garden</label>
@@ -1839,7 +1887,7 @@ const Garden = () => {
                       setShowAddPlant(false)
                       setEditingPlant(null)
                       setPlantForm({
-                        name: '', type: '', environment: '', care_guide: '', ideal_soil_type: '',
+                        name: '', type: '', environment: 'outdoor', care_guide: '', ideal_soil_type: '',
                         garden_id: '', planting_date: new Date().toISOString().split('T')[0]
                       })
                       setPlantImage(null)
