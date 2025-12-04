@@ -289,10 +289,6 @@ const Feedback = () => {
                   <p className="font-medium text-blue-900">Email Support</p>
                   <p className="text-blue-700">support@egrowtify.com</p>
                 </div>
-                <div className="bg-green-50 p-3 rounded-lg">
-                  <p className="font-medium text-green-900">Live Chat</p>
-                  <p className="text-green-700">Available 9 AM - 6 PM</p>
-                </div>
               </div>
             </div>
           </div>

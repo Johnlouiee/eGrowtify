@@ -122,11 +122,16 @@ const Subscription = () => {
         // Clear auth cache to force fresh data
         authService.clearCache()
         
-        // Refresh auth status to update isPremium
-        await refreshAuthStatus()
+        // Force refresh auth status to update isPremium (bypass debounce)
+        await refreshAuthStatus(true)
         
-        // Refresh subscription details
-        fetchSubscriptionDetails()
+        // Refresh subscription details to update UI
+        await fetchSubscriptionDetails()
+        
+        // Wait a moment for state to update, then refresh page to ensure all components update
+        setTimeout(() => {
+          window.location.reload()
+        }, 2000)
       } else {
         throw new Error(response.data.error || 'Subscription failed')
       }
@@ -808,13 +813,16 @@ const Subscription = () => {
                       setSuccess(true)
                       toast.success('Subscription payment successful! You now have Premium access.')
                       
-                      // Refresh auth status to update isPremium
-                      await refreshAuthStatus()
+                      // Clear auth cache and force refresh auth status to update isPremium
+                      authService.clearCache()
+                      await refreshAuthStatus(true) // Force refresh, bypass debounce
                       
-                      // Close modal after success
+                      // Refresh subscription details to update UI
+                      await fetchSubscriptionDetails()
+                      
+                      // Wait a moment for state to update, then refresh page to ensure all components update
                       setTimeout(() => {
-                        setShowCheckout(false)
-                        setSuccess(false)
+                        window.location.reload()
                       }, 2000)
                     } else {
                       throw new Error(response.data.error || 'Subscription failed')
@@ -824,7 +832,7 @@ const Subscription = () => {
                   } finally {
                     setIsProcessing(false)
                   }
-                }} className={`btn-primary ${isProcessing ? 'opacity-70 cursor-not-allowed' : ''}`} disabled={isProcessing}>
+                }} className={`btn-primary ${isProcessing ? 'opacity-70 cursor-not-allowed' : ''}`}>
                   {isProcessing ? 'Processing Payment…' : `Pay ₱${priceDisplay.amount}`}
                 </button>
               </div>

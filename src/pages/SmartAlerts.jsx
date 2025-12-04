@@ -73,36 +73,48 @@ const SmartAlerts = () => {
       const completedActions = response.data.completed_actions || []
       
       // Transform backend alerts to frontend format
-      const transformedAlerts = alerts.map(alert => ({
-        id: alert.id,
-        type: alert.type,
-        plant_name: alert.plant_name,
-        garden_name: alert.garden_name,
-        message: alert.message,
-        due_date: new Date(alert.due_date),
-        priority: alert.priority,
-        status: alert.status,
-        icon: getAlertIcon(alert.type),
-        color: getAlertColor(alert.priority, alert.status),
-        details: getAlertDetails(alert.type, alert.plant_name)
-      }))
+      // Filter out health_change alerts (both pending and completed)
+      const transformedAlerts = alerts
+        .filter(alert => {
+          const alertType = (alert.type || '').toLowerCase()
+          return !alertType.includes('health_change') && alertType !== 'health_change'
+        })
+        .map(alert => ({
+          id: alert.id,
+          type: alert.type,
+          plant_name: alert.plant_name,
+          garden_name: alert.garden_name,
+          message: alert.message,
+          due_date: new Date(alert.due_date),
+          priority: alert.priority,
+          status: alert.status,
+          icon: getAlertIcon(alert.type),
+          color: getAlertColor(alert.priority, alert.status),
+          details: getAlertDetails(alert.type, alert.plant_name)
+        }))
       
       // Transform completed actions to frontend format
-      const transformedCompletedActions = completedActions.map(action => ({
-        id: action.id,
-        type: action.type,
-        plant_name: action.plant_name,
-        garden_name: action.garden_name,
-        message: `${action.plant_name} ${action.type}ed successfully`,
-        due_date: new Date(action.action_date),
-        priority: 'low',
-        status: 'completed',
-        icon: getAlertIcon(action.type),
-        color: 'gray',
-        details: `Completed ${action.type}ing for ${action.plant_name} on ${new Date(action.action_date).toLocaleDateString()}`
-      }))
+      // Filter out health_change type actions, but keep pruning, watering, fertilizing
+      const transformedCompletedActions = completedActions
+        .filter(action => {
+          const actionType = (action.type || '').toLowerCase()
+          return !actionType.includes('health_change') && actionType !== 'health_change'
+        })
+        .map(action => ({
+          id: action.id,
+          type: action.type,
+          plant_name: action.plant_name,
+          garden_name: action.garden_name,
+          message: `${action.plant_name} ${action.type}ed successfully`,
+          due_date: new Date(action.action_date),
+          priority: 'low',
+          status: 'completed',
+          icon: getAlertIcon(action.type),
+          color: 'gray',
+          details: `Completed ${action.type}ing for ${action.plant_name} on ${new Date(action.action_date).toLocaleDateString()}`
+        }))
       
-      // Combine alerts and completed actions
+      // Combine alerts and completed actions (excluding health_change)
       const allAlerts = [...transformedAlerts, ...transformedCompletedActions]
       setAlerts(allAlerts)
       
@@ -647,15 +659,21 @@ ${report.recommendations.map(rec => `• ${rec}`).join('\n')}
   }
 
   const getFilteredAlerts = () => {
+    // Filter out health_change alerts (already filtered in fetchAlerts, but double-check)
+    const filteredAlerts = alerts.filter(alert => {
+      const alertType = (alert.type || '').toLowerCase()
+      return !alertType.includes('health_change') && alertType !== 'health_change'
+    })
+    
     switch (filter) {
       case 'pending':
-        return alerts.filter(alert => alert.status === 'pending')
+        return filteredAlerts.filter(alert => alert.status === 'pending')
       case 'completed':
-        return alerts.filter(alert => alert.status === 'completed')
+        return filteredAlerts.filter(alert => alert.status === 'completed')
       case 'overdue':
-        return alerts.filter(alert => alert.status === 'overdue')
+        return filteredAlerts.filter(alert => alert.status === 'overdue')
       default:
-        return alerts
+        return filteredAlerts
     }
   }
 
@@ -780,7 +798,12 @@ ${report.recommendations.map(rec => `• ${rec}`).join('\n')}
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Alerts</p>
-                <p className="text-2xl font-bold text-gray-900">{alerts.length}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {alerts.filter(a => {
+                    const alertType = (a.type || '').toLowerCase()
+                    return !alertType.includes('health_change') && alertType !== 'health_change'
+                  }).length}
+                </p>
               </div>
             </div>
           </div>
@@ -793,7 +816,11 @@ ${report.recommendations.map(rec => `• ${rec}`).join('\n')}
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Pending</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {alerts.filter(a => a.status === 'pending').length}
+                  {alerts.filter(a => {
+                    const alertType = (a.type || '').toLowerCase()
+                    const isHealthChange = alertType.includes('health_change') || alertType === 'health_change'
+                    return a.status === 'pending' && !isHealthChange
+                  }).length}
                 </p>
               </div>
             </div>
@@ -807,7 +834,11 @@ ${report.recommendations.map(rec => `• ${rec}`).join('\n')}
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Overdue</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {alerts.filter(a => a.status === 'overdue').length}
+                  {alerts.filter(a => {
+                    const alertType = (a.type || '').toLowerCase()
+                    const isHealthChange = alertType.includes('health_change') || alertType === 'health_change'
+                    return a.status === 'overdue' && !isHealthChange
+                  }).length}
                 </p>
               </div>
             </div>
@@ -821,7 +852,11 @@ ${report.recommendations.map(rec => `• ${rec}`).join('\n')}
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Completed</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {alerts.filter(a => a.status === 'completed').length}
+                  {alerts.filter(a => {
+                    const alertType = (a.type || '').toLowerCase()
+                    const isHealthChange = alertType.includes('health_change') || alertType === 'health_change'
+                    return a.status === 'completed' && !isHealthChange
+                  }).length}
                 </p>
               </div>
             </div>
@@ -831,10 +866,41 @@ ${report.recommendations.map(rec => `• ${rec}`).join('\n')}
         {/* Filters */}
         <div className="flex space-x-4 mb-6">
           {[
-            { key: 'all', label: 'All Alerts', count: alerts.length },
-            { key: 'pending', label: 'Pending', count: alerts.filter(a => a.status === 'pending').length },
-            { key: 'overdue', label: 'Overdue', count: alerts.filter(a => a.status === 'overdue').length },
-            { key: 'completed', label: 'Completed', count: alerts.filter(a => a.status === 'completed').length }
+            { 
+              key: 'all', 
+              label: 'All Alerts', 
+              count: alerts.filter(a => {
+                const alertType = (a.type || '').toLowerCase()
+                return !alertType.includes('health_change') && alertType !== 'health_change'
+              }).length 
+            },
+            { 
+              key: 'pending', 
+              label: 'Pending', 
+              count: alerts.filter(a => {
+                const alertType = (a.type || '').toLowerCase()
+                const isHealthChange = alertType.includes('health_change') || alertType === 'health_change'
+                return a.status === 'pending' && !isHealthChange
+              }).length 
+            },
+            { 
+              key: 'overdue', 
+              label: 'Overdue', 
+              count: alerts.filter(a => {
+                const alertType = (a.type || '').toLowerCase()
+                const isHealthChange = alertType.includes('health_change') || alertType === 'health_change'
+                return a.status === 'overdue' && !isHealthChange
+              }).length 
+            },
+            { 
+              key: 'completed', 
+              label: 'Completed', 
+              count: alerts.filter(a => {
+                const alertType = (a.type || '').toLowerCase()
+                const isHealthChange = alertType.includes('health_change') || alertType === 'health_change'
+                return a.status === 'completed' && !isHealthChange
+              }).length 
+            }
           ].map(({ key, label, count }) => (
             <button
               key={key}

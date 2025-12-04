@@ -111,13 +111,28 @@ const ManageNotifications = () => {
 
   const openEditModal = (notification) => {
     setEditingNotification(notification)
+    
+    // Convert UTC date to local datetime-local format
+    let expiresAtLocal = ''
+    if (notification.expires_at) {
+      const utcDate = new Date(notification.expires_at)
+      // Get local date components
+      const year = utcDate.getFullYear()
+      const month = String(utcDate.getMonth() + 1).padStart(2, '0')
+      const day = String(utcDate.getDate()).padStart(2, '0')
+      const hours = String(utcDate.getHours()).padStart(2, '0')
+      const minutes = String(utcDate.getMinutes()).padStart(2, '0')
+      // Format as datetime-local: YYYY-MM-DDTHH:mm
+      expiresAtLocal = `${year}-${month}-${day}T${hours}:${minutes}`
+    }
+    
     setNotificationFormData({
       title: notification.title || '',
       message: notification.message || '',
       type: notification.type || 'Update',
       priority: notification.priority || 'Medium',
       is_active: notification.is_active !== undefined ? notification.is_active : true,
-      expires_at: notification.expires_at ? new Date(notification.expires_at).toISOString().slice(0, 16) : ''
+      expires_at: expiresAtLocal
     })
     setShowCreateModal(true)
   }
@@ -125,9 +140,24 @@ const ManageNotifications = () => {
   const handleSaveNotification = async (e) => {
     e.preventDefault()
     try {
+      // Convert datetime-local to ISO string, preserving the date correctly
+      let expiresAt = null
+      if (notificationFormData.expires_at) {
+        // datetime-local format: "YYYY-MM-DDTHH:mm" (local time, no timezone)
+        // Parse the date components to preserve the exact date the user selected
+        const [datePart, timePart] = notificationFormData.expires_at.split('T')
+        const [year, month, day] = datePart.split('-').map(Number)
+        const [hours, minutes] = timePart.split(':').map(Number)
+        
+        // Store as the selected date at noon UTC to prevent date shifts
+        // This ensures the date part (year-month-day) is always preserved
+        // regardless of the user's timezone when displaying
+        expiresAt = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T12:00:00.000Z`
+      }
+      
       const payload = {
         ...notificationFormData,
-        expires_at: notificationFormData.expires_at || null
+        expires_at: expiresAt
       }
 
       if (editingNotification) {
