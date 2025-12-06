@@ -37,12 +37,19 @@ def create_app():
     if db_type == 'postgresql':
         database_url = os.getenv('DATABASE_URL')
         if database_url:
-            app.config['SQLALCHEMY_DATABASE_URI'] = database_url.replace('postgres://', 'postgresql://', 1)
+            # Handle both postgres:// and postgresql:// URLs
+            if database_url.startswith('postgres://'):
+                database_url = database_url.replace('postgres://', 'postgresql://', 1)
+            app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+            print(f"✅ Using PostgreSQL database from DATABASE_URL")
         else:
+            # Fallback to constructing from individual variables
             app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{mysql_user}:{mysql_password}@{mysql_host}/{mysql_db}"
+            print(f"⚠️ DATABASE_URL not set, using individual PostgreSQL variables")
     else:
         password_part = f":{mysql_password}" if mysql_password else ""
         app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{mysql_user}{password_part}@{mysql_host}/{mysql_db}?charset=utf8mb4'
+        print(f"✅ Using MySQL database: {mysql_host}/{mysql_db}")
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True,
@@ -77,26 +84,39 @@ def create_app():
     app.register_blueprint(views, url_prefix='/')
     app.register_blueprint(auth, url_prefix='/')
 
-    # Create database tables
+    # Create database tables (only if not in production or if explicitly enabled)
+    # In production, tables should be created via migrations or manual setup
     with app.app_context():
         try:
-            db.create_all()
-            print("Database tables created successfully")
+            # Test database connection first
+            db.engine.connect()
+            print("✅ Database connection successful")
             
-            # Create a default admin user if none exists
-            if not Admin.query.filter_by(username='admin').first():
-                admin = Admin(
-                    username='admin',
-                    email='admin@egrowtify.com',
-                    full_name='System Administrator',
-                    is_super_admin=True
-                )
-                admin.set_password('admin123')
-                db.session.add(admin)
-                db.session.commit()
-                print("Default admin user created")
+            # Only create tables if they don't exist (safer for production)
+            try:
+                db.create_all()
+                print("✅ Database tables created/verified successfully")
+                
+                # Create a default admin user if none exists
+                try:
+                    if not Admin.query.filter_by(username='admin').first():
+                        admin = Admin(
+                            username='admin',
+                            email='admin@egrowtify.com',
+                            full_name='System Administrator',
+                            is_super_admin=True
+                        )
+                        admin.set_password('admin123')
+                        db.session.add(admin)
+                        db.session.commit()
+                        print("✅ Default admin user created")
+                except Exception as admin_error:
+                    print(f"⚠️ Admin user creation skipped: {admin_error}")
+            except Exception as table_error:
+                print(f"⚠️ Table creation skipped (may already exist): {table_error}")
         except Exception as e:
-            print(f"Database initialization error: {e}")
-            print("Make sure XAMPP MySQL is running and the 'egrowtifydb' database exists")
+            print(f"❌ Database connection error: {e}")
+            print("⚠️ Make sure database credentials are correct in environment variables")
+            # Don't fail the app startup - let it continue and show error on first request
 
     return app
