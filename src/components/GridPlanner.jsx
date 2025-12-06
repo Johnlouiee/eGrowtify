@@ -906,8 +906,15 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
   }
 
   // Helper function to check if plant was updated today
-  const wasUpdatedToday = (lastUpdated) => {
+  // Returns true only if the plant has an image AND was updated today
+  // This allows newly placed plants (without images) to be updated once on the day they're placed
+  const wasUpdatedToday = (lastUpdated, hasImage) => {
+    // If no image, allow update (newly placed plant)
+    if (!hasImage) return false
+    
+    // If no last_updated timestamp, allow update
     if (!lastUpdated) return false
+    
     const lastUpdateDate = new Date(lastUpdated)
     const today = new Date()
     return (
@@ -928,8 +935,10 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
     const file = e.target.files[0]
     if (!file) return
 
-    // Check if plant was already updated today
-    if (space.last_updated && wasUpdatedToday(space.last_updated)) {
+    // Check if plant was already updated today (only if it has an image)
+    // Newly placed plants without images can be updated once on the day they're placed
+    const hasImage = !!(space.image_path || space.plant?.latest_image)
+    if (wasUpdatedToday(space.last_updated, hasImage)) {
       toast.error(`This plant can only be updated once per day. Available again tomorrow.`, { duration: 4000 })
       return
     }
@@ -1756,26 +1765,32 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                   ) : null}
                   
                   {/* Daily Update Limit Indicator */}
-                  {space.last_updated && wasUpdatedToday(space.last_updated) && (
-                    <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <div className="flex items-start space-x-2">
-                        <Clock className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1">
-                          <p className="text-xs font-medium text-amber-800 mb-1">
-                            Daily Update Limit Reached
-                          </p>
-                          <p className="text-xs text-amber-700">
-                            This plant can only be updated once per day. Available again on {getNextAvailableDate()}.
-                          </p>
+                  {(() => {
+                    const hasImage = !!(space.image_path || space.plant?.latest_image)
+                    return space.last_updated && wasUpdatedToday(space.last_updated, hasImage) && (
+                      <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <div className="flex items-start space-x-2">
+                          <Clock className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-xs font-medium text-amber-800 mb-1">
+                              Daily Update Limit Reached
+                            </p>
+                            <p className="text-xs text-amber-700">
+                              This plant can only be updated once per day. Available again on {getNextAvailableDate()}.
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )
+                  })()}
                   
                   <label className={`flex items-center space-x-2 text-sm border rounded-lg p-3 transition-colors ${
-                    (space.last_updated && wasUpdatedToday(space.last_updated)) || 
-                    uploadingImage === space.id || 
-                    (!isPremium && usageStatus && usageStatus.total_remaining === 0)
+                    (() => {
+                      const hasImage = !!(space.image_path || space.plant?.latest_image)
+                      return wasUpdatedToday(space.last_updated, hasImage) || 
+                        uploadingImage === space.id || 
+                        (!isPremium && usageStatus && usageStatus.total_remaining === 0)
+                    })()
                       ? 'text-gray-400 cursor-not-allowed border-gray-300 bg-gray-50'
                       : 'text-gray-700 cursor-pointer hover:text-gray-900 border-gray-300 hover:bg-gray-50'
                   }`}>
@@ -1785,23 +1800,29 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                       onChange={(e) => handleImageUpload(e, space)}
                       className="hidden"
                       id={`upload-modal-${space.id}`}
-                      disabled={
-                        (space.last_updated && wasUpdatedToday(space.last_updated)) ||
-                        uploadingImage === space.id || 
-                        (!isPremium && usageStatus && usageStatus.total_remaining === 0)
-                      }
+                      disabled={(() => {
+                        const hasImage = !!(space.image_path || space.plant?.latest_image)
+                        return wasUpdatedToday(space.last_updated, hasImage) ||
+                          uploadingImage === space.id || 
+                          (!isPremium && usageStatus && usageStatus.total_remaining === 0)
+                      })()}
                     />
                     <Camera className={`h-4 w-4 ${
-                      (space.last_updated && wasUpdatedToday(space.last_updated)) || 
-                      uploadingImage === space.id || 
-                      (!isPremium && usageStatus && usageStatus.total_remaining === 0)
-                        ? 'text-gray-400'
-                        : 'text-gray-600'
+                      (() => {
+                        const hasImage = !!(space.image_path || space.plant?.latest_image)
+                        const isDisabled = wasUpdatedToday(space.last_updated, hasImage) || 
+                          uploadingImage === space.id || 
+                          (!isPremium && usageStatus && usageStatus.total_remaining === 0)
+                        return isDisabled ? 'text-gray-400' : 'text-gray-600'
+                      })()
                     }`} />
                     <span>
                       {uploadingImage === space.id 
                         ? 'Uploading...' 
-                        : (space.last_updated && wasUpdatedToday(space.last_updated))
+                        : (() => {
+                            const hasImage = !!(space.image_path || space.plant?.latest_image)
+                            return wasUpdatedToday(space.last_updated, hasImage)
+                          })()
                           ? 'Update Available Tomorrow'
                           : ((space.image_path || plant?.latest_image) ? 'Update Image' : 'Upload Plant Image')
                       }

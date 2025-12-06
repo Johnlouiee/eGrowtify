@@ -706,6 +706,9 @@ const SeasonalPlanning = () => {
         let tempValue = weatherData.temperature
         console.log('Original temperature:', tempValue, 'Type:', typeof tempValue)
         
+        // Check if temperature is in Fahrenheit before parsing
+        const isFahrenheit = typeof tempValue === 'string' && tempValue.includes('°F')
+        
         if (typeof tempValue === 'string') {
           // Extract number from string like "72°F" or "28°C"
           const match = tempValue.match(/(\d+(?:\.\d+)?)/)
@@ -715,7 +718,7 @@ const SeasonalPlanning = () => {
         
         // Convert Fahrenheit to Celsius if needed
         let tempCelsius = tempValue
-        if (weatherData.temperature && weatherData.temperature.includes('°F')) {
+        if (isFahrenheit) {
           tempCelsius = Math.round((tempValue - 32) * 5/9)
         }
         console.log('Temperature in Celsius:', tempCelsius)
@@ -735,6 +738,9 @@ const SeasonalPlanning = () => {
         let windValue = weatherData.windSpeed
         console.log('Original wind speed:', windValue, 'Type:', typeof windValue)
         
+        // Check if wind speed is in mph before parsing
+        const isMph = typeof weatherData.windSpeed === 'string' && weatherData.windSpeed.includes('mph')
+        
         if (typeof windValue === 'string') {
           // Extract number from string
           const match = windValue.match(/(\d+(?:\.\d+)?)/)
@@ -742,7 +748,7 @@ const SeasonalPlanning = () => {
         }
         
         let windKmh = windValue
-        if (weatherData.windSpeed && weatherData.windSpeed.includes('mph')) {
+        if (isMph) {
           windKmh = Math.round(windValue * 1.60934)
         }
         console.log('Wind speed in km/h:', windKmh)
@@ -789,12 +795,19 @@ const SeasonalPlanning = () => {
         setWeatherData(processedWeatherData)
         setForecastData(processedWeatherData.forecast)
         generateWeatherSuggestions(processedWeatherData)
+      } else if (weatherData.rateLimited) {
+        // Rate limited - use fallback data silently
+        throw new Error('Rate limit exceeded')
       } else {
         console.log('API returned success: false, using fallback data')
         throw new Error('API returned success: false')
       }
     } catch (error) {
-      console.error('Error fetching weather for city:', error)
+      // Only log non-rate-limit errors to reduce console noise
+      const isRateLimit = error.message && error.message.includes('Rate limit')
+      if (!isRateLimit) {
+        console.error('Error fetching weather for city:', error)
+      }
       // Use fallback data
       const mockWeatherData = {
         temperature: 28,
@@ -854,7 +867,10 @@ const SeasonalPlanning = () => {
             await fetchWeatherData(latitude, longitude)
           },
           (error) => {
-            console.error('Geolocation error:', error)
+            // Only log if it's not a permission denied error (which is common and expected)
+            if (error.code !== error.PERMISSION_DENIED) {
+              console.warn('Geolocation error:', error)
+            }
             // Fallback to Cebu, Philippines
             setUserLocation('Cebu, Philippines')
             setUserCoordinates({ lat: 10.3157, lng: 123.8854 })
@@ -904,8 +920,11 @@ const SeasonalPlanning = () => {
           ? parseFloat(weatherData.temperature.replace(/[^\d.-]/g, ''))
           : weatherData.temperature
         
+        // Check if temperature is in Fahrenheit before parsing
+        const isFahrenheit = typeof weatherData.temperature === 'string' && weatherData.temperature.includes('°F')
+        
         // Convert Fahrenheit to Celsius if needed
-        const tempC = weatherData.temperature && weatherData.temperature.includes('°F')
+        const tempC = isFahrenheit
           ? Math.round((tempValue - 32) * 5/9)
           : tempValue
         
@@ -919,7 +938,10 @@ const SeasonalPlanning = () => {
           ? parseFloat(weatherData.windSpeed.replace(/[^\d.-]/g, ''))
           : weatherData.windSpeed
         
-        const windKmh = weatherData.windSpeed && weatherData.windSpeed.includes('mph')
+        // Check if wind speed is in mph before checking includes
+        const isMph = typeof weatherData.windSpeed === 'string' && weatherData.windSpeed.includes('mph')
+        
+        const windKmh = isMph
           ? Math.round(windValue * 1.60934)
           : windValue
         
@@ -960,7 +982,10 @@ const SeasonalPlanning = () => {
         throw new Error('Weather API failed')
       }
     } catch (error) {
-      console.error('Error fetching weather data:', error)
+      // Only log non-rate-limit errors to reduce console noise
+      if (!error.message || (!error.message.includes('Rate limit') && !error.message.includes('429'))) {
+        console.error('Error fetching weather data:', error)
+      }
       // Fallback weather data (Philippines climate)
       const mockWeatherData = {
         temperature: Math.floor(Math.random() * 10) + 25, // 25-35°C (Philippines range)
