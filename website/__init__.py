@@ -59,8 +59,19 @@ def create_app():
     }
 
     # Initialize extensions
-    mysql.init_app(app)
-    db.init_app(app)
+    # Only initialize MySQL extension if using MySQL (not PostgreSQL)
+    if db_type != 'postgresql':
+        mysql.init_app(app)
+    
+    # Initialize SQLAlchemy (works with both MySQL and PostgreSQL)
+    try:
+        db.init_app(app)
+        print("✅ SQLAlchemy initialized successfully")
+    except Exception as db_init_error:
+        print(f"❌ SQLAlchemy initialization error: {db_init_error}")
+        # Don't fail completely - let it try to connect later
+        raise
+    
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     init_mail(app)
@@ -89,8 +100,15 @@ def create_app():
     with app.app_context():
         try:
             # Test database connection first
-            db.engine.connect()
-            print("✅ Database connection successful")
+            try:
+                conn = db.engine.connect()
+                conn.close()
+                print("✅ Database connection successful")
+            except Exception as conn_error:
+                print(f"❌ Database connection test failed: {conn_error}")
+                print(f"   Database URI: {app.config.get('SQLALCHEMY_DATABASE_URI', 'Not set')[:50]}...")
+                # Don't fail completely - let it try again on first request
+                raise
             
             # Only create tables if they don't exist (safer for production)
             try:
@@ -113,10 +131,15 @@ def create_app():
                 except Exception as admin_error:
                     print(f"⚠️ Admin user creation skipped: {admin_error}")
             except Exception as table_error:
-                print(f"⚠️ Table creation skipped (may already exist): {table_error}")
+                print(f"⚠️ Table creation error: {table_error}")
+                # This might be okay if tables already exist
         except Exception as e:
-            print(f"❌ Database connection error: {e}")
-            print("⚠️ Make sure database credentials are correct in environment variables")
+            print(f"❌ Database initialization error: {e}")
+            print(f"   Error type: {type(e).__name__}")
+            import traceback
+            print(f"   Full traceback:")
+            traceback.print_exc()
+            print("⚠️ Application will continue but database operations may fail")
             # Don't fail the app startup - let it continue and show error on first request
 
     return app
