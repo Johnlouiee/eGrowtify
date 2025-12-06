@@ -6309,19 +6309,46 @@ def admin_api_subscription_stats():
         return jsonify({"error": "Admin access required"}), 403
     
     try:
+        from datetime import datetime, timedelta, timezone
+        from website.models import UserSubscription
+        
         total_subscribers = User.query.filter_by(subscribed=True).count()
         active_subscriptions = User.query.filter_by(subscribed=True, is_active=True).count()
-        monthly_revenue = total_subscribers * 150.00  # Updated to 150 PHP
+        monthly_revenue = total_subscribers * 150.00  # 150 PHP per subscriber
         total_users = User.query.count()
         subscription_rate = (total_subscribers / total_users * 100) if total_users > 0 else 0
+        
+        # Calculate Average Revenue Per User (ARPU)
+        # ARPU = Total Revenue / Total Subscribers
+        average_revenue_per_user = (monthly_revenue / total_subscribers) if total_subscribers > 0 else 0
+        
+        # Calculate new subscribers this month
+        now = datetime.now(timezone.utc)
+        start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        new_subscribers_this_month = User.query.filter(
+            User.subscribed == True,
+            User.created_at >= start_of_month
+        ).count()
+        
+        # Calculate churn rate (cancelled subscriptions / total subscriptions)
+        total_subscription_records = UserSubscription.query.count()
+        cancelled_subscriptions = UserSubscription.query.filter_by(status='cancelled').count()
+        churn_rate = (cancelled_subscriptions / total_subscription_records * 100) if total_subscription_records > 0 else 0
         
         return jsonify({
             "totalSubscribers": total_subscribers,
             "activeSubscriptions": active_subscriptions,
             "monthlyRevenue": round(monthly_revenue, 2),
-            "subscriptionRate": round(subscription_rate, 1)
+            "subscriptionRate": round(subscription_rate, 1),
+            "averageRevenuePerUser": round(average_revenue_per_user, 2),
+            "churnRate": round(churn_rate, 1),
+            "newSubscribersThisMonth": new_subscribers_this_month,
+            "totalRevenue": round(monthly_revenue, 2)  # For compatibility
         })
     except Exception as e:
+        print(f"Error calculating subscription stats: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @views.route('/api/admin/subscription/subscribers')
@@ -6386,15 +6413,17 @@ def user_subscribe():
             db.session.flush()  # Get the ID
         
         # Create user subscription record
-        from datetime import datetime, timedelta
+        from datetime import datetime, timedelta, timezone
+        now = datetime.now(timezone.utc)
         subscription = UserSubscription(
             user_id=current_user.id,
             plan_id=premium_plan.id,
-            start_date=datetime.now(),
-            end_date=datetime.now() + timedelta(days=30),  # 30 days for demo
+            start_date=now,
+            end_date=now + timedelta(days=30),  # 30 days for demo
             status='active',
             payment_status='paid',
-            total_paid=150.00
+            total_paid=150.00,
+            created_at=now  # Explicitly set created_at to current UTC time
         )
         db.session.add(subscription)
         
@@ -6584,6 +6613,107 @@ def user_downgrade_subscription():
         print(f"❌ SUBSCRIPTION DOWNGRADE ERROR: {str(e)}")
         
         return jsonify({"success": False, "error": f"Subscription downgrade failed: {str(e)}"}), 500
+
+@views.route('/api/subscription/details', methods=['GET'])
+@login_required
+def get_subscription_details():
+    """Get current user's subscription details"""
+    try:
+        from website.models import UserSubscription, SubscriptionPlan
+        from datetime import datetime, timedelta, timezone
+        
+        # Get the user's active subscription
+        active_subscription = UserSubscription.query.filter_by(
+            user_id=current_user.id,
+            status='active'
+        ).order_by(UserSubscription.created_at.desc()).first()
+        
+        if not active_subscription:
+            return jsonify({
+                "success": False,
+                "message": "No active subscription found"
+            }), 404
+        
+        # Get the plan details
+        plan = SubscriptionPlan.query.get(active_subscription.plan_id)
+        
+        if not plan:
+            return jsonify({
+                "success": False,
+                "message": "Plan not found"
+            }), 404
+        
+        # Get start_date (use created_at if start_date is not set)
+        start_date = active_subscription.start_date or active_subscription.created_at
+        if not start_date:
+            return jsonify({
+                "success": False,
+                "message": "Subscription start date not found"
+            }), 404
+        
+        # Ensure start_date is timezone-aware
+        if start_date.tzinfo is None:
+            start_date = start_date.replace(tzinfo=timezone.utc)
+        
+        # Calculate next billing date: add 1 month to start_date
+        # Handle month boundaries correctly
+        year = start_date.year
+        month = start_date.month
+        day = start_date.day
+        
+        # Add 1 month
+        if month == 12:
+            year += 1
+            month = 1
+        else:
+            month += 1
+        
+        # Handle edge case: if day doesn't exist in next month (e.g., Jan 31 -> Feb 31)
+        # Use the last day of the month instead
+        try:
+            next_billing = datetime(year, month, day, tzinfo=timezone.utc)
+        except ValueError:
+            # Day doesn't exist in next month, use last day of month
+            # Get first day of month after next month, then subtract 1 day
+            if month == 12:
+                next_month = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+            else:
+                next_month = datetime(year, month + 1, 1, tzinfo=timezone.utc)
+            # Last day of target month
+            last_day = (next_month - timedelta(days=1)).day
+            next_billing = datetime(year, month, last_day, tzinfo=timezone.utc)
+        
+        return jsonify({
+            "success": True,
+            "subscription": {
+                "plan": plan.plan_name,
+                "status": active_subscription.status,
+                "startDate": start_date.isoformat(),
+                "nextBillingDate": next_billing.isoformat(),
+                "amount": float(plan.price),
+                "currency": plan.currency or "PHP",
+                "paymentMethod": "GCash",  # Default, can be enhanced later
+                "autoRenew": active_subscription.status == 'active',
+                "features": {
+                    "gridPlanner6x6": plan.grid_planner_size == '6x6',
+                    "aiAnalyses20": plan.free_ai_analyses >= 20,
+                    "plantAnalyses10": plan.free_plant_analyses >= 10,
+                    "soilAnalyses10": plan.free_soil_analyses >= 10,
+                    "advancedPlantId": True,
+                    "detailedSoilAnalysis": True,
+                    "personalizedRecommendations": True,
+                    "prioritySupport": True
+                }
+            }
+        })
+    except Exception as e:
+        print(f"Error fetching subscription details: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 @views.route('/api/subscription/cancel', methods=['POST'])
 @login_required
@@ -7008,6 +7138,107 @@ def admin_api_toggle_subscription(user_id):
         return jsonify({"message": "Subscription status updated successfully"})
     except Exception as e:
         db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@views.route('/api/admin/subscription/recent-activity')
+@login_required
+def admin_api_subscription_recent_activity():
+    """Get recent subscription activities for admin dashboard"""
+    if not current_user.is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    
+    try:
+        from website.models import UserSubscription, SubscriptionPlan, User
+        from datetime import datetime, timedelta
+        
+        # Get recent subscriptions (last 10, ordered by created_at)
+        recent_subscriptions = UserSubscription.query.order_by(
+            UserSubscription.created_at.desc()
+        ).limit(10).all()
+        
+        activities = []
+        for sub in recent_subscriptions:
+            user = User.query.get(sub.user_id)
+            plan = SubscriptionPlan.query.get(sub.plan_id)
+            
+            if not user or not plan:
+                continue
+            
+            # Always show subscription creation event (using created_at)
+            if sub.created_at:
+                created_timestamp = sub.created_at
+                if created_timestamp.tzinfo is None:
+                    created_timestamp = created_timestamp.replace(tzinfo=timezone.utc)
+                
+                activities.append({
+                    'id': f"{sub.id}_created",
+                    'type': 'subscription_created',
+                    'message': f'New {plan.plan_name} subscription activated',
+                    'user': f"{user.firstname} {user.lastname}",
+                    'user_email': user.email,
+                    'plan_name': plan.plan_name,
+                    'status': 'active',
+                    'payment_status': sub.payment_status,
+                    'timestamp': created_timestamp.isoformat(),
+                    'icon_type': 'crown',
+                    'color': 'text-yellow-600'
+                })
+            
+            # If subscription was cancelled, also show cancellation event (using updated_at)
+            if sub.status == 'cancelled' and sub.updated_at and sub.updated_at != sub.created_at:
+                cancelled_timestamp = sub.updated_at
+                if cancelled_timestamp.tzinfo is None:
+                    cancelled_timestamp = cancelled_timestamp.replace(tzinfo=timezone.utc)
+                
+                activities.append({
+                    'id': f"{sub.id}_cancelled",
+                    'type': 'subscription_cancelled',
+                    'message': f'{plan.plan_name} subscription cancelled',
+                    'user': f"{user.firstname} {user.lastname}",
+                    'user_email': user.email,
+                    'plan_name': plan.plan_name,
+                    'status': 'cancelled',
+                    'payment_status': sub.payment_status,
+                    'timestamp': cancelled_timestamp.isoformat(),
+                    'icon_type': 'xcircle',
+                    'color': 'text-red-600'
+                })
+            
+            # If payment failed, show payment failure event
+            if sub.payment_status == 'failed' and sub.updated_at and sub.updated_at != sub.created_at:
+                failed_timestamp = sub.updated_at
+                if failed_timestamp.tzinfo is None:
+                    failed_timestamp = failed_timestamp.replace(tzinfo=timezone.utc)
+                
+                activities.append({
+                    'id': f"{sub.id}_failed",
+                    'type': 'payment_failed',
+                    'message': f'Payment failed for {plan.plan_name} subscription',
+                    'user': f"{user.firstname} {user.lastname}",
+                    'user_email': user.email,
+                    'plan_name': plan.plan_name,
+                    'status': sub.status,
+                    'payment_status': 'failed',
+                    'timestamp': failed_timestamp.isoformat(),
+                    'icon_type': 'alert',
+                    'color': 'text-orange-600'
+                })
+        
+        # Sort activities by timestamp (most recent first)
+        activities.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        # Limit to 10 most recent activities
+        activities = activities[:10]
+        
+        return jsonify({
+            "success": True,
+            "activities": activities,
+            "total": len(activities)
+        })
+    except Exception as e:
+        print(f"Error fetching recent subscription activity: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @views.route('/api/admin/subscription/plans')

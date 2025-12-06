@@ -33,8 +33,20 @@ const Reports = () => {
   useEffect(() => {
     if (isAdmin) {
       fetchReportsData()
+      
+      // Auto-refresh every 30 seconds
+      const interval = setInterval(() => {
+        fetchReportsData()
+      }, 30000)
+      
+      return () => clearInterval(interval)
     }
   }, [isAdmin, dateRange])
+  
+  // Reset to first page when search term or tab changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, activeTab])
 
   const fetchReportsData = async () => {
     try {
@@ -58,11 +70,15 @@ const Reports = () => {
       })
       setSubscriptionLogs(subscriptionResponse.data.logs || [])
 
-      // Fetch summary statistics
-      const statsResponse = await axios.get('/api/admin/reports/summary', {
-        params: { date_range: dateRange }
-      })
-      setSummaryStats(statsResponse.data)
+      // Calculate summary statistics from actual data
+      const calculatedStats = {
+        totalActivities: activityResponse.data.logs?.length || 0,
+        totalHistoryRecords: historyResponse.data.logs?.length || 0,
+        totalSubscriptions: subscriptionResponse.data.logs?.length || 0,
+        activeSubscriptions: subscriptionResponse.data.logs?.filter(log => log.status === 'active').length || 0,
+        cancelledSubscriptions: subscriptionResponse.data.logs?.filter(log => log.status === 'cancelled').length || 0
+      }
+      setSummaryStats(calculatedStats)
 
     } catch (error) {
       console.error('Error fetching reports data:', error)
@@ -161,12 +177,13 @@ const Reports = () => {
         }
       ])
 
+      // Calculate from mock data
       setSummaryStats({
-        totalActivities: 156,
-        totalHistoryRecords: 89,
-        totalSubscriptions: 45,
-        activeSubscriptions: 42,
-        cancelledSubscriptions: 3
+        totalActivities: activityLogs.length,
+        totalHistoryRecords: historyLogs.length,
+        totalSubscriptions: subscriptionLogs.length,
+        activeSubscriptions: subscriptionLogs.filter(log => log.status === 'active').length,
+        cancelledSubscriptions: subscriptionLogs.filter(log => log.status === 'cancelled').length
       })
     } finally {
       setLoading(false)
@@ -210,12 +227,27 @@ const Reports = () => {
   }
 
   const formatTimestamp = (timestamp) => {
-    return new Date(timestamp).toLocaleString()
+    if (!timestamp) return 'N/A'
+    try {
+      return new Date(timestamp).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      })
+    } catch (e) {
+      return 'Invalid date'
+    }
   }
 
   const formatTimeAgo = (timestamp) => {
+    if (!timestamp) return 'N/A'
     const now = new Date()
-    const diff = now - new Date(timestamp)
+    const date = new Date(timestamp)
+    const diff = now - date
+    const seconds = Math.floor(diff / 1000)
     const minutes = Math.floor(diff / 60000)
     const hours = Math.floor(diff / 3600000)
     const days = Math.floor(diff / 86400000)
@@ -223,6 +255,7 @@ const Reports = () => {
     if (days > 0) return `${days}d ago`
     if (hours > 0) return `${hours}h ago`
     if (minutes > 0) return `${minutes}m ago`
+    if (seconds > 0) return `${seconds}s ago`
     return 'Just now'
   }
 
@@ -351,49 +384,72 @@ const Reports = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Total Activities</p>
-                <p className="text-2xl font-bold text-gray-900">{summaryStats.totalActivities}</p>
+                <p className="text-sm text-gray-500 mb-1">Total Activities</p>
+                <p className="text-3xl font-bold text-gray-900">{summaryStats.totalActivities}</p>
+                <p className="text-xs text-gray-400 mt-1">All user actions</p>
               </div>
-              <Activity className="h-8 w-8 text-green-600" />
+              <div className="p-3 bg-green-100 rounded-lg">
+                <Activity className="h-6 w-6 text-green-600" />
+              </div>
             </div>
           </div>
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">History Records</p>
-                <p className="text-2xl font-bold text-gray-900">{summaryStats.totalHistoryRecords}</p>
+                <p className="text-sm text-gray-500 mb-1">History Records</p>
+                <p className="text-3xl font-bold text-gray-900">{summaryStats.totalHistoryRecords}</p>
+                <p className="text-xs text-gray-400 mt-1">Database changes</p>
               </div>
-              <History className="h-8 w-8 text-green-600" />
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <History className="h-6 w-6 text-blue-600" />
+              </div>
             </div>
           </div>
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Total Subscriptions</p>
-                <p className="text-2xl font-bold text-gray-900">{summaryStats.totalSubscriptions}</p>
+                <p className="text-sm text-gray-500 mb-1">Total Subscriptions</p>
+                <p className="text-3xl font-bold text-gray-900">{summaryStats.totalSubscriptions}</p>
+                <p className="text-xs text-gray-400 mt-1">All time</p>
               </div>
-              <CreditCard className="h-8 w-8 text-green-600" />
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <CreditCard className="h-6 w-6 text-purple-600" />
+              </div>
             </div>
           </div>
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Active</p>
-                <p className="text-2xl font-bold text-green-600">{summaryStats.activeSubscriptions}</p>
+                <p className="text-sm text-gray-500 mb-1">Active</p>
+                <p className="text-3xl font-bold text-green-600">{summaryStats.activeSubscriptions}</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {summaryStats.totalSubscriptions > 0 
+                    ? `${Math.round((summaryStats.activeSubscriptions / summaryStats.totalSubscriptions) * 100)}% active rate`
+                    : 'No subscriptions'}
+                </p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
+              <div className="p-3 bg-green-100 rounded-lg">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
             </div>
           </div>
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Cancelled</p>
-                <p className="text-2xl font-bold text-red-600">{summaryStats.cancelledSubscriptions}</p>
+                <p className="text-sm text-gray-500 mb-1">Cancelled</p>
+                <p className="text-3xl font-bold text-red-600">{summaryStats.cancelledSubscriptions}</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {summaryStats.totalSubscriptions > 0 
+                    ? `${Math.round((summaryStats.cancelledSubscriptions / summaryStats.totalSubscriptions) * 100)}% cancelled`
+                    : 'No cancellations'}
+                </p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-red-600" />
+              <div className="p-3 bg-red-100 rounded-lg">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
             </div>
           </div>
         </div>
@@ -440,11 +496,15 @@ const Reports = () => {
               </div>
               <button
                 onClick={fetchReportsData}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors shadow-sm hover:shadow-md"
               >
                 <RefreshCw className="h-4 w-4" />
                 <span>Refresh</span>
               </button>
+              <div className="text-xs text-gray-500 flex items-center space-x-1">
+                <Clock className="h-3 w-3" />
+                <span>Auto-refresh: 30s</span>
+              </div>
             </div>
           </div>
 
@@ -465,10 +525,9 @@ const Reports = () => {
                   )}
                   {activeTab === 'history' && (
                     <>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Table</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">What Changed</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Record ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Changes</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Changed By</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
                     </>
@@ -486,10 +545,23 @@ const Reports = () => {
                 </tr>
               </thead>
               <tbody className="bg-white/50 divide-y divide-gray-200">
-                {getPaginatedData().map((item, index) => {
-                  const ActionIcon = getActionIcon(item.action)
-                  return (
-                    <tr key={item.id || index} className="hover:bg-gray-50">
+                {getPaginatedData().length === 0 ? (
+                  <tr>
+                    <td colSpan={activeTab === 'history' ? 5 : activeTab === 'activity' ? 6 : 6} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center">
+                        <FileText className="h-12 w-12 text-gray-400 mb-4" />
+                        <p className="text-gray-500 text-lg font-medium">No logs found</p>
+                        <p className="text-gray-400 text-sm mt-1">
+                          {searchTerm ? 'Try adjusting your search criteria' : 'No data available for the selected date range'}
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  getPaginatedData().map((item, index) => {
+                    const ActionIcon = getActionIcon(item.action)
+                    return (
+                      <tr key={item.id || index} className="hover:bg-gray-50 transition-colors">
                       {activeTab === 'activity' && (
                         <>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -525,28 +597,109 @@ const Reports = () => {
                       )}
                       {activeTab === 'history' && (
                         <>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-medium text-gray-900">{item.table_name}</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              item.action === 'INSERT' ? 'bg-green-100 text-green-800' :
-                              item.action === 'UPDATE' ? 'bg-blue-100 text-blue-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {item.action}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm text-gray-900">{item.record_id}</span>
-                          </td>
                           <td className="px-6 py-4">
-                            <div className="text-sm text-gray-900">
-                              {item.field_changes?.join(', ') || 'N/A'}
+                            <div className="flex flex-col">
+                              <span className="text-sm font-semibold text-gray-900 capitalize">
+                                {item.table_name?.replace('_', ' ') || 'Unknown Table'}
+                              </span>
+                              <span className="text-xs text-gray-500 mt-1">
+                                Record ID: {item.record_id}
+                              </span>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm text-gray-500">{item.changed_by}</span>
+                            <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                              item.action === 'INSERT' ? 'bg-green-100 text-green-800 border border-green-200' :
+                              item.action === 'UPDATE' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                              'bg-red-100 text-red-800 border border-red-200'
+                            }`}>
+                              {item.action === 'INSERT' ? 'Created' : 
+                               item.action === 'UPDATE' ? 'Updated' : 
+                               item.action === 'DELETE' ? 'Deleted' : item.action}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="space-y-2 max-w-md">
+                              {item.action === 'UPDATE' && item.old_values && item.new_values ? (
+                                // Show before/after for updates
+                                Object.keys(item.new_values || {}).map((field, idx) => {
+                                  const oldVal = item.old_values?.[field]
+                                  const newVal = item.new_values?.[field]
+                                  if (oldVal === newVal) return null
+                                  
+                                  return (
+                                    <div key={idx} className="text-xs">
+                                      <div className="font-medium text-gray-700 mb-1 capitalize">
+                                        {field.replace(/_/g, ' ')}:
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <div className="flex-1 bg-red-50 border border-red-200 rounded px-2 py-1">
+                                          <div className="text-red-600 font-medium">Before:</div>
+                                          <div className="text-red-700 truncate">
+                                            {oldVal !== null && oldVal !== undefined ? String(oldVal) : 'Empty'}
+                                          </div>
+                                        </div>
+                                        <ArrowRight className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                                        <div className="flex-1 bg-green-50 border border-green-200 rounded px-2 py-1">
+                                          <div className="text-green-600 font-medium">After:</div>
+                                          <div className="text-green-700 truncate">
+                                            {newVal !== null && newVal !== undefined ? String(newVal) : 'Empty'}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )
+                                })
+                              ) : item.action === 'INSERT' && item.new_values ? (
+                                // Show new values for inserts
+                                <div className="space-y-1">
+                                  <div className="text-xs font-medium text-gray-700 mb-2">New Record:</div>
+                                  {Object.entries(item.new_values).slice(0, 3).map(([key, value], idx) => (
+                                    <div key={idx} className="text-xs bg-green-50 border border-green-200 rounded px-2 py-1">
+                                      <span className="font-medium text-green-700 capitalize">{key.replace(/_/g, ' ')}:</span>{' '}
+                                      <span className="text-green-800">{value !== null && value !== undefined ? String(value) : 'Empty'}</span>
+                                    </div>
+                                  ))}
+                                  {Object.keys(item.new_values).length > 3 && (
+                                    <div className="text-xs text-gray-500 italic">
+                                      +{Object.keys(item.new_values).length - 3} more fields
+                                    </div>
+                                  )}
+                                </div>
+                              ) : item.action === 'DELETE' && item.old_values ? (
+                                // Show deleted values
+                                <div className="space-y-1">
+                                  <div className="text-xs font-medium text-red-700 mb-2">Deleted Record:</div>
+                                  {Object.entries(item.old_values).slice(0, 3).map(([key, value], idx) => (
+                                    <div key={idx} className="text-xs bg-red-50 border border-red-200 rounded px-2 py-1">
+                                      <span className="font-medium text-red-700 capitalize">{key.replace(/_/g, ' ')}:</span>{' '}
+                                      <span className="text-red-800">{value !== null && value !== undefined ? String(value) : 'Empty'}</span>
+                                    </div>
+                                  ))}
+                                  {Object.keys(item.old_values).length > 3 && (
+                                    <div className="text-xs text-gray-500 italic">
+                                      +{Object.keys(item.old_values).length - 3} more fields
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="text-xs text-gray-500">
+                                  {item.field_changes?.join(', ') || 'No details available'}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-gray-900">
+                                {item.changed_by?.replace('user_', 'User ') || item.changed_by || 'Unknown'}
+                              </span>
+                              {item.changed_by?.startsWith('user_') && (
+                                <span className="text-xs text-gray-500">
+                                  ID: {item.changed_by.replace('user_', '')}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">{formatTimestamp(item.timestamp)}</div>
@@ -575,7 +728,7 @@ const Reports = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className="text-sm font-medium text-gray-900">
-                              {item.currency} {item.amount}
+                              ₱{item.amount?.toFixed(2) || '0.00'}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -589,61 +742,65 @@ const Reports = () => {
                           </td>
                         </>
                       )}
-                    </tr>
-                  )
-                })}
+                      </tr>
+                    )
+                  })
+                )}
               </tbody>
             </table>
           </div>
 
           {/* Pagination */}
-          <div className="bg-white/80 backdrop-blur-sm px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={getPaginatedData().length < itemsPerPage}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
-            </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing <span className="font-medium">{((currentPage - 1) * itemsPerPage) + 1}</span> to{' '}
-                  <span className="font-medium">
-                    {Math.min(currentPage * itemsPerPage, getFilteredData().length)}
-                  </span>{' '}
-                  of <span className="font-medium">{getFilteredData().length}</span> results
-                </p>
+          {getFilteredData().length > 0 && (
+            <div className="bg-white/80 backdrop-blur-sm px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+              <div className="flex-1 flex justify-between sm:hidden">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={getPaginatedData().length < itemsPerPage || currentPage * itemsPerPage >= getFilteredData().length}
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
               </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                    disabled={getPaginatedData().length < itemsPerPage}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </nav>
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Showing <span className="font-medium">{((currentPage - 1) * itemsPerPage) + 1}</span> to{' '}
+                    <span className="font-medium">
+                      {Math.min(currentPage * itemsPerPage, getFilteredData().length)}
+                    </span>{' '}
+                    of <span className="font-medium">{getFilteredData().length}</span> {getFilteredData().length === 1 ? 'result' : 'results'}
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-500">Page {currentPage} of {Math.ceil(getFilteredData().length / itemsPerPage) || 1}</span>
+                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={getPaginatedData().length < itemsPerPage || currentPage * itemsPerPage >= getFilteredData().length}
+                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </nav>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

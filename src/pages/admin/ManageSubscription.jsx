@@ -37,6 +37,10 @@ const ManageSubscription = () => {
   const [showBulkActions, setShowBulkActions] = useState(false)
   const [recentActivity, setRecentActivity] = useState([])
   const [subscriptionPlans, setSubscriptionPlans] = useState([])
+  const [activitySearchTerm, setActivitySearchTerm] = useState('')
+  const [activityFilterStatus, setActivityFilterStatus] = useState('all') // all, subscribed, cancelled
+  const [activityCurrentPage, setActivityCurrentPage] = useState(1)
+  const [activityItemsPerPage] = useState(5)
   const [showEditPlanModal, setShowEditPlanModal] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState(null)
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false)
@@ -50,7 +54,64 @@ const ManageSubscription = () => {
 
   useEffect(() => {
     fetchSubscriptionData()
+    
+    // Auto-refresh activity every 5 seconds for real-time updates
+    const interval = setInterval(() => {
+      // Only refresh the activity data, not the entire subscription data
+      fetchRecentActivity()
+    }, 5000) // 5 seconds for real-time feel
+    
+    return () => clearInterval(interval)
   }, [])
+  
+  // Reset to first page when search or filter changes
+  useEffect(() => {
+    setActivityCurrentPage(1)
+  }, [activitySearchTerm, activityFilterStatus])
+  
+  // Separate function to fetch only recent activity for faster updates
+  const fetchRecentActivity = async () => {
+    try {
+      const activityRes = await axios.get('/api/admin/subscription/recent-activity')
+      if (activityRes.data.success && activityRes.data.activities) {
+        // Map API response to component format
+        const mappedActivities = activityRes.data.activities.map(activity => {
+          // Map icon_type to actual icon component
+          let IconComponent = Crown // default
+          if (activity.icon_type === 'crown') IconComponent = Crown
+          else if (activity.icon_type === 'xcircle') IconComponent = XCircle
+          else if (activity.icon_type === 'alert') IconComponent = AlertCircle
+          else if (activity.icon_type === 'check') IconComponent = CheckCircle
+          
+          // Parse timestamp properly - handle ISO string format
+          let parsedTimestamp
+          if (activity.timestamp) {
+            parsedTimestamp = new Date(activity.timestamp)
+            // If parsing failed, use current time as fallback
+            if (isNaN(parsedTimestamp.getTime())) {
+              parsedTimestamp = new Date()
+            }
+          } else {
+            parsedTimestamp = new Date()
+          }
+          
+          return {
+            id: activity.id,
+            type: activity.type,
+            message: activity.message,
+            user: activity.user,
+            timestamp: parsedTimestamp,
+            icon: IconComponent,
+            color: activity.color
+          }
+        })
+        setRecentActivity(mappedActivities)
+      }
+    } catch (activityError) {
+      console.error('Error fetching recent activity:', activityError)
+      // Don't show error toast for background refresh
+    }
+  }
 
   const fetchSubscriptionData = async () => {
     try {
@@ -64,60 +125,54 @@ const ManageSubscription = () => {
       setSubscriptionStats(statsRes.data)
       setSubscribers(subscribersRes.data)
       
-      // Mock data for demonstration - replace with actual API calls
-      setRecentActivity([
-        {
-          id: 1,
-          type: 'subscription_created',
-          message: 'New Premium subscription activated',
-          user: 'John Doe',
-          timestamp: new Date(Date.now() - 1000 * 60 * 30),
-          icon: Crown,
-          color: 'text-yellow-600'
-        },
-        {
-          id: 2,
-          type: 'subscription_cancelled',
-          message: 'Subscription cancelled by user',
-          user: 'Jane Smith',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-          icon: XCircle,
-          color: 'text-red-600'
-        },
-        {
-          id: 3,
-          type: 'payment_failed',
-          message: 'Payment failed for subscription',
-          user: 'Bob Johnson',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
-          icon: AlertCircle,
-          color: 'text-orange-600'
-        }
-      ])
+      // Fetch recent subscription activities from API
+      await fetchRecentActivity()
       
       // Fetch subscription plans from API
       try {
         const plansRes = await axios.get('/api/admin/subscription/plans')
         if (plansRes.data && plansRes.data.length > 0) {
-          const plans = plansRes.data.map(plan => ({
-            id: plan.id,
-            name: plan.plan_name,
-            price: plan.price,
-            plan_type: plan.plan_type,
-            features: [
-              `${plan.free_ai_analyses} AI Analyses`,
-              `${plan.free_plant_analyses} Plant Analyses`,
-              `${plan.free_soil_analyses} Soil Analyses`,
-              `${plan.grid_planner_size} Grid Planner`,
-              plan.plan_type === 'premium' ? 'Priority Support' : 'Basic Support'
-            ],
-            color: plan.plan_type === 'premium' ? 'bg-green-500' : 'bg-gray-500',
-            borderColor: plan.plan_type === 'premium' ? 'border-green-200' : 'border-gray-200',
-            bgColor: plan.plan_type === 'premium' ? 'bg-green-50' : 'bg-gray-50',
-            subscribers: subscribers.filter(s => s.subscribed === (plan.plan_type === 'premium')).length,
-            popular: plan.plan_type === 'premium',
-            ...plan
-          }))
+          const plans = plansRes.data.map(plan => {
+            // Build features based on plan type
+            let features = []
+            if (plan.plan_type === 'basic') {
+              features = [
+                '3 free analysis only 3 plants + 3 soil',
+                '3x3 grid planner',
+                'Basic plant identification',
+                'Simple soil moisture check'
+              ]
+            } else if (plan.plan_type === 'premium') {
+              features = [
+                '20 free AI analysis per month (10 plants + 10 soil)',
+                '6x6 grid planner',
+                'Advance plant identification',
+                'Detailed soil composition analysis'
+              ]
+            } else {
+              // Fallback for other plan types
+              features = [
+                `${plan.free_ai_analyses} AI Analyses`,
+                `${plan.free_plant_analyses} Plant Analyses`,
+                `${plan.free_soil_analyses} Soil Analyses`,
+                `${plan.grid_planner_size} Grid Planner`
+              ]
+            }
+            
+            return {
+              id: plan.id,
+              name: plan.plan_name,
+              price: plan.price,
+              plan_type: plan.plan_type,
+              features: features,
+              color: plan.plan_type === 'premium' ? 'bg-green-500' : 'bg-gray-500',
+              borderColor: plan.plan_type === 'premium' ? 'border-green-200' : 'border-gray-200',
+              bgColor: plan.plan_type === 'premium' ? 'bg-green-50' : 'bg-gray-50',
+              subscribers: subscribers.filter(s => s.subscribed === (plan.plan_type === 'premium')).length,
+              popular: plan.plan_type === 'premium',
+              ...plan
+            }
+          })
           setSubscriptionPlans(plans)
         } else {
           // Fallback to default plans
@@ -126,7 +181,12 @@ const ManageSubscription = () => {
               id: 'basic',
               name: 'Basic Plan',
               price: 0,
-              features: ['Basic plant tracking', 'Limited AI recognition', 'Community access', 'Basic garden planning'],
+              features: [
+                '3 free analysis only 3 plants + 3 soil',
+                '3x3 grid planner',
+                'Basic plant identification',
+                'Simple soil moisture check'
+              ],
               color: 'bg-gray-500',
               borderColor: 'border-gray-200',
               bgColor: 'bg-gray-50',
@@ -136,7 +196,12 @@ const ManageSubscription = () => {
               id: 'premium',
               name: 'Premium Plan',
               price: 150,
-              features: ['Unlimited plant tracking', 'Advanced AI recognition', 'Priority support', 'Exclusive content', 'Expert consultations', 'Custom garden plans'],
+              features: [
+                '20 free AI analysis per month (10 plants + 10 soil)',
+                '6x6 grid planner',
+                'Advance plant identification',
+                'Detailed soil composition analysis'
+              ],
               color: 'bg-green-500',
               borderColor: 'border-green-200',
               bgColor: 'bg-green-50',
@@ -152,7 +217,12 @@ const ManageSubscription = () => {
             id: 'basic',
             name: 'Basic Plan',
             price: 0,
-            features: ['Basic plant tracking', 'Limited AI recognition', 'Community access', 'Basic garden planning'],
+            features: [
+              '3 free analysis only 3 plants + 3 soil',
+              '3x3 grid planner',
+              'Basic plant identification',
+              'Simple soil moisture check'
+            ],
             color: 'bg-gray-500',
             borderColor: 'border-gray-200',
             bgColor: 'bg-gray-50',
@@ -162,7 +232,12 @@ const ManageSubscription = () => {
             id: 'premium',
             name: 'Premium Plan',
             price: 150,
-            features: ['Unlimited plant tracking', 'Advanced AI recognition', 'Priority support', 'Exclusive content', 'Expert consultations', 'Custom garden plans'],
+            features: [
+              '20 free AI analysis per month (10 plants + 10 soil)',
+              '6x6 grid planner',
+              'Advance plant identification',
+              'Detailed soil composition analysis'
+            ],
             color: 'bg-purple-500',
             borderColor: 'border-purple-200',
             bgColor: 'bg-purple-50',
@@ -339,16 +414,53 @@ const ManageSubscription = () => {
   }
 
   const formatTimeAgo = (timestamp) => {
+    if (!timestamp) return 'Just now'
+    
+    // Handle both Date objects and ISO strings
+    const activityDate = timestamp instanceof Date ? timestamp : new Date(timestamp)
     const now = new Date()
-    const diff = now - timestamp
+    
+    // Check if date is valid
+    if (isNaN(activityDate.getTime())) {
+      return 'Just now'
+    }
+    
+    const diff = now - activityDate
+    
+    // If less than 1 second, show "Just now"
+    if (diff < 1000) return 'Just now'
+    
+    const seconds = Math.floor(diff / 1000)
     const minutes = Math.floor(diff / 60000)
     const hours = Math.floor(diff / 3600000)
     const days = Math.floor(diff / 86400000)
     
+    // Show exact time for very recent activities (less than 1 minute)
+    if (seconds < 60) {
+      return `${seconds}s ago`
+    }
+    
     if (days > 0) return `${days}d ago`
     if (hours > 0) return `${hours}h ago`
     if (minutes > 0) return `${minutes}m ago`
+    
     return 'Just now'
+  }
+  
+  // Format exact time for display
+  const formatExactTime = (timestamp) => {
+    if (!timestamp) return ''
+    
+    const activityDate = timestamp instanceof Date ? timestamp : new Date(timestamp)
+    if (isNaN(activityDate.getTime())) return ''
+    
+    return activityDate.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    })
   }
 
   const filteredSubscribers = subscribers.filter(subscriber => {
@@ -442,7 +554,7 @@ const ManageSubscription = () => {
           
           <AdminStatsCard
             title="Monthly Revenue"
-            value={`$${subscriptionStats.monthlyRevenue}`}
+            value={`₱${subscriptionStats.monthlyRevenue || 0}`}
             subtitle="Revenue"
             icon={DollarSign}
             iconColor="from-purple-500 to-purple-600"
@@ -451,7 +563,7 @@ const ManageSubscription = () => {
             shadowColor="hover:shadow-purple-500/10"
             trend={true}
             trendIcon={DollarSign}
-            trendText={`$${subscriptionStats.averageRevenuePerUser} ARPU`}
+            trendText={`₱${(subscriptionStats.averageRevenuePerUser || 0).toFixed(2)} ARPU`}
             trendColor="text-green-600"
           />
           
@@ -464,10 +576,7 @@ const ManageSubscription = () => {
             bgColor="from-orange-500/5 to-amber-500/5"
             borderColor="hover:border-orange-300/50"
             shadowColor="hover:shadow-orange-500/10"
-            trend={true}
-            trendIcon={Target}
-            trendText={`${subscriptionStats.churnRate}% churn rate`}
-            trendColor="text-orange-600"
+            trend={false}
           />
         </div>
 
@@ -882,7 +991,7 @@ const ManageSubscription = () => {
                       </div>
                     </div>
                     <p className="text-3xl font-bold text-gray-900 mb-2">
-                      ${plan.price}<span className="text-sm text-gray-500">/month</span>
+                      ₱{plan.price}<span className="text-sm text-gray-500">/month</span>
                     </p>
                     <p className="text-sm text-gray-600 mb-4">{plan.subscribers} subscribers</p>
                     <ul className="text-sm text-gray-600 space-y-2 mb-6">
@@ -922,59 +1031,135 @@ const ManageSubscription = () => {
           {/* Recent Activity Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Activity className="h-5 w-5 mr-2 text-green-600" />
-                Recent Activity
-              </h3>
-              <div className="space-y-4">
-                {recentActivity.map((activity) => {
-                  const IconComponent = activity.icon
-                  return (
-                    <div key={activity.id} className="flex items-start space-x-3">
-                      <div className={`p-2 bg-gray-100 rounded-lg`}>
-                        <IconComponent className={`h-4 w-4 ${activity.color}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-900">{activity.message}</p>
-                        <p className="text-xs text-gray-500">{activity.user}</p>
-                        <p className="text-xs text-gray-400">{formatTimeAgo(activity.timestamp)}</p>
-                      </div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <Activity className="h-5 w-5 mr-2 text-green-600" />
+                  Recent Activity
+                </h3>
+              </div>
+              
+              {/* Search and Filter */}
+              <div className="mb-4 space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by email or name..."
+                    value={activitySearchTerm}
+                    onChange={(e) => {
+                      setActivitySearchTerm(e.target.value)
+                      setActivityCurrentPage(1) // Reset to first page on search
+                    }}
+                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+                <select
+                  value={activityFilterStatus}
+                  onChange={(e) => {
+                    setActivityFilterStatus(e.target.value)
+                    setActivityCurrentPage(1) // Reset to first page on filter change
+                  }}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                >
+                  <option value="all">All Activities</option>
+                  <option value="subscribed">Subscribed Only</option>
+                  <option value="cancelled">Cancelled Only</option>
+                </select>
+              </div>
+              
+              {/* Filtered and Paginated Activities */}
+              {(() => {
+                // Filter activities
+                const filteredActivities = recentActivity.filter(activity => {
+                  const matchesSearch = !activitySearchTerm || 
+                    activity.user?.toLowerCase().includes(activitySearchTerm.toLowerCase()) ||
+                    activity.user_email?.toLowerCase().includes(activitySearchTerm.toLowerCase())
+                  
+                  const matchesStatus = activityFilterStatus === 'all' ||
+                    (activityFilterStatus === 'subscribed' && activity.type === 'subscription_created') ||
+                    (activityFilterStatus === 'cancelled' && activity.type === 'subscription_cancelled')
+                  
+                  return matchesSearch && matchesStatus
+                })
+                
+                // Calculate pagination
+                const totalPages = Math.ceil(filteredActivities.length / activityItemsPerPage)
+                const startIndex = (activityCurrentPage - 1) * activityItemsPerPage
+                const endIndex = startIndex + activityItemsPerPage
+                const paginatedActivities = filteredActivities.slice(startIndex, endIndex)
+                
+                return (
+                  <>
+                    <div className="space-y-4 min-h-[300px]">
+                      {paginatedActivities.length > 0 ? (
+                        paginatedActivities.map((activity) => {
+                          const IconComponent = activity.icon
+                          return (
+                            <div key={activity.id} className="flex items-start space-x-3">
+                              <div className={`p-2 bg-gray-100 rounded-lg`}>
+                                <IconComponent className={`h-4 w-4 ${activity.color}`} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-900">{activity.message}</p>
+                                <p className="text-xs text-gray-500">{activity.user}</p>
+                                <div className="flex items-center space-x-2">
+                                  <p className="text-xs text-gray-400">{formatTimeAgo(activity.timestamp)}</p>
+                                  <span className="text-xs text-gray-300">•</span>
+                                  <p className="text-xs text-gray-400" title={formatExactTime(activity.timestamp)}>
+                                    {formatExactTime(activity.timestamp)}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })
+                      ) : (
+                        <div className="text-center py-8">
+                          <Activity className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                          <p className="text-sm text-gray-500">No activities found</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {activitySearchTerm || activityFilterStatus !== 'all' 
+                              ? 'Try adjusting your search or filter' 
+                              : 'Subscription activities will appear here'}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                  )
-                })}
-              </div>
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <button className="w-full text-sm text-green-600 hover:text-green-800 font-medium">
-                  View All Activity
-                </button>
-              </div>
+                    
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-gray-500">
+                            Showing {startIndex + 1}-{Math.min(endIndex, filteredActivities.length)} of {filteredActivities.length}
+                          </p>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => setActivityCurrentPage(prev => Math.max(1, prev - 1))}
+                              disabled={activityCurrentPage === 1}
+                              className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Previous
+                            </button>
+                            <span className="text-xs text-gray-600">
+                              Page {activityCurrentPage} of {totalPages}
+                            </span>
+                            <button
+                              onClick={() => setActivityCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                              disabled={activityCurrentPage === totalPages}
+                              className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
             </div>
 
-            {/* Quick Stats */}
-            <div className="mt-6 bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <BarChart3 className="h-5 w-5 mr-2 text-green-600" />
-                Quick Stats
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Conversion Rate</span>
-                  <span className="text-sm font-semibold text-green-600">12.5%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Avg. Revenue/User</span>
-                  <span className="text-sm font-semibold text-green-600">$8.50</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Churn Rate</span>
-                  <span className="text-sm font-semibold text-orange-600">3.2%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Lifetime Value</span>
-                  <span className="text-sm font-semibold text-green-600">$127</span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -1108,13 +1293,6 @@ const ManageSubscription = () => {
                     ₱{analyticsData.monthlyRevenue?.toLocaleString() || 0}
                   </p>
                 </div>
-                <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-4 rounded-lg border border-orange-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-600">Churn Rate</span>
-                    <TrendingUp className="h-5 w-5 text-orange-600" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{analyticsData.churnRate || 0}%</p>
-                </div>
                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-600">Conversion Rate</span>
@@ -1144,7 +1322,6 @@ const ManageSubscription = () => {
                 <div className="space-y-2 text-sm text-gray-600">
                   <p>• Average subscription duration: 8.5 months</p>
                   <p>• Customer lifetime value: ₱{((analyticsData.averageRevenuePerUser || 0) * 8.5).toLocaleString()}</p>
-                  <p>• Retention rate: {100 - (analyticsData.churnRate || 0)}%</p>
                 </div>
               </div>
             </div>

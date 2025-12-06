@@ -32,60 +32,50 @@ const Subscription = () => {
   const fetchSubscriptionDetails = async () => {
     try {
       setLoading(true)
-      // Mock subscription details - replace with actual API call
-      const mockSubscriptionDetails = {
-        plan: 'Premium Plan',
-        status: 'active',
-        startDate: '2024-01-15',
-        nextBillingDate: '2024-02-15',
-        amount: 150.00,
-        currency: 'PHP',
-        paymentMethod: 'GCash - 09XX XXX XXXX',
-        autoRenew: true,
-        features: {
-          gridPlanner6x6: true,
-          aiAnalyses20: true,
-          plantAnalyses10: true,
-          soilAnalyses10: true,
-          advancedPlantId: true,
-          detailedSoilAnalysis: true,
-          personalizedRecommendations: true,
-          prioritySupport: true
-        }
+      
+      // Fetch real subscription details from backend
+      const response = await axios.get('/api/subscription/details')
+      
+      if (response.data.success && response.data.subscription) {
+        const subscription = response.data.subscription
+        setSubscriptionDetails({
+          plan: subscription.plan,
+          status: subscription.status,
+          startDate: subscription.startDate,
+          nextBillingDate: subscription.nextBillingDate,
+          amount: subscription.amount,
+          currency: subscription.currency,
+          paymentMethod: subscription.paymentMethod,
+          autoRenew: subscription.autoRenew,
+          features: subscription.features
+        })
+        
+        // Mock billing history for now (can be enhanced later with real data)
+        const mockBillingHistory = [
+          {
+            id: 1,
+            date: subscription.startDate || new Date().toISOString().split('T')[0],
+            amount: subscription.amount || 150.00,
+            status: 'paid',
+            description: `${subscription.plan || 'Premium Plan'} Subscription - GCash`,
+            invoiceUrl: '#'
+          }
+        ]
+        setBillingHistory(mockBillingHistory)
+      } else {
+        // No active subscription found
+        setSubscriptionDetails(null)
+        setBillingHistory([])
       }
-
-      const mockBillingHistory = [
-        {
-          id: 1,
-          date: '2024-01-15',
-          amount: 150.00,
-          status: 'paid',
-          description: 'Premium Plan Subscription - GCash',
-          invoiceUrl: '#'
-        },
-        {
-          id: 2,
-          date: '2023-12-15',
-          amount: 25.00,
-          status: 'paid',
-          description: 'Additional AI Analysis - Pepper Plant',
-          invoiceUrl: '#'
-        },
-        {
-          id: 3,
-          date: '2023-11-15',
-          amount: 20.00,
-          status: 'paid',
-          description: 'Grid Planner Upgrade - 4x4 to 6x6',
-          invoiceUrl: '#'
-        }
-      ]
-
-      setSubscriptionDetails(mockSubscriptionDetails)
-      setBillingHistory(mockBillingHistory)
     } catch (error) {
       console.error('Error fetching subscription details:', error)
-      toast.error('Failed to load subscription details')
+      if (error.response?.status === 404) {
+        // No subscription found - this is okay for basic plan users
+        setSubscriptionDetails(null)
+        setBillingHistory([])
+      } else {
+        toast.error('Failed to load subscription details')
+      }
     } finally {
       setLoading(false)
     }
@@ -314,118 +304,6 @@ const Subscription = () => {
           </div>
         </div>
 
-        {/* Feature Comparison */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-          {/* Plant Recognition Features */}
-          <div className="card">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-3 bg-green-100 rounded-xl">
-                <Leaf className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Plant Recognition</h2>
-                <p className="text-gray-600">AI-powered plant identification and care</p>
-              </div>
-            </div>
-
-            {/* Free Features */}
-            <div className="mb-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                  <span className="text-xs font-bold text-gray-600">FREE</span>
-                </div>
-                <h3 className="font-semibold text-gray-900">Basic Features</h3>
-              </div>
-              <div className="space-y-3">
-                {freeFeatures.plants.map((feature, index) => (
-                  <div key={index} className="flex items-start space-x-3">
-                    <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">{feature}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Premium Features */}
-            <div className="border-t pt-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                  <Crown className="h-3 w-3 text-white" />
-                </div>
-                <h3 className="font-semibold text-gray-900">Premium Features</h3>
-              </div>
-              <div className="space-y-3">
-                {premiumFeatures.plants.map((feature, index) => (
-                  <div key={index} className="flex items-start space-x-3">
-                    {isPremium ? (
-                      <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                    ) : (
-                      <X className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                    )}
-                    <span className={`text-sm ${isPremium ? 'text-gray-700' : 'text-gray-500'}`}>
-                      {feature}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Soil Analysis Features */}
-          <div className="card">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-3 bg-amber-100 rounded-xl">
-                <Droplets className="h-6 w-6 text-amber-600" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Soil Analysis</h2>
-                <p className="text-gray-600">Comprehensive soil health assessment</p>
-              </div>
-            </div>
-
-            {/* Free Features */}
-            <div className="mb-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                  <span className="text-xs font-bold text-gray-600">FREE</span>
-                </div>
-                <h3 className="font-semibold text-gray-900">Basic Analysis</h3>
-              </div>
-              <div className="space-y-3">
-                {freeFeatures.soil.map((feature, index) => (
-                  <div key={index} className="flex items-start space-x-3">
-                    <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">{feature}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Premium Features */}
-            <div className="border-t pt-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                  <Crown className="h-3 w-3 text-white" />
-                </div>
-                <h3 className="font-semibold text-gray-900">Advanced Analysis</h3>
-              </div>
-              <div className="space-y-3">
-                {premiumFeatures.soil.map((feature, index) => (
-                  <div key={index} className="flex items-start space-x-3">
-                    {isPremium ? (
-                      <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                    ) : (
-                      <X className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                    )}
-                    <span className={`text-sm ${isPremium ? 'text-gray-700' : 'text-gray-500'}`}>
-                      {feature}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Pricing Plans */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
@@ -441,7 +319,7 @@ const Subscription = () => {
               <ul className="text-left space-y-3 mb-8">
                 <li className="flex items-center space-x-3">
                   <Check className="h-5 w-5 text-green-500" />
-                  <span className="text-sm text-gray-700">4 free AI analyses per month (2 plants + 2 soil)</span>
+                  <span className="text-sm text-gray-700">3 free analysis only 3 plants + 3 soil</span>
                 </li>
                 <li className="flex items-center space-x-3">
                   <Check className="h-5 w-5 text-green-500" />
@@ -488,11 +366,11 @@ const Subscription = () => {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-2">Premium Plan</h3>
               <div className="text-4xl font-bold text-gray-900 mb-4">₱150<span className="text-lg text-gray-500">/month</span></div>
-              <p className="text-gray-600 mb-6">Unlock advanced features with 20 AI analyses</p>
+              <p className="text-gray-600 mb-6">Unlock advanced features with 20 free AI analyses</p>
               <ul className="text-left space-y-3 mb-8">
                 <li className="flex items-center space-x-3">
                   <Check className="h-5 w-5 text-green-500" />
-                  <span className="text-sm text-gray-700">20 free AI analyses per month (10 plants + 10 soil)</span>
+                  <span className="text-sm text-gray-700">20 free AI analysis per month (10 plants + 10 soil)</span>
                 </li>
                 <li className="flex items-center space-x-3">
                   <Check className="h-5 w-5 text-green-500" />
@@ -500,19 +378,11 @@ const Subscription = () => {
                 </li>
                 <li className="flex items-center space-x-3">
                   <Check className="h-5 w-5 text-green-500" />
-                  <span className="text-sm text-gray-700">Advanced plant identification with pest detection</span>
+                  <span className="text-sm text-gray-700">Advance plant identification</span>
                 </li>
                 <li className="flex items-center space-x-3">
                   <Check className="h-5 w-5 text-green-500" />
                   <span className="text-sm text-gray-700">Detailed soil composition analysis</span>
-                </li>
-                <li className="flex items-center space-x-3">
-                  <Check className="h-5 w-5 text-green-500" />
-                  <span className="text-sm text-gray-700">Personalized plant recommendations</span>
-                </li>
-                <li className="flex items-center space-x-3">
-                  <Check className="h-5 w-5 text-green-500" />
-                  <span className="text-sm text-gray-700">Priority customer support</span>
                 </li>
               </ul>
               <button onClick={() => setShowCheckout(true)} className="btn-primary w-full flex items-center justify-center space-x-2">
@@ -561,7 +431,7 @@ const Subscription = () => {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Amount:</span>
-                          <span className="font-medium">${subscriptionDetails.amount}/{subscriptionDetails.plan.includes('Monthly') ? 'month' : 'year'}</span>
+                          <span className="font-medium">₱{subscriptionDetails.amount}/{subscriptionDetails.plan.includes('Monthly') ? 'month' : 'year'}</span>
                         </div>
                       </div>
                     </div>
@@ -898,7 +768,7 @@ const Subscription = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">What happens to my free analyses?</h3>
-              <p className="text-sm text-gray-600">Basic plan users get 4 free AI analyses per month (2 plants + 2 soil). Premium users get 20 free analyses (10 plants + 10 soil). Additional analyses cost ₱25 each.</p>
+              <p className="text-sm text-gray-600">Basic plan users get 3 free AI analyses per month (3 plants + 3 soil). Premium users get 20 free analyses (10 plants + 10 soil). Additional analyses cost ₱25 each.</p>
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">Can I cancel anytime?</h3>
