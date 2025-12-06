@@ -1,9 +1,13 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from website import create_app
+import os
 
 app = create_app()
-CORS(app, origins=['http://localhost:3000'], supports_credentials=True)
+
+# CORS configuration - update with your production frontend URL
+allowed_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')
+CORS(app, origins=allowed_origins, supports_credentials=True)
 
 @app.route('/')
 def home():
@@ -65,13 +69,19 @@ def api_weather():
     return get_weather()
 
 if __name__ == '__main__':
+    import os
+    port = int(os.getenv('PORT', 5000))
+    debug = os.getenv('FLASK_ENV', 'development') == 'development'
+    host = os.getenv('HOST', '127.0.0.1')
+    
     print("Starting Flask Backend...")
-    print("Backend will run on: http://127.0.0.1:5000")
+    print(f"Backend will run on: http://{host}:{port}")
     print("API endpoints available:")
     print("   - GET / - Welcome message")
     print("   - GET /test - Test endpoint")
     print("")
-    print("To see the UI, run 'npm run dev' in another terminal")
-    print("   Then visit: http://localhost:3000")
+    if debug:
+        print("To see the UI, run 'npm run dev' in another terminal")
+        print("   Then visit: http://localhost:3000")
     print("")
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run(debug=debug, host=host, port=port)

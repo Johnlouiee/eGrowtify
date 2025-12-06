@@ -16,17 +16,33 @@ def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'OPAW')
 
-    # Enable CORS for React frontend
-    CORS(app, origins=['http://localhost:3000'], supports_credentials=True)
+    # Enable CORS for React frontend - supports multiple origins via comma-separated list
+    cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')
+    CORS(app, origins=cors_origins, supports_credentials=True)
 
-    # MySQL Configuration for XAMPP
-    app.config['MYSQL_HOST'] = 'localhost'
-    app.config['MYSQL_USER'] = 'root'
-    app.config['MYSQL_PASSWORD'] = ''  
-    app.config['MYSQL_DB'] = 'egrowtifydb'
+    # MySQL Configuration - use environment variables for production
+    app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST', 'localhost')
+    app.config['MYSQL_USER'] = os.getenv('MYSQL_USER', 'root')
+    app.config['MYSQL_PASSWORD'] = os.getenv('MYSQL_PASSWORD', '')
+    app.config['MYSQL_DB'] = os.getenv('MYSQL_DB', 'egrowtifydb')
 
-    # SQLAlchemy Configuration
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/egrowtifydb?charset=utf8mb4'
+    # SQLAlchemy Configuration - construct URI from environment variables
+    mysql_user = os.getenv('MYSQL_USER', 'root')
+    mysql_password = os.getenv('MYSQL_PASSWORD', '')
+    mysql_host = os.getenv('MYSQL_HOST', 'localhost')
+    mysql_db = os.getenv('MYSQL_DB', 'egrowtifydb')
+    
+    # Support both MySQL and PostgreSQL (for platforms like Render/Railway)
+    db_type = os.getenv('DATABASE_TYPE', 'mysql')
+    if db_type == 'postgresql':
+        database_url = os.getenv('DATABASE_URL')
+        if database_url:
+            app.config['SQLALCHEMY_DATABASE_URI'] = database_url.replace('postgres://', 'postgresql://', 1)
+        else:
+            app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{mysql_user}:{mysql_password}@{mysql_host}/{mysql_db}"
+    else:
+        password_part = f":{mysql_password}" if mysql_password else ""
+        app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{mysql_user}{password_part}@{mysql_host}/{mysql_db}?charset=utf8mb4'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True,
