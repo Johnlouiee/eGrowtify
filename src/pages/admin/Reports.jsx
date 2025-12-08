@@ -303,17 +303,103 @@ const Reports = () => {
     toast.success('Data exported successfully')
   }
 
+  const formatDateForExport = (value) => {
+    if (!value) return ''
+    // Check if it's a date string or Date object
+    if (value instanceof Date) {
+      const year = value.getFullYear()
+      const month = String(value.getMonth() + 1).padStart(2, '0')
+      const day = String(value.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+    if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
+      // Already in YYYY-MM-DD format
+      return value.split('T')[0]
+    }
+    try {
+      const date = new Date(value)
+      if (!isNaN(date.getTime())) {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+      }
+    } catch (e) {
+      // Not a date, return as is
+    }
+    return value
+  }
+
+  const escapeCSV = (value) => {
+    if (value === null || value === undefined) return ''
+    const str = String(value)
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+      return `"${str.replace(/"/g, '""')}"`
+    }
+    return str
+  }
+
   const convertToCSV = (data, type) => {
     if (data.length === 0) return ''
     
-    const headers = Object.keys(data[0]).join(',')
-    const rows = data.map(item => 
-      Object.values(item).map(value => 
-        typeof value === 'object' ? JSON.stringify(value) : value
-      ).join(',')
-    )
+    // Get headers based on active tab
+    let headers = []
+    if (type === 'activity') {
+      headers = ['User', 'Action', 'Description', 'IP Address', 'Status', 'Time']
+    } else if (type === 'history') {
+      headers = ['Table', 'Action', 'Record ID', 'Changes', 'Changed By', 'Time']
+    } else if (type === 'subscription') {
+      headers = ['User', 'Action', 'Plan', 'Amount', 'Status', 'Time']
+    } else {
+      headers = Object.keys(data[0])
+    }
     
-    return [headers, ...rows].join('\n')
+    const headerRow = headers.map(h => escapeCSV(h)).join(',')
+    
+    const rows = data.map(item => {
+      if (type === 'activity') {
+        return [
+          escapeCSV(item.user_name || ''),
+          escapeCSV(item.action || ''),
+          escapeCSV(item.description || ''),
+          escapeCSV(item.ip_address || ''),
+          escapeCSV(item.status || ''),
+          formatDateForExport(item.timestamp)
+        ].join(',')
+      } else if (type === 'history') {
+        return [
+          escapeCSV(item.table_name || ''),
+          escapeCSV(item.action || ''),
+          escapeCSV(item.record_id || ''),
+          escapeCSV(item.field_changes?.join(', ') || ''),
+          escapeCSV(item.changed_by || ''),
+          formatDateForExport(item.timestamp)
+        ].join(',')
+      } else if (type === 'subscription') {
+        return [
+          escapeCSV(item.user_name || ''),
+          escapeCSV(item.action || ''),
+          escapeCSV(item.plan_name || ''),
+          escapeCSV(item.amount || '0'),
+          escapeCSV(item.status || ''),
+          formatDateForExport(item.timestamp)
+        ].join(',')
+      } else {
+        // Generic fallback
+        return Object.values(item).map(value => {
+          if (typeof value === 'object' && value !== null) {
+            return escapeCSV(JSON.stringify(value))
+          }
+          // Check if it looks like a date
+          if (typeof value === 'string' && (value.includes('T') || value.match(/^\d{4}-\d{2}-\d{2}/))) {
+            return formatDateForExport(value)
+          }
+          return escapeCSV(value)
+        }).join(',')
+      }
+    })
+    
+    return [headerRow, ...rows].join('\n')
   }
 
   const downloadCSV = (content, filename) => {

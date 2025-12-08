@@ -2252,10 +2252,33 @@ def get_soil_temperature():
             weather_data = weather_response.json()
             air_temp = weather_data['main']['temp']
             
-            # Estimate soil temperature (typically 2-5°C cooler than air temp)
-            # This is a simplified calculation - in reality, soil temp varies by depth, time of day, etc.
-            soil_temp_shallow = round(air_temp - 2, 1)  # 2-4 inches deep
-            soil_temp_deep = round(air_temp - 4, 1)     # 6-8 inches deep
+            # Estimate soil temperature using improved formula (without IoT sensors)
+            # Based on agricultural research and meteorological data:
+            # - Soil temp varies by depth, time of day, season, and soil type
+            # - Shallow soil (2-4") follows air temp more closely
+            # - Deep soil (6-8") is more stable and cooler
+            # - Daytime: soil is 2-4°C cooler than air
+            # - Nighttime: soil retains heat, 1-2°C cooler than air
+            # - Summer: soil stays warmer
+            # - Winter: soil stays cooler
+            
+            from datetime import datetime
+            now = datetime.now()
+            hour = now.hour
+            month = now.month
+            is_daytime = 6 <= hour < 18
+            is_summer = 4 <= month <= 9  # April-September in Philippines
+            
+            if is_daytime:
+                # Daytime: soil is cooler than air
+                soil_temp_shallow = round(air_temp - (2 if is_summer else 3), 1)  # 2-4 inches deep
+                soil_temp_deep = round(air_temp - (4 if is_summer else 5), 1)      # 6-8 inches deep
+            else:
+                # Nighttime: soil retains heat better
+                soil_temp_shallow = round(air_temp - (1 if is_summer else 2), 1)   # 2-4 inches deep
+                soil_temp_deep = round(air_temp - (3 if is_summer else 4), 1)     # 6-8 inches deep
+            
+            # Note: This is an estimation. For accurate readings, use a soil thermometer.
             
             # Generate planting recommendations based on soil temperature
             recommendations = []

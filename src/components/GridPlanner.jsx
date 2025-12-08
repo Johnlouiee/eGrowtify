@@ -1,4 +1,4 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
+import React, { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { Plus, ShoppingCart, Leaf, MapPin, Trash2, Edit, Droplets, Scissors, Sun, Crown, ArrowRight, Camera, Upload, History, Clock, X } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
@@ -27,6 +27,9 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
   })
   const [draggedPlant, setDraggedPlant] = useState(null)
   const [dragOverSpace, setDragOverSpace] = useState(null)
+  const touchStartElementRef = useRef(null)
+  const draggedPlantRef = useRef(null)
+  const gridSpacesRef = useRef([])
   const [uploadingImage, setUploadingImage] = useState(null)
   const [updatingPlant, setUpdatingPlant] = useState(null)
   const [selectedPlantSpace, setSelectedPlantSpace] = useState(null)
@@ -64,6 +67,16 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
   // Check for payment success on component mount
   useEffect(() => {
     checkPaymentStatus()
+  }, [])
+
+  // Cleanup touch event listeners on unmount
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('touchmove', handleDocumentTouchMove)
+      document.removeEventListener('touchend', handleDocumentTouchEnd)
+      document.removeEventListener('touchcancel', handleDocumentTouchEnd)
+      cleanupTouchDrag()
+    }
   }, [])
 
   // Fetch plants after grid spaces are loaded
@@ -666,48 +679,143 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
     console.log('🌱 Dragged plant set:', plant)
   }
 
+  // Update refs when state changes
+  useEffect(() => {
+    draggedPlantRef.current = draggedPlant
+  }, [draggedPlant])
+
+  useEffect(() => {
+    gridSpacesRef.current = gridSpaces
+  }, [gridSpaces])
+
   // Touch support for mobile devices
   const handleTouchStart = (e, plant) => {
     e.preventDefault()
+    e.stopPropagation()
+    
+    // Store initial touch position to detect drag vs tap
+    const touch = e.touches[0]
+    touchStartElementRef.current = {
+      element: e.currentTarget,
+      startX: touch.clientX,
+      startY: touch.clientY,
+      plant: plant
+    }
+    
     setDraggedPlant(plant)
+    draggedPlantRef.current = plant
+    
     // Add visual feedback
-    e.target.style.opacity = '0.5'
-    e.target.style.transform = 'rotate(5deg)'
+    e.currentTarget.style.opacity = '0.5'
+    e.currentTarget.style.transform = 'rotate(5deg) scale(1.1)'
+    e.currentTarget.style.transition = 'none'
+    
+    // Prevent scrolling during drag
+    document.body.style.overflow = 'hidden'
+    
+    // Add document-level touch listeners for proper tracking
+    document.addEventListener('touchmove', handleDocumentTouchMove, { passive: false })
+    document.addEventListener('touchend', handleDocumentTouchEnd, { passive: false })
+    document.addEventListener('touchcancel', handleDocumentTouchEnd, { passive: false })
   }
 
-  const handleTouchMove = (e) => {
-    if (!draggedPlant) return
+  const cleanupTouchDrag = () => {
+    // Reset visual feedback
+    if (touchStartElementRef.current && touchStartElementRef.current.element) {
+      const element = touchStartElementRef.current.element
+      element.style.opacity = '1'
+      element.style.transform = 'rotate(0deg) scale(1)'
+      element.style.transition = ''
+    }
+    
+    // Restore scrolling
+    document.body.style.overflow = ''
+    
+    setDraggedPlant(null)
+    draggedPlantRef.current = null
+    setDragOverSpace(null)
+    touchStartElementRef.current = null
+  }
+
+  const handleDocumentTouchMove = (e) => {
+    if (!draggedPlantRef.current || !touchStartElementRef.current) return
     
     e.preventDefault()
+    e.stopPropagation()
+    
     const touch = e.touches[0]
+    if (!touch) return
+    
+    // Check if user has moved enough to consider it a drag (not just a tap)
+    const deltaX = Math.abs(touch.clientX - touchStartElementRef.current.startX)
+    const deltaY = Math.abs(touch.clientY - touchStartElementRef.current.startY)
+    const minDragDistance = 10 // pixels
+    
+    if (deltaX < minDragDistance && deltaY < minDragDistance) {
+      // Not enough movement yet, don't treat as drag
+      return
+    }
+    
+    // Find element under touch point
     const element = document.elementFromPoint(touch.clientX, touch.clientY)
     
     if (element && element.closest('[data-space-id]')) {
       const spaceId = element.closest('[data-space-id]').getAttribute('data-space-id')
       setDragOverSpace(spaceId)
+    } else {
+      setDragOverSpace(null)
     }
   }
 
-  const handleTouchEnd = (e) => {
-    if (!draggedPlant) return
-    
+  const handleDocumentTouchEnd = (e) => {
     e.preventDefault()
+    e.stopPropagation()
+    
+    // Remove document-level listeners first
+    document.removeEventListener('touchmove', handleDocumentTouchMove)
+    document.removeEventListener('touchend', handleDocumentTouchEnd)
+    document.removeEventListener('touchcancel', handleDocumentTouchEnd)
+    
+    if (!draggedPlantRef.current || !touchStartElementRef.current) {
+      cleanupTouchDrag()
+      return
+    }
+    
     const touch = e.changedTouches[0]
+    if (!touch) {
+      cleanupTouchDrag()
+      return
+    }
+    
+    // Check if this was a drag (moved enough) or just a tap
+    const deltaX = Math.abs(touch.clientX - touchStartElementRef.current.startX)
+    const deltaY = Math.abs(touch.clientY - touchStartElementRef.current.startY)
+    const minDragDistance = 10 // pixels
+    
+    // If it was just a tap (not enough movement), don't treat as drag
+    if (deltaX < minDragDistance && deltaY < minDragDistance) {
+      cleanupTouchDrag()
+      return
+    }
+    
+    // Find element under touch point
     const element = document.elementFromPoint(touch.clientX, touch.clientY)
     
     if (element && element.closest('[data-space-id]')) {
       const spaceId = element.closest('[data-space-id]').getAttribute('data-space-id')
-      const space = gridSpaces.find(s => s.id === spaceId)
+      const space = gridSpacesRef.current.find(s => s.id === spaceId)
       if (space) {
-        handleDrop(e, space)
+        // Create a synthetic event for handleDrop
+        const syntheticEvent = {
+          preventDefault: () => {},
+          stopPropagation: () => {},
+          type: 'drop'
+        }
+        handleDrop(syntheticEvent, space)
       }
     }
     
-    // Reset visual feedback
-    e.target.style.opacity = '1'
-    e.target.style.transform = 'rotate(0deg)'
-    setDraggedPlant(null)
-    setDragOverSpace(null)
+    cleanupTouchDrag()
   }
 
   const handleDragOver = (e, space) => {
@@ -1211,13 +1319,12 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                   onDragStart={!isDisabled ? (e) => handleDragStart(e, plant) : undefined}
                   onDragEnd={handleDragEnd}
                   onTouchStart={!isDisabled ? (e) => handleTouchStart(e, plant) : undefined}
-                  onTouchMove={!isDisabled ? handleTouchMove : undefined}
-                  onTouchEnd={!isDisabled ? handleTouchEnd : undefined}
                   onClick={isDisabled ? (e) => {
                     e.preventDefault()
                     e.stopPropagation()
                     toast.error(`${plant.name} is already placed in the grid`)
                   } : undefined}
+                  style={!isDisabled ? { touchAction: 'none', WebkitTouchCallout: 'none', userSelect: 'none' } : {}}
                   className={`flex items-center space-x-2 px-3 py-2 border rounded-lg transition-all duration-200 ${
                     isDisabled
                       ? 'bg-gray-100 border-gray-300 cursor-not-allowed opacity-50 pointer-events-none' 
@@ -1372,8 +1479,6 @@ const GridPlanner = forwardRef(({ selectedGarden, onGardenUpdate, onPlantUpdate 
                         onDragStart={(e) => handleDragStart(e, plant)}
                         onDragEnd={handleDragEnd}
                         onTouchStart={(e) => handleTouchStart(e, plant)}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
                         title={`Drag to move ${plant?.name || 'Plant'}`}
                       >
                         <Leaf className={`${effectivePremium ? 'h-3 w-3' : 'h-6 w-6'} text-green-600 mx-auto mb-1`} />

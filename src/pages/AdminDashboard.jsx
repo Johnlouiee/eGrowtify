@@ -458,14 +458,6 @@ const AdminDashboard = () => {
                             <p className="text-xs text-gray-700 line-clamp-2 mb-1">
                               {notification.message}
                             </p>
-                            {notification.created_at && (
-                              <p className="text-xs text-gray-500">
-                                {new Date(notification.created_at).toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric'
-                                })}
-                              </p>
-                            )}
                           </div>
                         </div>
                       </div>

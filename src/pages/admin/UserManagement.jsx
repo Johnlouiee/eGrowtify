@@ -93,18 +93,6 @@ const UserManagement = () => {
     }
   }
 
-  const handleToggleSubscription = async (userId, currentSubscription) => {
-    try {
-      await axios.patch(`/api/admin/users/${userId}/subscription`, {
-        subscribed: !currentSubscription
-      })
-      toast.success(`User subscription ${!currentSubscription ? 'activated' : 'deactivated'} successfully`)
-      fetchUsers() // Refresh the list
-    } catch (error) {
-      console.error('Error updating subscription:', error)
-      toast.error('Failed to update subscription')
-    }
-  }
 
   // Utility Functions
   const toggleUserExpansion = (userId) => {
@@ -593,20 +581,6 @@ const UserManagement = () => {
                             {user.is_active ? <Lock className="h-5 w-5" /> : <Unlock className="h-5 w-5" />}
                             <span className="text-sm font-medium">{user.is_active ? 'Lock' : 'Unlock'}</span>
                           </button>
-                          {user.role !== 'admin' && (
-                            <button
-                              onClick={() => handleToggleSubscription(user.id, user.subscribed)}
-                              className={`px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md ${
-                                user.subscribed 
-                                  ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' 
-                                  : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                              }`}
-                              title={user.subscribed ? 'Remove Premium' : 'Add Premium'}
-                            >
-                              <Crown className="h-5 w-5" />
-                              <span className="text-sm font-medium">{user.subscribed ? 'Premium' : 'Upgrade'}</span>
-                            </button>
-                          )}
                           <button
                             onClick={() => handleDeleteUser(user.id)}
                             className="px-4 py-2.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
