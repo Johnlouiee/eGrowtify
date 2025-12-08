@@ -2378,7 +2378,7 @@ const SeasonalPlanning = () => {
                                       {day.temperature.low}° / {day.temperature.high}°
                                     </div>
                                   )}
-                                  <div className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                                  <div className={`text-[10px] font-semibold px-1.5 py-0.5 rounded mb-1 ${
                                     day.planting_score >= 6 ? 'bg-green-200 text-green-800' :
                                     day.planting_score >= 4 ? 'bg-blue-200 text-blue-800' :
                                     day.planting_score >= 2 ? 'bg-yellow-200 text-yellow-800' :
@@ -2386,6 +2386,11 @@ const SeasonalPlanning = () => {
                                   }`}>
                                     {day.planting_score}/8
                                   </div>
+                                  {day.recommendation && (
+                                    <div className="text-[9px] text-gray-600 mt-1 line-clamp-2">
+                                      {day.recommendation}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             )

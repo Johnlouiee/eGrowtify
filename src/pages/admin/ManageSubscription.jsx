@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { 
-  CreditCard, Users, TrendingUp, DollarSign, Calendar,
+  CreditCard, Users, TrendingUp, TrendingDown, DollarSign, Calendar,
   ArrowLeft, Eye, Edit, CheckCircle, XCircle, AlertCircle,
   Crown, Star, Zap, Settings, Filter, Search, Download,
   RefreshCw, Plus, Trash2, MoreVertical, BarChart3,
-  Activity, Target, Globe, Lock, Unlock, Clock,
+  Activity, Target, Globe, Clock,
   ChevronDown, ChevronUp, Grid, List, Mail, Phone, Save
 } from 'lucide-react'
 import axios from 'axios'
@@ -391,23 +391,50 @@ const ManageSubscription = () => {
     }
   }
 
+  const formatDateForExport = (dateString) => {
+    if (!dateString) return ''
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return ''
+      // Format as YYYY-MM-DD for Excel compatibility
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    } catch (e) {
+      return ''
+    }
+  }
+
   const exportSubscribers = () => {
     const csvContent = [
       ['Name', 'Email', 'Status', 'Plan', 'Start Date'].join(','),
-      ...filteredSubscribers.map(subscriber => [
-        subscriber.full_name,
-        subscriber.email,
-        subscriber.subscribed ? 'Subscribed' : 'Not Subscribed',
-        subscriber.subscribed ? 'Premium' : 'Basic',
-        new Date(subscriber.created_at).toLocaleDateString()
-      ].join(','))
+      ...filteredSubscribers.map(subscriber => {
+        // Escape commas and quotes in CSV values
+        const escapeCSV = (value) => {
+          if (value === null || value === undefined) return ''
+          const str = String(value)
+          if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+            return `"${str.replace(/"/g, '""')}"`
+          }
+          return str
+        }
+        
+        return [
+          escapeCSV(subscriber.full_name || ''),
+          escapeCSV(subscriber.email || ''),
+          escapeCSV(subscriber.subscribed ? 'Subscribed' : 'Not Subscribed'),
+          escapeCSV(subscriber.subscribed ? 'Premium' : 'Basic'),
+          formatDateForExport(subscriber.created_at)
+        ].join(',')
+      })
     ].join('\n')
 
-    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'subscribers.csv'
+    a.download = `subscribers_${new Date().toISOString().split('T')[0]}.csv`
     a.click()
     window.URL.revokeObjectURL(url)
     toast.success('Subscribers exported successfully')
@@ -793,10 +820,10 @@ const ManageSubscription = () => {
                                 ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' 
                                 : 'bg-green-100 text-green-700 hover:bg-green-200'
                             }`}
-                            title={subscriber.subscribed ? 'Cancel Subscription' : 'Activate Subscription'}
+                            title={subscriber.subscribed ? 'Downgrade to Basic' : 'Upgrade to Premium'}
                           >
-                            {subscriber.subscribed ? <Lock className="h-5 w-5" /> : <Unlock className="h-5 w-5" />}
-                            <span className="text-sm font-medium">{subscriber.subscribed ? 'Lock' : 'Unlock'}</span>
+                            {subscriber.subscribed ? <TrendingDown className="h-5 w-5" /> : <TrendingUp className="h-5 w-5" />}
+                            <span className="text-sm font-medium">{subscriber.subscribed ? 'Downgrade' : 'Upgrade'}</span>
                           </button>
                           <button
                             className="px-4 py-2.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
@@ -877,9 +904,9 @@ const ManageSubscription = () => {
                               ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' 
                               : 'bg-green-100 text-green-600 hover:bg-green-200'
                           }`}
-                          title={subscriber.subscribed ? 'Cancel Subscription' : 'Activate Subscription'}
+                          title={subscriber.subscribed ? 'Downgrade to Basic' : 'Upgrade to Premium'}
                         >
-                          {subscriber.subscribed ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                          {subscriber.subscribed ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
                         </button>
                         <button
                           className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
@@ -947,9 +974,9 @@ const ManageSubscription = () => {
                               ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' 
                               : 'bg-green-100 text-green-600 hover:bg-green-200'
                           }`}
-                          title={subscriber.subscribed ? 'Cancel Subscription' : 'Activate Subscription'}
+                          title={subscriber.subscribed ? 'Downgrade to Basic' : 'Upgrade to Premium'}
                         >
-                          {subscriber.subscribed ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                          {subscriber.subscribed ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
                         </button>
                         <button
                           className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"

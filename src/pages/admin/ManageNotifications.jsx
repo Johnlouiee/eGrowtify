@@ -6,7 +6,7 @@ import {
   Send, Clock, Users, Zap, Settings, RefreshCw,
   TrendingUp, BarChart3, Target, Star, Shield,
   MessageSquare, Mail, Smartphone, Globe, Lock,
-  Unlock, Play, Pause, Volume2, VolumeX
+  Unlock, Play, Volume2, VolumeX
 } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
@@ -30,8 +30,7 @@ const ManageNotifications = () => {
     message: '',
     type: 'Update',
     priority: 'Medium',
-    is_active: true,
-    expires_at: ''
+    is_active: true
   })
   const [viewMode, setViewMode] = useState('cards') // cards, table, list
   const [stats, setStats] = useState({
@@ -57,7 +56,7 @@ const ManageNotifications = () => {
         total: notificationData.length,
         active: notificationData.filter(n => n.is_active).length,
         high: notificationData.filter(n => n.priority === 'High').length,
-        sent: notificationData.filter(n => n.status === 'sent').length
+        sent: notificationData.filter(n => n.is_active).length // Active notifications are "sent" to users
       }
       setStats(calculatedStats)
     } catch (error) {
@@ -103,8 +102,7 @@ const ManageNotifications = () => {
       message: '',
       type: 'Update',
       priority: 'Medium',
-      is_active: true,
-      expires_at: ''
+      is_active: true
     })
     setShowCreateModal(true)
   }
@@ -112,27 +110,12 @@ const ManageNotifications = () => {
   const openEditModal = (notification) => {
     setEditingNotification(notification)
     
-    // Convert UTC date to local datetime-local format
-    let expiresAtLocal = ''
-    if (notification.expires_at) {
-      const utcDate = new Date(notification.expires_at)
-      // Get local date components
-      const year = utcDate.getFullYear()
-      const month = String(utcDate.getMonth() + 1).padStart(2, '0')
-      const day = String(utcDate.getDate()).padStart(2, '0')
-      const hours = String(utcDate.getHours()).padStart(2, '0')
-      const minutes = String(utcDate.getMinutes()).padStart(2, '0')
-      // Format as datetime-local: YYYY-MM-DDTHH:mm
-      expiresAtLocal = `${year}-${month}-${day}T${hours}:${minutes}`
-    }
-    
     setNotificationFormData({
       title: notification.title || '',
       message: notification.message || '',
       type: notification.type || 'Update',
       priority: notification.priority || 'Medium',
-      is_active: notification.is_active !== undefined ? notification.is_active : true,
-      expires_at: expiresAtLocal
+      is_active: notification.is_active !== undefined ? notification.is_active : true
     })
     setShowCreateModal(true)
   }
@@ -140,24 +123,12 @@ const ManageNotifications = () => {
   const handleSaveNotification = async (e) => {
     e.preventDefault()
     try {
-      // Convert datetime-local to ISO string, preserving the date correctly
-      let expiresAt = null
-      if (notificationFormData.expires_at) {
-        // datetime-local format: "YYYY-MM-DDTHH:mm" (local time, no timezone)
-        // Parse the date components to preserve the exact date the user selected
-        const [datePart, timePart] = notificationFormData.expires_at.split('T')
-        const [year, month, day] = datePart.split('-').map(Number)
-        const [hours, minutes] = timePart.split(':').map(Number)
-        
-        // Store as the selected date at noon UTC to prevent date shifts
-        // This ensures the date part (year-month-day) is always preserved
-        // regardless of the user's timezone when displaying
-        expiresAt = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T12:00:00.000Z`
-      }
-      
       const payload = {
-        ...notificationFormData,
-        expires_at: expiresAt
+        title: notificationFormData.title,
+        message: notificationFormData.message,
+        type: notificationFormData.type,
+        priority: notificationFormData.priority,
+        is_active: notificationFormData.is_active
       }
 
       if (editingNotification) {
@@ -402,26 +373,15 @@ const ManageNotifications = () => {
                       </button>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleToggleNotificationStatus(notification.id, notification.is_active)}
-                        className={`flex items-center px-3 py-2 rounded-xl transition-all duration-200 ${
-                          notification.is_active 
-                            ? 'text-orange-600 hover:text-orange-900 hover:bg-orange-50' 
-                            : 'text-green-600 hover:text-green-900 hover:bg-green-50'
-                        }`}
-                      >
-                        {notification.is_active ? (
-                          <>
-                            <Pause className="h-4 w-4 mr-1" />
-                            <span className="text-sm font-medium">Pause</span>
-                          </>
-                        ) : (
-                          <>
-                            <Play className="h-4 w-4 mr-1" />
-                            <span className="text-sm font-medium">Activate</span>
-                          </>
-                        )}
-                      </button>
+                      {!notification.is_active && (
+                        <button
+                          onClick={() => handleToggleNotificationStatus(notification.id, notification.is_active)}
+                          className="flex items-center px-3 py-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-xl transition-all duration-200"
+                        >
+                          <Play className="h-4 w-4 mr-1" />
+                          <span className="text-sm font-medium">Activate</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDeleteNotification(notification.id)}
                         className="flex items-center px-3 py-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-xl transition-all duration-200"
@@ -516,16 +476,14 @@ const ManageNotifications = () => {
                             <Edit className="h-5 w-5" />
                             <span className="text-sm font-medium">Edit</span>
                           </button>
-                        <button
-                          onClick={() => handleToggleNotificationStatus(notification.id, notification.is_active)}
-                            className={`flex items-center px-2 py-1 rounded-lg transition-all duration-200 ${
-                            notification.is_active 
-                                ? 'text-orange-600 hover:text-orange-900 hover:bg-orange-50' 
-                                : 'text-green-600 hover:text-green-900 hover:bg-green-50'
-                          }`}
-                        >
-                          {notification.is_active ? 'Deactivate' : 'Activate'}
-                        </button>
+                        {!notification.is_active && (
+                          <button
+                            onClick={() => handleToggleNotificationStatus(notification.id, notification.is_active)}
+                            className="flex items-center px-2 py-1 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg transition-all duration-200"
+                          >
+                            Activate
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDeleteNotification(notification.id)}
                             className="text-red-600 hover:text-red-900 flex items-center px-2 py-1 rounded-lg hover:bg-red-50 transition-all duration-200"
@@ -593,16 +551,14 @@ const ManageNotifications = () => {
                         <Edit className="h-4 w-4 mr-1" />
                         Edit
                       </button>
-                      <button
-                        onClick={() => handleToggleNotificationStatus(notification.id, notification.is_active)}
-                        className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
-                          notification.is_active 
-                            ? 'text-orange-600 hover:text-orange-900 hover:bg-orange-50' 
-                            : 'text-green-600 hover:text-green-900 hover:bg-green-50'
-                        }`}
-                      >
-                        {notification.is_active ? 'Deactivate' : 'Activate'}
-                      </button>
+                      {!notification.is_active && (
+                        <button
+                          onClick={() => handleToggleNotificationStatus(notification.id, notification.is_active)}
+                          className="flex items-center px-3 py-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg transition-all duration-200"
+                        >
+                          Activate
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDeleteNotification(notification.id)}
                         className="flex items-center px-3 py-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition-all duration-200"
@@ -809,17 +765,6 @@ const ManageNotifications = () => {
                         <option value="High">High</option>
                       </select>
                     </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">Expiration Date (Optional)</label>
-                    <input
-                      type="datetime-local"
-                      value={notificationFormData.expires_at}
-                      onChange={(e) => setNotificationFormData(prev => ({ ...prev, expires_at: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Leave empty for no expiration</p>
                   </div>
 
                   <div className="flex items-center space-x-2">

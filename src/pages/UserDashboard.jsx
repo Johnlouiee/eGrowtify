@@ -687,34 +687,6 @@ const UserDashboard = () => {
                       <p className="text-gray-700 leading-relaxed">
                         {notification.message}
                       </p>
-                      {notification.expires_at ? (
-                        <p className="text-xs text-gray-500 mt-2">
-                          Expires: {(() => {
-                            // Extract the date part directly from the ISO string to avoid timezone issues
-                            // Format is YYYY-MM-DDTHH:mm:ss.sssZ
-                            const dateStr = notification.expires_at.split('T')[0]
-                            const [year, month, day] = dateStr.split('-').map(Number)
-                            
-                            // Create a date object with the extracted date (at local midnight)
-                            const displayDate = new Date(year, month - 1, day)
-                            
-                            // Format the date
-                            return displayDate.toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })
-                          })()}
-                        </p>
-                      ) : notification.created_at && (
-                        <p className="text-xs text-gray-500 mt-2">
-                          {new Date(notification.created_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </p>
-                      )}
                     </div>
                   </div>
                 </div>
