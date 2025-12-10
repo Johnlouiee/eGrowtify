@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { Menu, X, User, LogOut, Calendar, Star, Info, Settings, Heart, ChevronDown, Bell, Users, BookOpen, BarChart3, MessageSquare, Share2 } from 'lucide-react'
 
 const Navbar = () => {
-  const { user, logout } = useAuth()
+  const { user, logout, isAdmin } = useAuth()
   const navigate = useNavigate()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -65,7 +65,7 @@ const Navbar = () => {
             
             {user ? (
               <>
-                {user.role === 'admin' ? (
+                {isAdmin ? (
                   <>
                     <Link to="/admin" className="text-white hover:text-green-100 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1 relative group">
                       <Settings className="h-4 w-4" />
@@ -176,7 +176,7 @@ const Navbar = () => {
                    
                    {isProfileMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-[9999] border">
-                      {user.role === 'admin' ? (
+                      {isAdmin ? (
                         // Admin Profile Menu
                         <>
                           <Link
@@ -316,130 +316,214 @@ const Navbar = () => {
             
             {user ? (
               <>
-                {user.role === 'admin' ? (
-                  <Link
-                    to="/admin/dashboard"
-                    className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Admin Dashboard
-                    <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
-                  </Link>
+                {isAdmin ? (
+                  <>
+                    <Link
+                      to="/admin"
+                      className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Admin Dashboard
+                      <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
+                    </Link>
+                    <Link
+                      to="/admin/users"
+                      className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      User Management
+                      <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
+                    </Link>
+                    <Link
+                      to="/admin/notifications"
+                      className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Notifications
+                      <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
+                    </Link>
+                    <Link
+                      to="/admin/subscription"
+                      className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Subscriptions
+                      <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
+                    </Link>
+                    <Link
+                      to="/admin/learning-paths"
+                      className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Learning Paths
+                      <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
+                    </Link>
+                    <Link
+                      to="/admin/feedback"
+                      className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Feedback Management
+                      <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
+                    </Link>
+                    <Link
+                      to="/admin/reports"
+                      className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Reports
+                      <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
+                    </Link>
+                    {/* Mobile Menu Items for Admin */}
+                    <div className="border-t pt-2 mt-2">
+                      <div className="text-xs font-semibold text-green-100 uppercase tracking-wider px-3 py-2">
+                        Menu
+                      </div>
+                      <Link
+                        to="/admin/profile"
+                        className="flex items-center space-x-2 text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <User className="h-4 w-4" />
+                        <span>Admin Profile</span>
+                      </Link>
+                      <Link
+                        to="/about"
+                        className="flex items-center space-x-2 text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Info className="h-4 w-4" />
+                        <span>About</span>
+                      </Link>
+                      <button
+                        onClick={() => {
+                          handleLogout()
+                          setIsMenuOpen(false)
+                        }}
+                        className="flex items-center space-x-2 text-red-600 hover:text-red-700 block w-full text-left px-3 py-2 rounded-md text-base font-medium"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  </>
                 ) : (
-                  <Link
-                    to="/dashboard"
-                    className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Dashboard
-                    <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
-                  </Link>
+                  <>
+                    <Link
+                      to="/dashboard"
+                      className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Dashboard
+                      <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
+                    </Link>
+                    <Link
+                      to="/garden"
+                      className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      My Plants
+                      <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
+                    </Link>
+                    <Link
+                      to="/ai-recognition"
+                      className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      AI Recognition
+                      <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
+                    </Link>
+                    <Link
+                      to="/smart-alerts"
+                      className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Smart Alerts
+                      <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
+                    </Link>
+                    <Link
+                      to="/seasonal-planning"
+                      className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Seasonal Planning
+                      <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
+                    </Link>
+                    <Link
+                      to="/community/concepts"
+                      className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Community Hub
+                      <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
+                    </Link>
+                    
+                    {/* Mobile Menu Items */}
+                    <div className="border-t pt-2 mt-2">
+                      <div className="text-xs font-semibold text-green-100 uppercase tracking-wider px-3 py-2">
+                        Menu
+                      </div>
+                      <Link
+                        to="/seasonal-planning"
+                        className="flex items-center space-x-2 text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Calendar className="h-4 w-4" />
+                        <span>Planning</span>
+                      </Link>
+                      <Link
+                        to="/subscription"
+                        className="flex items-center space-x-2 text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Star className="h-4 w-4" />
+                        <span>Subscription</span>
+                      </Link>
+                      <Link
+                        to="/about"
+                        className="flex items-center space-x-2 text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Info className="h-4 w-4" />
+                        <span>About</span>
+                      </Link>
+                      <Link
+                        to="/profile"
+                        className="flex items-center space-x-2 text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Settings className="h-4 w-4" />
+                        <span>Manage Account</span>
+                      </Link>
+                      <Link
+                        to="/feedback"
+                        className="flex items-center space-x-2 text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Heart className="h-4 w-4" />
+                        <span>Feedback</span>
+                      </Link>
+                      <Link
+                        to="/community/concepts"
+                        className="flex items-center space-x-2 text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Share2 className="h-4 w-4" />
+                        <span>Community Hub</span>
+                      </Link>
+                      <button
+                        onClick={() => {
+                          handleLogout()
+                          setIsMenuOpen(false)
+                        }}
+                        className="flex items-center space-x-2 text-red-600 hover:text-red-700 block w-full text-left px-3 py-2 rounded-md text-base font-medium"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  </>
                 )}
-                <Link
-                  to="/garden"
-                  className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  My Plants
-                  <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
-                </Link>
-                <Link
-                  to="/ai-recognition"
-                  className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  AI Recognition
-                  <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
-                </Link>
-                <Link
-                  to="/smart-alerts"
-                  className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Smart Alerts
-                  <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
-                </Link>
-                <Link
-                  to="/seasonal-planning"
-                  className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Seasonal Planning
-                  <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
-                </Link>
-                  <Link
-                    to="/community/concepts"
-                    className="text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium relative group"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Community Hub
-                    <span className="absolute bottom-2 left-3 w-0 h-0.5 bg-white group-hover:w-[calc(100%-1.5rem)] transition-all duration-300 ease-in-out"></span>
-                  </Link>
-                
-                {/* Mobile Menu Items */}
-                <div className="border-t pt-2 mt-2">
-                  <div className="text-xs font-semibold text-green-100 uppercase tracking-wider px-3 py-2">
-                    Menu
-                  </div>
-                  <Link
-                    to="/seasonal-planning"
-                    className="flex items-center space-x-2 text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Calendar className="h-4 w-4" />
-                    <span>Planning</span>
-                  </Link>
-                  <Link
-                    to="/subscription"
-                    className="flex items-center space-x-2 text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Star className="h-4 w-4" />
-                    <span>Subscription</span>
-                  </Link>
-                  <Link
-                    to="/about"
-                    className="flex items-center space-x-2 text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Info className="h-4 w-4" />
-                    <span>About</span>
-                  </Link>
-                  <Link
-                    to="/profile"
-                    className="flex items-center space-x-2 text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Settings className="h-4 w-4" />
-                    <span>Manage Account</span>
-                  </Link>
-                  <Link
-                    to="/feedback"
-                    className="flex items-center space-x-2 text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Heart className="h-4 w-4" />
-                    <span>Feedback</span>
-                  </Link>
-                  <Link
-                    to="/community/concepts"
-                    className="flex items-center space-x-2 text-white hover:text-green-100 block px-3 py-2 rounded-md text-base font-medium"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Share2 className="h-4 w-4" />
-                    <span>Community Hub</span>
-                  </Link>
-                  <button
-                    onClick={() => {
-                      handleLogout()
-                      setIsMenuOpen(false)
-                    }}
-                    className="flex items-center space-x-2 text-red-600 hover:text-red-700 block w-full text-left px-3 py-2 rounded-md text-base font-medium"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Logout</span>
-                  </button>
-                </div>
               </>
             ) : (
               <>

@@ -384,6 +384,10 @@ const Subscription = () => {
                   <Check className="h-5 w-5 text-green-500" />
                   <span className="text-sm text-gray-700">Detailed soil composition analysis</span>
                 </li>
+                <li className="flex items-center space-x-3">
+                  <Check className="h-5 w-5 text-green-500" />
+                  <span className="text-sm text-gray-700">Unlocked all modules in learning path</span>
+                </li>
               </ul>
               <button onClick={() => setShowCheckout(true)} className="btn-primary w-full flex items-center justify-center space-x-2">
                 <span>Upgrade to Premium</span>

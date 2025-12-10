@@ -147,7 +147,8 @@ const ManageSubscription = () => {
                 '20 free AI analysis per month (10 plants + 10 soil)',
                 '6x6 grid planner',
                 'Advance plant identification',
-                'Detailed soil composition analysis'
+                'Detailed soil composition analysis',
+                'Unlocked all modules in learning path'
               ]
             } else {
               // Fallback for other plan types
@@ -200,7 +201,8 @@ const ManageSubscription = () => {
                 '20 free AI analysis per month (10 plants + 10 soil)',
                 '6x6 grid planner',
                 'Advance plant identification',
-                'Detailed soil composition analysis'
+                'Detailed soil composition analysis',
+                'Unlocked all modules in learning path'
               ],
               color: 'bg-green-500',
               borderColor: 'border-green-200',
@@ -236,7 +238,8 @@ const ManageSubscription = () => {
               '20 free AI analysis per month (10 plants + 10 soil)',
               '6x6 grid planner',
               'Advance plant identification',
-              'Detailed soil composition analysis'
+              'Detailed soil composition analysis',
+              'Unlocked all modules in learning path'
             ],
             color: 'bg-purple-500',
             borderColor: 'border-purple-200',

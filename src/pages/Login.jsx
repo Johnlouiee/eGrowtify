@@ -47,8 +47,12 @@ const Login = () => {
       if (result.success) {
         console.log('Login successful, checking user role for redirect') // Debug log
         toast.success('Welcome back!')
-        // The useEffect will handle the redirect based on user role
-        // No need to manually navigate here as the useEffect will trigger
+        // Redirect immediately based on admin status from login response
+        if (result.is_admin) {
+          navigate('/admin')
+        } else {
+          navigate('/dashboard')
+        }
       } else {
         console.log('Login failed:', result.message)
         

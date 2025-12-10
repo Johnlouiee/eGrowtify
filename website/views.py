@@ -1104,10 +1104,14 @@ def ai_plant_recognition():
         # Mark whether rules contributed
         result['rules_enriched'] = bool(rule_enrichment) or bool(inferred)
 
-        # Enhanced OpenAI integration for more accurate analysis
+        # Enhanced OpenAI integration for more accurate analysis (PREMIUM ONLY)
+        # Basic users get rule-based enrichment only, Premium users get AI-enhanced analysis
+        is_premium = getattr(current_user, 'subscribed', False)
+        
         try:
             openai_key = os.getenv('OPENAI_API_KEY')
-            if openai_key:
+            # Only run AI enrichment for Premium users
+            if openai_key and is_premium:
                 # Check cache first (key by scientific name or display name)
                 cache_key = (result.get('scientific_name') or result.get('plant_name') or '').lower().strip()
                 cache_hit = False
@@ -1339,8 +1343,33 @@ def ai_plant_recognition():
             except Exception:
                 ...
 
+        # Filter result based on plan type
+        # Basic users: Only basic information (plant name, basic care tips)
+        # Premium users: All advanced features (health status, pest identification, AI enrichment, etc.)
+        if not is_premium:
+            # Basic plan - return simplified result
+            basic_result = {
+                'plant_name': result.get('plant_name'),
+                'plant_type': result.get('plant_type'),
+                'scientific_name': result.get('scientific_name'),
+                'common_names': result.get('common_names'),
+                'confidence': result.get('confidence'),
+                'care_recommendations': {
+                    'watering': result.get('care_recommendations', {}).get('watering', 'Water as needed'),
+                    'sunlight': result.get('care_recommendations', {}).get('sunlight', 'Provide suitable sun exposure'),
+                    'soil': result.get('care_recommendations', {}).get('soil', 'Well-draining soil')
+                },
+                'info_url': result.get('info_url'),
+                'plan_type': 'basic'
+            }
+            if result.get('alternatives'):
+                basic_result['alternatives'] = result['alternatives']
+            result = basic_result
+        else:
+            # Premium plan - include all advanced features
+            result['plan_type'] = 'premium'
+        
         # Track usage after successful analysis (both premium and basic users)
-        is_premium = getattr(current_user, 'subscribed', False)
         free_allocation = 10 if is_premium else 3
         usage = _get_or_create_ai_usage(current_user.id)
         is_free = usage.can_use_free(free_allocation)
@@ -1435,8 +1464,8 @@ def soil_analysis():
             "Analyze the provided soil image and return detailed, accurate soil assessment with specific plant recommendations. "
             "Consider visual indicators of soil health, texture, moisture, color, structure, and potential issues. "
             "Return your analysis as strict JSON with these exact keys: "
-            "moisture_level (detailed assessment with visual indicators), texture (specific soil type with characteristics), "
-            "ph (estimated pH range with visual indicators), organic_matter (assessment of organic content), "
+            "moisture_level (detailed assessment with visual indicators), soil_type (clear soil classification: Clay Soil, Sandy Soil, Loam Soil, Silt Soil, or Mixed Soil), "
+            "texture (detailed texture description with characteristics), organic_matter (assessment of organic content), "
             "drainage (drainage quality assessment), recommendations (array of specific improvement suggestions), "
             "suitable_plants (detailed object with categories: vegetables, fruits, herbs, flowers, trees - each containing specific plant names with brief explanations), "
             "nutrient_indicators (visual signs of nutrient status), compaction_assessment (soil structure analysis), "
@@ -1549,26 +1578,44 @@ def soil_analysis():
         ai_result = _json.loads(content)
         
         # Structure the response to match frontend expectations with enhanced data
-        result = {
-            'moisture_level': ai_result.get('moisture_level', 'Unable to determine from image'),
-            'texture': ai_result.get('texture', 'Unable to determine from image'),
-            'ph': ai_result.get('ph', 'Unable to determine from image'),
-            'organic_matter': ai_result.get('organic_matter', 'Unable to assess from image'),
-            'drainage': ai_result.get('drainage', 'Unable to assess from image'),
-            'recommendations': ai_result.get('recommendations', []),
-            'suitable_plants': ai_result.get('suitable_plants', {}),
-            'nutrient_indicators': ai_result.get('nutrient_indicators', 'Unable to assess from image'),
-            'compaction_assessment': ai_result.get('compaction_assessment', 'Unable to assess from image'),
-            'soil_health_score': ai_result.get('soil_health_score', 'Unable to assess from image'),
-            'seasonal_considerations': ai_result.get('seasonal_considerations', 'Unable to assess from image'),
-            'soil_amendments': ai_result.get('soil_amendments', 'Unable to assess from image'),
-            'water_retention': ai_result.get('water_retention', 'Unable to assess from image'),
-            'root_development': ai_result.get('root_development', 'Unable to assess from image'),
-            'ai_analyzed': True
-        }
+        # Extract soil type from texture or use texture as soil type
+        texture_value = ai_result.get('texture', 'Unable to determine from image')
+        soil_type_value = ai_result.get('soil_type', texture_value)
+        
+        # Check if user is premium to determine what data to return
+        is_premium = getattr(current_user, 'subscribed', False)
+        
+        if is_premium:
+            # Premium plan - return all detailed information
+            result = {
+                'moisture_level': ai_result.get('moisture_level', 'Unable to determine from image'),
+                'soil_type': soil_type_value,
+                'texture': texture_value,
+                'organic_matter': ai_result.get('organic_matter', 'Unable to assess from image'),
+                'drainage': ai_result.get('drainage', 'Unable to assess from image'),
+                'recommendations': ai_result.get('recommendations', []),
+                'suitable_plants': ai_result.get('suitable_plants', {}),
+                'nutrient_indicators': ai_result.get('nutrient_indicators', 'Unable to assess from image'),
+                'compaction_assessment': ai_result.get('compaction_assessment', 'Unable to assess from image'),
+                'soil_health_score': ai_result.get('soil_health_score', 'Unable to assess from image'),
+                'seasonal_considerations': ai_result.get('seasonal_considerations', 'Unable to assess from image'),
+                'soil_amendments': ai_result.get('soil_amendments', 'Unable to assess from image'),
+                'water_retention': ai_result.get('water_retention', 'Unable to assess from image'),
+                'root_development': ai_result.get('root_development', 'Unable to assess from image'),
+                'ai_analyzed': True,
+                'plan_type': 'premium'
+            }
+        else:
+            # Basic plan - return only basic information (moisture, soil type, texture)
+            result = {
+                'moisture_level': ai_result.get('moisture_level', 'Unable to determine from image'),
+                'soil_type': soil_type_value,
+                'texture': texture_value,
+                'ai_analyzed': True,
+                'plan_type': 'basic'
+            }
 
         # Track soil usage after successful analysis (both premium and basic users) - separate from plant analysis
-        is_premium = getattr(current_user, 'subscribed', False)
         free_allocation = 10 if is_premium else 3
         usage = _get_or_create_soil_usage(current_user.id)
         is_free = usage.can_use_free(free_allocation)
@@ -1634,23 +1681,50 @@ def soil_analysis():
             else:
                 moisture = "Moderate moisture level"
             
-            return jsonify({
-                'moisture_level': moisture,
-                'texture': soil_type,
-                'ph': ph_estimate,
-                'organic_matter': 'Unable to assess from image - consider soil test',
-                'drainage': 'Unable to assess from image - observe after watering',
-                'recommendations': [
-                    'Consider professional soil testing for accurate pH and nutrient levels',
-                    'Add organic matter like compost to improve soil structure',
-                    'Test drainage by observing how quickly water is absorbed'
-                ],
-                'suitable_plants': ['Most common garden plants will grow in this soil type'],
-                'nutrient_indicators': 'Unable to assess from image - consider soil test',
-                'compaction_assessment': 'Unable to assess from image - test with finger or tool',
-                'ai_analyzed': False,
-                'fallback_analysis': True
-            })
+            # Extract soil type classification from soil_type string
+            soil_type_class = "Mixed Soil"
+            if "clay" in soil_type.lower() or "clay-rich" in soil_type.lower():
+                soil_type_class = "Clay Soil"
+            elif "loamy" in soil_type.lower() or "loam" in soil_type.lower():
+                soil_type_class = "Loam Soil"
+            elif "sandy" in soil_type.lower() or "sand" in soil_type.lower():
+                soil_type_class = "Sandy Soil"
+            elif "silt" in soil_type.lower():
+                soil_type_class = "Silt Soil"
+            
+            # Check if user is premium to determine what data to return
+            is_premium = getattr(current_user, 'subscribed', False)
+            
+            if is_premium:
+                # Premium plan - return all detailed information
+                return jsonify({
+                    'moisture_level': moisture,
+                    'soil_type': soil_type_class,
+                    'texture': soil_type,
+                    'organic_matter': 'Unable to assess from image - consider soil test',
+                    'drainage': 'Unable to assess from image - observe after watering',
+                    'recommendations': [
+                        'Consider professional soil testing for accurate nutrient levels',
+                        'Add organic matter like compost to improve soil structure',
+                        'Test drainage by observing how quickly water is absorbed'
+                    ],
+                    'suitable_plants': ['Most common garden plants will grow in this soil type'],
+                    'nutrient_indicators': 'Unable to assess from image - consider soil test',
+                    'compaction_assessment': 'Unable to assess from image - test with finger or tool',
+                    'ai_analyzed': False,
+                    'fallback_analysis': True,
+                    'plan_type': 'premium'
+                })
+            else:
+                # Basic plan - return only basic information
+                return jsonify({
+                    'moisture_level': moisture,
+                    'soil_type': soil_type_class,
+                    'texture': soil_type,
+                    'ai_analyzed': False,
+                    'fallback_analysis': True,
+                    'plan_type': 'basic'
+                })
         except Exception:
             return jsonify({"error": f"Soil analysis failed: {str(e)}"}), 500
 
@@ -2660,8 +2734,34 @@ def gardening_tips():
 @views.route('/notifications')
 @login_required
 def notifications():
-    # Return empty array for now - can be extended to return actual user notifications
-    return jsonify([])
+    """Get active notifications for the current user"""
+    try:
+        # Get all active notifications that haven't expired
+        now = datetime.now(timezone.utc)
+        active_notifications = Notification.query.filter(
+            Notification.is_active == True,
+            db.or_(
+                Notification.expires_at.is_(None),
+                Notification.expires_at > now
+            )
+        ).order_by(
+            # Sort by priority (High > Medium > Low), then by created_at (newest first)
+            db.case(
+                (Notification.priority == 'High', 3),
+                (Notification.priority == 'Medium', 2),
+                (Notification.priority == 'Low', 1),
+                else_=0
+            ).desc(),
+            Notification.created_at.desc()
+        ).all()
+        
+        # Convert to dictionary format
+        notifications_data = [notification.to_dict() for notification in active_notifications]
+        
+        return jsonify(notifications_data)
+    except Exception as e:
+        print(f"Error fetching notifications: {str(e)}")
+        return jsonify([])  # Return empty array on error
 
 @views.route('/garden', methods=['GET'])
 @login_required
@@ -4715,6 +4815,7 @@ def smart_alerts():
                 'plant_name': plant.name if plant else 'Unknown Plant',
                 'garden_name': garden.name if garden else 'Unknown Garden',
                 'action_date': action.action_date.isoformat(),
+                'created_at': action.created_at.isoformat() if action.created_at else action.action_date.isoformat(),
                 'status': 'completed',
                 'notes': action.notes
             })
@@ -5998,6 +6099,29 @@ def admin_api_learning_paths():
 def get_learning_path_content(difficulty):
     """Serve learning path content - prioritize saved modules from database, fallback to static modules"""
     try:
+        # Check if the learning path is active by checking if any modules are active
+        active_modules_count = LearningPathContent.query.filter_by(
+            path_difficulty=difficulty,
+            content_type='module',
+            is_active=True
+        ).count()
+        
+        # If no active modules exist, the path is deactivated
+        if active_modules_count == 0:
+            # Check if there are any modules at all (to distinguish between deactivated and empty)
+            total_modules_count = LearningPathContent.query.filter_by(
+                path_difficulty=difficulty,
+                content_type='module'
+            ).count()
+            
+            if total_modules_count > 0:
+                # Path has been deactivated by admin
+                return jsonify({
+                    "error": "This learning path has been deactivated",
+                    "is_active": False,
+                    "message": "This learning path is currently unavailable. Please check back later."
+                }), 403
+        
         # First, get complete modules saved by admin (content_type='module')
         saved_modules = LearningPathContent.query.filter_by(
             path_difficulty=difficulty,
@@ -6170,13 +6294,36 @@ def admin_api_create_notification():
                 print(f"Error parsing expires_at: {e}")
                 pass
         
+        # Handle created_by: if current_user is Admin (from admins table), 
+        # we need to check if they have a corresponding User record
+        # Otherwise, set to NULL since the foreign key references users.id
+        created_by = None
+        
+        # Check if current_user is a User (from users table)
+        if isinstance(current_user, User):
+            # Verify the user exists in the database
+            user_exists = User.query.get(current_user.id)
+            if user_exists:
+                created_by = current_user.id
+        # If current_user is Admin (from admins table), try to find corresponding User by email
+        else:
+            # Try to find a User with the same email
+            try:
+                corresponding_user = User.query.filter_by(email=current_user.email).first()
+                if corresponding_user:
+                    created_by = corresponding_user.id
+            except:
+                pass
+            # If no corresponding user found, set to NULL (foreign key allows NULL)
+            # This is safe because created_by is nullable
+        
         notification = Notification(
             title=data['title'],
             message=data['message'],
             type=data.get('type', 'Update'),
             priority=data.get('priority', 'Medium'),
             is_active=data.get('is_active', True),
-            created_by=current_user.id,
+            created_by=created_by,  # Will be NULL if admin has no corresponding user
             expires_at=expires_at
         )
         
@@ -6285,15 +6432,25 @@ def api_user_notifications():
         now = datetime.now(timezone.utc)
         notifications = Notification.query.filter(
             Notification.is_active == True,
-            (Notification.expires_at.is_(None)) | (Notification.expires_at > now)
+            db.or_(
+                Notification.expires_at.is_(None),
+                Notification.expires_at > now
+            )
         ).order_by(
-            Notification.priority.desc(),
+            # Sort by priority (High > Medium > Low), then by created_at (newest first)
+            db.case(
+                (Notification.priority == 'High', 3),
+                (Notification.priority == 'Medium', 2),
+                (Notification.priority == 'Low', 1),
+                else_=0
+            ).desc(),
             Notification.created_at.desc()
         ).all()
         
         return jsonify([n.to_dict() for n in notifications])
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Error fetching user notifications: {str(e)}")
+        return jsonify([])  # Return empty array on error instead of 500
 
 @views.route('/api/admin/seasonal-content')
 @login_required
@@ -7489,7 +7646,7 @@ def admin_api_update_learning_path(path_id):
 
 # Learning paths cannot be deleted - they are fixed (Beginner, Intermediate, Expert)
 
-@views.route('/api/admin/learning-paths/<int:path_id>/status', methods=['PATCH'])
+@views.route('/api/admin/learning-paths/<path_id>/status', methods=['PATCH'])
 @login_required
 def admin_api_toggle_learning_path_status(path_id):
     if not current_user.is_admin():
@@ -7497,18 +7654,43 @@ def admin_api_toggle_learning_path_status(path_id):
     
     try:
         data = request.get_json()
+        is_active = data.get('is_active', True)
         
-        # In a real app, you would:
-        # 1. Update the LearningPath status in the database
-        # 2. Update the corresponding learning path file
-        # 3. Notify users if the path becomes inactive
-        # 4. Handle user progress if path is deactivated
+        # Map path_id to difficulty
+        difficulty_map = {
+            '1': 'Beginner',
+            '2': 'Intermediate', 
+            '3': 'Expert',
+            'beginner': 'Beginner',
+            'intermediate': 'Intermediate',
+            'expert': 'Expert'
+        }
+        
+        difficulty = difficulty_map.get(str(path_id).lower())
+        if not difficulty:
+            return jsonify({"error": "Invalid learning path ID"}), 400
+        
+        # Update all LearningPathContent records for this difficulty
+        # This effectively activates/deactivates the entire learning path
+        updated_count = LearningPathContent.query.filter_by(
+            path_difficulty=difficulty
+        ).update({'is_active': is_active})
+        
+        db.session.commit()
+        
+        print(f"✅ Updated {updated_count} modules for {difficulty} learning path - is_active: {is_active}")
         
         return jsonify({
-            "message": "Learning path status updated successfully",
-            "note": "In production, this would update the database and notify affected users"
+            "success": True,
+            "message": f"Learning path {difficulty} {'activated' if is_active else 'deactivated'} successfully",
+            "updated_modules": updated_count,
+            "is_active": is_active
         })
     except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error updating learning path status: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 # Save Module API (POST for create)

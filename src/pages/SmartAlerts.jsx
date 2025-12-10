@@ -28,6 +28,13 @@ const SmartAlerts = () => {
   useEffect(() => {
     fetchAlerts()
     fetchProgressReports()
+    
+    // Auto-refresh alerts every 30 seconds to show real-time updates
+    const refreshInterval = setInterval(() => {
+      fetchAlerts()
+    }, 30000) // 30 seconds
+    
+    return () => clearInterval(refreshInterval)
   }, [])
 
   // Helper functions for alert formatting
@@ -100,22 +107,109 @@ const SmartAlerts = () => {
           const actionType = (action.type || '').toLowerCase()
           return !actionType.includes('health_change') && actionType !== 'health_change'
         })
-        .map(action => ({
-          id: action.id,
-          type: action.type,
-          plant_name: action.plant_name,
-          garden_name: action.garden_name,
-          message: `${action.plant_name} ${action.type}ed successfully`,
-          due_date: new Date(action.action_date),
-          priority: 'low',
-          status: 'completed',
-          icon: getAlertIcon(action.type),
-          color: 'gray',
-          details: `Completed ${action.type}ing for ${action.plant_name} on ${new Date(action.action_date).toLocaleDateString()}`
-        }))
+        .map(action => {
+          // Use created_at if available (has actual timestamp with time), otherwise use action_date
+          // created_at has the exact time the action was completed, which is what we want for "time ago"
+          let actionDate
+          let displayDate
+          
+          if (action.created_at) {
+            // Use created_at which has the actual timestamp with time
+            actionDate = new Date(action.created_at)
+            displayDate = new Date(action.action_date || action.created_at) // Use action_date for display
+          } else if (action.action_date) {
+            // Fallback to action_date if created_at is not available
+            const dateStr = action.action_date
+            // Check if it's just a date (YYYY-MM-DD) or has time component
+            if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              // It's just a date (no time), so we can't calculate accurate "time ago"
+              // Use current time as approximation for very recent actions
+              actionDate = new Date() // Use current time for "time ago" calculation
+              displayDate = new Date(dateStr) // Use the actual date for display
+            } else {
+              actionDate = new Date(dateStr)
+              displayDate = new Date(dateStr)
+            }
+          } else {
+            actionDate = new Date()
+            displayDate = new Date()
+          }
+          
+          // Ensure it's a valid date
+          if (isNaN(actionDate.getTime())) {
+            console.warn('Invalid date:', action.action_date || action.created_at, 'using current date')
+            actionDate = new Date()
+            displayDate = new Date()
+          }
+          
+          return {
+            id: action.id,
+            type: action.type,
+            plant_name: action.plant_name,
+            garden_name: action.garden_name,
+            message: `${action.plant_name} ${action.type === 'prune' ? 'pruned' : action.type === 'water' ? 'watered' : action.type === 'fertilize' ? 'fertilized' : `${action.type}ed`} successfully`,
+            due_date: actionDate, // Use timestamp for "time ago" calculation
+            priority: 'low',
+            status: 'completed',
+            icon: getAlertIcon(action.type),
+            color: 'gray',
+            details: `Completed ${action.type === 'prune' ? 'pruning' : action.type === 'water' ? 'watering' : action.type === 'fertilize' ? 'fertilizing' : `${action.type}ing`} for ${action.plant_name} on ${displayDate.toLocaleDateString()}`,
+            action_date: actionDate, // Store actual timestamp for sorting and display
+            _sortKey: actionDate.getTime() // Add explicit sort key for debugging
+          }
+        })
       
       // Combine alerts and completed actions (excluding health_change)
       const allAlerts = [...transformedAlerts, ...transformedCompletedActions]
+      
+      // Sort alerts: completed actions first (most recent at top), then pending/overdue
+      allAlerts.sort((a, b) => {
+        // If both are completed, sort by date (most recent first - descending)
+        if (a.status === 'completed' && b.status === 'completed') {
+          const aDate = a.action_date || a.due_date
+          const bDate = b.action_date || b.due_date
+          // Most recent first (larger timestamp = more recent)
+          const aTime = aDate instanceof Date ? aDate.getTime() : new Date(aDate).getTime()
+          const bTime = bDate instanceof Date ? bDate.getTime() : new Date(bDate).getTime()
+          // Debug logging for first few items
+          if (allAlerts.indexOf(a) < 3 || allAlerts.indexOf(b) < 3) {
+            console.log('Sorting completed:', {
+              a: { plant: a.plant_name, time: aTime, date: aDate },
+              b: { plant: b.plant_name, time: bTime, date: bDate },
+              result: bTime - aTime
+            })
+          }
+          return bTime - aTime // Descending order (newest first)
+        }
+        // If only one is completed, put completed first
+        if (a.status === 'completed' && b.status !== 'completed') {
+          return -1
+        }
+        if (a.status !== 'completed' && b.status === 'completed') {
+          return 1
+        }
+        // For non-completed alerts, sort by priority and due date
+        const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 }
+        const aPriority = priorityOrder[a.priority] || 0
+        const bPriority = priorityOrder[b.priority] || 0
+        if (aPriority !== bPriority) {
+          return bPriority - aPriority
+        }
+        const aTime = a.due_date instanceof Date ? a.due_date.getTime() : new Date(a.due_date).getTime()
+        const bTime = b.due_date instanceof Date ? b.due_date.getTime() : new Date(b.due_date).getTime()
+        return aTime - bTime
+      })
+      
+      // Debug: Log the sorted alerts to verify sorting
+      console.log('✅ Sorted alerts (first 10):', allAlerts.slice(0, 10).map((a, idx) => ({
+        index: idx,
+        plant: a.plant_name,
+        status: a.status,
+        date: a.action_date || a.due_date,
+        timestamp: (a.action_date || a.due_date).getTime(),
+        timeAgo: formatTimeRemaining(a.action_date || a.due_date)
+      })))
+      
       setAlerts(allAlerts)
       
       // Show success message if we have real alerts
@@ -721,18 +815,35 @@ ${report.recommendations.map(rec => `• ${rec}`).join('\n')}
   const formatTimeRemaining = (dueDate) => {
     const now = new Date()
     const diff = dueDate - now
-    const hours = Math.floor(diff / (1000 * 60 * 60))
-    const days = Math.floor(hours / 24)
+    const totalSeconds = Math.floor(Math.abs(diff) / 1000)
+    const totalMinutes = Math.floor(totalSeconds / 60)
+    const totalHours = Math.floor(totalMinutes / 60)
+    const totalDays = Math.floor(totalHours / 24)
     
     if (diff < 0) {
-      const absHours = Math.abs(hours)
-      const absDays = Math.abs(days)
-      if (absDays > 0) return `${absDays} day${absDays > 1 ? 's' : ''} ago`
-      return `${absHours} hour${absHours > 1 ? 's' : ''} ago`
+      // Past date - show "X ago"
+      if (totalDays > 0) {
+        return `${totalDays} day${totalDays > 1 ? 's' : ''} ago`
+      }
+      if (totalHours > 0) {
+        return `${totalHours} hour${totalHours > 1 ? 's' : ''} ago`
+      }
+      if (totalMinutes > 0) {
+        return `${totalMinutes} minute${totalMinutes > 1 ? 's' : ''} ago`
+      }
+      return 'Just now'
     }
     
-    if (days > 0) return `in ${days} day${days > 1 ? 's' : ''}`
-    if (hours > 0) return `in ${hours} hour${hours > 1 ? 's' : ''}`
+    // Future date - show "in X"
+    if (totalDays > 0) {
+      return `in ${totalDays} day${totalDays > 1 ? 's' : ''}`
+    }
+    if (totalHours > 0) {
+      return `in ${totalHours} hour${totalHours > 1 ? 's' : ''}`
+    }
+    if (totalMinutes > 0) {
+      return `in ${totalMinutes} minute${totalMinutes > 1 ? 's' : ''}`
+    }
     return 'Due now'
   }
 

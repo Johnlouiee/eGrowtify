@@ -746,6 +746,23 @@ const ManageLearningPaths = () => {
             }
           })
           
+          // Check path status by querying if there are any active modules for this difficulty
+          // Since the API only returns active modules, if we have modules, path is likely active
+          // But we'll also check the admin API to get the actual status
+          let pathIsActive = true
+          try {
+            const statusResponse = await axios.get(`/api/admin/learning-paths`)
+            const pathStatus = statusResponse.data.find(p => 
+              p.difficulty === difficulty || p.id === difficulty.toLowerCase() || p.id === difficulty
+            )
+            if (pathStatus) {
+              pathIsActive = pathStatus.is_active !== false
+            }
+          } catch (statusError) {
+            // If status check fails, assume active if we have modules
+            pathIsActive = modules.length > 0
+          }
+          
           learningPathsData.push({
         id: difficulty.toLowerCase(),
         title: `${difficulty} Learning Path`,
@@ -756,13 +773,17 @@ const ManageLearningPaths = () => {
           return total + time
         }, 0)} min`,
             modules_count: modules.length,
-        is_active: true,
+        is_active: pathIsActive,
             modules: modules
           })
         } catch (apiError) {
           console.error(`Error loading ${difficulty} modules from API:`, apiError)
           // Fallback to static modules
           const modules = getDefaultStaticModules(difficulty)
+          
+          // Check if any modules are inactive to determine path status
+          const hasInactiveModules = modules.some(m => m.is_active === false)
+          const pathIsActive = !hasInactiveModules && modules.length > 0
           
           learningPathsData.push({
             id: difficulty.toLowerCase(),
@@ -774,7 +795,7 @@ const ManageLearningPaths = () => {
               return total + time
             }, 0)} min`,
             modules_count: modules.length,
-            is_active: true,
+            is_active: pathIsActive,
             modules: modules
           })
         }
@@ -792,18 +813,29 @@ const ManageLearningPaths = () => {
 
   const handleTogglePathStatus = async (pathId, currentStatus) => {
     try {
-      // Update the local state instead of making API calls
-      setLearningPaths(prevPaths => 
-        prevPaths.map(path => 
-          path.id === pathId 
-            ? { ...path, is_active: !currentStatus }
-            : path
+      const newStatus = !currentStatus
+      
+      // Call the API to update the status in the database
+      const response = await axios.patch(`/api/admin/learning-paths/${pathId}/status`, {
+        is_active: newStatus
+      })
+      
+      if (response.data.success) {
+        // Update the local state after successful API call
+        setLearningPaths(prevPaths => 
+          prevPaths.map(path => 
+            path.id === pathId 
+              ? { ...path, is_active: newStatus }
+              : path
+          )
         )
-      )
-      toast.success(`Learning path ${!currentStatus ? 'activated' : 'deactivated'} successfully`)
+        toast.success(response.data.message || `Learning path ${newStatus ? 'activated' : 'deactivated'} successfully`)
+      } else {
+        throw new Error(response.data.error || 'Failed to update status')
+      }
     } catch (error) {
       console.error('Error updating learning path status:', error)
-      toast.error('Failed to update learning path status')
+      toast.error(error.response?.data?.error || 'Failed to update learning path status')
     }
   }
 

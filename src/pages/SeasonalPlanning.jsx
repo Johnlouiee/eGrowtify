@@ -417,14 +417,49 @@ const SeasonalPlanning = () => {
   }
 
   useEffect(() => {
-    initializeSeasonalData()
+    let isMounted = true
+    
+    const initData = async () => {
+      try {
+        await initializeSeasonalData()
+      } catch (error) {
+        console.error('Error in initializeSeasonalData:', error)
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+    
+    initData()
+    
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   // Separate useEffect for weather data to ensure it loads properly
   useEffect(() => {
-    initializeWeatherData()
-    // Also fetch 7-day forecast when city changes
-    fetchSevenDayForecast(currentCity)
+    let isMounted = true
+    
+    const initWeather = async () => {
+      try {
+        await initializeWeatherData()
+        // Also fetch 7-day forecast when city changes
+        await fetchSevenDayForecast(currentCity)
+      } catch (error) {
+        console.error('Error in initializeWeatherData:', error)
+        // Ensure loading state is set even on error
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+    
+    initWeather()
+    
+    return () => {
+      isMounted = false
+    }
   }, [currentCity])
 
   // Function to handle plant variety clicks
@@ -834,19 +869,33 @@ const SeasonalPlanning = () => {
 
   const initializeSeasonalData = async () => {
     try {
+      setLoading(true)
       // Get current season
       const month = new Date().getMonth()
       const season = getSeasonFromMonth(month)
       setCurrentSeason(season)
 
       // Get user location
-      await getUserLocation()
+      try {
+        await getUserLocation()
+      } catch (locationError) {
+        console.warn('Error getting user location:', locationError)
+        // Set default location
+        setUserLocation('Cebu, Philippines')
+        setUserCoordinates({ lat: 10.3157, lng: 123.8854 })
+      }
 
       // Fetch seasonal data
-      await fetchSeasonalData(season)
-      setLoading(false)
+      try {
+        await fetchSeasonalData(season)
+      } catch (seasonalError) {
+        console.warn('Error fetching seasonal data:', seasonalError)
+        // Continue with default data
+      }
     } catch (error) {
       console.error('Error initializing seasonal data:', error)
+      toast.error('Error loading seasonal planning data. Using default data.')
+    } finally {
       setLoading(false)
     }
   }
@@ -2221,9 +2270,9 @@ const SeasonalPlanning = () => {
                 <div className="bg-gray-50 rounded-lg p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold text-gray-900 text-lg">
-                    {months[selectedMonth]} Planting Guide
+                    {months[selectedMonth] || 'Unknown'} Planting Guide
                   </h3>
-                    {plantingCalendar[selectedMonth]?.season && (
+                    {plantingCalendar && plantingCalendar[selectedMonth]?.season && (
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                         plantingCalendar[selectedMonth].season === 'wet' 
                           ? 'bg-blue-100 text-blue-800' 
@@ -2245,7 +2294,7 @@ const SeasonalPlanning = () => {
                           Discover the best outdoor plants for {months[selectedMonth]} in the Philippines
                         </p>
                         <button
-                          onClick={() => handleViewRecommendedPlants(plantingCalendar[selectedMonth]?.outdoor || [], 'Outdoor')}
+                          onClick={() => handleViewRecommendedPlants((plantingCalendar && plantingCalendar[selectedMonth]?.outdoor) || [], 'Outdoor')}
                           className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
                         >
                           <span>View Recommended Plants</span>
@@ -2264,7 +2313,7 @@ const SeasonalPlanning = () => {
                         Monthly Tip
                       </h4>
                       <p className="text-sm text-gray-700">
-                        {plantingCalendar[selectedMonth]?.tips}
+                        {plantingCalendar && plantingCalendar[selectedMonth]?.tips || 'No specific tips available for this month.'}
                       </p>
                     </div>
                     
@@ -2274,11 +2323,11 @@ const SeasonalPlanning = () => {
                         Weather Considerations
                       </h4>
                       <p className="text-sm text-gray-700">
-                        {plantingCalendar[selectedMonth]?.weather_considerations}
+                        {plantingCalendar && plantingCalendar[selectedMonth]?.weather_considerations || 'No specific weather considerations for this month.'}
                       </p>
                     </div>
 
-                    {plantingCalendar[selectedMonth]?.philippines_specific && (
+                    {plantingCalendar && plantingCalendar[selectedMonth]?.philippines_specific && (
                       <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                         <h4 className="font-medium text-gray-900 mb-2 flex items-center">
                           <MapPin className="h-4 w-4 mr-2 text-green-600" />

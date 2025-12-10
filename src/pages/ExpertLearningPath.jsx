@@ -6,6 +6,7 @@ import {
   Target, TrendingUp, Star, Users, Calendar, MapPin, Zap, Video, PlayCircle, X
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import axios from 'axios'
 import ImageDisplay from '../components/ImageDisplay'
 import { useAuth } from '../contexts/AuthContext'
 import { getModuleData } from '../utils/learningPathData'
@@ -42,8 +43,24 @@ const ExpertLearningPath = () => {
       try {
         const response = await axios.get('/api/learning-paths/Expert')
         
+        // Check if path is deactivated (error response)
+        if (response.data && response.data.error && response.data.is_active === false) {
+          toast.error(response.data.message || 'This learning path has been deactivated')
+          navigate('/dashboard')
+          return
+        }
+        
+        // Check if response is an array (valid modules) or error object
+        if (!Array.isArray(response.data)) {
+          if (response.data.error) {
+            toast.error(response.data.message || 'This learning path is unavailable')
+            navigate('/dashboard')
+            return
+          }
+        }
+        
         // Check if backend returned empty array (no content in database)
-        if (response.data && response.data.length === 0) {
+        if (Array.isArray(response.data) && response.data.length === 0) {
           console.log('No content in database, using fallback data')
           // Fallback to hardcoded data
           const fallbackModules = getModuleData('Expert').map(module => ({
@@ -52,7 +69,7 @@ const ExpertLearningPath = () => {
             color: 'purple'
           }))
           setModules(fallbackModules)
-        } else {
+        } else if (Array.isArray(response.data)) {
           // Use backend data
           const backendModules = response.data.map(module => {
             // Ensure quizzes is properly formatted as an array
@@ -84,7 +101,16 @@ const ExpertLearningPath = () => {
         }
       } catch (error) {
         console.error('Error loading modules from backend:', error)
-        // Fallback to hardcoded data
+        
+        // Check if path is deactivated (403 error)
+        if (error.response && error.response.status === 403) {
+          const errorData = error.response.data
+          toast.error(errorData.message || 'This learning path has been deactivated')
+          navigate('/dashboard')
+          return
+        }
+        
+        // Fallback to hardcoded data only if it's not a deactivation error
         const fallbackModules = getModuleData('Expert').map(module => ({
           ...module,
           icon: Award,

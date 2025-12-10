@@ -1270,22 +1270,22 @@ const AIPlantRecognition = () => {
                     <p className="text-sm text-blue-800">{soilResult.moisture_level}</p>
                   </div>
 
-                  {/* Texture & pH */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-amber-50 rounded-lg p-4">
-                      <div className="flex items-center space-x-3 mb-1">
-                        <Beaker className="h-5 w-5 text-amber-700" />
-                        <h3 className="font-semibold text-amber-900">Texture</h3>
-                      </div>
-                      <p className="text-sm text-amber-800">{soilResult.texture}</p>
+                  {/* Soil Type */}
+                  <div className="bg-amber-50 rounded-lg p-4 border-2 border-amber-200">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <Beaker className="h-6 w-6 text-amber-700" />
+                      <h3 className="font-bold text-lg text-amber-900">Soil Type</h3>
                     </div>
-                    <div className="bg-violet-50 rounded-lg p-4">
-                      <div className="flex items-center space-x-3 mb-1">
-                        <Thermometer className="h-5 w-5 text-violet-700" />
-                        <h3 className="font-semibold text-violet-900">pH</h3>
-                      </div>
-                      <p className="text-sm text-violet-800">{soilResult.ph}</p>
+                    <p className="text-base font-semibold text-amber-800">{soilResult.soil_type || soilResult.texture}</p>
+                  </div>
+
+                  {/* Texture Details */}
+                  <div className="bg-amber-50 rounded-lg p-4">
+                    <div className="flex items-center space-x-3 mb-1">
+                      <Beaker className="h-5 w-5 text-amber-700" />
+                      <h3 className="font-semibold text-amber-900">Texture</h3>
                     </div>
+                    <p className="text-sm text-amber-800">{soilResult.texture}</p>
                   </div>
 
                   {/* Organic Matter & Drainage */}

@@ -33,6 +33,13 @@ const UserDashboard = () => {
   // Get learning paths data from centralized source (fallback)
   const allModules = getLearningPathModules()
   
+  // Track which learning paths are active
+  const [pathStatus, setPathStatus] = useState({
+    beginner: true,
+    intermediate: true,
+    expert: true
+  })
+
   // Learning paths data with access control - using centralized data
   const learningPaths = [
     {
@@ -43,8 +50,9 @@ const UserDashboard = () => {
       color: 'bg-green-500',
       progress: learningProgress.beginner || 0,
       modules: allModules.Beginner.map(module => module.title),
-      isAccessible: true, // Always accessible
-      isLocked: false
+      isAccessible: pathStatus.beginner, // Check if path is active
+      isLocked: false,
+      isActive: pathStatus.beginner
     },
     {
       id: 'intermediate',
@@ -54,8 +62,9 @@ const UserDashboard = () => {
       color: 'bg-blue-500',
       progress: learningProgress.intermediate || 0,
       modules: allModules.Intermediate.map(module => module.title),
-      isAccessible: isPremium || (learningProgress.beginner >= 100), // Accessible if premium OR beginner completed
-      isLocked: !isPremium && (learningProgress.beginner < 100)
+      isAccessible: pathStatus.intermediate && (isPremium || (learningProgress.beginner >= 100)), // Accessible if active AND (premium OR beginner completed)
+      isLocked: !isPremium && (learningProgress.beginner < 100),
+      isActive: pathStatus.intermediate
     },
     {
       id: 'expert',
@@ -65,8 +74,9 @@ const UserDashboard = () => {
       color: 'bg-purple-500',
       progress: learningProgress.expert || 0,
       modules: allModules.Expert.map(module => module.title),
-      isAccessible: isPremium || (learningProgress.intermediate >= 100), // Accessible if premium OR intermediate completed
-      isLocked: !isPremium && (learningProgress.intermediate < 100)
+      isAccessible: pathStatus.expert && (isPremium || (learningProgress.intermediate >= 100)), // Accessible if active AND (premium OR intermediate completed)
+      isLocked: !isPremium && (learningProgress.intermediate < 100),
+      isActive: pathStatus.expert
     }
   ]
 
@@ -162,16 +172,27 @@ const UserDashboard = () => {
   }
 
   // Fetch actual modules from backend API (same as learning path pages)
+  // Also check if paths are active
   useEffect(() => {
     const loadModules = async () => {
       const difficulties = ['Beginner', 'Intermediate', 'Expert']
       const loadedModules = { Beginner: [], Intermediate: [], Expert: [] }
+      const pathStatuses = { beginner: true, intermediate: true, expert: true }
       
       for (const difficulty of difficulties) {
         try {
           const response = await axios.get(`/api/learning-paths/${difficulty}`)
           
-          if (response.data && response.data.length > 0) {
+          // Check if path is deactivated (error response)
+          if (response.data && response.data.error && response.data.is_active === false) {
+            const pathKey = difficulty.toLowerCase()
+            pathStatuses[pathKey] = false
+            console.log(`${difficulty} learning path is deactivated`)
+            continue // Skip loading modules for deactivated paths
+          }
+          
+          // Check if response is an array (valid modules)
+          if (Array.isArray(response.data) && response.data.length > 0) {
             // Use backend data
             const backendModules = response.data.map(module => {
               // Ensure quizzes is properly formatted as an array
@@ -203,6 +224,14 @@ const UserDashboard = () => {
             loadedModules[difficulty] = getModuleData(difficulty)
           }
         } catch (error) {
+          // Check if path is deactivated (403 error)
+          if (error.response && error.response.status === 403) {
+            const pathKey = difficulty.toLowerCase()
+            pathStatuses[pathKey] = false
+            console.log(`${difficulty} learning path is deactivated`)
+            continue
+          }
+          
           console.error(`Error loading ${difficulty} modules from backend:`, error)
           // Fallback to static data
           loadedModules[difficulty] = getModuleData(difficulty)
@@ -210,6 +239,7 @@ const UserDashboard = () => {
       }
       
       setActualModules(loadedModules)
+      setPathStatus(pathStatuses)
     }
     
     loadModules()
@@ -232,6 +262,8 @@ const UserDashboard = () => {
   }, [user])
 
   useEffect(() => {
+    if (!user) return // Don't run if user is not available
+    
     // Load learning progress from localStorage
     const loadLearningProgress = () => {
       const calculateProgress = () => {
@@ -478,6 +510,12 @@ const UserDashboard = () => {
   }, [user, actualModules]) // Re-run when user changes or modules are loaded
 
   const handleLearningPathClick = (path) => {
+    // Check if path is active first
+    if (!path.isActive) {
+      toast.error('This learning path has been deactivated and is currently unavailable.')
+      return
+    }
+    
     if (!path.isAccessible) {
       if (path.isLocked) {
         toast.error('Complete the previous level or upgrade to Premium to access this learning path!')
@@ -955,7 +993,7 @@ const UserDashboard = () => {
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {learningPaths.map((path) => {
+                {learningPaths.filter(path => path.isActive).map((path) => {
                   const IconComponent = path.icon
                   return (
                     <div 
