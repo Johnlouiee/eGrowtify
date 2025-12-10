@@ -103,8 +103,7 @@ const Garden = () => {
   const [gardenForm, setGardenForm] = useState({
     name: '',
     garden_type: '',
-    location_city: '',
-    location_country: ''
+    location_country: 'Philippines'
   })
   const countryToCities = {
     Philippines: ['Manila', 'Quezon City', 'Cebu City', 'Davao City', 'Baguio'],
@@ -598,7 +597,7 @@ const Garden = () => {
         await axios.post('/garden/add', gardenForm)
         toast.success('Garden added successfully!')
       }
-      setGardenForm({ name: '', garden_type: '', location_city: '', location_country: '' })
+      setGardenForm({ name: '', garden_type: '', location_country: 'Philippines' })
       setShowAddGarden(false)
       fetchGardens()
     } catch (error) {
@@ -786,8 +785,7 @@ const Garden = () => {
     setGardenForm({
       name: garden.name,
       garden_type: garden.garden_type,
-      location_city: garden.location_city,
-      location_country: garden.location_country
+      location_country: 'Philippines'
     })
     setShowAddGarden(true)
   }
@@ -918,7 +916,7 @@ const Garden = () => {
                       </div>
                       <div className="flex items-center space-x-2">
                         <MapPin className="h-4 w-4" />
-                        <span>{garden.location_city}, {garden.location_country}</span>
+                        <span>{garden.location_city ? `${garden.location_city}, ` : ''}{garden.location_country}</span>
                       </div>
                       {garden.grid_size && (
                         <div className="flex items-center space-x-2">
@@ -1501,34 +1499,12 @@ const Garden = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-                  <select
-                    value={gardenForm.location_country}
-                    onChange={(e) => {
-                      const country = e.target.value
-                      const defaultCity = country ? (countryToCities[country]?.[0] || '') : ''
-                      setGardenForm({ ...gardenForm, location_country: country, location_city: defaultCity })
-                    }}
-                    className="input-field"
-                  >
-                    <option value="">Select Country</option>
-                    {Object.keys(countryToCities).map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                  <select
-                    value={gardenForm.location_city}
-                    onChange={(e) => setGardenForm({ ...gardenForm, location_city: e.target.value })}
-                    className="input-field"
-                    disabled={!gardenForm.location_country}
-                  >
-                    <option value="">{gardenForm.location_country ? 'Select City' : 'Select a country first'}</option>
-                    {(countryToCities[gardenForm.location_country] || []).map((city) => (
-                      <option key={city} value={city}>{city}</option>
-                    ))}
-                  </select>
+                  <input
+                    type="text"
+                    value="Philippines"
+                    readOnly
+                    className="input-field bg-gray-100 cursor-not-allowed"
+                  />
                 </div>
                 <div className="flex space-x-4">
                   <button type="submit" className="btn-primary flex-1">
@@ -1539,7 +1515,7 @@ const Garden = () => {
                     onClick={() => {
                       setShowAddGarden(false)
                       setEditingGarden(null)
-                      setGardenForm({ name: '', garden_type: '', location_city: '', location_country: '' })
+                      setGardenForm({ name: '', garden_type: '', location_country: 'Philippines' })
                     }}
                     className="btn-secondary flex-1"
                   >

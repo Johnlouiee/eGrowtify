@@ -42,15 +42,17 @@ import Reports from './pages/admin/Reports'
 // Components
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
+import ErrorBoundary from './components/ErrorBoundary'
 
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="min-h-screen flex flex-col">
-          <Navbar />
-          <main className="flex-grow">
-            <Routes>
+        <ErrorBoundary>
+          <div className="min-h-screen flex flex-col">
+            <Navbar />
+            <main className="flex-grow">
+              <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
@@ -81,9 +83,11 @@ function App() {
                 </UserRoute>
               } />
               <Route path="/dashboard" element={
-                <UserRoute>
-                  <UserDashboard />
-                </UserRoute>
+                <ErrorBoundary>
+                  <UserRoute>
+                    <UserDashboard />
+                  </UserRoute>
+                </ErrorBoundary>
               } />
               <Route path="/garden" element={
                 <UserRoute>
@@ -116,9 +120,11 @@ function App() {
                 </UserRoute>
               } />
               <Route path="/seasonal-planning" element={
-                <UserRoute>
-                  <SeasonalPlanning />
-                </UserRoute>
+                <ErrorBoundary>
+                  <UserRoute>
+                    <SeasonalPlanning />
+                  </UserRoute>
+                </ErrorBoundary>
               } />
               <Route path="/community/concepts" element={
                 <UserRoute>
@@ -192,10 +198,11 @@ function App() {
                   <Reports />
                 </AdminRoute>
               } />
-            </Routes>
-          </main>
-          <Footer />
-        </div>
+              </Routes>
+            </main>
+            <Footer />
+          </div>
+        </ErrorBoundary>
       </Router>
     </AuthProvider>
   )

@@ -80,8 +80,9 @@ export const AuthProvider = ({ children }) => {
         setIsAdmin(response.data.is_admin)
         setIsPremium(response.data.is_premium || false)
         console.log('User set to:', response.data.user) // Debug log
+        console.log('Is Admin:', response.data.is_admin) // Debug log
         toast.success('Login successful!')
-        return { success: true }
+        return { success: true, is_admin: response.data.is_admin }
       } else {
         toast.error(response.data.message || 'Login failed')
         return { success: false, message: response.data.message }
