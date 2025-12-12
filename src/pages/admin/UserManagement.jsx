@@ -42,18 +42,19 @@ const UserManagement = () => {
     try {
       setLoading(true)
       const response = await axios.get('/api/admin/users')
-      const userData = response.data.users || response.data
+      // Backend returns array directly, not wrapped in {users: [...]}
+      const userData = Array.isArray(response.data) ? response.data : (response.data.users || [])
       setUsers(userData)
       
-      // Calculate stats
+      // Calculate stats (exclude admins from premium count since they don't have subscriptions)
       const now = new Date()
       const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
       
       const calculatedStats = {
         total: userData.length,
         active: userData.filter(user => user.is_active).length,
-        premium: userData.filter(user => user.subscribed).length,
-        newThisMonth: userData.filter(user => new Date(user.created_at) >= thisMonth).length
+        premium: userData.filter(user => user.subscribed && user.role !== 'admin').length, // Admins don't have subscriptions
+        newThisMonth: userData.filter(user => user.created_at && new Date(user.created_at) >= thisMonth).length
       }
       setStats(calculatedStats)
     } catch (error) {
@@ -173,7 +174,8 @@ const UserManagement = () => {
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+                         user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.username?.toLowerCase().includes(searchTerm.toLowerCase()) // Include username for admins
     const matchesRole = filterRole === 'all' || user.role === filterRole
     const matchesStatus = filterStatus === 'all' || 
                          (filterStatus === 'active' && user.is_active) ||

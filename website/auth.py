@@ -52,7 +52,7 @@ def login():
         email = data.get('email')
         password = data.get('password')
         
-        # Try to login as user (both regular users and admins)
+        # Try to login as regular user first
         user = User.query.filter_by(email=email).first()
         
         if user and user.check_password(password):
@@ -98,8 +98,51 @@ def login():
                     "is_admin": user.is_admin(),
                     "is_premium": getattr(user, 'subscribed', False) or getattr(user, 'subscription_plan', 'basic') == 'premium'
                 })
-        else:
-            return jsonify({"success": False, "message": "Invalid credentials."}), 401
+        
+        # If not found in User table, try Admin table
+        admin = Admin.query.filter_by(email=email).first()
+        
+        if admin and admin.check_password(password):
+            if not admin.is_active:
+                return jsonify({"success": False, "message": "Account is inactive. Please contact support."}), 401
+            else:
+                # Update last login
+                admin.last_login = datetime.now()
+                db.session.commit()
+                
+                login_user(admin)
+                
+                # Log login to history
+                try:
+                    log_history_change(
+                        table_name='admins',
+                        record_id=admin.id,
+                        action='LOGIN',
+                        old_values={'last_login': admin.last_login.isoformat() if admin.last_login else None},
+                        new_values={'last_login': datetime.now().isoformat()},
+                        changed_by=admin.email or f"admin_{admin.id}"
+                    )
+                except Exception as e:
+                    print(f"Error logging admin login history: {str(e)}")
+                
+                # Return admin info
+                return jsonify({
+                    "success": True,
+                    "message": "Logged in successfully!",
+                    "user": {
+                        "id": admin.id,
+                        "email": admin.email,
+                        "username": admin.username,
+                        "full_name": admin.full_name,
+                        "is_active": admin.is_active,
+                        "is_super_admin": admin.is_super_admin
+                    },
+                    "is_admin": True,  # Admins are always admins
+                    "is_premium": False  # Admins don't have premium status
+                })
+        
+        # If neither user nor admin found
+        return jsonify({"success": False, "message": "Invalid credentials."}), 401
     
     return jsonify({"message": "Login endpoint - send POST request with email and password"})
 
@@ -228,37 +271,58 @@ def auth_status():
         # Create fresh auth status data
         user = current_user
         
-        # Check for active subscription
-        from .models import UserSubscription
-        active_subscription = UserSubscription.query.filter_by(
-            user_id=user.id,
-            status='active'
-        ).first()
+        # Check if current_user is an Admin instance
+        is_admin_user = isinstance(user, Admin)
         
-        # Determine subscription plan from active subscription
-        subscription_plan = 'basic'
-        if active_subscription and active_subscription.subscription_plan:
-            subscription_plan = active_subscription.subscription_plan.plan_type if hasattr(active_subscription.subscription_plan, 'plan_type') else 'premium'
-        elif getattr(user, 'subscribed', False):
-            subscription_plan = 'premium'
-        
-        is_premium = getattr(user, 'subscribed', False) or subscription_plan == 'premium'
-        
-        auth_data = {
-            "authenticated": True,
-            "user": {
-                "id": user.id,
-                "email": user.email,
-                "full_name": user.full_name,
-                "role": user.role,
-                "is_active": user.is_active,
-                "created_at": user.created_at.isoformat() if user.created_at else None,
-                "subscribed": getattr(user, 'subscribed', False),
-                "subscription_plan": subscription_plan
-            },
-            "is_admin": user.is_admin(),
-            "is_premium": is_premium
-        }
+        if is_admin_user:
+            # Handle Admin model
+            auth_data = {
+                "authenticated": True,
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "username": user.username,
+                    "full_name": user.full_name,
+                    "is_active": user.is_active,
+                    "is_super_admin": user.is_super_admin,
+                    "created_at": user.created_at.isoformat() if user.created_at else None
+                },
+                "is_admin": True,  # Admins are always admins
+                "is_premium": False  # Admins don't have premium status
+            }
+        else:
+            # Handle User model
+            # Check for active subscription
+            from .models import UserSubscription
+            active_subscription = UserSubscription.query.filter_by(
+                user_id=user.id,
+                status='active'
+            ).first()
+            
+            # Determine subscription plan from active subscription
+            subscription_plan = 'basic'
+            if active_subscription and active_subscription.subscription_plan:
+                subscription_plan = active_subscription.subscription_plan.plan_type if hasattr(active_subscription.subscription_plan, 'plan_type') else 'premium'
+            elif getattr(user, 'subscribed', False):
+                subscription_plan = 'premium'
+            
+            is_premium = getattr(user, 'subscribed', False) or subscription_plan == 'premium'
+            
+            auth_data = {
+                "authenticated": True,
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "full_name": user.full_name,
+                    "role": user.role,
+                    "is_active": user.is_active,
+                    "created_at": user.created_at.isoformat() if user.created_at else None,
+                    "subscribed": getattr(user, 'subscribed', False),
+                    "subscription_plan": subscription_plan
+                },
+                "is_admin": user.is_admin(),
+                "is_premium": is_premium
+            }
         
         # Cache the result
         auth_status._cache[cache_key] = (auth_data, current_time)

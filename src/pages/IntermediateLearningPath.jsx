@@ -145,10 +145,17 @@ const IntermediateLearningPath = () => {
           })
           
           // Validate and filter quiz attempts - only keep those that exist in current modules
+          // Quiz attempts are stored with keys like "moduleId_quizTitle"
           const validQuizAttempts = {}
-          Object.keys(progressData.quizAttempts || {}).forEach(moduleId => {
-            if (currentModuleIds.includes(moduleId)) {
-              validQuizAttempts[moduleId] = progressData.quizAttempts[moduleId]
+          Object.keys(progressData.quizAttempts || {}).forEach(quizKey => {
+            // Extract module ID from quiz key (format: "moduleId_quizTitle")
+            // Find first underscore to separate module ID from quiz title
+            const underscoreIndex = quizKey.indexOf('_')
+            if (underscoreIndex > 0) {
+              const moduleId = quizKey.substring(0, underscoreIndex)
+              if (currentModuleIds.includes(moduleId)) {
+                validQuizAttempts[quizKey] = progressData.quizAttempts[quizKey]
+              }
             }
           })
           
@@ -180,18 +187,40 @@ const IntermediateLearningPath = () => {
     loadProgress()
   }, [modules, loading, user]) // Re-run when modules load or user changes
 
+  // Check if all quizzes in a module are completed - defined early for use in save progress
+  const areAllQuizzesCompleted = (module) => {
+    if (!module) return false
+    
+    const quizzes = module.quizzes || (module.quiz ? [module.quiz] : [])
+    if (quizzes.length === 0) return false // No quizzes means not completed
+    
+    // Check if all quizzes have at least one attempt
+    return quizzes.every(quiz => {
+      const quizKey = `${module.id}_${quiz.title}`
+      return quizAttempts[quizKey] && quizAttempts[quizKey].length > 0
+    })
+  }
+
   // Save progress whenever completedModules or moduleProgress changes
+  // This ensures progress persists even after learning path completion
   useEffect(() => {
     if (modules.length === 0) return // Don't save if modules haven't loaded yet
     
     const saveProgress = () => {
       const storageKey = getStorageKey('intermediateProgress')
+      // Check if all modules are completed
+      const allCompleted = modules.every(m => {
+        const mod = modules.find(module => module.id === m.id)
+        return areAllQuizzesCompleted(mod)
+      })
+      
       const progressData = {
         completedModules,
         moduleProgress,
         quizAttempts,
         totalModules: modules.length, // Store total module count for accurate progress calculation
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
+        pathCompleted: allCompleted // Mark path as completed but keep all progress
       }
       localStorage.setItem(storageKey, JSON.stringify(progressData))
     }
@@ -220,12 +249,26 @@ const IntermediateLearningPath = () => {
       return quizAttempts[quizKey] && quizAttempts[quizKey].length > 0
     })
     
+    // Allow users to review even if completed - show options screen
     if (isCompleted && hasQuizAttempts) {
       setCurrentModule(module)
       setShowRetakeOption(true)
     } else {
+      // Start module normally (allows review even if completed)
       startModule(module)
     }
+  }
+
+  const handleReviewLessons = () => {
+    setShowRetakeOption(false)
+    // Start from first lesson to allow full review
+    setCurrentLesson(0)
+    setShowQuiz(false)
+    setShowQuizSelection(false)
+    setCurrentQuiz(null)
+    setQuizAnswers({})
+    setShowQuizResults(false)
+    setQuizScore(0)
   }
 
   const handleRetakeQuiz = () => {
@@ -324,32 +367,75 @@ const IntermediateLearningPath = () => {
       attemptNumber: (quizAttempts[quizKey]?.length || 0) + 1
     }
     
-    setQuizAttempts(prev => ({
-      ...prev,
-      [quizKey]: [...(prev[quizKey] || []), attempt]
-    }))
+    // Update quiz attempts
+    const updatedQuizAttempts = {
+      ...quizAttempts,
+      [quizKey]: [...(quizAttempts[quizKey] || []), attempt]
+    }
     
-    // Mark module as completed
-    if (!completedModules.includes(currentModule.id)) {
+    setQuizAttempts(updatedQuizAttempts)
+    
+    // Check if all quizzes in the module are now completed
+    const quizzes = currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])
+    const allQuizzesCompleted = quizzes.every(quiz => {
+      const qKey = `${currentModule.id}_${quiz.title}`
+      return updatedQuizAttempts[qKey] && updatedQuizAttempts[qKey].length > 0
+    })
+    
+    // Mark module as completed only if all quizzes are completed
+    if (allQuizzesCompleted && !completedModules.includes(currentModule.id)) {
       setCompletedModules(prev => [...prev, currentModule.id])
     }
     
     // Check if all intermediate modules are completed
-    const allModulesCompleted = completedModules.length + 1 >= modules.length
+    const allModulesCompleted = modules.every(m => {
+      const mod = modules.find(module => module.id === m.id)
+      return areAllQuizzesCompleted(mod)
+    })
     if (allModulesCompleted) {
-      // Update learning progress to 100%
+      // Update learning progress to 100% - but DO NOT reset module progress
       const storageKey = getStorageKey('learningProgress')
       const currentProgress = JSON.parse(localStorage.getItem(storageKey) || '{}')
       currentProgress.intermediate = 100
       localStorage.setItem(storageKey, JSON.stringify(currentProgress))
       
-      toast.success('🎉 Congratulations! You have completed the Intermediate Learning Path! The Expert path is now unlocked!')
+      // Ensure progress is saved - progress should persist even after completion
+      const progressStorageKey = getStorageKey('intermediateProgress')
+      const progressData = {
+        completedModules,
+        moduleProgress,
+        quizAttempts,
+        totalModules: modules.length,
+        lastUpdated: new Date().toISOString(),
+        pathCompleted: true // Mark path as completed but keep all progress
+      }
+      localStorage.setItem(progressStorageKey, JSON.stringify(progressData))
+      
+      toast.success('🎉 Congratulations! You have completed the Intermediate Learning Path! The Expert path is now unlocked! Your progress has been saved.')
     } else {
-      const nextModule = getNextModule()
-      if (nextModule && !isModuleLocked(nextModule.id)) {
-        toast.success(`Quiz completed! Score: ${score}/${currentQuiz.questions.length}. You can now proceed to the next module!`)
+      // Check if all quizzes in this module are now completed
+      const quizzes = currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])
+      const completedQuizzes = quizzes.filter(quiz => {
+        const qKey = `${currentModule.id}_${quiz.title}`
+        return updatedQuizAttempts[qKey] && updatedQuizAttempts[qKey].length > 0
+      }).length
+      
+      if (allQuizzesCompleted && quizzes.length > 1) {
+        const nextModule = getNextModule()
+        if (nextModule && !isModuleLocked(nextModule.id)) {
+          toast.success(`All quizzes completed! Score: ${score}/${currentQuiz.questions.length}. Module is now complete! You can now proceed to the next module!`)
+        } else {
+          toast.success(`All quizzes completed! Score: ${score}/${currentQuiz.questions.length}. Module is now complete!`)
+        }
+      } else if (quizzes.length > 1) {
+        toast.success(`Quiz completed! Score: ${score}/${currentQuiz.questions.length}. Complete ${quizzes.length - completedQuizzes} more quiz${quizzes.length - completedQuizzes > 1 ? 'zes' : ''} to finish this module.`)
       } else {
-        toast.success(`Quiz completed! Score: ${score}/${currentQuiz.questions.length}`)
+        const nextModule = getNextModule()
+        if (nextModule && !isModuleLocked(nextModule.id)) {
+          toast.success(`Quiz completed! Score: ${score}/${currentQuiz.questions.length}. You can now proceed to the next module!`)
+        } else {
+          toast.success(`Quiz completed! Score: ${score}/${currentQuiz.questions.length}`)
+        }
       }
     }
   }
@@ -372,7 +458,11 @@ const IntermediateLearningPath = () => {
   }
 
   const isModuleCompleted = (moduleId) => {
-    return completedModules.includes(moduleId)
+    const module = modules.find(m => m.id === moduleId)
+    if (!module) return completedModules.includes(moduleId)
+    
+    // Check if all quizzes are completed
+    return areAllQuizzesCompleted(module)
   }
 
   const isModuleLocked = (moduleId) => {
@@ -460,20 +550,27 @@ const IntermediateLearningPath = () => {
                 </div>
               )}
 
-              <div className="flex justify-center space-x-4">
+              <div className="flex flex-wrap justify-center gap-4">
+                <button
+                  onClick={handleReviewLessons}
+                  className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center"
+                >
+                  <BookOpen className="h-5 w-5 mr-2" />
+                  Review Lessons
+                </button>
                 <button
                   onClick={handleRetakeQuiz}
-                  className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center"
+                  className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
                 >
                   <BookOpen className="h-5 w-5 mr-2" />
                   Retake Quiz
                 </button>
                 <button
                   onClick={handleContinueFromResults}
-                  className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                  className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
                 >
                   <Eye className="h-5 w-5 mr-2" />
-                  View Results
+                  View Quiz Results
                 </button>
                 <button
                   onClick={() => setCurrentModule(null)}
@@ -508,7 +605,14 @@ const IntermediateLearningPath = () => {
                   <TrendingUp className="h-8 w-8 text-blue-600 mr-3" />
                   <div>
                     <h1 className="text-2xl font-bold text-gray-900">{currentModule.title}</h1>
-                    <p className="text-sm text-gray-600">{currentModule.description}</p>
+                    <p className="text-sm text-gray-600">
+                      {currentModule.description}
+                      {isModuleCompleted(currentModule.id) && (
+                        <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                          ✓ Completed - Review Mode
+                        </span>
+                      )}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -542,9 +646,14 @@ const IntermediateLearningPath = () => {
                 </div>
 
                 <div className="prose max-w-none">
-                  <p className="text-gray-700 mb-6 text-lg leading-relaxed">
-                    {currentModule.lessons[currentLesson].content}
-                  </p>
+                  {/* Lesson Content */}
+                  {currentModule.lessons[currentLesson].content && (
+                    <div className="mb-6">
+                      <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-line">
+                        {currentModule.lessons[currentLesson].content}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Lesson Images */}
                   {currentModule.lessons[currentLesson].images && currentModule.lessons[currentLesson].images.length > 0 && (
@@ -576,17 +685,22 @@ const IntermediateLearningPath = () => {
                     </div>
                   )}
 
-                  {/* Points */}
-                  <div className="space-y-4">
-                    {currentModule.lessons[currentLesson].points && Array.isArray(currentModule.lessons[currentLesson].points) && currentModule.lessons[currentLesson].points.map((point, index) => (
-                      <div key={index} className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
-                        <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-blue-600 text-sm font-medium">{index + 1}</span>
-                        </div>
-                        <p className="text-gray-700 leading-relaxed">{point}</p>
+                  {/* Points - Key Information */}
+                  {currentModule.lessons[currentLesson].points && Array.isArray(currentModule.lessons[currentLesson].points) && currentModule.lessons[currentLesson].points.length > 0 && (
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Key Points:</h3>
+                      <div className="space-y-3">
+                        {currentModule.lessons[currentLesson].points.map((point, index) => (
+                          <div key={index} className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg border-l-4 border-blue-500">
+                            <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
+                              <span className="text-blue-600 text-sm font-medium">{index + 1}</span>
+                            </div>
+                            <p className="text-gray-700 leading-relaxed flex-1">{point}</p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Navigation */}
@@ -600,13 +714,39 @@ const IntermediateLearningPath = () => {
                     Previous
                   </button>
                   
-                  <button
-                    onClick={nextLesson}
-                    className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    {currentLesson === currentModule.lessons.length - 1 ? 'Start Quiz' : 'Next Lesson'}
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </button>
+                  <div className="flex items-center space-x-3">
+                    {/* Go to Quiz button - always visible for review */}
+                    {(currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])).length > 0 && (
+                      <button
+                        onClick={() => {
+                          const quizzes = currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])
+                          if (quizzes.length > 1) {
+                            setShowQuizSelection(true)
+                            setShowQuiz(false)
+                          } else if (quizzes.length === 1) {
+                            setCurrentQuiz(quizzes[0])
+                            setShowQuizSelection(false)
+                            setShowQuiz(true)
+                            setQuizAnswers({})
+                            setShowQuizResults(false)
+                            setQuizScore(0)
+                          }
+                        }}
+                        className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                      >
+                        <HelpCircle className="h-4 w-4 mr-2" />
+                        Go to Quiz
+                      </button>
+                    )}
+                    
+                    <button
+                      onClick={nextLesson}
+                      className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      {currentLesson === currentModule.lessons.length - 1 ? 'Start Quiz' : 'Next Lesson'}
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -617,6 +757,22 @@ const IntermediateLearningPath = () => {
                 <div className="text-center mb-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">Select a Quiz</h2>
                   <p className="text-gray-600">Choose which quiz you'd like to take</p>
+                  {(() => {
+                    const quizzes = currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])
+                    const completedCount = quizzes.filter(quiz => {
+                      const qKey = `${currentModule.id}_${quiz.title}`
+                      return quizAttempts[qKey] && quizAttempts[qKey].length > 0
+                    }).length
+                    if (quizzes.length > 1) {
+                      return (
+                        <p className="text-sm text-gray-500 mt-2">
+                          {completedCount} of {quizzes.length} quizzes completed
+                          {completedCount < quizzes.length && ` • Complete all ${quizzes.length} quizzes to finish this module`}
+                        </p>
+                      )
+                    }
+                    return null
+                  })()}
                 </div>
 
                 <div className="space-y-4">
@@ -624,16 +780,28 @@ const IntermediateLearningPath = () => {
                     const quizKey = `${currentModule.id}_${quiz.title}`
                     const attempts = quizAttempts[quizKey] || []
                     const lastAttempt = attempts.length > 0 ? attempts[attempts.length - 1] : null
+                    const isCompleted = attempts.length > 0
                     
                     return (
-                      <div key={index} className="border border-gray-200 rounded-lg p-6 hover:border-blue-500 transition-colors">
+                      <div key={index} className={`border rounded-lg p-6 transition-colors ${
+                        isCompleted 
+                          ? 'border-blue-300 bg-blue-50' 
+                          : 'border-gray-200 hover:border-blue-500'
+                      }`}>
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-1">{quiz.title || `Quiz ${index + 1}`}</h3>
+                            <div className="flex items-center space-x-2 mb-1">
+                              <h3 className="text-lg font-semibold text-gray-900">{quiz.title || `Quiz ${index + 1}`}</h3>
+                              {isCompleted && (
+                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                                  ✓ Completed
+                                </span>
+                              )}
+                            </div>
                             <p className="text-sm text-gray-600">
                               {quiz.questions?.length || 0} questions
                               {lastAttempt && (
-                                <span className="ml-2 text-blue-600">
+                                <span className="ml-2 text-blue-600 font-medium">
                                   • Last score: {lastAttempt.score}/{lastAttempt.totalQuestions}
                                 </span>
                               )}
@@ -782,7 +950,7 @@ const IntermediateLearningPath = () => {
                             ))}
                           </div>
                           <p className="mt-3 text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                            {question.explanation}
+                            {question.explanation || 'No explanation provided for this question.'}
                           </p>
                         </div>
                       ))}
@@ -795,10 +963,20 @@ const IntermediateLearningPath = () => {
                       >
                         Retake Quiz
                       </button>
-                      {getNextModule() && !isModuleLocked(getNextModule().id) && (
+                      {getNextModule() && !isModuleLocked(getNextModule().id) && areAllQuizzesCompleted(currentModule) && (
                         <button
                           onClick={goToNextModule}
                           className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center"
+                        >
+                          Next Module
+                          <ArrowRight className="h-4 w-4 ml-2" />
+                        </button>
+                      )}
+                      {getNextModule() && !isModuleLocked(getNextModule().id) && !areAllQuizzesCompleted(currentModule) && (
+                        <button
+                          disabled
+                          className="px-6 py-3 bg-gray-400 text-white rounded-lg cursor-not-allowed flex items-center opacity-50"
+                          title="Complete all quizzes in this module to proceed"
                         >
                           Next Module
                           <ArrowRight className="h-4 w-4 ml-2" />
@@ -856,7 +1034,7 @@ const IntermediateLearningPath = () => {
               </div>
             </div>
             <div className="text-sm text-gray-600">
-              {completedModules.length} of {modules.length} modules completed
+              {modules.filter(m => isModuleCompleted(m.id)).length} of {modules.length} modules completed
             </div>
           </div>
         </div>
@@ -871,12 +1049,12 @@ const IntermediateLearningPath = () => {
               <div className="bg-gray-200 rounded-full h-3">
                 <div 
                   className="bg-blue-600 h-3 rounded-full transition-all duration-300"
-                  style={{ width: `${Math.round((completedModules.length / modules.length) * 100)}%` }}
+                  style={{ width: `${modules.length > 0 ? Math.round((modules.filter(m => isModuleCompleted(m.id)).length / modules.length) * 100) : 0}%` }}
                 ></div>
               </div>
             </div>
             <span className="text-sm font-medium text-gray-600">
-              {Math.round((completedModules.length / modules.length) * 100)}%
+              {modules.length > 0 ? Math.round((modules.filter(m => isModuleCompleted(m.id)).length / modules.length) * 100) : 0}%
             </span>
           </div>
         </div>

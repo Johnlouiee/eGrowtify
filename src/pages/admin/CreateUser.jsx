@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { 
   ArrowLeft, UserPlus, Mail, Phone, Lock, Eye, EyeOff, 
@@ -6,13 +6,23 @@ import {
 } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import { useAuth } from '../../contexts/AuthContext'
 
 const CreateUser = () => {
   const navigate = useNavigate()
+  const { isAdmin } = useAuth()
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [errors, setErrors] = useState({})
+  
+  // Ensure only admins can access this page
+  useEffect(() => {
+    if (isAdmin === false) {
+      toast.error('Access denied. Admin privileges required.')
+      navigate('/dashboard')
+    }
+  }, [isAdmin, navigate])
   
   const [formData, setFormData] = useState({
     // Common fields
@@ -26,8 +36,7 @@ const CreateUser = () => {
     
     // Admin-specific fields
     username: '',
-    full_name: '',
-    is_super_admin: false
+    full_name: ''
   })
 
   const handleInputChange = (e) => {
@@ -47,8 +56,7 @@ const CreateUser = () => {
         // Clear admin-specific fields when switching to user
         ...(value === 'user' ? {
           username: '',
-          full_name: '',
-          is_super_admin: false
+          full_name: ''
         } : {})
       }))
       
@@ -141,6 +149,12 @@ const CreateUser = () => {
       return
     }
     
+    // Double-check admin status before allowing admin creation
+    if (formData.userType === 'admin' && !isAdmin) {
+      toast.error('Only admins can create admin accounts')
+      return
+    }
+    
     setLoading(true)
     
     try {
@@ -153,10 +167,12 @@ const CreateUser = () => {
           email: formData.email,
           full_name: formData.full_name,
           password: formData.password,
-          is_super_admin: formData.is_super_admin
+          is_super_admin: false // All created admins are regular admins, not super admins
         }
         
+        console.log('Creating admin account with payload:', { ...payload, password: '***' })
         const response = await axios.post(endpoint, payload)
+        console.log('Admin creation response:', response.data)
         
         if (response.data.success) {
           toast.success('Admin created successfully!')
@@ -187,8 +203,15 @@ const CreateUser = () => {
       }
     } catch (error) {
       console.error('Error creating account:', error)
+      console.error('Error response:', error.response?.data)
+      console.error('Error status:', error.response?.status)
+      
       if (error.response?.data?.message) {
         toast.error(error.response.data.message)
+      } else if (error.response?.data?.error) {
+        toast.error(error.response.data.error)
+      } else if (error.message) {
+        toast.error(error.message)
       } else {
         toast.error('Failed to create account. Please try again.')
       }
@@ -266,10 +289,12 @@ const CreateUser = () => {
                   </div>
                 </label>
                 
-                <label className={`relative flex items-center p-5 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
-                  formData.userType === 'admin' 
-                    ? 'border-green-500 bg-green-50 shadow-md scale-105' 
-                    : 'border-gray-200 hover:border-green-300 hover:bg-green-50/50'
+                <label className={`relative flex items-center p-5 border-2 rounded-xl transition-all duration-200 ${
+                  !isAdmin 
+                    ? 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed' 
+                    : formData.userType === 'admin' 
+                    ? 'border-green-500 bg-green-50 shadow-md scale-105 cursor-pointer' 
+                    : 'border-gray-200 hover:border-green-300 hover:bg-green-50/50 cursor-pointer'
                 }`}>
                   <input
                     type="radio"
@@ -277,6 +302,7 @@ const CreateUser = () => {
                     value="admin"
                     checked={formData.userType === 'admin'}
                     onChange={handleInputChange}
+                    disabled={!isAdmin}
                     className="sr-only"
                   />
                   <div className="flex items-center w-full">
@@ -285,7 +311,9 @@ const CreateUser = () => {
                     </div>
                     <div>
                       <div className={`font-medium ${formData.userType === 'admin' ? 'text-green-900' : 'text-gray-900'}`}>Admin User</div>
-                      <div className={`text-sm ${formData.userType === 'admin' ? 'text-green-700' : 'text-gray-500'}`}>Administrator account</div>
+                      <div className={`text-sm ${formData.userType === 'admin' ? 'text-green-700' : 'text-gray-500'}`}>
+                        {!isAdmin ? 'Admin privileges required' : 'Administrator account'}
+                      </div>
                     </div>
                   </div>
                 </label>
@@ -339,19 +367,6 @@ const CreateUser = () => {
                       </p>
                     )}
                   </div>
-                </div>
-                
-                <div className="flex items-center p-3 bg-green-50 rounded-lg border border-green-200">
-                  <input
-                    type="checkbox"
-                    name="is_super_admin"
-                    checked={formData.is_super_admin}
-                    onChange={handleInputChange}
-                    className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded cursor-pointer"
-                  />
-                  <label className="ml-2 text-sm text-gray-700 cursor-pointer">
-                    Super Admin (Full system access)
-                  </label>
                 </div>
               </>
             )}

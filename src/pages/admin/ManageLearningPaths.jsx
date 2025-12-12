@@ -6,7 +6,7 @@ import {
   Upload, X, Save, Clock, Calendar, Star, FileImage, Video,
   Play, Pause, Volume2, VolumeX, Settings, MoreVertical,
   ChevronDown, ChevronUp, Image, FileText, List, Grid,
-  Copy, Move, Download, Share2, Heart, Bookmark
+  Copy, Move, Download, Share2, Heart, Bookmark, Sparkles, AlertCircle
 } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
@@ -62,6 +62,10 @@ const ManageLearningPaths = () => {
     difficulty: 'Beginner',
     lessons: [],
     quizzes: [], // Changed from single quiz to array of quizzes
+    images: [],
+    videos: []
+  })
+  const [filesToDelete, setFilesToDelete] = useState({
     images: [],
     videos: []
   })
@@ -134,22 +138,62 @@ const ManageLearningPaths = () => {
             questions: [
               {
                 id: 1,
-                question: 'How many hours of sunlight do most plants need daily?',
-                options: ['2-4 hours', '6-8 hours', '10-12 hours', 'All day'],
+                question: 'According to the Introduction to Gardening lesson, what is the best approach for beginners?',
+                options: ['Start with a large garden immediately', 'Start small with a few plants to build confidence', 'Only garden if you have a large outdoor space', 'Wait until you have all expensive equipment'],
                 correct: 1,
-                explanation: '✅ CORRECT! Most plants need 6-8 hours of direct sunlight daily to thrive and produce flowers or fruits.',
+                explanation: '✅ CORRECT! Start small with a few plants to build confidence. Gardening is accessible to everyone, regardless of space or experience. Starting small helps you learn gradually and avoid feeling overwhelmed.',
                 required: true
               },
               {
                 id: 2,
-                question: 'What is the best approach for beginner gardeners?',
-                options: ['Start with 20+ plants', 'Start with 3-5 plants', 'Start with only one plant', 'Start with a full garden'],
+                question: 'Based on the Essential Tools and Supplies lesson, what is the most important feature containers should have?',
+                options: ['Expensive decorative design', 'Drainage holes', 'Large size', 'Bright colors'],
                 correct: 1,
-                explanation: '✅ CORRECT! Starting with 3-5 plants allows you to give each plant proper attention and learn their specific needs without feeling overwhelmed.',
+                explanation: '✅ CORRECT! Containers with drainage holes are essential. Without drainage holes, water accumulates at the bottom, causing root rot.',
+                required: true
+              },
+              {
+                id: 3,
+                question: 'From the Introduction to Gardening lesson, what skills does gardening help develop?',
+                options: ['Only physical strength', 'Patience and observation skills', 'Computer programming', 'Cooking skills'],
+                correct: 1,
+                explanation: '✅ CORRECT! Gardening teaches patience and observation skills. As you care for plants, you learn to observe their needs, notice changes, and be patient as they grow.',
                 required: true
               }
             ]
           },
+          quizzes: [
+            {
+              id: 'basic-info-quiz-1',
+              title: 'Basic Information Quiz',
+              questions: [
+                {
+                  id: 1,
+                  question: 'According to the Introduction to Gardening lesson, what is the best approach for beginners?',
+                  options: ['Start with a large garden immediately', 'Start small with a few plants to build confidence', 'Only garden if you have a large outdoor space', 'Wait until you have all expensive equipment'],
+                  correct: 1,
+                  explanation: '✅ CORRECT! Start small with a few plants to build confidence. Gardening is accessible to everyone, regardless of space or experience. Starting small helps you learn gradually and avoid feeling overwhelmed.',
+                  required: true
+                },
+                {
+                  id: 2,
+                  question: 'Based on the Essential Tools and Supplies lesson, what is the most important feature containers should have?',
+                  options: ['Expensive decorative design', 'Drainage holes', 'Large size', 'Bright colors'],
+                  correct: 1,
+                  explanation: '✅ CORRECT! Containers with drainage holes are essential. Without drainage holes, water accumulates at the bottom, causing root rot.',
+                  required: true
+                },
+                {
+                  id: 3,
+                  question: 'From the Introduction to Gardening lesson, what skills does gardening help develop?',
+                  options: ['Only physical strength', 'Patience and observation skills', 'Computer programming', 'Cooking skills'],
+                  correct: 1,
+                  explanation: '✅ CORRECT! Gardening teaches patience and observation skills. As you care for plants, you learn to observe their needs, notice changes, and be patient as they grow.',
+                  required: true
+                }
+              ]
+            }
+          ],
           images: [],
           videos: []
         },
@@ -246,7 +290,7 @@ const ManageLearningPaths = () => {
                 question: 'What is the most common cause of plant death for beginners?',
                 options: ['Too little sunlight', 'Overwatering', 'Not enough fertilizer', 'Wrong container size'],
                 correct: 1,
-                explanation: '✅ CORRECT! Overwatering is the #1 cause of plant death. It leads to root rot and prevents roots from getting oxygen.',
+                explanation: '✅ CORRECT! Overwatering is the #1 cause of plant death. It leads to root rot and prevents roots from getting oxygen. Always check soil moisture before watering and ensure proper drainage.',
                 required: true
               },
               {
@@ -254,7 +298,7 @@ const ManageLearningPaths = () => {
                 question: 'Which tool is essential for all container gardens?',
                 options: ['Expensive fertilizer', 'Drainage holes in containers', 'Grow lights', 'Automatic watering system'],
                 correct: 1,
-                explanation: '✅ CORRECT! Drainage holes are absolutely essential. Without them, water accumulates and causes root rot.',
+                explanation: '✅ CORRECT! Drainage holes are absolutely essential. Without them, water accumulates at the bottom of containers, causing root rot and preventing roots from getting oxygen. Always use containers with drainage holes or create them yourself.',
                 required: true
               },
               {
@@ -262,7 +306,15 @@ const ManageLearningPaths = () => {
                 question: 'What should you do if a plant shows yellow leaves?',
                 options: ['Water more frequently', 'Check for overwatering or nutrient issues', 'Move to full sun immediately', 'Add more fertilizer'],
                 correct: 1,
-                explanation: '✅ CORRECT! Yellow leaves can indicate overwatering, underwatering, or nutrient deficiency. Check the soil and plant conditions first.',
+                explanation: '✅ CORRECT! Yellow leaves can indicate overwatering, underwatering, or nutrient deficiency. Check the soil moisture first, then examine the plant\'s overall condition. Don\'t immediately change everything - diagnose the problem first.',
+                required: true
+              },
+              {
+                id: 4,
+                question: 'Understanding How Plants Grow: What is the final stage in a plant\'s life cycle before it produces seeds?',
+                options: ['Seed', 'Seedling', 'Flowering', 'Mature plant'],
+                correct: 2,
+                explanation: '✅ CORRECT! Flowering is the stage when plants produce flowers, which then develop into fruits and seeds. The plant life cycle typically goes: Seed → Seedling → Vegetative growth → Flowering → Fruiting/Seeding. Understanding these stages helps you provide appropriate care at each phase.',
                 required: true
               }
             ]
@@ -907,6 +959,8 @@ const ManageLearningPaths = () => {
       images: module.images || [],
       videos: module.videos || []
     })
+    // Reset files to delete when opening modal
+    setFilesToDelete({ images: [], videos: [] })
     setShowEditModuleModal(true)
   }
 
@@ -1016,9 +1070,43 @@ const ManageLearningPaths = () => {
   const handleEditModule = async (e) => {
     e.preventDefault()
     try {
+      // Delete marked files from server when saving
+      const deletePromises = []
+      
+      // Delete marked images
+      for (const imageUrl of filesToDelete.images) {
+        deletePromises.push(
+          axios.post('/api/admin/delete-file', { fileUrl: imageUrl }).catch(err => {
+            console.error('Error deleting image:', err)
+            // Continue even if deletion fails
+          })
+        )
+      }
+      
+      // Delete marked videos
+      for (const videoUrl of filesToDelete.videos) {
+        deletePromises.push(
+          axios.post('/api/admin/delete-file', { fileUrl: videoUrl }).catch(err => {
+            console.error('Error deleting video:', err)
+            // Continue even if deletion fails
+          })
+        )
+      }
+      
+      // Wait for all deletions to complete (or fail gracefully)
+      await Promise.all(deletePromises)
+      
+      // Ensure we use the current form data, not stale editingModule data
+      // Filter out any null/undefined entries and ensure arrays are clean
+      const cleanImages = (moduleFormData.images || []).filter(img => img && img.id && img.url)
+      const cleanVideos = (moduleFormData.videos || []).filter(vid => vid && vid.id && vid.url)
+      
       const updatedModule = {
         ...editingModule,
-        ...moduleFormData,
+        title: moduleFormData.title,
+        description: moduleFormData.description,
+        estimatedTime: moduleFormData.estimatedTime,
+        difficulty: moduleFormData.difficulty,
         lessons: moduleFormData.lessons.map((lesson, index) => ({
           id: lesson.id || index + 1,
           ...lesson
@@ -1037,17 +1125,26 @@ const ManageLearningPaths = () => {
             id: question.id || index + 1,
             ...question
           }))
-        } : { title: '', questions: [] }
+        } : { title: '', questions: [] },
+        // CRITICAL: Use cleaned arrays from current form data (after deletions)
+        // This ensures deleted files are NOT included in the saved module
+        images: cleanImages,
+        videos: cleanVideos
       }
+      
+      console.log('Saving module with images:', cleanImages.length, 'videos:', cleanVideos.length)
 
       // Save to backend API
       try {
-        await axios.put(`/api/admin/learning-paths/${selectedPath.difficulty}/modules`, {
+        const saveResponse = await axios.put(`/api/admin/learning-paths/${selectedPath.difficulty}/modules`, {
           id: updatedModule.id,
           module: updatedModule
         })
+        console.log('Module saved successfully:', saveResponse.data)
+        console.log('Saved with images:', updatedModule.images.length, 'videos:', updatedModule.videos.length)
       } catch (apiError) {
         console.error('Error saving module to backend:', apiError)
+        toast.error('Failed to save module to server. Changes may not persist.')
         // Continue with local state update even if API fails
       }
 
@@ -1076,6 +1173,45 @@ const ManageLearningPaths = () => {
           )
         }))
       }
+      
+      // Refresh learning paths to ensure we have the latest data from backend
+      // This ensures deleted files are properly removed from the module data
+      try {
+        const refreshResponse = await axios.get(`/api/learning-paths/${selectedPath.difficulty}`)
+        if (refreshResponse.data && refreshResponse.data.length > 0) {
+          const refreshedModule = refreshResponse.data.find(m => m.id === editingModule.id)
+          if (refreshedModule) {
+            // Update the module in learningPaths with fresh data from backend
+            setLearningPaths(prevPaths => 
+              prevPaths.map(path => 
+                path.id === selectedPath.id 
+                  ? { 
+                      ...path, 
+                      modules: path.modules.map(module => 
+                        module.id === editingModule.id ? refreshedModule : module
+                      )
+                    }
+                  : path
+              )
+            )
+            // Also update selectedPath with fresh data
+            if (selectedPath) {
+              setSelectedPath(prev => ({
+                ...prev,
+                modules: prev.modules.map(module => 
+                  module.id === editingModule.id ? refreshedModule : module
+                )
+              }))
+            }
+          }
+        }
+      } catch (refreshError) {
+        console.error('Error refreshing module data:', refreshError)
+        // Continue even if refresh fails - we've already updated local state
+      }
+      
+      // Clear files to delete list after successful save
+      setFilesToDelete({ images: [], videos: [] })
       
       setShowEditModuleModal(false)
       setEditingModule(null)
@@ -1315,6 +1451,10 @@ const ManageLearningPaths = () => {
         toast.error(`Question ${i + 1} needs a correct answer selected`)
         return
       }
+      if (!question.explanation || !question.explanation.trim()) {
+        toast.error(`Question ${i + 1} needs an explanation`)
+        return
+      }
     }
     
     try {
@@ -1384,6 +1524,10 @@ const ManageLearningPaths = () => {
         toast.error(`Question ${i + 1} needs a correct answer selected`)
         return
       }
+      if (!question.explanation || !question.explanation.trim()) {
+        toast.error(`Question ${i + 1} needs an explanation`)
+        return
+      }
     }
     
     try {
@@ -1396,7 +1540,7 @@ const ManageLearningPaths = () => {
           question: question.question.trim(),
           options: question.options.filter(opt => opt && opt.trim() !== ''),
           correct: question.correct,
-          explanation: question.explanation || '',
+          explanation: question.explanation.trim(),
           image: question.image || null,
           video: question.video || null,
           required: question.required !== undefined ? question.required : true
@@ -1426,6 +1570,203 @@ const ManageLearningPaths = () => {
     }
   }
 
+  // Generate Quiz from Lessons
+  const generateQuizFromLessons = () => {
+    if (!moduleFormData.lessons || moduleFormData.lessons.length === 0) {
+      toast.error('No lessons available to generate quiz from')
+      return
+    }
+
+    const generatedQuestions = []
+    let questionId = 1
+
+    // Generate questions from each lesson
+    moduleFormData.lessons.forEach((lesson, lessonIndex) => {
+      // Extract key information from lesson
+      const lessonTitle = lesson.title || `Lesson ${lessonIndex + 1}`
+      const lessonContent = lesson.content || ''
+      const lessonPoints = lesson.points || []
+
+      // Generate 1-2 questions per lesson based on content
+      if (lessonContent) {
+        // Question 1: Based on lesson title/content
+        const question1 = {
+          id: questionId++,
+          question: `Based on the lesson "${lessonTitle}", ${generateQuestionFromContent(lessonContent)}`,
+          options: generateOptionsFromContent(lessonContent, lessonPoints),
+          correct: 0,
+          explanation: `This question is based on the lesson: ${lessonTitle}. Review the lesson content to understand the correct answer.`
+        }
+        generatedQuestions.push(question1)
+      }
+
+      // Generate questions from key points
+      if (lessonPoints && lessonPoints.length > 0) {
+        lessonPoints.forEach((point, pointIndex) => {
+          if (pointIndex < 2 && point.trim()) { // Max 2 questions per lesson from points
+            const question = {
+              id: questionId++,
+              question: generateQuestionFromPoint(point),
+              options: generateOptionsFromPoint(point, lessonPoints),
+              correct: 0,
+              explanation: `This question is based on: ${point.substring(0, 100)}...`
+            }
+            generatedQuestions.push(question)
+          }
+        })
+      }
+    })
+
+    // Limit to 5-10 questions total
+    const finalQuestions = generatedQuestions.slice(0, Math.min(10, generatedQuestions.length))
+
+    if (finalQuestions.length === 0) {
+      toast.error('Could not generate questions from lessons. Please ensure lessons have content.')
+      return
+    }
+
+    // Create or update quiz
+    const quizTitle = moduleFormData.quiz?.title || `${moduleFormData.title} Quiz`
+    const existingQuiz = moduleFormData.quizzes && moduleFormData.quizzes.length > 0 
+      ? moduleFormData.quizzes[0] 
+      : null
+
+    const newQuiz = {
+      id: existingQuiz?.id || `quiz-${Date.now()}`,
+      title: quizTitle,
+      questions: finalQuestions,
+      images: [],
+      videos: []
+    }
+
+    // Update module form data
+    const updatedQuizzes = existingQuiz 
+      ? moduleFormData.quizzes.map(q => q.id === existingQuiz.id ? newQuiz : q)
+      : [newQuiz, ...(moduleFormData.quizzes || [])]
+
+    setModuleFormData(prev => ({
+      ...prev,
+      quizzes: updatedQuizzes,
+      quiz: newQuiz // Also update backward compatibility quiz field
+    }))
+
+    toast.success(`Generated ${finalQuestions.length} quiz questions from lessons!`)
+  }
+
+  // Helper function to generate question from content
+  const generateQuestionFromContent = (content) => {
+    // Extract key concepts and create a question
+    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20)
+    if (sentences.length === 0) return 'what is the main topic covered?'
+    
+    // Look for key phrases
+    if (content.toLowerCase().includes('important') || content.toLowerCase().includes('essential')) {
+      return 'what is an important concept discussed?'
+    }
+    if (content.toLowerCase().includes('should') || content.toLowerCase().includes('must')) {
+      return 'what should you remember from this lesson?'
+    }
+    if (content.toLowerCase().includes('best') || content.toLowerCase().includes('recommended')) {
+      return 'what is the best practice mentioned?'
+    }
+    
+    return 'what is the main concept covered in this lesson?'
+  }
+
+  // Helper function to generate options from content
+  const generateOptionsFromContent = (content, points) => {
+    const options = []
+    
+    // Extract key terms/phrases
+    const keyTerms = extractKeyTerms(content, points)
+    
+    // Create correct answer (first option)
+    if (keyTerms.length > 0) {
+      options.push(keyTerms[0])
+    } else {
+      options.push('The concepts discussed in the lesson')
+    }
+    
+    // Add plausible distractors
+    options.push('Information not covered in the lesson')
+    options.push('Advanced topics beyond this lesson')
+    options.push('Basic concepts unrelated to this lesson')
+    
+    return options.slice(0, 4)
+  }
+
+  // Helper function to generate question from point
+  const generateQuestionFromPoint = (point) => {
+    // Remove emoji and extract meaningful content
+    const cleanPoint = point.replace(/[🌱🌿🌾💡🔬🌱💧☀️🌡️🏠📊🧪🌿⚡🍃⏰🔄🎯📅🔍]/g, '').trim()
+    
+    if (cleanPoint.length < 10) return `What is mentioned in: ${cleanPoint.substring(0, 50)}?`
+    
+    // Extract the main concept
+    const firstSentence = cleanPoint.split(':')[0] || cleanPoint.split('.')[0] || cleanPoint
+    const concept = firstSentence.substring(0, 60).trim()
+    
+    return `According to the lesson, what is true about ${concept}?`
+  }
+
+  // Helper function to generate options from point
+  const generateOptionsFromPoint = (point, allPoints) => {
+    const options = []
+    
+    // Extract the main answer from the point
+    const mainAnswer = point.split(':')[1] || point.split('.')[0] || point
+    const cleanAnswer = mainAnswer.substring(0, 80).trim()
+    
+    if (cleanAnswer) {
+      options.push(cleanAnswer)
+    } else {
+      options.push('The information provided in the lesson')
+    }
+    
+    // Add distractors from other points or generic options
+    if (allPoints && allPoints.length > 1) {
+      const otherPoints = allPoints.filter(p => p !== point).slice(0, 2)
+      otherPoints.forEach(p => {
+        const distractor = p.split(':')[1] || p.split('.')[0] || p
+        if (distractor && options.length < 4) {
+          options.push(distractor.substring(0, 80).trim())
+        }
+      })
+    }
+    
+    // Fill remaining slots with generic options
+    while (options.length < 4) {
+      options.push('Information not covered in this lesson')
+    }
+    
+    return options.slice(0, 4)
+  }
+
+  // Helper function to extract key terms
+  const extractKeyTerms = (content, points) => {
+    const terms = []
+    
+    // Extract from content
+    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 15)
+    sentences.slice(0, 2).forEach(sentence => {
+      const keyPhrase = sentence.trim().substring(0, 60)
+      if (keyPhrase) terms.push(keyPhrase)
+    })
+    
+    // Extract from points
+    if (points && points.length > 0) {
+      points.slice(0, 2).forEach(point => {
+        const cleanPoint = point.replace(/[🌱🌿🌾💡🔬🌱💧☀️🌡️🏠📊🧪🌿⚡🍃⏰🔄🎯📅🔍]/g, '').trim()
+        const keyPhrase = cleanPoint.split(':')[1] || cleanPoint.split('.')[0] || cleanPoint
+        if (keyPhrase && keyPhrase.length > 10) {
+          terms.push(keyPhrase.substring(0, 60).trim())
+        }
+      })
+    }
+    
+    return terms.filter(t => t && t.length > 5).slice(0, 4)
+  }
+
   // Question CRUD Functions
   const openAddQuestionModal = () => {
     setQuestionFormData({
@@ -1451,12 +1792,24 @@ const ManageLearningPaths = () => {
       return
     }
     
+    // Validate correct answer is selected
+    if (questionFormData.correct === null || questionFormData.correct === undefined) {
+      toast.error('Please select the correct answer')
+      return
+    }
+    
+    // Validate explanation is provided
+    if (!questionFormData.explanation || !questionFormData.explanation.trim()) {
+      toast.error('Please provide an explanation for the correct answer')
+      return
+    }
+    
     const newQuestion = {
       id: Date.now(),
       question: questionFormData.question.trim(),
       options: validOptions,
       correct: questionFormData.correct,
-      explanation: questionFormData.explanation || '',
+      explanation: questionFormData.explanation.trim(),
       required: questionFormData.required !== undefined ? questionFormData.required : true,
       image: questionFormData.image || null,
       video: questionFormData.video || null
@@ -1486,12 +1839,24 @@ const ManageLearningPaths = () => {
       return
     }
     
+    // Validate correct answer is selected
+    if (questionFormData.correct === null || questionFormData.correct === undefined) {
+      toast.error('Please select the correct answer')
+      return
+    }
+    
+    // Validate explanation is provided
+    if (!questionFormData.explanation || !questionFormData.explanation.trim()) {
+      toast.error('Please provide an explanation for the correct answer')
+      return
+    }
+    
     const newQuestion = {
       id: Date.now(),
       question: questionFormData.question.trim(),
       options: validOptions,
       correct: questionFormData.correct,
-      explanation: questionFormData.explanation || '',
+      explanation: questionFormData.explanation.trim(),
       required: questionFormData.required !== undefined ? questionFormData.required : true,
       image: questionFormData.image || null,
       video: questionFormData.video || null
@@ -1545,6 +1910,7 @@ const ManageLearningPaths = () => {
       images: [],
       videos: []
     })
+    setFilesToDelete({ images: [], videos: [] })
   }
 
   const resetLessonForm = () => {
@@ -1694,56 +2060,56 @@ const ManageLearningPaths = () => {
     }
   }
 
-  const removeImage = async (imageId) => {
-    try {
-      const imageToRemove = moduleFormData.images.find(img => img.id === imageId)
-      if (imageToRemove) {
-        // Delete file from server
-        await axios.post('/api/admin/delete-file', {
-          fileUrl: imageToRemove.url
-        })
-      }
-      
-      setModuleFormData(prev => ({
-        ...prev,
-        images: prev.images.filter(img => img.id !== imageId)
-      }))
-      toast.success('Image removed!')
-    } catch (error) {
-      console.error('Error removing image:', error)
-      // Still remove from UI even if server deletion fails
-      setModuleFormData(prev => ({
-        ...prev,
-        images: prev.images.filter(img => img.id !== imageId)
-      }))
-      toast.success('Image removed from module!')
+  const removeImage = (imageId) => {
+    const imageToRemove = moduleFormData.images.find(img => img.id === imageId)
+    if (!imageToRemove) return
+
+    // Show confirmation dialog
+    if (!window.confirm(`Are you sure you want to delete "${imageToRemove.name}"? The file will be removed when you save the module.`)) {
+      return
     }
+
+    // Mark file for deletion (will be deleted from server when module is saved)
+    if (imageToRemove.url) {
+      setFilesToDelete(prev => ({
+        ...prev,
+        images: [...prev.images, imageToRemove.url]
+      }))
+    }
+    
+    // Remove from UI immediately (but don't delete from server yet)
+    setModuleFormData(prev => ({
+      ...prev,
+      images: prev.images.filter(img => img.id !== imageId)
+    }))
+    
+    toast.success('Image marked for deletion. Click "Update Module" to save changes.')
   }
 
-  const removeVideo = async (videoId) => {
-    try {
-      const videoToRemove = moduleFormData.videos.find(vid => vid.id === videoId)
-      if (videoToRemove) {
-        // Delete file from server
-        await axios.post('/api/admin/delete-file', {
-          fileUrl: videoToRemove.url
-        })
-      }
-      
-      setModuleFormData(prev => ({
-        ...prev,
-        videos: prev.videos.filter(vid => vid.id !== videoId)
-      }))
-      toast.success('Video removed!')
-    } catch (error) {
-      console.error('Error removing video:', error)
-      // Still remove from UI even if server deletion fails
-      setModuleFormData(prev => ({
-        ...prev,
-        videos: prev.videos.filter(vid => vid.id !== videoId)
-      }))
-      toast.success('Video removed from module!')
+  const removeVideo = (videoId) => {
+    const videoToRemove = moduleFormData.videos.find(vid => vid.id === videoId)
+    if (!videoToRemove) return
+
+    // Show confirmation dialog
+    if (!window.confirm(`Are you sure you want to delete "${videoToRemove.name}"? The file will be removed when you save the module.`)) {
+      return
     }
+
+    // Mark file for deletion (will be deleted from server when module is saved)
+    if (videoToRemove.url) {
+      setFilesToDelete(prev => ({
+        ...prev,
+        videos: [...prev.videos, videoToRemove.url]
+      }))
+    }
+    
+    // Remove from UI immediately (but don't delete from server yet)
+    setModuleFormData(prev => ({
+      ...prev,
+      videos: prev.videos.filter(vid => vid.id !== videoId)
+    }))
+    
+    toast.success('Video marked for deletion. Click "Update Module" to save changes.')
   }
 
   // Lesson Media Upload Functions
@@ -2713,158 +3079,6 @@ const ManageLearningPaths = () => {
                     </div>
                   </div>
 
-                  {/* Enhanced Images Section */}
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200/50">
-                    <div className="flex items-center space-x-3 mb-6">
-                      <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-lg">
-                        <Image className="h-5 w-5 text-white" />
-                      </div>
-                      <h4 className="text-xl font-bold text-slate-900">Module Images</h4>
-                    </div>
-                    
-                    <div className="space-y-6">
-                      {/* Enhanced Upload Area */}
-                      <div className="border-2 border-dashed border-green-300 rounded-2xl p-8 text-center hover:border-green-400 transition-all duration-200 bg-white/50 backdrop-blur-sm">
-                        <div className="relative">
-                          <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl blur-sm opacity-25"></div>
-                          <div className="relative p-6">
-                            <Image className="mx-auto h-16 w-16 text-green-500 mb-4" />
-                            <h5 className="text-lg font-semibold text-slate-900 mb-2">Upload Module Images</h5>
-                            <p className="text-slate-600 mb-4">Add visual content to enhance learning experience</p>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={(e) => {
-                            Array.from(e.target.files).forEach(file => {
-                              handleImageUpload(file)
-                            })
-                          }}
-                          className="hidden"
-                          id="image-upload"
-                          disabled={uploading}
-                        />
-                        <label
-                          htmlFor="image-upload"
-                              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 cursor-pointer disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl text-lg font-semibold"
-                        >
-                              <Upload className="h-5 w-5 mr-2" />
-                          {uploading ? 'Uploading...' : 'Choose Images'}
-                        </label>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Enhanced Display Uploaded Images */}
-                      {moduleFormData.images.length > 0 && (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                          {moduleFormData.images.map((image) => (
-                            <div key={image.id} className="relative group bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300">
-                              <img
-                                src={image.url}
-                                alt={image.name}
-                                className="w-full h-40 object-cover rounded-xl border border-slate-200"
-                              />
-                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-xl flex items-center justify-center">
-                                <button
-                                  onClick={() => removeImage(image.id)}
-                                  className="opacity-0 group-hover:opacity-100 bg-red-600 text-white p-3 rounded-full hover:bg-red-700 transition-all shadow-lg"
-                                >
-                                  <X className="h-5 w-5" />
-                                </button>
-                              </div>
-                              <div className="mt-3">
-                                <p className="text-sm font-semibold text-slate-900 truncate">{image.name}</p>
-                                <p className="text-xs text-slate-500">{(image.size / (1024 * 1024)).toFixed(2)} MB</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Enhanced Videos Section */}
-                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200/50">
-                    <div className="flex items-center space-x-3 mb-6">
-                      <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow-lg">
-                        <Video className="h-5 w-5 text-white" />
-                      </div>
-                      <h4 className="text-xl font-bold text-slate-900">Module Videos</h4>
-                    </div>
-                    
-                    <div className="space-y-6">
-                      {/* Enhanced Upload Area */}
-                      <div className="border-2 border-dashed border-purple-300 rounded-2xl p-8 text-center hover:border-purple-400 transition-all duration-200 bg-white/50 backdrop-blur-sm">
-                        <div className="relative">
-                          <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur-sm opacity-25"></div>
-                          <div className="relative p-6">
-                            <Video className="mx-auto h-16 w-16 text-purple-500 mb-4" />
-                            <h5 className="text-lg font-semibold text-slate-900 mb-2">Upload Module Videos</h5>
-                            <p className="text-slate-600 mb-4">Add video content to make learning more engaging</p>
-                        <input
-                          type="file"
-                          accept="video/*"
-                          multiple
-                          onChange={(e) => {
-                            Array.from(e.target.files).forEach(file => {
-                              handleVideoUpload(file)
-                            })
-                          }}
-                          className="hidden"
-                          id="video-upload"
-                          disabled={uploading}
-                        />
-                        <label
-                          htmlFor="video-upload"
-                              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 cursor-pointer disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl text-lg font-semibold"
-                        >
-                              <Upload className="h-5 w-5 mr-2" />
-                          {uploading ? 'Uploading...' : 'Choose Videos'}
-                        </label>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Enhanced Display Uploaded Videos */}
-                      {moduleFormData.videos.length > 0 && (
-                        <div className="space-y-4">
-                          {moduleFormData.videos.map((video) => (
-                            <div key={video.id} className="relative group bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
-                              <div className="flex items-center space-x-6">
-                                <div className="flex-shrink-0">
-                                  <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg">
-                                    <Video className="h-8 w-8 text-white" />
-                                  </div>
-                                </div>
-                                <div className="flex-1">
-                                  <h6 className="text-lg font-semibold text-slate-900 mb-1">{video.name}</h6>
-                                  <p className="text-sm text-slate-500 mb-2">
-                                    {(video.size / (1024 * 1024)).toFixed(2)} MB
-                                  </p>
-                                  <div className="flex items-center space-x-4">
-                                    <span className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-                                      Video File
-                                    </span>
-                                    <span className="text-xs text-slate-500 bg-purple-100 px-3 py-1 rounded-full">
-                                      Ready to use
-                                    </span>
-                                  </div>
-                                </div>
-                                <button
-                                  onClick={() => removeVideo(video.id)}
-                                  className="p-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
-                                >
-                                  <Trash2 className="h-5 w-5" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
                   {/* Enhanced Content Management Section */}
                   <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200/50">
                     <div className="flex items-center space-x-3 mb-6">
@@ -2943,13 +3157,6 @@ const ManageLearningPaths = () => {
                               <p className="text-base text-gray-900">{moduleFormData.difficulty || 'Not set'}</p>
                             </div>
                           </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Media</label>
-                            <div className="flex items-center space-x-4 text-sm text-gray-600">
-                              <span>{moduleFormData.images?.length || 0} images</span>
-                              <span>{moduleFormData.videos?.length || 0} videos</span>
-                            </div>
-                          </div>
                         </div>
                       </div>
                     )}
@@ -3010,14 +3217,25 @@ const ManageLearningPaths = () => {
                       <div className="space-y-6">
                         <div className="flex items-center justify-between">
                           <h5 className="text-lg font-semibold text-slate-900">Module Quiz</h5>
-                          <button
-                            type="button"
-                            onClick={openAddQuizModal}
-                            className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 flex items-center text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Quiz
-                          </button>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              type="button"
+                              onClick={generateQuizFromLessons}
+                              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 flex items-center text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                              title="Generate quiz questions based on lesson content"
+                            >
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              Generate from Lessons
+                            </button>
+                            <button
+                              type="button"
+                              onClick={openAddQuizModal}
+                              className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 flex items-center text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Quiz
+                            </button>
+                          </div>
                         </div>
                         
                         <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200">
@@ -3101,16 +3319,32 @@ const ManageLearningPaths = () => {
                       </div>
                                 
                                 <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-1">Options</label>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Options <span className="text-red-500">*</span>
+                                    <span className="ml-2 text-xs text-gray-500 font-normal">(Select the correct answer)</span>
+                                  </label>
                                   {questionFormData.options.map((option, optIndex) => (
-                                    <div key={optIndex} className="flex items-center space-x-2 mb-2">
-                                      <input
-                                        type="radio"
-                                        name="new-question-correct"
-                                        checked={questionFormData.correct === optIndex}
-                                        onChange={() => setQuestionFormData(prev => ({ ...prev, correct: optIndex }))}
-                                        className="w-4 h-4 text-green-600"
-                                      />
+                                    <div key={optIndex} className={`flex items-center space-x-2 mb-2 p-2 rounded-lg border-2 transition-all ${
+                                      questionFormData.correct === optIndex 
+                                        ? 'border-green-500 bg-green-50' 
+                                        : 'border-gray-200 bg-white'
+                                    }`}>
+                                      <div className="flex items-center space-x-2">
+                                        <input
+                                          type="radio"
+                                          name="new-question-correct"
+                                          checked={questionFormData.correct === optIndex}
+                                          onChange={() => setQuestionFormData(prev => ({ ...prev, correct: optIndex }))}
+                                          className="w-5 h-5 text-green-600 focus:ring-green-500"
+                                        />
+                                        <span className={`text-xs font-medium ${
+                                          questionFormData.correct === optIndex 
+                                            ? 'text-green-700' 
+                                            : 'text-gray-500'
+                                        }`}>
+                                          {questionFormData.correct === optIndex ? '✓ Correct Answer' : 'Option'}
+                                        </span>
+                                      </div>
                                       <input
                                         type="text"
                                         value={option}
@@ -3153,17 +3387,27 @@ const ManageLearningPaths = () => {
                                     <Plus className="h-4 w-4 mr-1" />
                                     Add option
                                   </button>
+                                  {questionFormData.correct === null || questionFormData.correct === undefined ? (
+                                    <p className="mt-2 text-xs text-red-600">⚠️ Please select the correct answer</p>
+                                  ) : null}
                                 </div>
 
                                 <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-1">Explanation</label>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Explanation <span className="text-red-500">*</span>
+                                    <span className="ml-2 text-xs text-gray-500 font-normal">(Shown to users after answering)</span>
+                                  </label>
                                   <textarea
                                     value={questionFormData.explanation}
                                     onChange={(e) => setQuestionFormData(prev => ({ ...prev, explanation: e.target.value }))}
                                     className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                    placeholder="Explain why this answer is correct..."
-                                    rows="2"
+                                    placeholder="Explain why this answer is correct. This helps users understand the concept better..."
+                                    rows="3"
+                                    required
                                   />
+                                  {!questionFormData.explanation.trim() && (
+                                    <p className="mt-1 text-xs text-amber-600">💡 Adding an explanation helps users learn from their mistakes</p>
+                                  )}
                                 </div>
 
                                 {/* Image/Video Upload */}
@@ -3305,16 +3549,32 @@ const ManageLearningPaths = () => {
                                       </div>
                                       
                                       <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Options</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                          Options <span className="text-red-500">*</span>
+                                          <span className="ml-2 text-xs text-gray-500 font-normal">(Select the correct answer)</span>
+                                        </label>
                                         {questionFormData.options.map((option, optIndex) => (
-                                          <div key={optIndex} className="flex items-center space-x-2 mb-2">
-                                            <input
-                                              type="radio"
-                                              name={`edit-question-${question.id}`}
-                                              checked={questionFormData.correct === optIndex}
-                                              onChange={() => setQuestionFormData(prev => ({ ...prev, correct: optIndex }))}
-                                              className="w-4 h-4 text-green-600"
-                                            />
+                                          <div key={optIndex} className={`flex items-center space-x-2 mb-2 p-2 rounded-lg border-2 transition-all ${
+                                            questionFormData.correct === optIndex 
+                                              ? 'border-green-500 bg-green-50' 
+                                              : 'border-gray-200 bg-white'
+                                          }`}>
+                                            <div className="flex items-center space-x-2">
+                                              <input
+                                                type="radio"
+                                                name={`edit-question-${question.id}`}
+                                                checked={questionFormData.correct === optIndex}
+                                                onChange={() => setQuestionFormData(prev => ({ ...prev, correct: optIndex }))}
+                                                className="w-5 h-5 text-green-600 focus:ring-green-500"
+                                              />
+                                              <span className={`text-xs font-medium ${
+                                                questionFormData.correct === optIndex 
+                                                  ? 'text-green-700' 
+                                                  : 'text-gray-500'
+                                              }`}>
+                                                {questionFormData.correct === optIndex ? '✓ Correct Answer' : 'Option'}
+                                              </span>
+                                            </div>
                                             <input
                                               type="text"
                                               value={option}
@@ -3357,17 +3617,27 @@ const ManageLearningPaths = () => {
                                           <Plus className="h-4 w-4 mr-1" />
                                           Add option
                                         </button>
+                                        {questionFormData.correct === null || questionFormData.correct === undefined ? (
+                                          <p className="mt-2 text-xs text-red-600">⚠️ Please select the correct answer</p>
+                                        ) : null}
                                       </div>
 
                                       <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Explanation</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                          Explanation <span className="text-red-500">*</span>
+                                          <span className="ml-2 text-xs text-gray-500 font-normal">(Shown to users after answering)</span>
+                                        </label>
                                         <textarea
                                           value={questionFormData.explanation}
                                           onChange={(e) => setQuestionFormData(prev => ({ ...prev, explanation: e.target.value }))}
                                           className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                          placeholder="Explain why this answer is correct..."
-                                          rows="2"
+                                          placeholder="Explain why this answer is correct. This helps users understand the concept better..."
+                                          rows="3"
+                                          required
                                         />
+                                        {!questionFormData.explanation.trim() && (
+                                          <p className="mt-1 text-xs text-amber-600">💡 Adding an explanation helps users learn from their mistakes</p>
+                                        )}
                                       </div>
 
                                       {/* Image/Video Upload */}
@@ -3670,6 +3940,14 @@ const ManageLearningPaths = () => {
                     <div>
                       <h3 className="text-3xl font-bold text-slate-900">Edit Module</h3>
                       <p className="text-slate-600 mt-1">Update module information and content</p>
+                      {(filesToDelete.images.length > 0 || filesToDelete.videos.length > 0) && (
+                        <div className="mt-2 flex items-center space-x-2">
+                          <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">
+                            {filesToDelete.images.length + filesToDelete.videos.length} file(s) marked for deletion
+                          </span>
+                          <span className="text-sm text-slate-500">Click "Update Module" to save changes</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <button
@@ -3743,158 +4021,6 @@ const ManageLearningPaths = () => {
                         placeholder="Describe what students will learn in this module..."
                         required
                       />
-                    </div>
-                  </div>
-
-                  {/* Enhanced Images Section */}
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200/50">
-                    <div className="flex items-center space-x-3 mb-6">
-                      <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-lg">
-                        <Image className="h-5 w-5 text-white" />
-                      </div>
-                      <h4 className="text-xl font-bold text-slate-900">Module Images</h4>
-                    </div>
-                    
-                    <div className="space-y-6">
-                      {/* Enhanced Upload Area */}
-                      <div className="border-2 border-dashed border-green-300 rounded-2xl p-8 text-center hover:border-green-400 transition-all duration-200 bg-white/50 backdrop-blur-sm">
-                        <div className="relative">
-                          <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl blur-sm opacity-25"></div>
-                          <div className="relative p-6">
-                            <Image className="mx-auto h-16 w-16 text-green-500 mb-4" />
-                            <h5 className="text-lg font-semibold text-slate-900 mb-2">Upload Module Images</h5>
-                            <p className="text-slate-600 mb-4">Add visual content to enhance learning experience</p>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              multiple
-                              onChange={(e) => {
-                                Array.from(e.target.files).forEach(file => {
-                                  handleImageUpload(file)
-                                })
-                              }}
-                              className="hidden"
-                              id="edit-image-upload"
-                              disabled={uploading}
-                            />
-                            <label
-                              htmlFor="edit-image-upload"
-                              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 cursor-pointer disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl text-lg font-semibold"
-                            >
-                              <Upload className="h-5 w-5 mr-2" />
-                              {uploading ? 'Uploading...' : 'Choose Images'}
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Enhanced Display Uploaded Images */}
-                      {moduleFormData.images.length > 0 && (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                          {moduleFormData.images.map((image) => (
-                            <div key={image.id} className="relative group bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300">
-                              <img
-                                src={image.url}
-                                alt={image.name}
-                                className="w-full h-40 object-cover rounded-xl border border-slate-200"
-                              />
-                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-xl flex items-center justify-center">
-                                <button
-                                  onClick={() => removeImage(image.id)}
-                                  className="opacity-0 group-hover:opacity-100 bg-red-600 text-white p-3 rounded-full hover:bg-red-700 transition-all shadow-lg"
-                                >
-                                  <X className="h-5 w-5" />
-                                </button>
-                              </div>
-                              <div className="mt-3">
-                                <p className="text-sm font-semibold text-slate-900 truncate">{image.name}</p>
-                                <p className="text-xs text-slate-500">{(image.size / (1024 * 1024)).toFixed(2)} MB</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Enhanced Videos Section */}
-                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200/50">
-                    <div className="flex items-center space-x-3 mb-6">
-                      <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow-lg">
-                        <Video className="h-5 w-5 text-white" />
-                      </div>
-                      <h4 className="text-xl font-bold text-slate-900">Module Videos</h4>
-                    </div>
-                    
-                    <div className="space-y-6">
-                      {/* Enhanced Upload Area */}
-                      <div className="border-2 border-dashed border-purple-300 rounded-2xl p-8 text-center hover:border-purple-400 transition-all duration-200 bg-white/50 backdrop-blur-sm">
-                        <div className="relative">
-                          <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur-sm opacity-25"></div>
-                          <div className="relative p-6">
-                            <Video className="mx-auto h-16 w-16 text-purple-500 mb-4" />
-                            <h5 className="text-lg font-semibold text-slate-900 mb-2">Upload Module Videos</h5>
-                            <p className="text-slate-600 mb-4">Add video content to make learning more engaging</p>
-                            <input
-                              type="file"
-                              accept="video/*"
-                              multiple
-                              onChange={(e) => {
-                                Array.from(e.target.files).forEach(file => {
-                                  handleVideoUpload(file)
-                                })
-                              }}
-                              className="hidden"
-                              id="edit-video-upload"
-                              disabled={uploading}
-                            />
-                            <label
-                              htmlFor="edit-video-upload"
-                              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 cursor-pointer disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl text-lg font-semibold"
-                            >
-                              <Upload className="h-5 w-5 mr-2" />
-                              {uploading ? 'Uploading...' : 'Choose Videos'}
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Enhanced Display Uploaded Videos */}
-                      {moduleFormData.videos.length > 0 && (
-                        <div className="space-y-4">
-                          {moduleFormData.videos.map((video) => (
-                            <div key={video.id} className="relative group bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
-                              <div className="flex items-center space-x-6">
-                                <div className="flex-shrink-0">
-                                  <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg">
-                                    <Video className="h-8 w-8 text-white" />
-                                  </div>
-                                </div>
-                                <div className="flex-1">
-                                  <h6 className="text-lg font-semibold text-slate-900 mb-1">{video.name}</h6>
-                                  <p className="text-sm text-slate-500 mb-2">
-                                    {(video.size / (1024 * 1024)).toFixed(2)} MB
-                                  </p>
-                                  <div className="flex items-center space-x-4">
-                                    <span className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-                                      Video File
-                                    </span>
-                                    <span className="text-xs text-slate-500 bg-purple-100 px-3 py-1 rounded-full">
-                                      Ready to use
-                                    </span>
-                                  </div>
-                                </div>
-                                <button
-                                  onClick={() => removeVideo(video.id)}
-                                  className="p-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
-                                >
-                                  <Trash2 className="h-5 w-5" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   </div>
 
@@ -3974,13 +4100,6 @@ const ManageLearningPaths = () => {
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
                               <p className="text-base text-gray-900">{moduleFormData.difficulty || 'Not set'}</p>
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Media</label>
-                            <div className="flex items-center space-x-4 text-sm text-gray-600">
-                              <span>{moduleFormData.images?.length || 0} images</span>
-                              <span>{moduleFormData.videos?.length || 0} videos</span>
                             </div>
                           </div>
                         </div>
@@ -4170,9 +4289,19 @@ const ManageLearningPaths = () => {
                     </button>
                     <button
                       type="submit"
-                      className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                      className={`px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl flex items-center ${
+                        (filesToDelete.images.length > 0 || filesToDelete.videos.length > 0)
+                          ? 'bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white animate-pulse'
+                          : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white'
+                      }`}
                     >
+                      <Save className="h-5 w-5 mr-2" />
                       Update Module
+                      {(filesToDelete.images.length > 0 || filesToDelete.videos.length > 0) && (
+                        <span className="ml-2 px-2 py-0.5 bg-white/30 rounded-full text-xs font-bold">
+                          {filesToDelete.images.length + filesToDelete.videos.length}
+                        </span>
+                      )}
                     </button>
                   </div>
                 </form>

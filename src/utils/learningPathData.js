@@ -9,45 +9,45 @@ export const getLearningPathModules = () => {
         title: 'Plant Fundamentals - Understanding Your Green Friends',
         difficulty: 'Beginner',
         estimatedTime: '30 min',
-        description: 'Master the essential knowledge about plant types, life cycles, and basic plant biology for successful gardening',
+        description: 'Master the essential knowledge about plant types, life cycles, and basic plant care for successful gardening',
         lessons: [
           {
             id: 1,
             title: 'Plant Types & Life Cycles - The Foundation of Gardening',
-            content: 'Understanding plant life cycles is crucial for planning your garden and knowing what to expect from each plant. Plants are categorized into three main types based on their life cycle:',
+            content: 'Understanding plant life cycles is crucial for planning your garden and knowing what to expect from each plant. Plants are categorized into three main types based on their life cycle. This knowledge helps you plan your garden, understand care requirements, and set realistic expectations for your plants.',
             points: [
-              '🌱 ANNUALS: Complete their entire life cycle in one growing season. They grow, flower, produce seeds, and die all within a year. Examples: Marigolds, lettuce, petunias, zinnias. Perfect for beginners because you get quick results and can start fresh each year.',
-              '🌿 PERENNIALS: Live for multiple years, often coming back stronger each season. They may die back in winter but regrow from their roots. Examples: Roses, hostas, lavender, mint, daylilies. Great investment plants that provide long-term garden structure.',
-              '🌾 BIENNIALS: Take exactly two years to complete their cycle. First year: grow leaves and roots. Second year: flower, produce seeds, then die. Examples: Carrots, parsley, foxgloves, hollyhocks. Require patience but offer unique growing experiences.',
-              '💡 PLANNING TIP: Mix all three types in your garden! Annuals for quick color, perennials for structure, and biennials for variety. This creates a dynamic, ever-changing garden that stays interesting year-round.',
-              '🔬 PLANT ANATOMY: Understanding basic plant parts - roots (absorb water and nutrients), stems (transport water and nutrients), leaves (make food through photosynthesis), flowers (reproduction), and fruits/seeds (plant babies).',
-              '🌱 GROWTH PATTERNS: Plants grow in two ways - primary growth (getting taller) and secondary growth (getting wider). Understanding this helps you know when and how to prune or support your plants.'
+              '🌱 ANNUALS: Complete their entire life cycle in one growing season. They grow, flower, produce seeds, and die all within a year. Examples: Marigolds, lettuce, petunias, zinnias. Perfect for beginners because you get quick results and can start fresh each year. Care tip: Water regularly during hot weather, deadhead flowers to encourage more blooms, and fertilize monthly for best results.',
+              '🌿 PERENNIALS: Live for multiple years, often coming back stronger each season. They may die back in winter but regrow from their roots. Examples: Roses, hostas, lavender, mint, daylilies. Great investment plants that provide long-term garden structure. Care tip: Mulch around perennials in fall to protect roots, divide every 3-4 years to maintain vigor, and prune dead growth in spring.',
+              '🌾 BIENNIALS: Take exactly two years to complete their cycle. First year: grow leaves and roots. Second year: flower, produce seeds, then die. Examples: Carrots, parsley, foxgloves, hollyhocks. Require patience but offer unique growing experiences. Care tip: Mark biennials clearly so you don\'t accidentally pull them in their first year, and allow them to complete their cycle.',
+              '💡 PLANNING TIP: Mix all three types in your garden! Annuals for quick color, perennials for structure, and biennials for variety. This creates a dynamic, ever-changing garden that stays interesting year-round. Plan your garden layout considering each plant\'s life cycle and space needs.',
+              '🔬 PLANT ANATOMY: Understanding basic plant parts helps you care for them better. Roots absorb water and nutrients from soil - keep soil healthy! Stems transport water and nutrients - support tall plants with stakes. Leaves make food through photosynthesis - keep them clean and healthy. Flowers are for reproduction - deadhead to encourage more blooms. Fruits/seeds are plant babies - harvest when mature.',
+              '🌱 GROWTH PATTERNS: Plants grow in two ways - primary growth (getting taller) and secondary growth (getting wider). Understanding this helps you know when and how to prune or support your plants. Prune during active growth periods, support plants before they get too tall, and understand that different plants have different growth rates.'
             ]
           },
           {
             id: 2,
-            title: 'Choosing Your First Plants - The Success Formula',
-            content: 'Selecting the right plants for your first garden is like choosing the right training wheels for learning to ride a bike. These plants are forgiving, rewarding, and will build your confidence:',
+            title: 'Essential Plant Care - Water, Light, and Temperature',
+            content: 'The three most critical factors for plant health are water, light, and temperature. Master these basics, and your plants will thrive. Each plant has specific needs, but understanding the fundamentals applies to all plants.',
             points: [
-              '🌿 HERBS - The Perfect Starting Point: Basil (loves warmth, grows fast, great for cooking), Mint (vigorous grower, hard to kill, spreads easily), Parsley (biennial, great for garnishes), Chives (perennial, comes back every year, mild onion flavor). Herbs are forgiving because they\'re meant to be harvested regularly.',
-              '🥬 VEGETABLES - Quick Rewards: Lettuce (fast-growing, can harvest multiple times, cool-season crop), Spinach (nutrient-dense, grows in cool weather), Radishes (ready in 3-4 weeks, great for kids), Cherry tomatoes (more forgiving than large tomatoes, continuous harvest). Start with leafy greens - they\'re the easiest!',
-              '🌸 FLOWERS - Instant Gratification: Marigolds (pest-repellent, bright colors, easy from seed), Calendula (edible flowers, self-seeding), Sunflowers (dramatic height, attracts birds, easy to grow). Flowers provide immediate visual rewards and attract beneficial insects.',
-              '🌱 OUTDOOR PLANTS - Year-Round Gardening: Pothos (trailing vine, tolerates neglect, purifies air), Snake Plant (nearly indestructible, low water needs), Spider Plant (produces baby plants, great for sharing). Perfect for learning plant care basics outdoors.',
-              '💡 SUCCESS TIP: Start with just 3-5 plants maximum. Master their care routine before adding more. It\'s better to have a few thriving plants than many struggling ones!',
-              '🎯 PLANT SELECTION CRITERIA: Choose plants that match your available light, space, and time commitment. Consider your local climate and growing season length.'
+              '💧 WATERING BASICS: Most plants prefer deep, infrequent watering rather than frequent shallow watering. Check soil moisture by sticking your finger 1-2 inches into the soil - if it\'s dry, water thoroughly. Water in the morning to allow leaves to dry before evening. Signs of overwatering: yellow leaves, mushy stems, mold on soil. Signs of underwatering: drooping leaves, dry crispy edges, soil pulling away from pot edges.',
+              '☀️ LIGHT REQUIREMENTS: Plants need different amounts of light. Full sun (6+ hours direct sunlight) - tomatoes, peppers, most vegetables. Partial sun (3-6 hours) - many herbs, leafy greens. Shade (less than 3 hours) - ferns, hostas, some houseplants. Observe your space throughout the day to determine light levels. Rotate indoor plants weekly for even growth.',
+              '🌡️ TEMPERATURE CONSIDERATIONS: Most plants prefer temperatures between 65-75°F (18-24°C). Avoid placing plants near heating vents, air conditioners, or drafty windows. Protect outdoor plants from frost - cover or bring indoors when temperatures drop below 50°F (10°C). Some plants need a dormant period with cooler temperatures.',
+              '🌱 PLANT POSITIONING: Place plants where they\'ll receive appropriate light. South-facing windows get the most light, north-facing get the least. East-facing get morning sun (gentle), west-facing get afternoon sun (intense). Group plants with similar needs together for easier care. Use curtains or blinds to filter intense sunlight if needed.',
+              '💡 CARE SCHEDULE: Establish a weekly routine: Monday - check all plants, Wednesday - water as needed, Friday - inspect for pests/problems, Sunday - fertilize if needed. Consistency is key - plants thrive on routine. Keep a simple journal to track what works for each plant.',
+              '🔍 READING PLANT SIGNALS: Yellow leaves can mean overwatering, underwatering, or nutrient deficiency. Drooping leaves usually mean water stress. Brown crispy edges often mean low humidity or underwatering. New growth is a good sign - your plant is happy! Learn to observe and respond to your plant\'s needs.'
             ]
           },
           {
             id: 3,
-            title: 'Plant Care Basics - The Essential Skills',
-            content: 'The key to gardening success is building confidence through small wins. Think of it like learning to cook - you don\'t start with a five-course meal! Here\'s your step-by-step approach:',
+            title: 'Daily Plant Care Routine - Building Healthy Habits',
+            content: 'The key to gardening success is building confidence through small wins and consistent care. Think of it like learning to cook - you don\'t start with a five-course meal! Here\'s your step-by-step approach to daily plant care.',
             points: [
-              '🎯 THE 3-5 PLANT RULE: Begin with maximum 3-5 plants. This allows you to give each plant individual attention and learn their specific needs. More plants = more complexity = higher chance of failure. Quality over quantity!',
-              '📅 DAILY CARE ROUTINE: Establish a simple routine: Check plants daily (2-3 minutes), water when needed, observe growth changes. Consistency is more important than perfection. Plants thrive on routine, just like pets.',
-              '💧 MASTER THE BASICS FIRST: Focus on watering and light requirements before anything else. These are the two most critical factors for plant survival. Get these right, and 80% of your problems disappear.',
-              '📈 GRADUAL SCALING: Once you\'ve kept 3-5 plants alive for 2-3 months, add 2-3 more. This gradual approach builds confidence and prevents overwhelm. Each success makes you more confident for the next challenge.',
-              '🔍 OBSERVATION SKILLS: Learn to "read" your plants. Yellow leaves, drooping, new growth - these are your plants\' way of communicating. The more you observe, the better gardener you become.',
-              '💡 CONFIDENCE BUILDING: Celebrate small wins! First new leaf, first flower, first harvest. These moments build the confidence you need to tackle more challenging plants later.'
+              '🎯 THE 3-5 PLANT RULE: Begin with maximum 3-5 plants. This allows you to give each plant individual attention and learn their specific needs. More plants = more complexity = higher chance of failure. Quality over quantity! Choose plants with different care needs to learn variety, but start simple.',
+              '📅 DAILY CARE ROUTINE: Establish a simple routine: Morning check (2-3 minutes) - look for changes, check soil moisture, observe new growth. Water when needed - don\'t water on a schedule, water when plants need it. Evening check - see how plants responded to the day. Consistency is more important than perfection. Plants thrive on routine, just like pets.',
+              '💧 WATERING TECHNIQUES: Water at the base of plants, not on leaves (prevents disease). Water until it drains from bottom of pot, then empty saucer after 30 minutes. For outdoor plants, water deeply 2-3 times per week rather than daily shallow watering. Use room temperature water - cold water can shock roots. Water less in winter when plants grow slower.',
+              '🌿 FEEDING YOUR PLANTS: Fertilize during growing season (spring/summer) every 2-4 weeks. Use balanced fertilizer (10-10-10) for most plants. Reduce or stop fertilizing in fall/winter. Always follow package directions - more is not better! Over-fertilizing can burn roots and damage plants. Organic options like compost tea are gentler.',
+              '🔍 OBSERVATION SKILLS: Learn to "read" your plants. Yellow leaves, drooping, new growth - these are your plants\' way of communicating. Check leaves (top and bottom) for pests. Look at soil surface for mold or pests. Observe growth patterns - is it growing normally? The more you observe, the better gardener you become.',
+              '💡 CONFIDENCE BUILDING: Celebrate small wins! First new leaf, first flower, first harvest. These moments build the confidence you need to tackle more challenging plants later. Take photos to track progress. Share successes with other gardeners. Remember - every expert was once a beginner!'
             ]
           }
         ],
@@ -56,30 +56,38 @@ export const getLearningPathModules = () => {
           questions: [
             {
               id: 1,
-              question: '🔍 PLANT IDENTIFICATION: Look at this plant. It has bright, colorful flowers and appears to be growing vigorously in a single season. What type of plant is this?',
-              image: '/uploads/learning_paths/image/learning_1761296409_63f4b9f9.jpg',
-              imageDescription: 'A vibrant annual plant with bright flowers showing typical single-season growth characteristics',
-              options: ['Annual (lives one season)', 'Perennial (lives many years)', 'Biennial (lives two years)', 'Houseplant'],
-              correct: 0,
-              explanation: '✅ CORRECT! This is an annual plant. Key identifying features: Bright, showy flowers typical of annuals, single-season growth pattern, and the vibrant appearance that annuals are known for. Annuals put all their energy into one spectacular growing season!'
+              question: 'Based on the lesson about plant types, which type of plant completes its entire life cycle in one growing season?',
+              options: ['Perennial (lives many years)', 'Annual (lives one season)', 'Biennial (lives two years)', 'Evergreen (lives forever)'],
+              correct: 1,
+              explanation: '✅ CORRECT! Annuals complete their entire life cycle in one growing season - they grow, flower, produce seeds, and die all within a year. Examples include marigolds, lettuce, and petunias. They\'re perfect for beginners because you get quick results!'
             },
             {
               id: 2,
-              question: '🌱 BEGINNER PLANT SELECTION: This plant is known for being nearly indestructible and perfect for beginners. What is it?',
-              image: '/uploads/learning_paths/image/learning_1761296412_1fd407a0.jpg',
-              imageDescription: 'A snake plant (Sansevieria) showing its characteristic upright, sword-like leaves and low-maintenance appearance',
-              options: ['Orchid (needs special care)', 'Snake Plant (very forgiving)', 'Fiddle Leaf Fig (finicky)', 'Succulent (needs lots of sun)'],
+              question: 'According to the watering basics lesson, what is the best way to check if a plant needs water?',
+              options: ['Water on a fixed schedule every day', 'Stick your finger 1-2 inches into the soil to check moisture', 'Water whenever you remember', 'Only water when leaves are drooping'],
               correct: 1,
-              explanation: '✅ CORRECT! This is a Snake Plant (Sansevieria). Perfect for beginners because: It tolerates low light, needs minimal watering, is nearly impossible to kill, and purifies air. It\'s often called "indestructible" for good reason!'
+              explanation: '✅ CORRECT! The best way to check soil moisture is to stick your finger 1-2 inches into the soil. If it feels dry, water thoroughly. Most plants prefer deep, infrequent watering rather than frequent shallow watering. Watering on a schedule can lead to overwatering!'
             },
             {
               id: 3,
-              question: '📊 GARDEN PLANNING: How many plants should a beginner start with for the best success rate?',
-              image: '/uploads/learning_paths/image/learning_1761302201_2dfe938a.jpg',
-              imageDescription: 'A beginner garden setup showing the ideal number of plants for starting out',
+              question: 'From the daily care routine lesson, what is the recommended number of plants a beginner should start with?',
               options: ['10-15 plants', '3-5 plants', '20+ plants', 'Just one plant'],
               correct: 1,
-              explanation: '✅ CORRECT! 3-5 plants is the ideal starting number. This allows you to: Give each plant individual attention, learn their specific needs, build confidence through manageable care, and avoid overwhelm. Quality over quantity when learning!'
+              explanation: '✅ CORRECT! The 3-5 plant rule is ideal for beginners. This allows you to give each plant individual attention, learn their specific needs, and build confidence. More plants mean more complexity and a higher chance of failure. Quality over quantity when learning!'
+            },
+            {
+              id: 4,
+              question: 'Based on the light requirements lesson, how many hours of direct sunlight do "full sun" plants need?',
+              options: ['1-2 hours', '3-5 hours', '6+ hours of direct sunlight', 'No direct sunlight needed'],
+              correct: 2,
+              explanation: '✅ CORRECT! Full sun plants need 6 or more hours of direct sunlight per day. Examples include tomatoes, peppers, and most vegetables. Partial sun plants need 3-6 hours, and shade plants need less than 3 hours of direct sunlight.'
+            },
+            {
+              id: 5,
+              question: 'According to the plant care routine lesson, when should you fertilize your plants?',
+              options: ['Every day', 'Only in winter', 'Every 2-4 weeks during growing season (spring/summer)', 'Never fertilize'],
+              correct: 2,
+              explanation: '✅ CORRECT! Fertilize during the growing season (spring/summer) every 2-4 weeks. Use balanced fertilizer (10-10-10) for most plants. Reduce or stop fertilizing in fall/winter when plants grow slower. Always follow package directions - more is not better!'
             }
           ]
         }
@@ -94,40 +102,40 @@ export const getLearningPathModules = () => {
           {
             id: 4,
             title: 'Understanding Soil Types - Your Plant\'s Home',
-            content: 'Soil is more than just dirt - it\'s your plant\'s home, providing nutrients, water, air, and support. Understanding soil types is crucial for plant success:',
+            content: 'Soil is more than just dirt - it\'s your plant\'s home, providing nutrients, water, air, and support. Understanding soil types is crucial for plant success. Different plants need different soil conditions, and choosing the right soil is one of the most important decisions you\'ll make as a gardener.',
             points: [
-              '🏠 POTTING MIX vs GARDEN SOIL: Potting mix is specially formulated for containers - lightweight, well-draining, and sterile. Garden soil is too heavy and dense for pots, leading to poor drainage and root rot. Always use potting mix for container plants.',
-              '💧 DRAINAGE IS CRITICAL: Good soil should drain water quickly while retaining some moisture. Look for mixes with perlite, vermiculite, or sand. Poor drainage = waterlogged roots = plant death. Your plant\'s roots need air as much as water!',
-              '🌱 NUTRIENT CONTENT: Quality potting mixes contain slow-release fertilizers that feed plants for 3-6 months. Look for mixes labeled "with fertilizer" or "enriched." For edible plants, choose organic options to avoid chemical fertilizers.',
-              '🔬 SOIL COMPONENTS: Peat moss (retains moisture), Perlite (improves drainage), Vermiculite (holds water and nutrients), Compost (adds nutrients and beneficial microbes). The best mixes contain a balance of these components.',
-              '📊 pH LEVELS: Most plants prefer slightly acidic soil (pH 6.0-7.0). Some plants like blueberries need very acidic soil (pH 4.5-5.5). Test your soil pH if plants show nutrient deficiency symptoms.',
-              '💡 SOIL SELECTION TIP: When in doubt, choose a premium potting mix. It costs more upfront but saves money in the long run by preventing plant problems and ensuring healthy growth.'
+              '🏠 POTTING MIX vs GARDEN SOIL: Potting mix is specially formulated for containers - lightweight, well-draining, and sterile. Garden soil is too heavy and dense for pots, leading to poor drainage and root rot. Always use potting mix for container plants. Never use garden soil in pots - it compacts and suffocates roots. Potting mix contains ingredients like peat moss, perlite, and compost that create the perfect environment for container plants.',
+              '💧 DRAINAGE IS CRITICAL: Good soil should drain water quickly while retaining some moisture. Look for mixes with perlite (white specks that improve drainage), vermiculite (holds water), or sand. Poor drainage = waterlogged roots = plant death. Your plant\'s roots need air as much as water! Test drainage by watering and watching how quickly water flows through. If water sits on top for more than a few seconds, the soil needs better drainage.',
+              '🌱 SOIL TEXTURE TYPES: Clay soil (heavy, sticky, holds water too long), Sandy soil (light, gritty, drains too quickly), Loamy soil (perfect balance - dark, crumbly, ideal for most plants). Most garden plants prefer loamy soil. You can improve any soil type by adding organic matter like compost.',
+              '🔬 SOIL COMPONENTS EXPLAINED: Peat moss (retains moisture, slightly acidic), Perlite (white volcanic rock, improves drainage and aeration), Vermiculite (expanded mica, holds water and nutrients), Compost (adds nutrients and beneficial microbes, improves structure). The best mixes contain a balance of these components. Each component serves a specific purpose in creating healthy soil.',
+              '📊 pH LEVELS MATTER: Most plants prefer slightly acidic soil (pH 6.0-7.0). Some plants like blueberries need very acidic soil (pH 4.5-5.5). Test your soil pH if plants show nutrient deficiency symptoms. You can buy pH test kits at garden centers. Adjust pH with lime (raises pH) or sulfur (lowers pH) if needed, but most potting mixes are already balanced.',
+              '💡 SOIL SELECTION TIP: When in doubt, choose a premium potting mix. It costs more upfront but saves money in the long run by preventing plant problems and ensuring healthy growth. Look for mixes labeled "all-purpose" or "for containers." Avoid the cheapest options - they often lack proper drainage and nutrients.'
             ]
           },
           {
             id: 5,
             title: 'Soil Preparation & Container Selection',
-            content: 'The right container and proper soil preparation make all the difference in plant health and growth:',
+            content: 'The right container and proper soil preparation make all the difference in plant health and growth. Setting up your plants correctly from the start prevents many problems later. Learn how to choose containers and prepare soil for optimal plant health.',
             points: [
-              '🪴 CONTAINER ESSENTIALS: Ensure drainage holes in all containers - this is non-negotiable! Add saucers indoors to catch excess water. Choose appropriate size for plant growth - too small restricts roots, too large holds too much water.',
-              '📏 SIZE MATTERS: Start with containers 2-4 inches larger than the plant\'s root ball. Most plants need to be repotted every 1-2 years as they grow. Watch for roots coming out of drainage holes - that\'s your signal to repot.',
-              '🏺 MATERIAL CHOICES: Clay pots (breathable, good drainage, but heavy), Plastic pots (lightweight, retain moisture, affordable), Ceramic pots (attractive, good drainage, but fragile). Choose based on your plant\'s needs and your preferences.',
-              '🌱 SOIL PREPARATION: Moisten potting mix before planting - dry soil repels water. Fill container 1/3 full, place plant, fill around roots, firm gently. Leave 1 inch space at top for watering. Water thoroughly after planting.',
-              '🔄 REPOTTING BASICS: Gently remove plant from old pot, loosen root ball slightly, place in new pot with fresh soil. Water well and place in appropriate light. Don\'t fertilize for 2-3 weeks after repotting.',
-              '💧 WATERING SETUP: Use saucers to catch excess water, but empty them after 30 minutes to prevent root rot. Group plants with similar water needs together for easier care.'
+              '🪴 CONTAINER ESSENTIALS: Ensure drainage holes in all containers - this is non-negotiable! If a container doesn\'t have holes, drill them or use it as a decorative outer pot only. Add saucers indoors to catch excess water. Choose appropriate size for plant growth - too small restricts roots, too large holds too much water and can cause root rot. A good rule: container should be 1-2 inches larger in diameter than the root ball.',
+              '📏 SIZE MATTERS: Start with containers 2-4 inches larger than the plant\'s root ball. Most plants need to be repotted every 1-2 years as they grow. Watch for signs you need to repot: roots coming out of drainage holes, plant dries out very quickly, plant stops growing, or roots are visible on soil surface. When repotting, only go up one size - too large a jump can cause problems.',
+              '🏺 MATERIAL CHOICES: Clay pots (breathable, good drainage, but heavy and breakable), Plastic pots (lightweight, retain moisture longer, affordable, but less breathable), Ceramic pots (attractive, good drainage if they have holes, but fragile and expensive). Choose based on your plant\'s needs and your preferences. For moisture-loving plants, use plastic. For plants that need to dry out, use clay.',
+              '🌱 SOIL PREPARATION STEPS: Moisten potting mix before planting - dry soil repels water and can cause dry pockets. Fill container 1/3 full with moistened soil. Place plant in center, making sure it sits at the same depth as before. Fill around roots with more soil, firm gently (don\'t pack too tightly). Leave 1 inch space at top for watering. Water thoroughly after planting to settle soil and remove air pockets.',
+              '🔄 REPOTTING BASICS: Repot when plant outgrows container or soil is exhausted (usually every 1-2 years). Gently remove plant from old pot - tap sides if stuck. Loosen root ball slightly if roots are tightly wound. Place in new pot with fresh soil. Water well and place in appropriate light. Don\'t fertilize for 2-3 weeks after repotting - let roots settle first. Best time to repot is spring when plants start growing.',
+              '💧 WATERING SETUP: Use saucers to catch excess water, but empty them after 30 minutes to prevent root rot. Never let plants sit in standing water. Group plants with similar water needs together for easier care. Consider using a watering tray with pebbles and water for plants that need high humidity - this creates moisture without waterlogging roots.'
             ]
           },
           {
             id: 6,
             title: 'Soil Amendments & Plant Nutrition',
-            content: 'Learn how to improve your soil and provide proper nutrition for healthy plant growth:',
+            content: 'Learn how to improve your soil and provide proper nutrition for healthy plant growth. Understanding fertilizers and soil amendments helps you give your plants exactly what they need to thrive.',
             points: [
-              '🌿 ORGANIC AMENDMENTS: Compost (adds nutrients and improves structure), Worm castings (rich in nutrients, great for seedlings), Leaf mold (improves water retention), Manure (high in nitrogen, must be well-aged). These feed both plants and beneficial soil organisms.',
-              '⚡ INORGANIC AMENDMENTS: Perlite (improves drainage and aeration), Vermiculite (holds water and nutrients), Sand (improves drainage in clay soils), Lime (raises pH for alkaline-loving plants). These improve soil structure and drainage.',
-              '🍃 FERTILIZER BASICS: Plants need three main nutrients - Nitrogen (N) for green growth, Phosphorus (P) for roots and flowers, Potassium (K) for overall health. Look for balanced fertilizers like 10-10-10 for general use.',
-              '⏰ FERTILIZING SCHEDULE: Most houseplants need fertilizing every 2-4 weeks during growing season (spring/summer). Reduce or stop in fall/winter when plants grow slower. Always follow package directions - more is not better!',
-              '🌱 ORGANIC VS SYNTHETIC: Organic fertilizers (compost, fish emulsion) feed soil life and release nutrients slowly. Synthetic fertilizers (Miracle-Gro) provide quick nutrients but don\'t improve soil structure. Both have their place in gardening.',
-              '💡 NUTRIENT DEFICIENCY SIGNS: Yellow leaves (nitrogen deficiency), Purple leaves (phosphorus deficiency), Brown leaf edges (potassium deficiency). Learn to read these signs to provide targeted nutrition.'
+              '🌿 ORGANIC AMENDMENTS: Compost (adds nutrients and improves structure, feeds beneficial microbes), Worm castings (rich in nutrients, great for seedlings, gentle fertilizer), Leaf mold (improves water retention, adds organic matter), Manure (high in nitrogen, must be well-aged or it burns plants). These feed both plants and beneficial soil organisms. Organic amendments improve soil structure over time, making your soil better each year.',
+              '⚡ INORGANIC AMENDMENTS: Perlite (white volcanic rock, improves drainage and aeration, doesn\'t break down), Vermiculite (expanded mica, holds water and nutrients, good for seed starting), Sand (improves drainage in clay soils, use coarse sand not fine), Lime (raises pH for alkaline-loving plants, use carefully). These improve soil structure and drainage but don\'t add nutrients. Mix these into soil before planting for best results.',
+              '🍃 FERTILIZER BASICS - THE NPK SYSTEM: Plants need three main nutrients - Nitrogen (N) for green leafy growth, Phosphorus (P) for roots and flowers, Potassium (K) for overall health and disease resistance. Look for balanced fertilizers like 10-10-10 for general use. The numbers represent percentage of each nutrient. For example, 10-10-10 means 10% nitrogen, 10% phosphorus, 10% potassium. Higher numbers mean more concentrated fertilizer.',
+              '⏰ FERTILIZING SCHEDULE: Most houseplants need fertilizing every 2-4 weeks during growing season (spring/summer). Reduce or stop in fall/winter when plants grow slower. Always follow package directions - more is not better! Over-fertilizing can burn roots and damage plants. Signs of over-fertilizing: brown leaf tips, white crust on soil, stunted growth. If you see these, flush soil with water to remove excess fertilizer.',
+              '🌱 ORGANIC VS SYNTHETIC FERTILIZERS: Organic fertilizers (compost, fish emulsion, bone meal) feed soil life and release nutrients slowly over time. They improve soil structure and are gentler on plants. Synthetic fertilizers (Miracle-Gro, chemical NPK) provide quick nutrients but don\'t improve soil structure. Both have their place in gardening. Many gardeners use organic for long-term health and synthetic for quick fixes.',
+              '💡 NUTRIENT DEFICIENCY SIGNS: Yellow leaves (especially older leaves) = nitrogen deficiency - add nitrogen-rich fertilizer. Purple or reddish leaves = phosphorus deficiency - add phosphorus fertilizer. Brown leaf edges or spots = potassium deficiency - add potassium. Yellowing between veins = iron deficiency - often caused by high pH. Learn to read these signs to provide targeted nutrition. Fix deficiencies gradually - don\'t overcorrect!'
             ]
           }
         ],
@@ -136,26 +144,38 @@ export const getLearningPathModules = () => {
           questions: [
             {
               id: 4,
-              question: '🔍 SOIL IDENTIFICATION: This soil sample is dark brown, feels crumbly, and holds water well but drains properly. What type of soil is this?',
-              image: '/images/quiz/quiz-loamy-soil.jpg',
-              imageDescription: 'Dark brown, crumbly soil sample showing good structure and balanced texture',
-              options: ['Clay soil (heavy and dense)', 'Sandy soil (gritty and loose)', 'Loamy soil (balanced and crumbly)', 'Peaty soil (spongy and acidic)'],
-              correct: 2,
-              explanation: '✅ CORRECT! This is loamy soil - the "goldilocks" of soils! It has the perfect balance of sand, silt, and clay, providing good drainage while retaining moisture. Most garden plants love loamy soil because it offers the best of all worlds.'
+              question: 'According to the soil types lesson, what should you always use for container plants instead of garden soil?',
+              options: ['Garden soil (it\'s natural)', 'Potting mix (specially formulated for containers)', 'Sand only', 'Clay soil'],
+              correct: 1,
+              explanation: '✅ CORRECT! Always use potting mix for container plants. Potting mix is lightweight, well-draining, and sterile, while garden soil is too heavy and dense for pots, leading to poor drainage and root rot. Potting mix contains ingredients like peat moss, perlite, and compost that create the perfect environment for container plants.'
             },
             {
               id: 5,
-              question: '🪴 CONTAINER SELECTION: What is the most important feature a plant container must have?',
+              question: 'Based on the container selection lesson, what is the most important feature a plant container must have?',
               options: ['Attractive color', 'Drainage holes', 'Large size', 'Expensive material'],
               correct: 1,
-              explanation: '✅ CORRECT! Drainage holes are absolutely essential! Without them, water accumulates at the bottom, causing root rot and plant death. Even the most beautiful container is useless without proper drainage.'
+              explanation: '✅ CORRECT! Drainage holes are absolutely essential and non-negotiable! Without them, water accumulates at the bottom, causing root rot and plant death. Even the most beautiful container is useless without proper drainage. If a container doesn\'t have holes, drill them or use it as a decorative outer pot only.'
             },
             {
               id: 6,
-              question: '🌱 FERTILIZER KNOWLEDGE: What do the numbers 10-10-10 on a fertilizer package represent?',
+              question: 'From the fertilizer basics lesson, what do the numbers 10-10-10 on a fertilizer package represent?',
               options: ['Price in dollars', 'NPK ratio (Nitrogen-Phosphorus-Potassium)', 'Weight in pounds', 'Expiration date'],
               correct: 1,
-              explanation: '✅ CORRECT! The numbers 10-10-10 represent the NPK ratio - 10% Nitrogen, 10% Phosphorus, 10% Potassium. This is a balanced fertilizer suitable for most plants during their growing season.'
+              explanation: '✅ CORRECT! The numbers 10-10-10 represent the NPK ratio - 10% Nitrogen (for green growth), 10% Phosphorus (for roots and flowers), 10% Potassium (for overall health). This is a balanced fertilizer suitable for most plants during their growing season. The numbers represent the percentage of each nutrient in the fertilizer.'
+            },
+            {
+              id: 7,
+              question: 'According to the soil preparation lesson, how much space should you leave at the top of a container when planting?',
+              options: ['Fill to the very top', 'Leave 1 inch space at top for watering', 'Leave 3 inches space', 'It doesn\'t matter'],
+              correct: 1,
+              explanation: '✅ CORRECT! Leave 1 inch space at the top for watering. This space allows you to water thoroughly without water spilling over the edges. When preparing soil, fill container 1/3 full, place plant, fill around roots, firm gently, and leave that important 1 inch space at the top.'
+            },
+            {
+              id: 8,
+              question: 'Based on the nutrient deficiency signs lesson, what does yellow leaves (especially older leaves) typically indicate?',
+              options: ['Phosphorus deficiency', 'Nitrogen deficiency', 'Potassium deficiency', 'Too much water'],
+              correct: 1,
+              explanation: '✅ CORRECT! Yellow leaves, especially on older leaves, typically indicate a nitrogen deficiency. Nitrogen is essential for green leafy growth. Other signs: Purple or reddish leaves = phosphorus deficiency, Brown leaf edges = potassium deficiency. Learn to read these signs to provide targeted nutrition!'
             }
           ]
         }
@@ -170,40 +190,40 @@ export const getLearningPathModules = () => {
           {
             id: 7,
             title: 'Understanding Plant-Soil Compatibility',
-            content: 'Different plants have evolved to thrive in different soil conditions. Understanding these relationships is key to gardening success:',
+            content: 'Different plants have evolved to thrive in different soil conditions. Understanding these relationships is key to gardening success. Matching plants to their preferred soil type makes gardening easier and more successful. Learn which plants work best in different soil conditions.',
             points: [
-              '🌱 CLAY SOIL PLANTS: Hostas (large leaves love moisture), Daylilies (tough roots handle heavy soil), Astilbe (feathery flowers need constant moisture), Japanese Iris (loves wet feet). These plants have adapted to slow-draining conditions.',
-              '🌱 SANDY SOIL PLANTS: Lavender (silver leaves reflect sun, deep roots find water), Rosemary (Mediterranean native, drought-adapted), Succulents (store water in leaves), Cacti (spines reduce water loss). These plants evolved for quick drainage.',
-              '🌱 LOAMY SOIL PLANTS: Tomatoes (need steady moisture and nutrients), Roses (require good drainage but consistent water), Lettuce (quick-growing, needs balanced conditions), Carrots (need loose soil for straight roots). Most garden favorites prefer this balance.',
-              '🌱 PEATY SOIL PLANTS: Azaleas (shallow roots need acidic conditions), Blueberries (require pH 4.5-5.5 for iron absorption), Rhododendrons (large leaves need acidic soil), Camellias (evergreen beauty in acidic conditions). These plants evolved in forest floors.',
-              '🔍 SOIL IDENTIFICATION: Clay soil (dark, sticky, forms clumps), Sandy soil (light, gritty, drains quickly), Loamy soil (dark, crumbly, balanced), Peaty soil (very dark, spongy, acidic). Learn to identify by sight and touch.',
-              '💡 MATCHING STRATEGY: Choose plants that naturally thrive in your soil type, or modify your soil to suit your desired plants. It\'s easier to work with nature than against it!'
+              '🌱 CLAY SOIL PLANTS: Clay soil is heavy, sticky, and holds water well but drains slowly. Plants that thrive: Hostas (large leaves love constant moisture), Daylilies (tough roots handle heavy, compacted soil), Astilbe (feathery flowers need constant moisture), Japanese Iris (loves wet feet and heavy soil). These plants have adapted to slow-draining conditions. If you have clay soil, these are your best choices!',
+              '🌱 SANDY SOIL PLANTS: Sandy soil is light, gritty, and drains very quickly. Plants that thrive: Lavender (silver leaves reflect sun, deep roots find water), Rosemary (Mediterranean native, drought-adapted), Succulents (store water in leaves, need quick drainage), Cacti (spines reduce water loss, evolved for dry conditions). These plants evolved for quick drainage and can\'t handle wet feet. Perfect for sandy soil!',
+              '🌱 LOAMY SOIL PLANTS: Loamy soil is the "goldilocks" - perfect balance of sand, silt, and clay. Most garden favorites prefer this: Tomatoes (need steady moisture and nutrients), Roses (require good drainage but consistent water), Lettuce (quick-growing, needs balanced conditions), Carrots (need loose soil for straight roots). If you have loamy soil, you can grow almost anything!',
+              '🌱 ACIDIC SOIL PLANTS: Some plants need acidic soil (pH below 6.0): Azaleas (shallow roots need acidic conditions), Blueberries (require pH 4.5-5.5 for iron absorption), Rhododendrons (large leaves need acidic soil), Camellias (evergreen beauty in acidic conditions). These plants evolved in forest floors with acidic, organic-rich soil. Test your pH before planting these!',
+              '🔍 SOIL IDENTIFICATION TECHNIQUES: Clay soil (dark, sticky when wet, forms hard clumps, drains slowly), Sandy soil (light brown/tan, gritty texture, drains very quickly, feels loose), Loamy soil (dark brown, crumbly texture, balanced drainage, ideal for most plants), Peaty soil (very dark, spongy texture, acidic, holds lots of water). Learn to identify by sight, touch, and the squeeze test.',
+              '💡 MATCHING STRATEGY: Choose plants that naturally thrive in your soil type - this reduces maintenance and increases success. Or modify your soil to suit your desired plants - add compost to improve any soil, add sand to improve clay drainage, add organic matter to improve sandy soil. It\'s easier to work with nature than against it! Research plant preferences before buying.'
             ]
           },
           {
             id: 8,
             title: 'Soil Testing & Improvement Techniques',
-            content: 'Learn simple techniques to test your soil and improve it for better plant health:',
+            content: 'Learn simple techniques to test your soil and improve it for better plant health. Testing your soil helps you understand what you\'re working with and what improvements are needed. These simple tests can be done at home with no special equipment.',
             points: [
-              '🧪 SIMPLE SOIL TESTS: The squeeze test (clay forms ball, sandy crumbles, loamy breaks when poked), The drainage test (dig hole, fill with water, time how long it takes to drain), The jar test (soil in water, see how particles settle). These help identify your soil type.',
-              '📊 pH TESTING: Use test strips or send samples to extension services. Most plants prefer pH 6.0-7.0. Acidic soil (below 6.0) is good for blueberries and azaleas. Alkaline soil (above 7.0) is good for lavender and clematis.',
-              '🌿 SOIL IMPROVEMENT: Add compost to all soils (improves structure and nutrients), Add sand to clay (improves drainage), Add organic matter to sand (improves water retention), Add lime to acidic soil (raises pH), Add sulfur to alkaline soil (lowers pH).',
-              '⏰ TIMING MATTERS: Test soil in spring before planting. Add amendments 2-4 weeks before planting to allow them to integrate. Don\'t over-amend - start with small amounts and test results.',
-              '🔄 LONG-TERM IMPROVEMENT: Regular addition of compost improves any soil over time. Cover crops add organic matter and nutrients. Mulching protects soil and adds organic matter as it decomposes.',
-              '💧 WATERING ADJUSTMENTS: Clay soil needs less frequent, deeper watering. Sandy soil needs more frequent, lighter watering. Loamy soil needs moderate, regular watering. Adjust your watering schedule to your soil type.'
+              '🧪 SIMPLE SOIL TESTS YOU CAN DO: The squeeze test - take moist soil, squeeze it. Clay forms a tight ball that stays together, sandy crumbles apart immediately, loamy forms a ball but breaks when poked. The drainage test - dig a 12-inch hole, fill with water, time how long it takes to drain. Good drainage = 1-3 hours. The jar test - put soil in jar with water, shake, let settle. Layers show soil composition (clay on top, sand on bottom). These help identify your soil type.',
+              '📊 pH TESTING METHODS: Use pH test strips (available at garden centers, quick and easy), or send samples to extension services (most accurate, provides detailed analysis). Most plants prefer pH 6.0-7.0 (slightly acidic to neutral). Acidic soil (below 6.0) is good for blueberries, azaleas, rhododendrons. Alkaline soil (above 7.0) is good for lavender, clematis, some vegetables. Test pH before planting acid-loving plants!',
+              '🌿 SOIL IMPROVEMENT TECHNIQUES: Add compost to all soils (improves structure and nutrients, feeds beneficial microbes), Add sand to clay (improves drainage, use coarse sand not fine), Add organic matter to sand (improves water retention, use compost or peat moss), Add lime to acidic soil (raises pH, use carefully and test results), Add sulfur to alkaline soil (lowers pH, use carefully). Start with small amounts and test results - don\'t over-amend!',
+              '⏰ TIMING MATTERS: Test soil in spring before planting season. Add amendments 2-4 weeks before planting to allow them to integrate into soil. Don\'t over-amend - start with small amounts (1-2 inches of compost), test results, then add more if needed. Over-amending can cause problems just like under-amending. Patience is key - soil improvement takes time.',
+              '🔄 LONG-TERM IMPROVEMENT STRATEGIES: Regular addition of compost improves any soil over time - add 1-2 inches each year. Cover crops (like clover or rye) add organic matter and nutrients when turned under. Mulching protects soil, retains moisture, and adds organic matter as it decomposes. These practices build soil health gradually and sustainably.',
+              '💧 WATERING ADJUSTMENTS BY SOIL TYPE: Clay soil needs less frequent, deeper watering (water deeply once a week rather than daily). Sandy soil needs more frequent, lighter watering (may need water every 2-3 days, but less each time). Loamy soil needs moderate, regular watering (2-3 times per week, moderate amounts). Adjust your watering schedule to your soil type for best results. Observe how quickly your soil dries out and adjust accordingly.'
             ]
           },
           {
             id: 9,
             title: 'Creating the Perfect Growing Environment',
-            content: 'Combine your knowledge of plants and soil to create optimal growing conditions:',
+            content: 'Combine your knowledge of plants and soil to create optimal growing conditions. This is where everything comes together - matching the right plants to the right soil, preparing soil properly, and maintaining the perfect environment for your plants to thrive.',
             points: [
-              '🎯 PLANT SELECTION STRATEGY: Start with plants that naturally thrive in your soil type. This reduces maintenance and increases success. Research plant preferences before buying - it saves time and money.',
-              '🌱 CONTAINER GARDENING: Use different soil mixes for different plants in containers. Cacti need sandy mix, ferns need moisture-retentive mix, herbs need well-drained mix. This gives you control over growing conditions.',
-              '🌱 OUTDOOR ADAPTATIONS: Most outdoor plants prefer well-draining potting mix. Add extra perlite for succulents, extra peat for moisture-loving plants. Ensure proper drainage for outdoor containers.',
-              '🌿 GARDEN BED PREPARATION: Test soil before planting new beds. Add amendments based on test results and plant needs. Create raised beds for better drainage if needed. Plan plant placement based on soil conditions.',
-              '💡 SUCCESS TIPS: Group plants with similar soil needs together. This makes watering and fertilizing easier. Keep records of what works in your soil - this knowledge is valuable for future plantings.',
-              '🔄 CONTINUOUS LEARNING: Observe how plants respond to your soil conditions. Some plants may surprise you by thriving in unexpected conditions. Gardening is about learning and adapting to your unique environment.'
+              '🎯 PLANT SELECTION STRATEGY: Start with plants that naturally thrive in your soil type - this reduces maintenance and increases success. Research plant preferences before buying - check labels, ask at garden centers, read plant descriptions. It saves time and money to choose the right plants from the start. If you want specific plants, be prepared to modify your soil to meet their needs.',
+              '🌱 CONTAINER GARDENING ADVANTAGES: Use different soil mixes for different plants in containers - this gives you complete control! Cacti and succulents need sandy, well-draining mix (add extra perlite). Ferns and moisture-lovers need moisture-retentive mix (add extra peat moss). Herbs need well-drained mix (standard potting mix works). You can create the perfect soil for each plant type in containers.',
+              '🌱 OUTDOOR CONTAINER SETUP: Most outdoor container plants prefer well-draining potting mix. Add extra perlite for succulents and drought-tolerant plants. Add extra peat moss for moisture-loving plants. Ensure proper drainage for outdoor containers - they need drainage holes and should be elevated slightly so water can drain freely. Use quality potting mix - don\'t skimp on soil quality.',
+              '🌿 GARDEN BED PREPARATION: Test soil before planting new beds - know what you\'re working with. Add amendments based on test results and plant needs. Create raised beds for better drainage if your native soil is heavy clay. Plan plant placement based on soil conditions - group plants with similar needs together. Prepare beds 2-4 weeks before planting to allow amendments to integrate.',
+              '💡 SUCCESS TIPS FOR PLANT-SOIL MATCHING: Group plants with similar soil needs together - this makes watering and fertilizing easier. Keep records of what works in your soil - note which plants thrive and which struggle. This knowledge is valuable for future plantings. Don\'t be afraid to move plants if they\'re not happy - sometimes a different location makes all the difference.',
+              '🔄 CONTINUOUS LEARNING AND ADAPTATION: Observe how plants respond to your soil conditions - they\'ll tell you if they\'re happy! Some plants may surprise you by thriving in unexpected conditions. Gardening is about learning and adapting to your unique environment. Don\'t give up if something doesn\'t work - try a different plant or improve your soil. Every garden is a learning experience!'
             ]
           }
         ],
@@ -212,30 +232,38 @@ export const getLearningPathModules = () => {
           questions: [
             {
               id: 7,
-              question: '🔍 SOIL IDENTIFICATION: This soil sample is light brown, feels gritty, and water drains through it quickly. Which plant would thrive best in this soil type?',
-              image: '/images/quiz/quiz-sandy-soil.jpg',
-              imageDescription: 'Light brown/tan soil sample with visible individual grains, appearing loose and gritty',
-              options: ['Hostas (need constant moisture)', 'Lavender (drought-tolerant)', 'Azaleas (need acidic soil)', 'Astilbe (love wet conditions)'],
+              question: 'According to the plant-soil compatibility lesson, which type of plants thrive in sandy soil that drains quickly?',
+              options: ['Hostas and daylilies (need constant moisture)', 'Lavender and rosemary (drought-adapted)', 'Azaleas and blueberries (need acidic soil)', 'All plants work in sandy soil'],
               correct: 1,
-              explanation: '✅ CORRECT! Lavender is the perfect match for sandy soil. Sandy soil characteristics: Light brown color, gritty texture, drains water quickly (within minutes). Lavender evolved in Mediterranean climates with well-drained, dry conditions. Its silver leaves reflect sunlight and deep roots find water deep underground.'
+              explanation: '✅ CORRECT! Lavender and rosemary are perfect for sandy soil. Sandy soil drains very quickly, and these Mediterranean plants have evolved to handle dry, well-drained conditions. They have deep roots that find water and leaves adapted to conserve moisture. Plants that need constant moisture would struggle in sandy soil.'
             },
             {
               id: 8,
-              question: '🧪 SOIL TEST INTERPRETATION: You did the squeeze test on this soil - it formed a ball but broke apart when you poked it. What type of soil is this?',
-              image: '/images/quiz/quiz-loamy-squeeze-test.jpg',
-              imageDescription: 'Soil sample showing the squeeze test result - forms ball but breaks when poked',
-              options: ['Clay soil (stays in ball)', 'Sandy soil (crumbles apart)', 'Loamy soil (ball breaks when poked)', 'Peaty soil (spongy)'],
+              question: 'Based on the soil testing lesson, what does the squeeze test tell you? If soil forms a ball but breaks when poked, what type of soil is it?',
+              options: ['Clay soil (stays in tight ball)', 'Sandy soil (crumbles apart)', 'Loamy soil (ball breaks when poked)', 'Peaty soil (spongy)'],
               correct: 2,
-              explanation: '✅ CORRECT! This is loamy soil - the "goldilocks" of soils! The squeeze test result (forms ball but breaks when poked) is the key identifier. Loamy soil has: Perfect balance of sand, silt, and clay, good drainage but holds moisture, crumbly texture, ideal for most garden plants.'
+              explanation: '✅ CORRECT! If soil forms a ball but breaks when poked, it\'s loamy soil - the "goldilocks" of soils! This is the perfect balance of sand, silt, and clay. Clay soil would stay in a tight ball, sandy soil would crumble apart immediately, and peaty soil would feel spongy. Loamy soil is ideal for most garden plants.'
             },
             {
               id: 9,
-              question: '🌱 PLANT-SOIL MATCHING: This plant has yellow leaves and appears stressed. The soil around it is heavy and waterlogged. What soil improvement would help most?',
-              image: '/images/quiz/quiz-plant-yellow-leaves.jpg',
-              imageDescription: 'Plant with yellowing leaves sitting in heavy, waterlogged soil that appears dark and dense',
-              options: ['Add more clay soil', 'Add more sand only', 'Loamy soil with compost', 'Keep the same soil'],
-              correct: 2,
-              explanation: '✅ CORRECT! Loamy soil with compost is the best solution. Yellow leaves + waterlogged soil = poor drainage and nutrient deficiency. Loamy soil provides: Good drainage (prevents waterlogging), balanced texture (not too heavy, not too light), and compost adds nutrients and improves structure.'
+              question: 'From the soil improvement lesson, what should you add to clay soil to improve drainage?',
+              options: ['More clay', 'Sand (coarse sand, not fine)', 'Only water', 'Nothing - clay is perfect'],
+              correct: 1,
+              explanation: '✅ CORRECT! Add coarse sand to clay soil to improve drainage. Sand creates air spaces in heavy clay soil, allowing water to drain better. Use coarse sand, not fine sand. You can also add compost to improve structure. Clay soil that doesn\'t drain well can cause root rot, so improving drainage is important.'
+            },
+            {
+              id: 10,
+              question: 'According to the growing environment lesson, what is an advantage of container gardening?',
+              options: ['You can\'t control soil conditions', 'You can use different soil mixes for different plants', 'Containers are always better than garden beds', 'Plants grow faster in containers'],
+              correct: 1,
+              explanation: '✅ CORRECT! Container gardening gives you complete control - you can use different soil mixes for different plants! Cacti get sandy mix, ferns get moisture-retentive mix, herbs get well-drained mix. This allows you to create the perfect soil for each plant type, regardless of your native soil conditions.'
+            },
+            {
+              id: 11,
+              question: 'Based on the watering adjustments lesson, how should you water clay soil?',
+              options: ['Water daily with small amounts', 'Water less frequently but deeply (once a week)', 'Water only in summer', 'Clay soil doesn\'t need water'],
+              correct: 1,
+              explanation: '✅ CORRECT! Clay soil needs less frequent, deeper watering - water deeply once a week rather than daily. Clay holds water well, so it doesn\'t need frequent watering. Deep watering encourages roots to grow deep, while frequent shallow watering keeps roots near the surface. Adjust your watering schedule to your soil type!'
             }
           ]
         }

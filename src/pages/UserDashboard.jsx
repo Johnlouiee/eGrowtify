@@ -10,7 +10,7 @@ import {
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import WeatherCard from '../components/WeatherCard'
-import { getLearningPathModules } from '../utils/learningPathData'
+import { getLearningPathModules, getModuleData } from '../utils/learningPathData'
 
 const UserDashboard = () => {
   const { user, isPremium, refreshAuthStatus } = useAuth()
@@ -22,8 +22,15 @@ const UserDashboard = () => {
   const [seasonalTips, setSeasonalTips] = useState([])
   const [loading, setLoading] = useState(true)
   const [imageErrors, setImageErrors] = useState({})
-
-  // Get learning paths data from centralized source
+  
+  // Store actual modules from backend (same as learning path pages use)
+  const [actualModules, setActualModules] = useState({
+    Beginner: [],
+    Intermediate: [],
+    Expert: []
+  })
+  
+  // Get learning paths data from centralized source (fallback)
   const allModules = getLearningPathModules()
   
   // Learning paths data with access control - using centralized data
@@ -154,6 +161,60 @@ const UserDashboard = () => {
     console.log(`🎉 Dashboard FORCE CLEARED ${keysToRemove.length} learning path keys`)
   }
 
+  // Fetch actual modules from backend API (same as learning path pages)
+  useEffect(() => {
+    const loadModules = async () => {
+      const difficulties = ['Beginner', 'Intermediate', 'Expert']
+      const loadedModules = { Beginner: [], Intermediate: [], Expert: [] }
+      
+      for (const difficulty of difficulties) {
+        try {
+          const response = await axios.get(`/api/learning-paths/${difficulty}`)
+          
+          if (response.data && response.data.length > 0) {
+            // Use backend data
+            const backendModules = response.data.map(module => {
+              // Ensure quizzes is properly formatted as an array
+              let quizzes = module.quizzes
+              if (quizzes && typeof quizzes === 'string') {
+                try {
+                  quizzes = JSON.parse(quizzes)
+                } catch (e) {
+                  console.error('Error parsing quizzes:', e)
+                  quizzes = []
+                }
+              }
+              // If quizzes is not an array, try to use quiz as fallback
+              if (!Array.isArray(quizzes)) {
+                if (module.quiz) {
+                  quizzes = Array.isArray(module.quiz) ? module.quiz : [module.quiz]
+                } else {
+                  quizzes = []
+                }
+              }
+              return {
+                ...module,
+                quizzes: quizzes
+              }
+            })
+            loadedModules[difficulty] = backendModules
+          } else {
+            // Fallback to static data
+            loadedModules[difficulty] = getModuleData(difficulty)
+          }
+        } catch (error) {
+          console.error(`Error loading ${difficulty} modules from backend:`, error)
+          // Fallback to static data
+          loadedModules[difficulty] = getModuleData(difficulty)
+        }
+      }
+      
+      setActualModules(loadedModules)
+    }
+    
+    loadModules()
+  }, [])
+  
   useEffect(() => {
     // Fetch notifications
     const fetchNotifications = async () => {
@@ -186,13 +247,41 @@ const UserDashboard = () => {
         let intermediateProgress = 0
         let expertProgress = 0
         
+        // Helper function to check if a module is completed
+        // A module is completed if:
+        // 1. It has quizzes AND all quizzes are completed, OR
+        // 2. It has no quizzes AND it's in the completedModules array
+        const isModuleCompleted = (module, quizAttempts, completedModules) => {
+          if (!module) return false
+          const quizzes = module.quizzes || (module.quiz ? [module.quiz] : [])
+          
+          // If module has no quizzes, check if it's in completedModules
+          if (quizzes.length === 0) {
+            return completedModules.includes(module.id)
+          }
+          
+          // If module has quizzes, all must be completed
+          return quizzes.every(quiz => {
+            const quizKey = `${module.id}_${quiz.title}`
+            return quizAttempts[quizKey] && quizAttempts[quizKey].length > 0
+          })
+        }
+        
         if (beginnerData) {
           try {
             const parsed = JSON.parse(beginnerData)
-            // Use saved totalModules if available, otherwise fallback to static data
-            const totalModules = parsed.totalModules || allModules.Beginner.length
-            const completedModules = parsed.completedModules?.length || 0
-            beginnerProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
+            // Use actual modules from backend, fallback to static if not loaded yet
+            const modulesToCheck = actualModules.Beginner.length > 0 ? actualModules.Beginner : allModules.Beginner
+            const totalModules = parsed.totalModules || modulesToCheck.length
+            const quizAttempts = parsed.quizAttempts || {}
+            const completedModules = parsed.completedModules || []
+            
+            // Count actually completed modules
+            const actuallyCompleted = modulesToCheck.filter(module => 
+              isModuleCompleted(module, quizAttempts, completedModules)
+            ).length
+            
+            beginnerProgress = totalModules > 0 ? Math.round((actuallyCompleted / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing beginner progress:', error)
           }
@@ -201,10 +290,18 @@ const UserDashboard = () => {
         if (intermediateData) {
           try {
             const parsed = JSON.parse(intermediateData)
-            // Use saved totalModules if available, otherwise fallback to static data
-            const totalModules = parsed.totalModules || allModules.Intermediate.length
-            const completedModules = parsed.completedModules?.length || 0
-            intermediateProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
+            // Use actual modules from backend, fallback to static if not loaded yet
+            const modulesToCheck = actualModules.Intermediate.length > 0 ? actualModules.Intermediate : allModules.Intermediate
+            const totalModules = parsed.totalModules || modulesToCheck.length
+            const quizAttempts = parsed.quizAttempts || {}
+            const completedModules = parsed.completedModules || []
+            
+            // Count actually completed modules
+            const actuallyCompleted = modulesToCheck.filter(module => 
+              isModuleCompleted(module, quizAttempts, completedModules)
+            ).length
+            
+            intermediateProgress = totalModules > 0 ? Math.round((actuallyCompleted / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing intermediate progress:', error)
           }
@@ -213,10 +310,18 @@ const UserDashboard = () => {
         if (expertData) {
           try {
             const parsed = JSON.parse(expertData)
-            // Use saved totalModules if available, otherwise fallback to static data
-            const totalModules = parsed.totalModules || allModules.Expert.length
-            const completedModules = parsed.completedModules?.length || 0
-            expertProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
+            // Use actual modules from backend, fallback to static if not loaded yet
+            const modulesToCheck = actualModules.Expert.length > 0 ? actualModules.Expert : allModules.Expert
+            const totalModules = parsed.totalModules || modulesToCheck.length
+            const quizAttempts = parsed.quizAttempts || {}
+            const completedModules = parsed.completedModules || []
+            
+            // Count actually completed modules
+            const actuallyCompleted = modulesToCheck.filter(module => 
+              isModuleCompleted(module, quizAttempts, completedModules)
+            ).length
+            
+            expertProgress = totalModules > 0 ? Math.round((actuallyCompleted / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing expert progress:', error)
           }
@@ -242,7 +347,7 @@ const UserDashboard = () => {
       refreshAuthStatus() // Refresh subscription status
       setLastAuthRefresh(now)
     }
-  }, [user]) // Re-run when user changes
+  }, [user, actualModules]) // Re-run when user changes or modules are loaded
 
   // Listen for localStorage changes to update learning progress
   useEffect(() => {
@@ -260,13 +365,41 @@ const UserDashboard = () => {
         let intermediateProgress = 0
         let expertProgress = 0
         
+        // Helper function to check if a module is completed
+        // A module is completed if:
+        // 1. It has quizzes AND all quizzes are completed, OR
+        // 2. It has no quizzes AND it's in the completedModules array
+        const isModuleCompleted = (module, quizAttempts, completedModules) => {
+          if (!module) return false
+          const quizzes = module.quizzes || (module.quiz ? [module.quiz] : [])
+          
+          // If module has no quizzes, check if it's in completedModules
+          if (quizzes.length === 0) {
+            return completedModules.includes(module.id)
+          }
+          
+          // If module has quizzes, all must be completed
+          return quizzes.every(quiz => {
+            const quizKey = `${module.id}_${quiz.title}`
+            return quizAttempts[quizKey] && quizAttempts[quizKey].length > 0
+          })
+        }
+        
         if (beginnerData) {
           try {
             const parsed = JSON.parse(beginnerData)
-            // Use saved totalModules if available, otherwise fallback to static data
-            const totalModules = parsed.totalModules || allModules.Beginner.length
-            const completedModules = parsed.completedModules?.length || 0
-            beginnerProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
+            // Use actual modules from backend, fallback to static if not loaded yet
+            const modulesToCheck = actualModules.Beginner.length > 0 ? actualModules.Beginner : allModules.Beginner
+            const totalModules = parsed.totalModules || modulesToCheck.length
+            const quizAttempts = parsed.quizAttempts || {}
+            const completedModules = parsed.completedModules || []
+            
+            // Count actually completed modules
+            const actuallyCompleted = modulesToCheck.filter(module => 
+              isModuleCompleted(module, quizAttempts, completedModules)
+            ).length
+            
+            beginnerProgress = totalModules > 0 ? Math.round((actuallyCompleted / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing beginner progress:', error)
           }
@@ -275,10 +408,18 @@ const UserDashboard = () => {
         if (intermediateData) {
           try {
             const parsed = JSON.parse(intermediateData)
-            // Use saved totalModules if available, otherwise fallback to static data
-            const totalModules = parsed.totalModules || allModules.Intermediate.length
-            const completedModules = parsed.completedModules?.length || 0
-            intermediateProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
+            // Use actual modules from backend, fallback to static if not loaded yet
+            const modulesToCheck = actualModules.Intermediate.length > 0 ? actualModules.Intermediate : allModules.Intermediate
+            const totalModules = parsed.totalModules || modulesToCheck.length
+            const quizAttempts = parsed.quizAttempts || {}
+            const completedModules = parsed.completedModules || []
+            
+            // Count actually completed modules
+            const actuallyCompleted = modulesToCheck.filter(module => 
+              isModuleCompleted(module, quizAttempts, completedModules)
+            ).length
+            
+            intermediateProgress = totalModules > 0 ? Math.round((actuallyCompleted / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing intermediate progress:', error)
           }
@@ -287,10 +428,18 @@ const UserDashboard = () => {
         if (expertData) {
           try {
             const parsed = JSON.parse(expertData)
-            // Use saved totalModules if available, otherwise fallback to static data
-            const totalModules = parsed.totalModules || allModules.Expert.length
-            const completedModules = parsed.completedModules?.length || 0
-            expertProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
+            // Use actual modules from backend, fallback to static if not loaded yet
+            const modulesToCheck = actualModules.Expert.length > 0 ? actualModules.Expert : allModules.Expert
+            const totalModules = parsed.totalModules || modulesToCheck.length
+            const quizAttempts = parsed.quizAttempts || {}
+            const completedModules = parsed.completedModules || []
+            
+            // Count actually completed modules
+            const actuallyCompleted = modulesToCheck.filter(module => 
+              isModuleCompleted(module, quizAttempts, completedModules)
+            ).length
+            
+            expertProgress = totalModules > 0 ? Math.round((actuallyCompleted / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing expert progress:', error)
           }
@@ -326,7 +475,7 @@ const UserDashboard = () => {
       window.removeEventListener('storage', updateLearningProgress)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [user]) // Re-run when user changes
+  }, [user, actualModules]) // Re-run when user changes or modules are loaded
 
   const handleLearningPathClick = (path) => {
     if (!path.isAccessible) {
@@ -397,13 +546,41 @@ const UserDashboard = () => {
         let intermediateProgress = 0
         let expertProgress = 0
         
+        // Helper function to check if a module is completed
+        // A module is completed if:
+        // 1. It has quizzes AND all quizzes are completed, OR
+        // 2. It has no quizzes AND it's in the completedModules array
+        const isModuleCompleted = (module, quizAttempts, completedModules) => {
+          if (!module) return false
+          const quizzes = module.quizzes || (module.quiz ? [module.quiz] : [])
+          
+          // If module has no quizzes, check if it's in completedModules
+          if (quizzes.length === 0) {
+            return completedModules.includes(module.id)
+          }
+          
+          // If module has quizzes, all must be completed
+          return quizzes.every(quiz => {
+            const quizKey = `${module.id}_${quiz.title}`
+            return quizAttempts[quizKey] && quizAttempts[quizKey].length > 0
+          })
+        }
+        
         if (beginnerData) {
           try {
             const parsed = JSON.parse(beginnerData)
-            // Use saved totalModules if available, otherwise fallback to static data
-            const totalModules = parsed.totalModules || allModules.Beginner.length
-            const completedModules = parsed.completedModules?.length || 0
-            beginnerProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
+            // Use actual modules from backend, fallback to static if not loaded yet
+            const modulesToCheck = actualModules.Beginner.length > 0 ? actualModules.Beginner : allModules.Beginner
+            const totalModules = parsed.totalModules || modulesToCheck.length
+            const quizAttempts = parsed.quizAttempts || {}
+            const completedModules = parsed.completedModules || []
+            
+            // Count actually completed modules
+            const actuallyCompleted = modulesToCheck.filter(module => 
+              isModuleCompleted(module, quizAttempts, completedModules)
+            ).length
+            
+            beginnerProgress = totalModules > 0 ? Math.round((actuallyCompleted / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing beginner progress:', error)
           }
@@ -412,10 +589,18 @@ const UserDashboard = () => {
         if (intermediateData) {
           try {
             const parsed = JSON.parse(intermediateData)
-            // Use saved totalModules if available, otherwise fallback to static data
-            const totalModules = parsed.totalModules || allModules.Intermediate.length
-            const completedModules = parsed.completedModules?.length || 0
-            intermediateProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
+            // Use actual modules from backend, fallback to static if not loaded yet
+            const modulesToCheck = actualModules.Intermediate.length > 0 ? actualModules.Intermediate : allModules.Intermediate
+            const totalModules = parsed.totalModules || modulesToCheck.length
+            const quizAttempts = parsed.quizAttempts || {}
+            const completedModules = parsed.completedModules || []
+            
+            // Count actually completed modules
+            const actuallyCompleted = modulesToCheck.filter(module => 
+              isModuleCompleted(module, quizAttempts, completedModules)
+            ).length
+            
+            intermediateProgress = totalModules > 0 ? Math.round((actuallyCompleted / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing intermediate progress:', error)
           }
@@ -424,10 +609,18 @@ const UserDashboard = () => {
         if (expertData) {
           try {
             const parsed = JSON.parse(expertData)
-            // Use saved totalModules if available, otherwise fallback to static data
-            const totalModules = parsed.totalModules || allModules.Expert.length
-            const completedModules = parsed.completedModules?.length || 0
-            expertProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
+            // Use actual modules from backend, fallback to static if not loaded yet
+            const modulesToCheck = actualModules.Expert.length > 0 ? actualModules.Expert : allModules.Expert
+            const totalModules = parsed.totalModules || modulesToCheck.length
+            const quizAttempts = parsed.quizAttempts || {}
+            const completedModules = parsed.completedModules || []
+            
+            // Count actually completed modules
+            const actuallyCompleted = modulesToCheck.filter(module => 
+              isModuleCompleted(module, quizAttempts, completedModules)
+            ).length
+            
+            expertProgress = totalModules > 0 ? Math.round((actuallyCompleted / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing expert progress:', error)
           }
@@ -501,13 +694,41 @@ const UserDashboard = () => {
         let intermediateProgress = 0
         let expertProgress = 0
         
+        // Helper function to check if a module is completed
+        // A module is completed if:
+        // 1. It has quizzes AND all quizzes are completed, OR
+        // 2. It has no quizzes AND it's in the completedModules array
+        const isModuleCompleted = (module, quizAttempts, completedModules) => {
+          if (!module) return false
+          const quizzes = module.quizzes || (module.quiz ? [module.quiz] : [])
+          
+          // If module has no quizzes, check if it's in completedModules
+          if (quizzes.length === 0) {
+            return completedModules.includes(module.id)
+          }
+          
+          // If module has quizzes, all must be completed
+          return quizzes.every(quiz => {
+            const quizKey = `${module.id}_${quiz.title}`
+            return quizAttempts[quizKey] && quizAttempts[quizKey].length > 0
+          })
+        }
+        
         if (beginnerData) {
           try {
             const parsed = JSON.parse(beginnerData)
-            // Use saved totalModules if available, otherwise fallback to static data
-            const totalModules = parsed.totalModules || allModules.Beginner.length
-            const completedModules = parsed.completedModules?.length || 0
-            beginnerProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
+            // Use actual modules from backend, fallback to static if not loaded yet
+            const modulesToCheck = actualModules.Beginner.length > 0 ? actualModules.Beginner : allModules.Beginner
+            const totalModules = parsed.totalModules || modulesToCheck.length
+            const quizAttempts = parsed.quizAttempts || {}
+            const completedModules = parsed.completedModules || []
+            
+            // Count actually completed modules
+            const actuallyCompleted = modulesToCheck.filter(module => 
+              isModuleCompleted(module, quizAttempts, completedModules)
+            ).length
+            
+            beginnerProgress = totalModules > 0 ? Math.round((actuallyCompleted / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing beginner progress:', error)
           }
@@ -516,10 +737,18 @@ const UserDashboard = () => {
         if (intermediateData) {
           try {
             const parsed = JSON.parse(intermediateData)
-            // Use saved totalModules if available, otherwise fallback to static data
-            const totalModules = parsed.totalModules || allModules.Intermediate.length
-            const completedModules = parsed.completedModules?.length || 0
-            intermediateProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
+            // Use actual modules from backend, fallback to static if not loaded yet
+            const modulesToCheck = actualModules.Intermediate.length > 0 ? actualModules.Intermediate : allModules.Intermediate
+            const totalModules = parsed.totalModules || modulesToCheck.length
+            const quizAttempts = parsed.quizAttempts || {}
+            const completedModules = parsed.completedModules || []
+            
+            // Count actually completed modules
+            const actuallyCompleted = modulesToCheck.filter(module => 
+              isModuleCompleted(module, quizAttempts, completedModules)
+            ).length
+            
+            intermediateProgress = totalModules > 0 ? Math.round((actuallyCompleted / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing intermediate progress:', error)
           }
@@ -528,10 +757,18 @@ const UserDashboard = () => {
         if (expertData) {
           try {
             const parsed = JSON.parse(expertData)
-            // Use saved totalModules if available, otherwise fallback to static data
-            const totalModules = parsed.totalModules || allModules.Expert.length
-            const completedModules = parsed.completedModules?.length || 0
-            expertProgress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
+            // Use actual modules from backend, fallback to static if not loaded yet
+            const modulesToCheck = actualModules.Expert.length > 0 ? actualModules.Expert : allModules.Expert
+            const totalModules = parsed.totalModules || modulesToCheck.length
+            const quizAttempts = parsed.quizAttempts || {}
+            const completedModules = parsed.completedModules || []
+            
+            // Count actually completed modules
+            const actuallyCompleted = modulesToCheck.filter(module => 
+              isModuleCompleted(module, quizAttempts, completedModules)
+            ).length
+            
+            expertProgress = totalModules > 0 ? Math.round((actuallyCompleted / totalModules) * 100) : 0
           } catch (error) {
             console.error('Error parsing expert progress:', error)
           }

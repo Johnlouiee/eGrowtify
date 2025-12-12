@@ -5713,6 +5713,7 @@ def admin_api_users():
         return jsonify({"error": "Admin access required"}), 403
     
     try:
+        # Get all users
         users = User.query.all()
         users_data = []
         for user in users:
@@ -5731,6 +5732,28 @@ def admin_api_users():
                 "created_at": user.created_at.isoformat() if user.created_at else None,
                 "updated_at": user.updated_at.isoformat() if user.updated_at else None
             })
+        
+        # Get all admins and format them to match user structure with role="admin"
+        admins = Admin.query.all()
+        for admin in admins:
+            users_data.append({
+                "id": admin.id,
+                "email": admin.email,
+                "username": admin.username,
+                "firstname": None,  # Admins don't have firstname/lastname, they have full_name
+                "lastname": None,
+                "full_name": admin.full_name,
+                "contact": None,  # Admins don't have contact
+                "role": "admin",  # Mark as admin role
+                "is_active": admin.is_active,
+                "email_verified": True,  # Admins are always verified
+                "subscribed": False,  # Admins don't have subscriptions
+                "learning_level": None,  # Admins don't have learning level
+                "created_at": admin.created_at.isoformat() if admin.created_at else None,
+                "updated_at": None,
+                "is_super_admin": admin.is_super_admin  # Include super admin status
+            })
+        
         return jsonify(users_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -5742,32 +5765,50 @@ def admin_api_delete_user(user_id):
         return jsonify({"error": "Admin access required"}), 403
     
     try:
-        user = User.query.get_or_404(user_id)
-        if user.role == 'admin' and user.id != current_user.id:
-            return jsonify({"error": "Cannot delete other admin users"}), 403
+        # Prevent deleting yourself
+        if user_id == current_user.id:
+            return jsonify({"error": "Cannot delete your own account"}), 403
         
-        # Manually delete related records to avoid foreign key constraint issues
-        # Delete UserSubscription records first
-        UserSubscription.query.filter_by(user_id=user_id).delete()
+        # Check if it's an Admin account
+        admin = Admin.query.get(user_id)
+        if admin:
+            # It's an Admin account
+            db.session.delete(admin)
+            db.session.commit()
+            return jsonify({"message": "Admin account deleted successfully"})
         
-        # Delete ActivityLog records (they don't have CASCADE in the model)
-        ActivityLog.query.filter_by(user_id=user_id).delete()
+        # Check if it's a User account
+        user = User.query.get(user_id)
+        if user:
+            if user.role == 'admin' and user.id != current_user.id:
+                return jsonify({"error": "Cannot delete other admin users"}), 403
+            
+            # Manually delete related records to avoid foreign key constraint issues
+            # Delete UserSubscription records first
+            UserSubscription.query.filter_by(user_id=user_id).delete()
+            
+            # Delete ActivityLog records (they don't have CASCADE in the model)
+            ActivityLog.query.filter_by(user_id=user_id).delete()
+            
+            # Commit the deletions before deleting the user
+            db.session.commit()
+            
+            # Now delete the user - cascades will handle other related data (gardens, etc.)
+            db.session.delete(user)
+            db.session.commit()
+            
+            return jsonify({"message": "User deleted successfully"})
         
-        # Commit the deletions before deleting the user
-        db.session.commit()
+        # If neither found
+        return jsonify({"error": "User or admin not found"}), 404
         
-        # Now delete the user - cascades will handle other related data (gardens, etc.)
-        db.session.delete(user)
-        db.session.commit()
-        
-        return jsonify({"message": "User deleted successfully"})
     except Exception as e:
         db.session.rollback()
         import traceback
         error_msg = str(e)
-        print(f"Error deleting user {user_id}: {error_msg}")
+        print(f"Error deleting user/admin {user_id}: {error_msg}")
         print(traceback.format_exc())
-        return jsonify({"error": f"Failed to delete user: {error_msg}"}), 500
+        return jsonify({"error": f"Failed to delete: {error_msg}"}), 500
 
 @views.route('/api/admin/users/<int:user_id>/status', methods=['PATCH'])
 @login_required
@@ -5776,14 +5817,33 @@ def admin_api_toggle_user_status(user_id):
         return jsonify({"error": "Admin access required"}), 403
     
     try:
-        user = User.query.get_or_404(user_id)
-        if user.role == 'admin' and user.id != current_user.id:
-            return jsonify({"error": "Cannot modify other admin users"}), 403
+        # Prevent deactivating yourself
+        if user_id == current_user.id:
+            return jsonify({"error": "Cannot modify your own account status"}), 403
         
-        data = request.get_json()
-        user.is_active = data.get('is_active', not user.is_active)
-        db.session.commit()
-        return jsonify({"message": "User status updated successfully"})
+        # Check if it's an Admin account
+        admin = Admin.query.get(user_id)
+        if admin:
+            # It's an Admin account
+            data = request.get_json()
+            admin.is_active = data.get('is_active', not admin.is_active)
+            db.session.commit()
+            return jsonify({"message": "Admin status updated successfully"})
+        
+        # Check if it's a User account
+        user = User.query.get(user_id)
+        if user:
+            if user.role == 'admin' and user.id != current_user.id:
+                return jsonify({"error": "Cannot modify other admin users"}), 403
+            
+            data = request.get_json()
+            user.is_active = data.get('is_active', not user.is_active)
+            db.session.commit()
+            return jsonify({"message": "User status updated successfully"})
+        
+        # If neither found
+        return jsonify({"error": "User or admin not found"}), 404
+        
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
@@ -7737,7 +7797,6 @@ def admin_create_admin():
         email = data.get('email')
         full_name = data.get('full_name')
         password = data.get('password')
-        is_super_admin = data.get('is_super_admin', False)
         
         # Validation
         if not username or not email or not full_name or not password:
@@ -7755,12 +7814,12 @@ def admin_create_admin():
         if Admin.query.filter_by(email=email).first():
             return jsonify({"success": False, "message": "Email already exists"}), 400
         
-        # Create new admin
+        # Create new admin (all admins are regular admins, no super admin)
         new_admin = Admin(
             username=username,
             email=email,
             full_name=full_name,
-            is_super_admin=is_super_admin
+            is_super_admin=False  # All created admins are regular admins
         )
         new_admin.set_password(password)
         

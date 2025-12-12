@@ -85,6 +85,10 @@ class Admin(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+    def is_admin(self):
+        """Admin model users are always admins"""
+        return True
 
     def __repr__(self):
         return f'<Admin {self.username}>'
