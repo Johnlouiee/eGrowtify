@@ -1582,6 +1582,112 @@ def soil_analysis():
         texture_value = ai_result.get('texture', 'Unable to determine from image')
         soil_type_value = ai_result.get('soil_type', texture_value)
         
+        # Normalize soil type into a clear class for recommendations
+        soil_type_str = (soil_type_value or '').lower()
+        if 'clay' in soil_type_str:
+            soil_type_class = 'Clay Soil'
+        elif 'loam' in soil_type_str or 'loamy' in soil_type_str:
+            soil_type_class = 'Loam Soil'
+        elif 'sand' in soil_type_str or 'sandy' in soil_type_str:
+            soil_type_class = 'Sandy Soil'
+        elif 'silt' in soil_type_str:
+            soil_type_class = 'Silt Soil'
+        else:
+            soil_type_class = 'Mixed Soil'
+
+        # Read user gardening skill level (beginner / experienced)
+        user_level = getattr(current_user, 'learning_level', None)
+        if user_level not in ('beginner', 'experienced'):
+            user_level = None
+
+        # Curated, soil-type + skill-level based plant recommendations (English names)
+        soil_based_plants = {
+            'Clay Soil': {
+                'beginner': {
+                    'vegetables': ['Cabbage', 'Kale', 'Spinach'],
+                    'fruits': ['Guava', 'Banana'],
+                    'herbs': ['Mint', 'Parsley'],
+                    'flowers': ['Marigold', 'Zinnia'],
+                    'trees': ['Guava Tree']
+                },
+                'experienced': {
+                    'vegetables': ['Brussels Sprout', 'Celery'],
+                    'fruits': ['Avocado', 'Orange'],
+                    'herbs': ['Rosemary', 'Thyme'],
+                    'flowers': ['Hydrangea', 'Roses'],
+                    'trees': ['Mango Tree', 'Jackfruit Tree']
+                }
+            },
+            'Loam Soil': {
+                'beginner': {
+                    'vegetables': ['Tomato', 'Lettuce', 'Carrot', 'Eggplant'],
+                    'fruits': ['Mango', 'Banana', 'Papaya'],
+                    'herbs': ['Basil', 'Cilantro'],
+                    'flowers': ['Sunflower', 'Cosmos'],
+                    'trees': ['Calamansi Tree', 'Lemon Tree']
+                },
+                'experienced': {
+                    'vegetables': ['Cauliflower', 'Bell Pepper'],
+                    'fruits': ['Grapes', 'Dragon Fruit'],
+                    'herbs': ['Rosemary', 'Oregano', 'Thyme'],
+                    'flowers': ['Orchids', 'Dahlias'],
+                    'trees': ['Avocado Tree', 'Citrus Orchard Mix']
+                }
+            },
+            'Sandy Soil': {
+                'beginner': {
+                    'vegetables': ['Carrot', 'Sweet Potato', 'Peanut'],
+                    'fruits': ['Watermelon', 'Pineapple'],
+                    'herbs': ['Lavender', 'Rosemary'],
+                    'flowers': ['Portulaca', 'Gazania'],
+                    'trees': ['Casuarina Tree', 'Coconut Palm']
+                },
+                'experienced': {
+                    'vegetables': ['Asparagus', 'Artichoke'],
+                    'fruits': ['Grapes', 'Fig'],
+                    'herbs': ['Sage', 'Thyme'],
+                    'flowers': ['Bougainvillea', 'Bird of Paradise'],
+                    'trees': ['Olive Tree', 'Date Palm']
+                }
+            },
+            'Silt Soil': {
+                'beginner': {
+                    'vegetables': ['Onion', 'Garlic', 'Beetroot'],
+                    'fruits': ['Strawberry'],
+                    'herbs': ['Chives', 'Dill'],
+                    'flowers': ['Iris', 'Daylily'],
+                    'trees': ['Willow Tree']
+                },
+                'experienced': {
+                    'vegetables': ['Leek', 'Fennel'],
+                    'fruits': ['Blueberry', 'Raspberry'],
+                    'herbs': ['Tarragon', 'Lovage'],
+                    'flowers': ['Peony', 'Astilbe'],
+                    'trees': ['Alder Tree', 'Cherry Tree']
+                }
+            },
+            'Mixed Soil': {
+                'beginner': {
+                    'vegetables': ['Tomato', 'Lettuce', 'Cucumber'],
+                    'fruits': ['Mango', 'Banana'],
+                    'herbs': ['Basil', 'Mint'],
+                    'flowers': ['Marigold', 'Cosmos'],
+                    'trees': ['Guava Tree', 'Lemon Tree']
+                },
+                'experienced': {
+                    'vegetables': ['Broccoli', 'Okra'],
+                    'fruits': ['Rambutan', 'Lanzones'],
+                    'herbs': ['Coriander', 'Thyme'],
+                    'flowers': ['Kalachuchi', 'Roses'],
+                    'trees': ['Mango Tree', 'Avocado Tree']
+                }
+            }
+        }
+
+        # Prefer curated soil + skill-based plants; fall back to AI output if needed
+        curated_by_soil = soil_based_plants.get(soil_type_class, {})
+        curated_plants = curated_by_soil.get(user_level) or ai_result.get('suitable_plants', {})
+
         # Check if user is premium to determine what data to return
         is_premium = getattr(current_user, 'subscribed', False)
         
@@ -1589,12 +1695,12 @@ def soil_analysis():
             # Premium plan - return all detailed information
             result = {
                 'moisture_level': ai_result.get('moisture_level', 'Unable to determine from image'),
-                'soil_type': soil_type_value,
+                'soil_type': soil_type_class,
                 'texture': texture_value,
                 'organic_matter': ai_result.get('organic_matter', 'Unable to assess from image'),
                 'drainage': ai_result.get('drainage', 'Unable to assess from image'),
                 'recommendations': ai_result.get('recommendations', []),
-                'suitable_plants': ai_result.get('suitable_plants', {}),
+                'suitable_plants': curated_plants,
                 'nutrient_indicators': ai_result.get('nutrient_indicators', 'Unable to assess from image'),
                 'compaction_assessment': ai_result.get('compaction_assessment', 'Unable to assess from image'),
                 'soil_health_score': ai_result.get('soil_health_score', 'Unable to assess from image'),
@@ -1609,7 +1715,7 @@ def soil_analysis():
             # Basic plan - return only basic information (moisture, soil type, texture)
             result = {
                 'moisture_level': ai_result.get('moisture_level', 'Unable to determine from image'),
-                'soil_type': soil_type_value,
+                'soil_type': soil_type_class,
                 'texture': texture_value,
                 'ai_analyzed': True,
                 'plan_type': 'basic'
