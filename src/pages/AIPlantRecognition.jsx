@@ -221,7 +221,7 @@ const getPlantDetails = (plantName, description = '') => {
 }
 
 const AIPlantRecognition = () => {
-  const { isPremium, refreshAuthStatus } = useAuth()
+  const { user, isPremium, refreshAuthStatus } = useAuth()
   const navigate = useNavigate()
   const [selectedImage, setSelectedImage] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
@@ -1176,6 +1176,63 @@ const AIPlantRecognition = () => {
                   </div>
                 )}
 
+                {/* Collapsible Possible Issues (Causes/Diseases) */}
+                {analysisResult.possible_issues && Array.isArray(analysisResult.possible_issues) && analysisResult.possible_issues.length > 0 && (
+                  <div className="bg-white border border-gray-200 rounded-lg">
+                    <button
+                      onClick={() => toggleSection('possibleIssues')}
+                      className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <AlertCircle className="h-4 w-4 text-red-600" />
+                        <span className="font-medium text-gray-900">Possible Causes / Diseases</span>
+                        <span className="text-xs text-gray-500">
+                          ({analysisResult.possible_issues.length} items)
+                        </span>
+                      </div>
+                      {expandedSections.possibleIssues ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </button>
+                    {expandedSections.possibleIssues && (
+                      <div className="px-3 pb-3 border-t border-gray-100">
+                        <div className="space-y-3 mt-3">
+                          {analysisResult.possible_issues.map((item, idx) => (
+                            <div key={idx} className="bg-red-50 rounded-lg p-3 border border-red-100">
+                              <div className="flex items-center justify-between">
+                                <div className="font-semibold text-red-900 text-sm">
+                                  {item.issue || 'Possible issue'}
+                                </div>
+                                {item.likelihood && (
+                                  <span className="text-xs bg-white text-red-700 border border-red-200 px-2 py-0.5 rounded-full">
+                                    {item.likelihood}
+                                  </span>
+                                )}
+                              </div>
+                              {item.causes && (
+                                <div className="text-sm text-gray-700 mt-2">
+                                  <strong>Causes:</strong>{' '}
+                                  {Array.isArray(item.causes) ? item.causes.join('; ') : item.causes}
+                                </div>
+                              )}
+                              {item.actions && (
+                                <div className="text-sm text-gray-700 mt-2">
+                                  <strong>Actions:</strong>{' '}
+                                  {Array.isArray(item.actions) ? item.actions.join('; ') : item.actions}
+                                </div>
+                              )}
+                              {item.watch_for && (
+                                <div className="text-sm text-gray-700 mt-2">
+                                  <strong>Watch for:</strong>{' '}
+                                  {Array.isArray(item.watch_for) ? item.watch_for.join('; ') : item.watch_for}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Collapsible Common Issues */}
                 {analysisResult.common_issues && analysisResult.common_issues.length > 0 && (
                   <div className="bg-white border border-gray-200 rounded-lg">
@@ -1261,6 +1318,15 @@ const AIPlantRecognition = () => {
                 </div>
               ) : (
                 <div className="space-y-6">
+                  {/* Soil Type (moved to top) */}
+                  <div className="bg-amber-50 rounded-lg p-4 border-2 border-amber-200">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <Beaker className="h-6 w-6 text-amber-700" />
+                      <h3 className="font-bold text-lg text-amber-900">Soil Type</h3>
+                    </div>
+                    <p className="text-base font-semibold text-amber-800">{soilResult.soil_type || soilResult.texture}</p>
+                  </div>
+
                   {/* Moisture */}
                   <div className="bg-blue-50 rounded-lg p-4">
                     <div className="flex items-center space-x-3 mb-1">
@@ -1268,15 +1334,6 @@ const AIPlantRecognition = () => {
                       <h3 className="font-semibold text-blue-900">Moisture</h3>
                     </div>
                     <p className="text-sm text-blue-800">{soilResult.moisture_level}</p>
-                  </div>
-
-                  {/* Soil Type */}
-                  <div className="bg-amber-50 rounded-lg p-4 border-2 border-amber-200">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <Beaker className="h-6 w-6 text-amber-700" />
-                      <h3 className="font-bold text-lg text-amber-900">Soil Type</h3>
-                    </div>
-                    <p className="text-base font-semibold text-amber-800">{soilResult.soil_type || soilResult.texture}</p>
                   </div>
 
                   {/* Texture Details */}
@@ -1288,70 +1345,10 @@ const AIPlantRecognition = () => {
                     <p className="text-sm text-amber-800">{soilResult.texture}</p>
                   </div>
 
-                  {/* Organic Matter & Drainage */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-green-50 rounded-lg p-4">
-                      <div className="flex items-center space-x-3 mb-1">
-                        <Leaf className="h-5 w-5 text-green-600" />
-                        <h3 className="font-semibold text-green-900">Organic Matter</h3>
-                      </div>
-                      <p className="text-sm text-green-800">{soilResult.organic_matter}</p>
-                    </div>
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <div className="flex items-center space-x-3 mb-1">
-                        <Droplets className="h-5 w-5 text-blue-600" />
-                        <h3 className="font-semibold text-blue-900">Drainage</h3>
-                      </div>
-                      <p className="text-sm text-blue-800">{soilResult.drainage}</p>
-                    </div>
-                  </div>
-
-                  {/* Soil Health Score */}
-                  {soilResult.soil_health_score && (
-                    <div className="bg-emerald-50 rounded-lg p-4">
-                      <div className="flex items-center space-x-3 mb-1">
-                        <CheckCircle className="h-5 w-5 text-emerald-600" />
-                        <h3 className="font-semibold text-emerald-900">Soil Health Score</h3>
-                      </div>
-                      <p className="text-sm text-emerald-800">{soilResult.soil_health_score}</p>
-                    </div>
-                  )}
-
-                  {/* Nutrient Indicators & Compaction */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-purple-50 rounded-lg p-4">
-                      <div className="flex items-center space-x-3 mb-1">
-                        <Beaker className="h-5 w-5 text-purple-600" />
-                        <h3 className="font-semibold text-purple-900">Nutrient Indicators</h3>
-                      </div>
-                      <p className="text-sm text-purple-800">{soilResult.nutrient_indicators}</p>
-                    </div>
-                    <div className="bg-orange-50 rounded-lg p-4">
-                      <div className="flex items-center space-x-3 mb-1">
-                        <Thermometer className="h-5 w-5 text-orange-600" />
-                        <h3 className="font-semibold text-orange-900">Compaction</h3>
-                      </div>
-                      <p className="text-sm text-orange-800">{soilResult.compaction_assessment}</p>
-                    </div>
-                  </div>
-
-                  {/* Water Retention & Root Development */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <div className="flex items-center space-x-3 mb-1">
-                        <Droplets className="h-5 w-5 text-blue-600" />
-                        <h3 className="font-semibold text-blue-900">Water Retention</h3>
-                      </div>
-                      <p className="text-sm text-blue-800">{soilResult.water_retention}</p>
-                    </div>
-                    <div className="bg-green-50 rounded-lg p-4">
-                      <div className="flex items-center space-x-3 mb-1">
-                        <Leaf className="h-5 w-5 text-green-600" />
-                        <h3 className="font-semibold text-green-900">Root Development</h3>
-                      </div>
-                      <p className="text-sm text-green-800">{soilResult.root_development}</p>
-                    </div>
-                  </div>
+                  {/* Organic matter, drainage, score, and other detailed cards
+                      have been intentionally removed from the UI to simplify
+                      the soil analysis view, while keeping core metrics and
+                      recommendations below. */}
 
                   {/* Seasonal Considerations */}
                   {soilResult.seasonal_considerations && (
@@ -1489,7 +1486,16 @@ const AIPlantRecognition = () => {
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-xl font-semibold text-gray-900">Recommended Plants for Your Soil</h3>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Recommended Plants for Your Soil</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  {user?.learning_level === 'experienced'
+                    ? 'Plant recommendations for gardeners that have experience.'
+                    : user?.learning_level === 'beginner'
+                      ? 'Plant recommendations for beginners.'
+                      : 'Personalized plant recommendations based on your soil.'}
+                </p>
+              </div>
               <button
                 onClick={() => setShowPlantModal(false)}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -1530,7 +1536,12 @@ const AIPlantRecognition = () => {
                             {plants.map((plant, index) => {
                               const plantName = typeof plant === 'string' ? plant : plant.name || plant
                               const plantDescription = typeof plant === 'object' && plant.description ? plant.description : ''
-                              const plantDetails = getPlantDetails(plantName, plantDescription)
+                              const baseDetails = getPlantDetails(plantName, plantDescription)
+                              const plantDetails = {
+                                ...baseDetails,
+                                // Beginners see easier plants (labeled Easy)
+                                difficulty: user?.learning_level === 'beginner' ? 'Easy' : baseDetails.difficulty
+                              }
                               
                               return (
                                 <div key={index} className={`bg-white rounded-lg p-4 border ${borderColor} hover:shadow-md transition-shadow`}>
@@ -1566,7 +1577,11 @@ const AIPlantRecognition = () => {
                         ) : typeof plants === 'object' ? (
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {Object.entries(plants).map(([plantName, description]) => {
-                              const plantDetails = getPlantDetails(plantName, typeof description === 'string' ? description : '')
+                              const baseDetails = getPlantDetails(plantName, typeof description === 'string' ? description : '')
+                              const plantDetails = {
+                                ...baseDetails,
+                                difficulty: user?.learning_level === 'beginner' ? 'Easy' : baseDetails.difficulty
+                              }
                               
                               return (
                                 <div key={plantName} className={`bg-white rounded-lg p-4 border ${borderColor} hover:shadow-md transition-shadow`}>
@@ -1624,7 +1639,11 @@ const AIPlantRecognition = () => {
               ) : Array.isArray(soilResult.suitable_plants) ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {soilResult.suitable_plants.map((p, i) => {
-                    const plantDetails = getPlantDetails(p)
+                    const baseDetails = getPlantDetails(p)
+                    const plantDetails = {
+                      ...baseDetails,
+                      difficulty: user?.learning_level === 'beginner' ? 'Easy' : baseDetails.difficulty
+                    }
                     return (
                       <div key={i} className="bg-white rounded-lg p-4 border border-green-200 hover:shadow-md transition-shadow">
                         <div className="flex items-start justify-between mb-3">

@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
       console.log('Auth status check debounced - too soon since last check')
       return
     }
-    
+
     try {
       setLastAuthCheck(now)
       // Clear cache if forced refresh (e.g., after subscription upgrade)
@@ -73,7 +73,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axios.post('/auth/login', { email, password })
       console.log('Login response:', response.data) // Debug log
-      
+
       // Check if login was successful
       if (response.data.success) {
         setUser(response.data.user)
@@ -145,7 +145,7 @@ export const AuthProvider = ({ children }) => {
           if (avatarPath) {
             updatedUser.avatar_path = avatarPath
           }
-        } catch {}
+        } catch { }
         setUser(updatedUser)
       }
       toast.success('Profile updated successfully')

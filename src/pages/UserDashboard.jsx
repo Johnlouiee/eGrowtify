@@ -13,7 +13,7 @@ import WeatherCard from '../components/WeatherCard'
 import { getLearningPathModules, getModuleData } from '../utils/learningPathData'
 
 const UserDashboard = () => {
-  const { user, isPremium, refreshAuthStatus } = useAuth()
+  const { user, isPremium, refreshAuthStatus, updateProfile } = useAuth()
   const [lastAuthRefresh, setLastAuthRefresh] = useState(0)
   const [notifications, setNotifications] = useState([])
   const [plants, setPlants] = useState([])
@@ -40,6 +40,13 @@ const UserDashboard = () => {
     expert: true
   })
 
+  // Skill level onboarding modal
+  const [showSkillModal, setShowSkillModal] = useState(false)
+  const [savingSkill, setSavingSkill] = useState(false)
+
+  // learning_level is purely informational now; do not default it here
+  const userLearningLevel = user && user.learning_level
+
   // Learning paths data with access control - using centralized data
   const learningPaths = [
     {
@@ -62,7 +69,8 @@ const UserDashboard = () => {
       color: 'bg-blue-500',
       progress: learningProgress.intermediate || 0,
       modules: allModules.Intermediate.map(module => module.title),
-      isAccessible: pathStatus.intermediate && (isPremium || (learningProgress.beginner >= 100)), // Accessible if active AND (premium OR beginner completed)
+      // Access is based only on progress/subscription; gardener type is informational
+      isAccessible: pathStatus.intermediate && (isPremium || (learningProgress.beginner >= 100)),
       isLocked: !isPremium && (learningProgress.beginner < 100),
       isActive: pathStatus.intermediate
     },
@@ -169,6 +177,54 @@ const UserDashboard = () => {
     })
     
     console.log(`🎉 Dashboard FORCE CLEARED ${keysToRemove.length} learning path keys`)
+  }
+
+  // Show skill-level modal until the user chooses a level
+  useEffect(() => {
+    if (!user) return
+
+    try {
+      const key = `skillLevelCompleted_user_${user.id}`
+      const completed = localStorage.getItem(key)
+
+      // If backend already has a learning_level, assume they chose before and mark completed
+      if (user.learning_level) {
+        if (!completed) {
+          localStorage.setItem(key, 'completed')
+        }
+        setShowSkillModal(false)
+        return
+      }
+
+      // No learning_level yet → only show if they haven't completed onboarding locally
+      if (!completed) {
+        setShowSkillModal(true)
+      } else {
+        setShowSkillModal(false)
+      }
+    } catch {
+      // If localStorage fails, just always show for users without a stored completion flag
+      setShowSkillModal(true)
+    }
+  }, [user])
+
+  const handleSkillChoice = async (level) => {
+    if (!user) return
+    setSavingSkill(true)
+    try {
+      const normalized = level === 'experienced' ? 'experienced' : 'beginner'
+      // Persist the choice, but it should not gate learning paths anymore
+      await updateProfile({ learning_level: normalized })
+      try {
+        const key = `skillLevelCompleted_user_${user.id}`
+        localStorage.setItem(key, 'completed')
+      } catch {}
+      setShowSkillModal(false)
+    } catch (e) {
+      console.error('Error updating learning level', e)
+    } finally {
+      setSavingSkill(false)
+    }
   }
 
   // Fetch actual modules from backend API (same as learning path pages)
@@ -874,6 +930,71 @@ const UserDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      {/* Skill Level Onboarding Modal */}
+      {showSkillModal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 p-6 relative">
+            <button
+              onClick={() => setShowSkillModal(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-sm"
+            >
+              Skip for now
+            </button>
+            <div className="flex items-center mb-4">
+              <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center mr-3">
+                <Leaf className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">What kind of gardener are you?</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  This helps us personalize your learning path, tips, and recommendations.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <button
+                type="button"
+                onClick={() => handleSkillChoice('beginner')}
+                disabled={savingSkill}
+                className="border border-gray-200 rounded-xl p-4 text-left hover:border-green-400 hover:shadow-md transition-all disabled:opacity-60"
+              >
+                <h3 className="font-semibold text-gray-900 mb-1">New to gardening</h3>
+                <p className="text-xs text-gray-600 mb-2">
+                  Start with the basics, step-by-step guides, and beginner-friendly plants.
+                </p>
+                <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                  <li>Beginner learning path highlighted</li>
+                  <li>Simpler recommendations and explanations</li>
+                  <li>More guidance and reminders</li>
+                </ul>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSkillChoice('experienced')}
+                disabled={savingSkill}
+                className="border border-gray-200 rounded-xl p-4 text-left hover:border-blue-400 hover:shadow-md transition-all disabled:opacity-60"
+              >
+                <h3 className="font-semibold text-gray-900 mb-1">Have experience</h3>
+                <p className="text-xs text-gray-600 mb-2">
+                  Skip the basics and unlock more advanced content and controls.
+                </p>
+                <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                  <li>Intermediate path available immediately</li>
+                  <li>More detailed, technical recommendations</li>
+                  <li>Less hand-holding, more optimization tips</li>
+                </ul>
+              </button>
+            </div>
+
+            <p className="text-[11px] text-gray-500 mt-4">
+              You can change this later in your profile settings if you pick the wrong option.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Welcome Header with Notifications */}
         <div className="flex justify-between items-start mb-8">

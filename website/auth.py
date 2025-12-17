@@ -93,7 +93,9 @@ def login():
                         "is_active": user.is_active,
                         "email_verified": user.email_verified,
                         "subscribed": getattr(user, 'subscribed', False),
-                        "subscription_plan": getattr(user, 'subscription_plan', 'basic')
+                        "subscription_plan": getattr(user, 'subscription_plan', 'basic'),
+                        # Expose learning level so frontend can personalize experience
+                        "learning_level": getattr(user, 'learning_level', 'beginner')
                     },
                     "is_admin": user.is_admin(),
                     "is_premium": getattr(user, 'subscribed', False) or getattr(user, 'subscription_plan', 'basic') == 'premium'
@@ -318,7 +320,9 @@ def auth_status():
                     "is_active": user.is_active,
                     "created_at": user.created_at.isoformat() if user.created_at else None,
                     "subscribed": getattr(user, 'subscribed', False),
-                    "subscription_plan": subscription_plan
+                    "subscription_plan": subscription_plan,
+                    # Include learning level for personalization
+                    "learning_level": getattr(user, 'learning_level', 'beginner')
                 },
                 "is_admin": user.is_admin(),
                 "is_premium": is_premium
@@ -576,6 +580,7 @@ def profile():
                 "phone": current_user.contact,
                 "role": current_user.role,
                 "is_active": current_user.is_active,
+                "learning_level": getattr(current_user, 'learning_level', 'beginner'),
                 "created_at": current_user.created_at.isoformat() if current_user.created_at else None
             }
         })
@@ -600,6 +605,13 @@ def profile():
             if 'phone' in data:
                 current_user.contact = data['phone'] or ''
 
+            # Optional: update learning level for personalization (e.g., 'beginner' or 'experienced')
+            if 'learning_level' in data and data['learning_level']:
+                level = str(data['learning_level']).lower()
+                # Allow a small, controlled set of values
+                if level in ['beginner', 'intermediate', 'experienced']:
+                    current_user.learning_level = level
+
             db.session.commit()
             return jsonify({
                 "success": True,
@@ -610,7 +622,8 @@ def profile():
                     "full_name": current_user.full_name,
                     "phone": current_user.contact,
                     "role": current_user.role,
-                    "is_active": current_user.is_active
+                    "is_active": current_user.is_active,
+                    "learning_level": getattr(current_user, 'learning_level', 'beginner')
                 }
             })
         except Exception as e:

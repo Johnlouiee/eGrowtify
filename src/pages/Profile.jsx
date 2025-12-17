@@ -12,7 +12,8 @@ const Profile = () => {
   const [profileData, setProfileData] = useState({
     full_name: '',
     email: '',
-    phone: ''
+    phone: '',
+    learning_level: ''
   })
   const [passwordData, setPasswordData] = useState({
     current_password: '',
@@ -45,7 +46,8 @@ const Profile = () => {
         setProfileData({
           full_name: u.full_name ?? user.full_name ?? '',
           email: u.email ?? user.email ?? '',
-          phone: u.phone ?? user.phone ?? ''
+          phone: u.phone ?? user.phone ?? '',
+          learning_level: u.learning_level ?? user.learning_level ?? ''
         })
         // Store full profile user data for summary section
         setProfileUser(u)
@@ -56,19 +58,20 @@ const Profile = () => {
           if (candidate) {
             setPhotoPreview(candidate.startsWith('http') || candidate.startsWith('/') ? candidate : `/${candidate}`)
           }
-        } catch {}
+        } catch { }
       } catch (e) {
         // Fallback to context if API fails
         setProfileData({
           full_name: user.full_name || '',
           email: user.email || '',
-          phone: user.phone || ''
+          phone: user.phone || '',
+          learning_level: user.learning_level || ''
         })
         setProfileUser(user)
         try {
           const stored = localStorage.getItem('profilePhotoPath')
           if (stored) setPhotoPreview(stored.startsWith('http') || stored.startsWith('/') ? stored : `/${stored}`)
-        } catch {}
+        } catch { }
       }
     }
     loadProfile()
@@ -77,7 +80,7 @@ const Profile = () => {
   const handleProfileSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    
+
     try {
       const result = await updateProfile(profileData)
       if (result.success) {
@@ -92,25 +95,25 @@ const Profile = () => {
 
   const handlePasswordChange = async (e) => {
     e.preventDefault()
-    
+
     if (passwordData.new_password !== passwordData.confirm_password) {
       toast.error('New passwords do not match')
       return
     }
-    
+
     if (passwordData.new_password.length < 6) {
       toast.error('New password must be at least 6 characters')
       return
     }
-    
+
     setLoading(true)
-    
+
     try {
       const response = await axios.put('/auth/change-password', {
         current_password: passwordData.current_password,
         new_password: passwordData.new_password
       })
-      
+
       if (response.data.success) {
         toast.success('Password changed successfully!')
         setPasswordData({
@@ -136,7 +139,8 @@ const Profile = () => {
     setProfileData({
       full_name: user.full_name || '',
       email: user.email || '',
-      phone: user.phone || ''
+      phone: user.phone || '',
+      learning_level: user.learning_level || ''
     })
     setIsEditing(false)
   }
@@ -163,13 +167,13 @@ const Profile = () => {
       })
       if (response.data.success) {
         toast.success('Your account has been deleted successfully')
-        
+
         // Clear local storage immediately
         localStorage.clear()
-        
+
         // Clear auth cache
         authService.clearCache()
-        
+
         // Redirect immediately to landing page with full page reload
         // This ensures all React state is cleared and user cannot access protected routes
         setTimeout(() => {
@@ -206,7 +210,7 @@ const Profile = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Profile Information */}
           <div className="lg:col-span-2">
-             <div className="card">
+            <div className="card">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Personal Information</h2>
                 {!isEditing && (
@@ -288,7 +292,7 @@ const Profile = () => {
                     <input
                       type="text"
                       value={profileData.full_name}
-                      onChange={(e) => setProfileData({...profileData, full_name: e.target.value})}
+                      onChange={(e) => setProfileData({ ...profileData, full_name: e.target.value })}
                       className="input-field pl-10"
                       disabled={!isEditing}
                       required
@@ -305,7 +309,7 @@ const Profile = () => {
                     <input
                       type="email"
                       value={profileData.email}
-                      onChange={(e) => setProfileData({...profileData, email: e.target.value})}
+                      onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
                       className="input-field pl-10"
                       disabled={!isEditing}
                       required
@@ -326,11 +330,30 @@ const Profile = () => {
                       pattern="[0-9]*"
                       placeholder="Enter phone number"
                       value={profileData.phone}
-                      onChange={(e) => setProfileData({...profileData, phone: e.target.value.replace(/[^0-9+\-\s]/g, '')})}
+                      onChange={(e) => setProfileData({ ...profileData, phone: e.target.value.replace(/[^0-9+\-\s]/g, '') })}
                       className="input-field pl-10"
                       disabled={!isEditing}
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Gardening Skill Level
+                  </label>
+                  <select
+                    value={profileData.learning_level || ''}
+                    onChange={(e) => setProfileData({ ...profileData, learning_level: e.target.value })}
+                    className="input-field"
+                    disabled={!isEditing}
+                  >
+                    <option value="">Not set</option>
+                    <option value="beginner">New to gardening</option>
+                    <option value="experienced">Have experience</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    This is only used to personalize recommendations (for example, plant suggestions) and can be changed any time.
+                  </p>
                 </div>
 
                 {isEditing && (
@@ -379,7 +402,7 @@ const Profile = () => {
                       <input
                         type={showCurrentPassword ? 'text' : 'password'}
                         value={passwordData.current_password}
-                        onChange={(e) => setPasswordData({...passwordData, current_password: e.target.value})}
+                        onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
                         className="input-field pl-10 pr-10"
                         required
                       />
@@ -402,7 +425,7 @@ const Profile = () => {
                       <input
                         type={showNewPassword ? 'text' : 'password'}
                         value={passwordData.new_password}
-                        onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
+                        onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
                         className="input-field pl-10 pr-10"
                         required
                       />
@@ -425,7 +448,7 @@ const Profile = () => {
                       <input
                         type={showConfirmPassword ? 'text' : 'password'}
                         value={passwordData.confirm_password}
-                        onChange={(e) => setPasswordData({...passwordData, confirm_password: e.target.value})}
+                        onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
                         className="input-field pl-10 pr-10"
                         required
                       />
@@ -606,7 +629,7 @@ const Profile = () => {
                     <p className="text-sm text-gray-500">{user.email}</p>
                   </div>
                 </div>
-                
+
                 <div className="border-t pt-4">
                   <div className="space-y-3">
                     <div className="flex justify-between">
@@ -618,27 +641,36 @@ const Profile = () => {
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Member Since:</span>
                       <span className="text-sm font-medium text-gray-900">
-                        {profileUser?.created_at 
-                          ? new Date(profileUser.created_at).toLocaleDateString('en-US', { 
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric' 
+                        {profileUser?.created_at
+                          ? new Date(profileUser.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })
+                          : user?.created_at
+                            ? new Date(user.created_at).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
                             })
-                          : user?.created_at 
-                            ? new Date(user.created_at).toLocaleDateString('en-US', { 
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric' 
-                              })
                             : 'N/A'}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Status:</span>
-                      <span className={`text-sm font-medium ${
-                        (profileUser?.is_active ?? user?.is_active ?? true) ? 'text-green-600' : 'text-red-600'
-                      }`}>
+                      <span className={`text-sm font-medium ${(profileUser?.is_active ?? user?.is_active ?? true) ? 'text-green-600' : 'text-red-600'
+                        }`}>
                         {(profileUser?.is_active ?? user?.is_active ?? true) ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Gardener Type:</span>
+                      <span className="text-sm font-medium text-gray-900">
+                        {(profileUser?.learning_level ?? user?.learning_level) === 'experienced'
+                          ? 'Have experience'
+                          : (profileUser?.learning_level ?? user?.learning_level) === 'beginner'
+                            ? 'New to gardening'
+                            : 'Not set'}
                       </span>
                     </div>
                   </div>
@@ -646,7 +678,7 @@ const Profile = () => {
               </div>
             </div>
 
-            
+
           </div>
         </div>
       </div>
@@ -662,9 +694,9 @@ const Profile = () => {
               <X className="h-6 w-6 text-gray-700" />
             </button>
             <div className="bg-white rounded-lg overflow-hidden shadow-2xl">
-              <img 
-                src={photoPreview} 
-                alt="Profile Photo" 
+              <img
+                src={photoPreview}
+                alt="Profile Photo"
                 className="w-full h-auto max-h-[90vh] object-contain"
               />
             </div>
