@@ -95,7 +95,8 @@ def login():
                         "subscribed": getattr(user, 'subscribed', False),
                         "subscription_plan": getattr(user, 'subscription_plan', 'basic'),
                         # Expose learning level so frontend can personalize experience
-                        "learning_level": getattr(user, 'learning_level', 'beginner')
+                        "learning_level": getattr(user, 'learning_level', None),
+                        "primary_crop_focus": getattr(user, 'primary_crop_focus', None)
                     },
                     "is_admin": user.is_admin(),
                     "is_premium": getattr(user, 'subscribed', False) or getattr(user, 'subscription_plan', 'basic') == 'premium'
@@ -322,7 +323,8 @@ def auth_status():
                     "subscribed": getattr(user, 'subscribed', False),
                     "subscription_plan": subscription_plan,
                     # Include learning level for personalization
-                    "learning_level": getattr(user, 'learning_level', 'beginner')
+                    "learning_level": getattr(user, 'learning_level', None),
+                    "primary_crop_focus": getattr(user, 'primary_crop_focus', None)
                 },
                 "is_admin": user.is_admin(),
                 "is_premium": is_premium
@@ -580,7 +582,8 @@ def profile():
                 "phone": current_user.contact,
                 "role": current_user.role,
                 "is_active": current_user.is_active,
-                "learning_level": getattr(current_user, 'learning_level', 'beginner'),
+                "learning_level": getattr(current_user, 'learning_level', None),
+                "primary_crop_focus": getattr(current_user, 'primary_crop_focus', None),
                 "created_at": current_user.created_at.isoformat() if current_user.created_at else None
             }
         })
@@ -612,6 +615,14 @@ def profile():
                 if level in ['beginner', 'intermediate', 'experienced']:
                     current_user.learning_level = level
 
+            # Optional: update primary crop focus (e.g., 'Fruits', 'Vegetables', 'Flowers', 'Herbs')
+            if 'primary_crop_focus' in data:
+                crop_focus = data['primary_crop_focus']
+                if crop_focus is None or crop_focus == '':
+                    current_user.primary_crop_focus = None
+                elif crop_focus in ['Fruits', 'Vegetables', 'Flowers', 'Herbs']:
+                    current_user.primary_crop_focus = crop_focus
+
             db.session.commit()
             return jsonify({
                 "success": True,
@@ -623,7 +634,8 @@ def profile():
                     "phone": current_user.contact,
                     "role": current_user.role,
                     "is_active": current_user.is_active,
-                    "learning_level": getattr(current_user, 'learning_level', 'beginner')
+                    "learning_level": getattr(current_user, 'learning_level', None),
+                    "primary_crop_focus": getattr(current_user, 'primary_crop_focus', None)
                 }
             })
         except Exception as e:

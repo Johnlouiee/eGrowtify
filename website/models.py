@@ -22,6 +22,8 @@ class User(UserMixin, db.Model):
     email_notifications = db.Column(db.Boolean, default=True)  # Add email_notifications property
     # Let learning_level start as NULL so new users are explicitly asked
     learning_level = db.Column(db.String(20), nullable=True)
+    # Primary crop interest: 'Fruits', 'Vegetables', 'Flowers', 'Herbs', or NULL
+    primary_crop_focus = db.Column(db.String(20), nullable=True)
     email_verified = db.Column(db.Boolean, default=False)  # Email verification status
     email_verification_token = db.Column(db.String(100), unique=True)  # Verification token
     email_verification_expires = db.Column(db.DateTime)  # Token expiration

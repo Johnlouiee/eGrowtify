@@ -41,7 +41,9 @@ const BeginnerLearningPath = () => {
   useEffect(() => {
     const loadModules = async () => {
       try {
+        console.log('[LEARNING PATH] Loading modules for Beginner level...')
         const response = await axios.get('/api/learning-paths/Beginner')
+        console.log('[LEARNING PATH] API response received:', response.data?.length || 0, 'modules')
         
         // Check if path is deactivated (error response)
         if (response.data && response.data.error && response.data.is_active === false) {
@@ -71,6 +73,7 @@ const BeginnerLearningPath = () => {
           setModules(fallbackModules)
         } else if (Array.isArray(response.data)) {
           // Use backend data
+          console.log('[LEARNING PATH] Processing backend modules, first module title:', response.data[0]?.title)
           const backendModules = response.data.map(module => {
             // Ensure quizzes is properly formatted as an array
             let quizzes = module.quizzes
@@ -123,7 +126,7 @@ const BeginnerLearningPath = () => {
     }
     
     loadModules()
-  }, [])
+  }, [user?.primary_crop_focus]) // Reload modules when crop interest changes
 
   // Clear old progress data function
   const clearOldProgressData = () => {
@@ -269,15 +272,30 @@ const BeginnerLearningPath = () => {
     const isCompleted = isModuleCompleted(module.id)
     // Check if any quiz has been attempted
     const quizzes = module.quizzes || (module.quiz ? [module.quiz] : [])
-    const hasQuizAttempts = quizzes.some(quiz => {
+    const validQuizzes = quizzes.filter(q => q.questions && q.questions.length > 0)
+    const hasQuizAttempts = validQuizzes.some(quiz => {
       const quizKey = `${module.id}_${quiz.title}`
       return quizAttempts[quizKey] && quizAttempts[quizKey].length > 0
     })
+    
+    // Check if this is a quiz-only module (no lessons)
+    const isQuizOnlyModule = (!module.lessons || module.lessons.length === 0) && validQuizzes.length > 0
     
     // Allow users to review even if completed - show options screen
     if (isCompleted && hasQuizAttempts) {
       setCurrentModule(module)
       setShowRetakeOption(true)
+    } else if (isQuizOnlyModule) {
+      // Quiz-only module - go directly to quiz selection or quiz
+      setCurrentModule(module)
+      if (validQuizzes.length > 1) {
+        setShowQuizSelection(true)
+      } else if (validQuizzes.length === 1) {
+        setCurrentQuiz(validQuizzes[0])
+        setShowQuiz(true)
+      } else {
+        toast.error('This quiz module has no questions available')
+      }
     } else {
       // Start module normally (allows review even if completed)
       startModule(module)
@@ -323,21 +341,38 @@ const BeginnerLearningPath = () => {
   }
 
   const nextLesson = () => {
-    if (currentLesson < currentModule.lessons.length - 1) {
+    // Check if there are more lessons
+    if (currentModule.lessons && currentLesson < currentModule.lessons.length - 1) {
       setCurrentLesson(currentLesson + 1)
     } else {
-      // Show quiz selection if there are multiple quizzes, otherwise show the single quiz
+      // No more lessons - show quiz selection or quiz
       const quizzes = currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])
-      if (quizzes.length > 1) {
+      const validQuizzes = quizzes.filter(q => q.questions && q.questions.length > 0)
+      
+      if (validQuizzes.length > 1) {
         setShowQuizSelection(true)
         setShowQuiz(false) // Ensure showQuiz is false when showing selection
-      } else if (quizzes.length === 1) {
-        setCurrentQuiz(quizzes[0])
+      } else if (validQuizzes.length === 1) {
+        setCurrentQuiz(validQuizzes[0])
         setShowQuizSelection(false)
         setShowQuiz(true)
+      } else if (quizzes.length > 0) {
+        // Quizzes exist but have no questions - create default questions
+        toast.error('This quiz has no questions. Please contact support.')
+        console.error('Quiz module has no questions:', currentModule.id, quizzes)
       } else {
-        // No quizzes available - show message or keep on last lesson
-        toast.error('No quizzes available for this module')
+        // No quizzes at all - if no lessons either, mark as complete
+        if (!currentModule.lessons || currentModule.lessons.length === 0) {
+          // Quiz-only module with no quiz - this shouldn't happen, but handle gracefully
+          toast.error('This module has no content available')
+        } else {
+          // Module completed (all lessons done, no quiz)
+          toast.success('All lessons completed! Module finished.')
+          if (!completedModules.includes(currentModule.id)) {
+            setCompletedModules(prev => [...prev, currentModule.id])
+          }
+          setCurrentModule(null)
+        }
       }
     }
   }
@@ -665,8 +700,9 @@ const BeginnerLearningPath = () => {
                 ></div>
               </div>
 
-              {/* Lesson Content */}
-              <div className="p-8">
+              {/* Lesson Content or Quiz-Only Module */}
+              {currentModule.lessons && currentModule.lessons.length > 0 ? (
+                <div className="p-8">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-semibold text-gray-900">
                     Lesson {currentLesson + 1}: {currentModule.lessons[currentLesson].title}
@@ -780,6 +816,33 @@ const BeginnerLearningPath = () => {
                   </div>
                 </div>
               </div>
+              ) : (
+                // Quiz-only module (no lessons)
+                <div className="p-8 text-center">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                    {currentModule.title}
+                  </h2>
+                  <p className="text-gray-600 mb-6">{currentModule.description}</p>
+                  <button
+                    onClick={() => {
+                      const quizzes = currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])
+                      const validQuizzes = quizzes.filter(q => q.questions && q.questions.length > 0)
+                      if (validQuizzes.length > 1) {
+                        setShowQuizSelection(true)
+                      } else if (validQuizzes.length === 1) {
+                        setCurrentQuiz(validQuizzes[0])
+                        setShowQuiz(true)
+                      } else {
+                        toast.error('This quiz module has no questions available')
+                      }
+                    }}
+                    className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center mx-auto"
+                  >
+                    Start Quiz
+                    <ArrowRight className="h-5 w-5 ml-2" />
+                  </button>
+                </div>
+              )}
             </div>
           ) : showQuizSelection ? (
             // Quiz Selection Screen
@@ -868,6 +931,33 @@ const BeginnerLearningPath = () => {
                   </button>
                 </div>
               </div>
+              ) : (
+                // Quiz-only module (no lessons)
+                <div className="p-8 text-center">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                    {currentModule.title}
+                  </h2>
+                  <p className="text-gray-600 mb-6">{currentModule.description}</p>
+                  <button
+                    onClick={() => {
+                      const quizzes = currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])
+                      const validQuizzes = quizzes.filter(q => q.questions && q.questions.length > 0)
+                      if (validQuizzes.length > 1) {
+                        setShowQuizSelection(true)
+                      } else if (validQuizzes.length === 1) {
+                        setCurrentQuiz(validQuizzes[0])
+                        setShowQuiz(true)
+                      } else {
+                        toast.error('This quiz module has no questions available')
+                      }
+                    }}
+                    className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center mx-auto"
+                  >
+                    Start Quiz
+                    <ArrowRight className="h-5 w-5 ml-2" />
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -1141,7 +1231,42 @@ const BeginnerLearningPath = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center text-sm text-gray-500">
                       <BookOpen className="h-4 w-4 mr-1" />
-                      {module.lessons.length} lessons
+                      {(() => {
+                        const quizzes = module.quizzes || (module.quiz ? [module.quiz] : [])
+                        const validQuizzes = quizzes.filter(q => q.questions && q.questions.length > 0)
+                        const totalQuestions = validQuizzes.reduce((sum, q) => sum + (q.questions?.length || 0), 0)
+                        
+                        // Check if this is a quiz-focused module (by ID or title)
+                        const moduleId = (module.id || '').toLowerCase()
+                        const moduleTitle = (module.title || '').toLowerCase()
+                        const isQuizModule = (
+                          moduleId === 'quizzes' ||
+                          moduleId.includes('quiz') ||
+                          moduleTitle.includes('knowledge check') ||
+                          moduleTitle.includes('test your understanding')
+                        )
+                        
+                        if (isQuizModule && totalQuestions > 0) {
+                          // Quiz-focused module - prioritize showing quiz count
+                          if (module.lessons && module.lessons.length > 0) {
+                            return `${module.lessons.length} lessons • ${totalQuestions} quiz questions`
+                          } else {
+                            return `${totalQuestions} quiz questions`
+                          }
+                        } else if (totalQuestions > 0 && module.lessons && module.lessons.length > 0) {
+                          // Module with both lessons and quizzes
+                          return `${module.lessons.length} lessons • ${totalQuestions} quiz questions`
+                        } else if (totalQuestions > 0) {
+                          // Quiz-only module
+                          return `${totalQuestions} quiz questions`
+                        } else if (module.lessons && module.lessons.length > 0) {
+                          // Lesson-only module
+                          return `${module.lessons.length} lessons`
+                        } else {
+                          // No content (shouldn't happen, but handle gracefully)
+                          return 'No content'
+                        }
+                      })()}
                     </div>
                     
                     {isLocked ? (

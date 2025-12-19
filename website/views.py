@@ -6211,10 +6211,462 @@ def admin_api_learning_paths():
     ]
     return jsonify(learning_paths)
 
+# Cache for customized modules to avoid repeated AI calls
+_CROP_CUSTOMIZATION_CACHE = {}
+_CROP_CACHE_TTL = 60 * 60 * 24  # 24 hours
+
+def apply_basic_crop_customization(module, crop_type):
+    """
+    Apply basic text replacement customization when AI fails.
+    This ensures at least titles and descriptions are crop-specific.
+    Also ensures quiz questions are preserved.
+    """
+    import copy
+    customized = copy.deepcopy(module)
+    
+    # Customize title
+    if customized.get('title'):
+        title = customized['title']
+        if crop_type.lower() not in title.lower():
+            customized['title'] = title.replace('Gardening', f'{crop_type} Gardening').replace('gardening', f'{crop_type} gardening')
+    
+    # Customize description
+    if customized.get('description'):
+        desc = customized['description']
+        customized['description'] = desc.replace('gardening', f'{crop_type.lower()} gardening').replace('plants', f'{crop_type.lower()}')
+    
+    # Customize lessons
+    if customized.get('lessons'):
+        crop_examples = {
+            'Vegetables': 'tomatoes, carrots, and lettuce',
+            'Fruits': 'apples, berries, and citrus fruits',
+            'Flowers': 'roses, marigolds, and sunflowers',
+            'Herbs': 'basil, oregano, and thyme'
+        }
+        examples = crop_examples.get(crop_type, crop_type.lower())
+        
+        for lesson in customized['lessons']:
+            if lesson.get('title'):
+                lesson['title'] = lesson['title'].replace('Gardening', f'{crop_type} Gardening')
+            if lesson.get('content'):
+                content = lesson['content']
+                # Add crop-specific context
+                if crop_type.lower() not in content.lower():
+                    lesson['content'] = content.replace('plants', f'{crop_type.lower()}').replace('gardening', f'{crop_type.lower()} gardening')
+            
+            # Customize points/bullets
+            if lesson.get('points'):
+                for i, point in enumerate(lesson['points']):
+                    if isinstance(point, str):
+                        point_lower = point.lower()
+                        if 'plant' in point_lower and crop_type.lower() not in point_lower:
+                            lesson['points'][i] = point.replace('plants', f'{crop_type.lower()}').replace('plant', f'{crop_type.lower()}')
+    
+    # CRITICAL: Ensure quiz questions are preserved
+    if customized.get('quizzes'):
+        for quiz in customized['quizzes']:
+            if not quiz.get('questions') or len(quiz.get('questions', [])) == 0:
+                # If quiz has no questions, create default questions
+                quiz['questions'] = create_default_quiz_questions(crop_type, len(customized.get('lessons', [])))
+    elif customized.get('quiz'):
+        if not customized['quiz'].get('questions') or len(customized['quiz'].get('questions', [])) == 0:
+            customized['quiz']['questions'] = create_default_quiz_questions(crop_type, len(customized.get('lessons', [])))
+    
+    return customized
+
+def create_default_quiz_questions(crop_type, num_lessons):
+    """Create default quiz questions if module has no quiz questions"""
+    crop_examples = {
+        'Vegetables': ('tomatoes', 'carrots', 'lettuce', 'peppers'),
+        'Fruits': ('apples', 'berries', 'strawberries', 'citrus'),
+        'Flowers': ('roses', 'marigolds', 'sunflowers', 'petunias'),
+        'Herbs': ('basil', 'oregano', 'thyme', 'rosemary')
+    }
+    examples = crop_examples.get(crop_type, (crop_type.lower(),))
+    
+    return [
+        {
+            'id': 1,
+            'question': f'What is the best time to plant {examples[0]}?',
+            'options': [
+                'During winter',
+                f'During the appropriate growing season for {crop_type.lower()}',
+                'Any time of year',
+                'Only in summer'
+            ],
+            'correct': 1,
+            'explanation': f'✅ CORRECT! {crop_type} should be planted during their appropriate growing season for best results.',
+            'required': True
+        },
+        {
+            'id': 2,
+            'question': f'How often should you water {examples[0]}?',
+            'options': [
+                'Every hour',
+                'Once a month',
+                f'According to {crop_type.lower()} specific needs and soil moisture',
+                'Never'
+            ],
+            'correct': 2,
+            'explanation': f'✅ CORRECT! Water {crop_type.lower()} according to their specific needs and check soil moisture regularly.',
+            'required': True
+        },
+        {
+            'id': 3,
+            'question': f'What is essential for successful {crop_type.lower()} growing?',
+            'options': [
+                'Expensive equipment',
+                f'Proper soil preparation, adequate sunlight, and regular care',
+                'Large outdoor space only',
+                'Professional training'
+            ],
+            'correct': 1,
+            'explanation': f'✅ CORRECT! Successful {crop_type.lower()} growing requires proper soil preparation, adequate sunlight, and regular care.',
+            'required': True
+        }
+    ]
+
+def customize_module_for_crop(module, crop_type, difficulty_level):
+    """
+    Use AI to customize a learning module's content (lessons, quizzes) for a specific crop type.
+    Returns the customized module or None if customization fails.
+    Uses caching to avoid repeated API calls for the same module+crop combination.
+    """
+    try:
+        # Check cache first
+        cache_key = f"{module.get('id')}_{crop_type}_{difficulty_level}"
+        current_time = time.time()
+        
+        if cache_key in _CROP_CUSTOMIZATION_CACHE:
+            cached_module, cache_time = _CROP_CUSTOMIZATION_CACHE[cache_key]
+            if current_time - cache_time < _CROP_CACHE_TTL:
+                print(f"[CROP CUSTOMIZATION] Using cached customization for {cache_key}")
+                return cached_module
+        
+        openai_key = os.getenv('OPENAI_API_KEY')
+        if not openai_key:
+            print("[CROP CUSTOMIZATION] OpenAI API key not found, skipping customization")
+            return None
+        
+        from openai import OpenAI
+        client = OpenAI(api_key=openai_key)
+        
+        # Extract key parts of the module for customization
+        module_id = module.get('id', 'unknown')
+        module_title = module.get('title', '')
+        module_desc = module.get('description', '')
+        lessons = module.get('lessons', [])
+        quiz = module.get('quiz', {})
+        quizzes = module.get('quizzes', [])
+        
+        # Check if this is a quiz-only module BEFORE customization
+        module_id_lower = module_id.lower()
+        module_title_lower = (module_title or '').lower()
+        is_quiz_module = (
+            'quiz' in module_id_lower or 
+            'knowledge' in module_id_lower or 
+            'check' in module_id_lower or
+            'knowledge check' in module_title_lower or
+            'test your understanding' in module_title_lower
+        )
+        
+        # If quiz module has no quiz questions in original, create them now
+        if is_quiz_module:
+            has_quiz_questions = False
+            if quizzes and len(quizzes) > 0:
+                has_quiz_questions = any(q.get('questions') and len(q.get('questions', [])) > 0 for q in quizzes)
+            elif quiz and quiz.get('questions'):
+                has_quiz_questions = len(quiz.get('questions', [])) > 0
+            
+            if not has_quiz_questions:
+                print(f"[CROP CUSTOMIZATION] Quiz module ({module_id}) has no questions in original, will create default questions")
+                default_questions = create_default_quiz_questions(crop_type, len(lessons) if lessons else 2)
+                if not quiz:
+                    quiz = {}
+                quiz['title'] = quiz.get('title') or f'{crop_type} Knowledge Check'
+                quiz['questions'] = default_questions
+                if not quizzes:
+                    quizzes = [quiz]
+                else:
+                    quizzes[0] = quiz
+                module['quiz'] = quiz
+                module['quizzes'] = quizzes
+        
+        # Create a focused prompt for customization
+        crop_examples = {
+            'Vegetables': 'tomatoes, carrots, lettuce, peppers, cucumbers, broccoli, spinach, kale',
+            'Fruits': 'apples, berries, strawberries, citrus fruits, grapes, melons',
+            'Flowers': 'roses, marigolds, sunflowers, petunias, zinnias, daisies',
+            'Herbs': 'basil, oregano, thyme, rosemary, mint, parsley, cilantro'
+        }
+        examples = crop_examples.get(crop_type, crop_type.lower())
+        
+        system_prompt = f"""You are an expert gardening educator specializing in {crop_type} cultivation. Your task is to transform generic gardening content into {crop_type}-specific educational material.
+
+CRITICAL RULES:
+1. Return the COMPLETE module structure as JSON - include ALL fields from the original
+2. Customize EVERY lesson title, content, and bullet points to be about {crop_type} (specifically: {examples})
+3. Customize EVERY quiz question to test {crop_type}-specific knowledge
+4. Keep the exact same structure: same number of lessons, same quiz format, SAME NUMBER OF QUIZ QUESTIONS
+5. Preserve all IDs, image URLs, and technical fields exactly as they are
+6. Make content practical, actionable, and specific to {crop_type} growing
+7. Use {crop_type} names throughout (e.g., "{examples}")
+8. **CRITICAL**: Preserve ALL quiz questions with ALL their options and correct answers - only customize the question text and options text, NOT the structure
+9. If the module has a quiz, ensure it has at least 3 questions with 4 options each
+
+Return ONLY valid JSON - no explanations, no markdown, just the JSON object."""
+        
+        # Build full module JSON for the prompt - include ALL lessons
+        module_for_prompt = {
+            'id': module_id,
+            'title': module_title,
+            'description': module_desc,
+            'difficulty': difficulty_level,
+            'lessons': lessons,  # Include ALL lessons
+            'quiz': quiz if quiz else {'questions': []},
+            'quizzes': quizzes if quizzes else []
+        }
+        
+        # Truncate very long content to stay within token limits but keep structure
+        module_json_str = json.dumps(module_for_prompt, indent=2)
+        if len(module_json_str) > 8000:  # Approximate token limit consideration
+            # Keep first 3 lessons fully, truncate others
+            module_for_prompt['lessons'] = lessons[:3] + [{'id': l.get('id'), 'title': l.get('title', '')[:100]} for l in lessons[3:]]
+            module_json_str = json.dumps(module_for_prompt, indent=2)
+        
+        user_prompt = f"""Transform this {difficulty_level} level gardening module to be EXCLUSIVELY about {crop_type} cultivation.
+
+IMPORTANT: The module currently shows generic gardening content. Transform EVERYTHING to be {crop_type}-specific.
+
+Original module (JSON):
+{module_json_str}
+
+CRITICAL TRANSFORMATIONS REQUIRED:
+1. Module title: Change to mention "{crop_type}" (e.g., "Basic Information - {crop_type} Gardening")
+2. Module description: Focus on {crop_type} growing specifically
+3. EVERY lesson title: Include {crop_type} (e.g., "Introduction to {crop_type} Gardening")
+4. EVERY lesson content: Use {crop_type} examples ({examples}) throughout
+5. EVERY bullet point/point in lessons: Make it about {crop_type} specifically
+6. EVERY quiz question: Test {crop_type}-specific knowledge
+7. Keep ALL structure: same number of lessons, same fields, same IDs
+
+Return the COMPLETE customized module as JSON with ALL lessons customized."""
+        
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",  # Use cheaper model for text customization
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.7,
+            max_tokens=4000
+        )
+        
+        customized_content = completion.choices[0].message.content
+        
+        # Clean up the response (remove markdown code blocks if present)
+        if '```json' in customized_content:
+            customized_content = customized_content.split('```json')[1].split('```')[0].strip()
+        elif '```' in customized_content:
+            customized_content = customized_content.split('```')[1].split('```')[0].strip()
+        
+        customized_module = json.loads(customized_content)
+        
+        # Ensure critical fields are preserved from original
+        customized_module['id'] = module_id
+        if 'difficulty' not in customized_module:
+            customized_module['difficulty'] = difficulty_level
+        
+        # Ensure lessons array exists and has all lessons
+        if 'lessons' not in customized_module or len(customized_module['lessons']) < len(lessons):
+            # Merge: use customized lessons, fill missing ones from original
+            original_lessons_dict = {l.get('id'): l for l in lessons}
+            customized_lessons = customized_module.get('lessons', [])
+            customized_lessons_dict = {l.get('id'): l for l in customized_lessons}
+            
+            # Ensure all original lessons are present
+            final_lessons = []
+            for orig_lesson in lessons:
+                lesson_id = orig_lesson.get('id')
+                if lesson_id in customized_lessons_dict:
+                    final_lessons.append(customized_lessons_dict[lesson_id])
+                else:
+                    # Apply basic customization to missing lessons
+                    basic_lesson = apply_basic_crop_customization({'lessons': [orig_lesson]}, crop_type)
+                    final_lessons.append(basic_lesson['lessons'][0] if basic_lesson.get('lessons') else orig_lesson)
+            
+            customized_module['lessons'] = final_lessons
+        
+        # CRITICAL: Ensure quiz/quizzes structure is preserved with ALL questions
+        # Check if original has quizzes
+        if quizzes and len(quizzes) > 0:
+            # Original has quizzes array
+            if 'quizzes' not in customized_module or len(customized_module.get('quizzes', [])) == 0:
+                # Preserve original quizzes if AI didn't return them
+                customized_module['quizzes'] = quizzes
+                print(f"[CROP CUSTOMIZATION] Preserved original quizzes array: {len(quizzes)} quizzes")
+            else:
+                # Ensure all quiz questions are preserved
+                for i, orig_quiz in enumerate(quizzes):
+                    if i < len(customized_module.get('quizzes', [])):
+                        customized_quiz = customized_module['quizzes'][i]
+                        # If customized quiz has no questions, use original
+                        if not customized_quiz.get('questions') or len(customized_quiz.get('questions', [])) == 0:
+                            customized_quiz['questions'] = orig_quiz.get('questions', [])
+                            print(f"[CROP CUSTOMIZATION] Restored quiz questions for quiz {i}: {len(orig_quiz.get('questions', []))} questions")
+                        # Ensure question structure is correct
+                        for q in customized_quiz.get('questions', []):
+                            if 'options' not in q or len(q.get('options', [])) == 0:
+                                # Find original question and preserve options
+                                orig_q = next((oq for oq in orig_quiz.get('questions', []) if oq.get('id') == q.get('id')), None)
+                                if orig_q:
+                                    q['options'] = orig_q.get('options', [])
+                                    q['correct'] = orig_q.get('correct', 0)
+                # Also update backward compatibility quiz field
+                if customized_module.get('quizzes') and len(customized_module['quizzes']) > 0:
+                    customized_module['quiz'] = customized_module['quizzes'][0]
+        elif quiz and quiz.get('questions'):
+            # Original has single quiz object
+            if 'quiz' not in customized_module:
+                customized_module['quiz'] = quiz
+                print(f"[CROP CUSTOMIZATION] Preserved original quiz: {len(quiz.get('questions', []))} questions")
+            elif not customized_module['quiz'].get('questions') or len(customized_module['quiz'].get('questions', [])) == 0:
+                # Preserve original quiz questions if AI didn't return them
+                customized_module['quiz']['questions'] = quiz.get('questions', [])
+                print(f"[CROP CUSTOMIZATION] Restored quiz questions: {len(quiz.get('questions', []))} questions")
+            else:
+                # Ensure all questions have proper structure
+                for q in customized_module['quiz'].get('questions', []):
+                    if 'options' not in q or len(q.get('options', [])) == 0:
+                        orig_q = next((oq for oq in quiz.get('questions', []) if oq.get('id') == q.get('id')), None)
+                        if orig_q:
+                            q['options'] = orig_q.get('options', [])
+                            q['correct'] = orig_q.get('correct', 0)
+            # Also create quizzes array for consistency
+            if 'quizzes' not in customized_module:
+                customized_module['quizzes'] = [customized_module['quiz']]
+        else:
+            # No quiz in original - check if this is a quiz-only module (like "quizzes" or "Knowledge Check")
+            module_id_lower = module_id.lower()
+            module_title_lower = (module_title or '').lower()
+            is_quiz_module = (
+                'quiz' in module_id_lower or 
+                'knowledge' in module_id_lower or 
+                'check' in module_id_lower or
+                'knowledge check' in module_title_lower or
+                'test your understanding' in module_title_lower
+            )
+            
+            if is_quiz_module:
+                # This is a quiz-only module - create default quiz questions
+                print(f"[CROP CUSTOMIZATION] Quiz-only module detected ({module_id}: {module_title}), creating default quiz questions")
+                default_questions = create_default_quiz_questions(crop_type, len(lessons) if lessons else 2)
+                
+                # Ensure quiz structure exists
+                if 'quiz' not in customized_module:
+                    customized_module['quiz'] = {}
+                if 'quizzes' not in customized_module:
+                    customized_module['quizzes'] = []
+                
+                # Set quiz title and questions
+                customized_module['quiz']['title'] = customized_module['quiz'].get('title') or f'{crop_type} Knowledge Check'
+                customized_module['quiz']['questions'] = default_questions
+                
+                # Update quizzes array
+                if len(customized_module['quizzes']) == 0:
+                    customized_module['quizzes'] = [customized_module['quiz']]
+                else:
+                    # Update first quiz or add new one
+                    customized_module['quizzes'][0] = customized_module['quiz']
+                
+                print(f"[CROP CUSTOMIZATION] ✓ Created {len(default_questions)} default quiz questions for quiz module")
+            else:
+                # Regular module without quiz - ensure structure exists
+                if 'quiz' not in customized_module and 'quizzes' not in customized_module:
+                    customized_module['quiz'] = {'title': '', 'questions': []}
+                    customized_module['quizzes'] = []
+        
+        # Final check: Ensure quiz module has questions (double-check for quiz-only modules)
+        module_id_lower = customized_module.get('id', '').lower()
+        module_title_lower = (customized_module.get('title') or '').lower()
+        is_quiz_module_final = (
+            'quiz' in module_id_lower or 
+            'knowledge' in module_id_lower or 
+            'check' in module_id_lower or
+            'knowledge check' in module_title_lower
+        )
+        
+        if is_quiz_module_final:
+            # Ensure quiz has questions
+            quiz_has_questions = False
+            if customized_module.get('quiz') and customized_module['quiz'].get('questions'):
+                quiz_has_questions = len(customized_module['quiz']['questions']) > 0
+            elif customized_module.get('quizzes'):
+                quiz_has_questions = any(q.get('questions') and len(q.get('questions', [])) > 0 for q in customized_module['quizzes'])
+            
+            if not quiz_has_questions:
+                print(f"[CROP CUSTOMIZATION] ⚠ Quiz module has no questions, creating default questions")
+                default_questions = create_default_quiz_questions(crop_type, len(customized_module.get('lessons', [])) if customized_module.get('lessons') else 2)
+                if 'quiz' not in customized_module:
+                    customized_module['quiz'] = {}
+                customized_module['quiz']['title'] = customized_module['quiz'].get('title') or f'{crop_type} Knowledge Check'
+                customized_module['quiz']['questions'] = default_questions
+                if 'quizzes' not in customized_module or len(customized_module['quizzes']) == 0:
+                    customized_module['quizzes'] = [customized_module['quiz']]
+                else:
+                    customized_module['quizzes'][0] = customized_module['quiz']
+                print(f"[CROP CUSTOMIZATION] ✓ Created {len(default_questions)} quiz questions")
+        
+        # Preserve other fields from original
+        for key in ['estimatedTime', 'icon', 'color']:
+            if key in module and key not in customized_module:
+                customized_module[key] = module[key]
+        
+        # Cache the result
+        _CROP_CUSTOMIZATION_CACHE[cache_key] = (customized_module, current_time)
+        
+        return customized_module
+        
+    except Exception as e:
+        print(f"[CROP CUSTOMIZATION] Error in AI customization: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None
+
 @views.route('/api/learning-paths/<difficulty>')
 def get_learning_path_content(difficulty):
-    """Serve learning path content - prioritize saved modules from database, fallback to static modules"""
+    """Serve learning path content - prioritize saved modules from database, fallback to static modules.
+    Customizes modules based on user's primary_crop_focus if set and user is logged in."""
     try:
+        # Get user's crop interest for customization (only if logged in)
+        user_crop_focus = None
+        learning_path_topic = None
+        
+        try:
+            # Check if user is authenticated (route doesn't require login, so check safely)
+            from flask_login import current_user
+            if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+                user_crop_focus = getattr(current_user, 'primary_crop_focus', None)
+                print(f"[LEARNING PATH] User ID: {current_user.id}, Crop focus: {user_crop_focus}")
+                if user_crop_focus:
+                    print(f"[LEARNING PATH] ✓ Will customize modules for: {user_crop_focus}")
+                else:
+                    print(f"[LEARNING PATH] ⚠ User has no crop focus set")
+            else:
+                print(f"[LEARNING PATH] User not authenticated, skipping crop customization")
+        except Exception as e:
+            print(f"[LEARNING PATH] Error checking user auth: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            pass  # User not logged in, continue without customization
+        
+        # Determine learning path topic based on crop focus
+        if user_crop_focus:
+            if user_crop_focus in ['Flowers', 'Herbs']:
+                learning_path_topic = f'{user_crop_focus}_Cultivation'
+            elif user_crop_focus in ['Fruits', 'Vegetables']:
+                learning_path_topic = 'Fruit_Veggie_Cultivation_Path'
         # Check if the learning path is active by checking if any modules are active
         active_modules_count = LearningPathContent.query.filter_by(
             path_difficulty=difficulty,
@@ -6257,6 +6709,212 @@ def get_learning_path_content(difficulty):
                 print(f"Error parsing module data for {saved_module.module_id}")
                 continue
         
+        # Customize ALL modules based on crop interest using AI if user has set primary_crop_focus
+        if user_crop_focus and module_list:
+            print(f"[CROP CUSTOMIZATION] Customizing ALL modules for crop: {user_crop_focus}")
+            print(f"[CROP CUSTOMIZATION] Total modules before customization: {len(module_list)}")
+            
+            # Use AI to customize content for the specific crop type - customize ALL modules
+            customized_modules = []
+            
+            for module in module_list:
+                module_id = module.get('id', '').lower()
+                
+                # Customize ALL modules including static ones to make them crop-specific
+                try:
+                    customized_module = customize_module_for_crop(module, user_crop_focus, difficulty)
+                    if customized_module:
+                        # Final check: Ensure quiz modules have questions
+                        module_id_check = customized_module.get('id', '').lower()
+                        module_title_check = (customized_module.get('title') or '').lower()
+                        is_quiz_module_check = (
+                            module_id_check == 'quizzes' or
+                            'quiz' in module_id_check or 
+                            'knowledge check' in module_title_check or
+                            'test your understanding' in module_title_check
+                        )
+                        
+                        if is_quiz_module_check:
+                            # Ensure quiz has questions
+                            has_questions = False
+                            if customized_module.get('quiz') and customized_module['quiz'].get('questions'):
+                                has_questions = len(customized_module['quiz']['questions']) > 0
+                            elif customized_module.get('quizzes'):
+                                has_questions = any(q.get('questions') and len(q.get('questions', [])) > 0 for q in customized_module['quizzes'])
+                            
+                            if not has_questions:
+                                print(f"[CROP CUSTOMIZATION] ⚠ Quiz module {module_id_check} has no questions, creating default")
+                                default_qs = create_default_quiz_questions(user_crop_focus, len(customized_module.get('lessons', [])) if customized_module.get('lessons') else 2)
+                                if 'quiz' not in customized_module:
+                                    customized_module['quiz'] = {}
+                                customized_module['quiz']['title'] = customized_module['quiz'].get('title') or f'{user_crop_focus} Knowledge Check'
+                                customized_module['quiz']['questions'] = default_qs
+                                if 'quizzes' not in customized_module or len(customized_module['quizzes']) == 0:
+                                    customized_module['quizzes'] = [customized_module['quiz']]
+                                else:
+                                    customized_module['quizzes'][0] = customized_module['quiz']
+                                print(f"[CROP CUSTOMIZATION] ✓ Created {len(default_qs)} quiz questions")
+                        
+                        customized_modules.append(customized_module)
+                        print(f"[CROP CUSTOMIZATION] ✓ Customized: {module.get('id')} - {module.get('title')}")
+                    else:
+                        # If customization fails, try to manually customize at least the title/description
+                        print(f"[CROP CUSTOMIZATION] ⚠ AI customization failed for {module.get('id')}, applying basic customization")
+                        basic_customized = apply_basic_crop_customization(module, user_crop_focus)
+                        
+                        # Check if it's a quiz module and ensure it has questions
+                        module_id_basic = basic_customized.get('id', '').lower()
+                        module_title_basic = (basic_customized.get('title') or '').lower()
+                        is_quiz_module_basic = (
+                            module_id_basic == 'quizzes' or
+                            'quiz' in module_id_basic or 
+                            'knowledge check' in module_title_basic or
+                            'test your understanding' in module_title_basic
+                        )
+                        
+                        if is_quiz_module_basic:
+                            has_qs = False
+                            if basic_customized.get('quiz') and basic_customized['quiz'].get('questions'):
+                                has_qs = len(basic_customized['quiz']['questions']) > 0
+                            elif basic_customized.get('quizzes'):
+                                has_qs = any(q.get('questions') and len(q.get('questions', [])) > 0 for q in basic_customized['quizzes'])
+                            
+                            if not has_qs:
+                                print(f"[CROP CUSTOMIZATION] Creating quiz questions for {module_id_basic}")
+                                default_qs = create_default_quiz_questions(user_crop_focus, len(basic_customized.get('lessons', [])) if basic_customized.get('lessons') else 2)
+                                if 'quiz' not in basic_customized:
+                                    basic_customized['quiz'] = {}
+                                basic_customized['quiz']['title'] = basic_customized['quiz'].get('title') or f'{user_crop_focus} Knowledge Check'
+                                basic_customized['quiz']['questions'] = default_qs
+                                if 'quizzes' not in basic_customized or len(basic_customized['quizzes']) == 0:
+                                    basic_customized['quizzes'] = [basic_customized['quiz']]
+                                else:
+                                    basic_customized['quizzes'][0] = basic_customized['quiz']
+                        
+                        customized_modules.append(basic_customized)
+                except Exception as e:
+                    print(f"[CROP CUSTOMIZATION] ✗ Error customizing module {module.get('id')}: {str(e)}")
+                    # Apply basic customization as fallback
+                    try:
+                        basic_customized = apply_basic_crop_customization(module, user_crop_focus)
+                        
+                        # Check if quiz module needs questions
+                        module_id_fallback = basic_customized.get('id', '').lower()
+                        if module_id_fallback == 'quizzes' or 'quiz' in module_id_fallback:
+                            if not basic_customized.get('quiz', {}).get('questions') and not any(q.get('questions') for q in basic_customized.get('quizzes', [])):
+                                default_qs = create_default_quiz_questions(user_crop_focus, len(basic_customized.get('lessons', [])) if basic_customized.get('lessons') else 2)
+                                if 'quiz' not in basic_customized:
+                                    basic_customized['quiz'] = {}
+                                basic_customized['quiz']['questions'] = default_qs
+                                basic_customized['quizzes'] = [basic_customized['quiz']]
+                        
+                        customized_modules.append(basic_customized)
+                    except:
+                        # Last resort: include original module, but check if it's a quiz module
+                        module_id_orig = module.get('id', '').lower()
+                        if module_id_orig == 'quizzes' or 'quiz' in module_id_orig:
+                            # Ensure quiz module has questions even in original
+                            if not module.get('quiz', {}).get('questions') and not any(q.get('questions') for q in module.get('quizzes', [])):
+                                default_qs = create_default_quiz_questions(user_crop_focus, len(module.get('lessons', [])) if module.get('lessons') else 2)
+                                if 'quiz' not in module:
+                                    module['quiz'] = {}
+                                module['quiz']['questions'] = default_qs
+                                module['quizzes'] = [module['quiz']]
+                        customized_modules.append(module)
+            
+            module_list = customized_modules
+            print(f"[CROP CUSTOMIZATION] Total modules after customization: {len(module_list)}")
+        
+        # Legacy filtering logic (kept as fallback, but AI customization takes precedence)
+        elif learning_path_topic and module_list:
+            print(f"[CROP FILTER] Filtering modules for topic: {learning_path_topic}, User crop: {user_crop_focus}")
+            print(f"[CROP FILTER] Total modules before filtering: {len(module_list)}")
+            
+            filtered_modules = []
+            static_module_ids = ['basic-information', 'lessons', 'quizzes']
+            
+            # Define crop-specific keywords for filtering
+            crop_keywords = {
+                'Flowers_Cultivation': {
+                    'include': ['flower', 'bloom', 'petal', 'ornamental', 'garden', 'rose', 'tulip', 'daisy', 'marigold', 'sunflower', 'lily', 'pansy', 'zinnia', 'cosmos', 'nasturtium', 'bouquet', 'cutting', 'bedding', 'perennial', 'annual', 'biennial', 'blossom', 'floral'],
+                    'exclude': ['vegetable', 'fruit', 'herb', 'culinary', 'edible', 'harvest', 'crop', 'produce', 'tomato', 'pepper', 'lettuce', 'carrot', 'basil', 'oregano', 'mint', 'parsley', 'cucumber', 'squash', 'bean']
+                },
+                'Herbs_Cultivation': {
+                    'include': ['herb', 'spice', 'culinary', 'aromatic', 'medicinal', 'basil', 'oregano', 'thyme', 'rosemary', 'sage', 'mint', 'parsley', 'cilantro', 'dill', 'chives', 'lavender', 'chamomile', 'ginger', 'turmeric', 'cooking', 'seasoning'],
+                    'exclude': ['flower', 'ornamental', 'decoration', 'bouquet', 'cutting', 'bedding', 'rose', 'tulip']
+                },
+                'Fruit_Veggie_Cultivation_Path': {
+                    'include': ['fruit', 'vegetable', 'veggie', 'produce', 'harvest', 'crop', 'edible', 'tomato', 'pepper', 'lettuce', 'carrot', 'cucumber', 'squash', 'bean', 'peas', 'corn', 'potato', 'onion', 'garlic', 'apple', 'berry', 'strawberry', 'blueberry', 'raspberry', 'grape', 'citrus', 'orange', 'lemon', 'growing', 'planting', 'harvesting', 'broccoli', 'cabbage', 'spinach', 'kale', 'radish', 'beet', 'turnip'],
+                    'exclude': ['ornamental', 'decoration', 'bouquet', 'cutting', 'bedding', 'flower arrangement', 'bloom', 'petal']
+                }
+            }
+            
+            keywords_config = crop_keywords.get(learning_path_topic, {})
+            include_keywords = keywords_config.get('include', [])
+            exclude_keywords = keywords_config.get('exclude', [])
+            
+            for module in module_list:
+                module_id = module.get('id', '').lower()
+                
+                # Always include static/basic modules
+                if module_id in static_module_ids:
+                    filtered_modules.append(module)
+                    continue
+                
+                # Check if module matches crop interest
+                module_title = (module.get('title') or '').lower()
+                module_desc = (module.get('description') or '').lower()
+                
+                # Check lessons content
+                lessons = module.get('lessons', [])
+                lesson_text = ' '.join([
+                    (lesson.get('title') or '').lower() + ' ' + 
+                    (lesson.get('content') or '').lower() + ' ' +
+                    ' '.join([str(p).lower() for p in lesson.get('points', [])])
+                    for lesson in lessons
+                ])
+                
+                # Combine all text for matching
+                all_text = f"{module_title} {module_desc} {lesson_text}".lower()
+                
+                # Check for exclusion keywords first (if found, skip this module)
+                has_exclude_keyword = any(keyword in all_text for keyword in exclude_keywords)
+                if has_exclude_keyword:
+                    continue
+                
+                # Check for inclusion keywords
+                has_include_keyword = any(keyword in all_text for keyword in include_keywords)
+                
+                # Also check module_id for crop-specific patterns
+                module_id_matches = any(keyword in module_id for keyword in include_keywords)
+                
+                if has_include_keyword or module_id_matches:
+                    filtered_modules.append(module)
+                    print(f"[CROP FILTER] Included module: {module.get('id')} - {module.get('title')}")
+            
+            # If filtering resulted in only static modules, include some general modules too
+            # to ensure users have content to learn from
+            if len(filtered_modules) <= len(static_module_ids):
+                print(f"[CROP FILTER] Only {len(filtered_modules)} modules found, adding general modules...")
+                # Add general modules that don't conflict with crop type
+                general_keywords = ['plant', 'soil', 'water', 'sunlight', 'care', 'growing', 'gardening', 'basics', 'fundamentals', 'nutrient', 'fertilizer', 'pest', 'disease', 'pruning', 'watering']
+                for module in module_list:
+                    if module not in filtered_modules:
+                        module_title = (module.get('title') or '').lower()
+                        module_desc = (module.get('description') or '').lower()
+                        all_text = f"{module_title} {module_desc}".lower()
+                        
+                        # Include if it has general keywords and doesn't have exclude keywords
+                        has_general = any(keyword in all_text for keyword in general_keywords)
+                        has_exclude = any(keyword in all_text for keyword in exclude_keywords)
+                        
+                        if has_general and not has_exclude:
+                            filtered_modules.append(module)
+                            print(f"[CROP FILTER] Added general module: {module.get('id')} - {module.get('title')}")
+            
+            print(f"[CROP FILTER] Total modules after filtering: {len(filtered_modules)}")
+            module_list = filtered_modules
+        
         # If we have saved modules, ensure we have the 3 static modules (basic-information, lessons, quizzes)
         # Check if static modules exist, if not, they'll be added by the admin panel
         static_module_ids = ['basic-information', 'lessons', 'quizzes']
@@ -6269,6 +6927,9 @@ def get_learning_path_content(difficulty):
                 if static_id not in existing_ids:
                     # This shouldn't happen if admin auto-saved them, but handle gracefully
                     print(f"Warning: Static module {static_id} not found for {difficulty}")
+            
+            # Return array format for backward compatibility
+            # Frontend can check if response is object vs array to detect new format
             return jsonify(module_list)
         
         # Fallback: Get individual content items (lessons, quiz questions) for backward compatibility
@@ -6325,6 +6986,111 @@ def get_learning_path_content(difficulty):
                 'lessons': module_data['lessons'],
                 'quiz': module_data['quiz']
             })
+        
+        # Apply AI customization to fallback content if user has crop interest - customize ALL modules
+        if user_crop_focus and module_list:
+            print(f"[CROP CUSTOMIZATION] Customizing ALL fallback modules for crop: {user_crop_focus}")
+            customized_modules = []
+            
+            for module in module_list:
+                # Customize ALL modules including static ones
+                try:
+                    customized_module = customize_module_for_crop(module, user_crop_focus, difficulty)
+                    if customized_module:
+                        customized_modules.append(customized_module)
+                        print(f"[CROP CUSTOMIZATION] ✓ Customized fallback: {module.get('id')}")
+                    else:
+                        # If AI fails, apply basic customization
+                        print(f"[CROP CUSTOMIZATION] ⚠ AI failed for {module.get('id')}, applying basic customization")
+                        basic_customized = apply_basic_crop_customization(module, user_crop_focus)
+                        customized_modules.append(basic_customized)
+                except Exception as e:
+                    print(f"[CROP CUSTOMIZATION] ✗ Error customizing fallback module {module.get('id')}: {str(e)}")
+                    # Apply basic customization as fallback
+                    try:
+                        basic_customized = apply_basic_crop_customization(module, user_crop_focus)
+                        customized_modules.append(basic_customized)
+                    except:
+                        customized_modules.append(module)
+            
+            module_list = customized_modules
+        
+        # Apply crop interest filtering to fallback content as well (legacy fallback)
+        elif learning_path_topic and module_list:
+            filtered_modules = []
+            static_module_ids = ['basic-information', 'lessons', 'quizzes']
+            
+            # Define crop-specific keywords for filtering (same as above)
+            crop_keywords = {
+                'Flowers_Cultivation': {
+                    'include': ['flower', 'bloom', 'petal', 'ornamental', 'garden', 'rose', 'tulip', 'daisy', 'marigold', 'sunflower', 'lily', 'pansy', 'zinnia', 'cosmos', 'nasturtium', 'bouquet', 'cutting', 'bedding', 'perennial', 'annual', 'biennial'],
+                    'exclude': ['vegetable', 'fruit', 'herb', 'culinary', 'edible', 'harvest', 'crop', 'produce', 'tomato', 'pepper', 'lettuce', 'carrot', 'basil', 'oregano', 'mint', 'parsley']
+                },
+                'Herbs_Cultivation': {
+                    'include': ['herb', 'spice', 'culinary', 'aromatic', 'medicinal', 'basil', 'oregano', 'thyme', 'rosemary', 'sage', 'mint', 'parsley', 'cilantro', 'dill', 'chives', 'lavender', 'chamomile', 'ginger', 'turmeric', 'cooking', 'seasoning'],
+                    'exclude': ['flower', 'ornamental', 'decoration', 'bouquet', 'cutting', 'bedding']
+                },
+                'Fruit_Veggie_Cultivation_Path': {
+                    'include': ['fruit', 'vegetable', 'veggie', 'produce', 'harvest', 'crop', 'edible', 'tomato', 'pepper', 'lettuce', 'carrot', 'cucumber', 'squash', 'bean', 'peas', 'corn', 'potato', 'onion', 'garlic', 'apple', 'berry', 'strawberry', 'blueberry', 'raspberry', 'grape', 'citrus', 'orange', 'lemon', 'growing', 'planting', 'harvesting'],
+                    'exclude': ['ornamental', 'decoration', 'bouquet', 'cutting', 'bedding', 'flower arrangement']
+                }
+            }
+            
+            keywords_config = crop_keywords.get(learning_path_topic, {})
+            include_keywords = keywords_config.get('include', [])
+            exclude_keywords = keywords_config.get('exclude', [])
+            
+            for module in module_list:
+                module_id = module.get('id', '').lower()
+                
+                # Always include static/basic modules
+                if module_id in static_module_ids:
+                    filtered_modules.append(module)
+                    continue
+                
+                # Check if module matches crop interest
+                module_title = (module.get('title') or '').lower()
+                module_desc = (module.get('description') or '').lower()
+                
+                # Check lessons content
+                lessons = module.get('lessons', [])
+                lesson_text = ' '.join([
+                    (lesson.get('title') or '').lower() + ' ' + 
+                    (lesson.get('content') or '').lower()
+                    for lesson in lessons
+                ])
+                
+                # Combine all text for matching
+                all_text = f"{module_title} {module_desc} {lesson_text}".lower()
+                
+                # Check for exclusion keywords first
+                has_exclude_keyword = any(keyword in all_text for keyword in exclude_keywords)
+                if has_exclude_keyword:
+                    continue
+                
+                # Check for inclusion keywords
+                has_include_keyword = any(keyword in all_text for keyword in include_keywords)
+                module_id_matches = any(keyword in module_id for keyword in include_keywords)
+                
+                if has_include_keyword or module_id_matches:
+                    filtered_modules.append(module)
+            
+            # If filtering resulted in only static modules, include general modules
+            if len(filtered_modules) <= len(static_module_ids):
+                general_keywords = ['plant', 'soil', 'water', 'sunlight', 'care', 'growing', 'gardening', 'basics', 'fundamentals', 'nutrient', 'fertilizer', 'pest', 'disease', 'pruning', 'watering']
+                for module in module_list:
+                    if module not in filtered_modules:
+                        module_title = (module.get('title') or '').lower()
+                        module_desc = (module.get('description') or '').lower()
+                        all_text = f"{module_title} {module_desc}".lower()
+                        
+                        has_general = any(keyword in all_text for keyword in general_keywords)
+                        has_exclude = any(keyword in all_text for keyword in exclude_keywords)
+                        
+                        if has_general and not has_exclude:
+                            filtered_modules.append(module)
+            
+            module_list = filtered_modules
         
         # If no content found in database, return empty list to trigger fallback to static data in frontend
         # The frontend will use getModuleData() or the admin will auto-save static modules

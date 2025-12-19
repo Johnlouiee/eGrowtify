@@ -13,7 +13,8 @@ const Profile = () => {
     full_name: '',
     email: '',
     phone: '',
-    learning_level: ''
+    learning_level: '',
+    primary_crop_focus: ''
   })
   const [passwordData, setPasswordData] = useState({
     current_password: '',
@@ -47,7 +48,8 @@ const Profile = () => {
           full_name: u.full_name ?? user.full_name ?? '',
           email: u.email ?? user.email ?? '',
           phone: u.phone ?? user.phone ?? '',
-          learning_level: u.learning_level ?? user.learning_level ?? ''
+          learning_level: u.learning_level ?? user.learning_level ?? '',
+          primary_crop_focus: u.primary_crop_focus ?? user.primary_crop_focus ?? ''
         })
         // Store full profile user data for summary section
         setProfileUser(u)
@@ -140,7 +142,8 @@ const Profile = () => {
       full_name: user.full_name || '',
       email: user.email || '',
       phone: user.phone || '',
-      learning_level: user.learning_level || ''
+      learning_level: user.learning_level || '',
+      primary_crop_focus: user.primary_crop_focus || ''
     })
     setIsEditing(false)
   }
@@ -353,6 +356,27 @@ const Profile = () => {
                   </select>
                   <p className="text-xs text-gray-500 mt-1">
                     This is only used to personalize recommendations (for example, plant suggestions) and can be changed any time.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Primary Crop Interest
+                  </label>
+                  <select
+                    value={profileData.primary_crop_focus || ''}
+                    onChange={(e) => setProfileData({ ...profileData, primary_crop_focus: e.target.value })}
+                    className="input-field"
+                    disabled={!isEditing}
+                  >
+                    <option value="">Not set</option>
+                    <option value="Fruits">Fruits</option>
+                    <option value="Vegetables">Vegetables</option>
+                    <option value="Flowers">Flowers</option>
+                    <option value="Herbs">Herbs</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    This determines the default focus and learning path content for your gardening journey.
                   </p>
                 </div>
 
@@ -671,6 +695,12 @@ const Profile = () => {
                           : (profileUser?.learning_level ?? user?.learning_level) === 'beginner'
                             ? 'New to gardening'
                             : 'Not set'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Primary Crop Interest:</span>
+                      <span className="text-sm font-medium text-gray-900">
+                        {(profileUser?.primary_crop_focus ?? user?.primary_crop_focus) || 'Not set'}
                       </span>
                     </div>
                   </div>
