@@ -236,7 +236,8 @@ const AIPlantRecognition = () => {
     care: false,
     seasonal: false,
     pests: false,
-    issues: false
+    issues: false,
+    possibleIssues: false
   })
   const [showAddToGardenModal, setShowAddToGardenModal] = useState(false)
   const [gardens, setGardens] = useState([])
@@ -1202,7 +1203,7 @@ const AIPlantRecognition = () => {
                                   {item.issue || 'Possible issue'}
                                 </div>
                                 {item.likelihood && (
-                                  <span className="text-xs bg-white text-red-700 border border-red-200 px-2 py-0.5 rounded-full">
+                                  <span className="text-xs bg-pink-100 text-red-700 border border-red-200 px-2 py-0.5 rounded-full font-medium capitalize">
                                     {item.likelihood}
                                   </span>
                                 )}

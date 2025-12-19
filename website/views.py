@@ -1133,6 +1133,8 @@ def ai_plant_recognition():
                                 })
                             if isinstance(ai.get('common_issues'), list):
                                 result['common_issues'] = ai.get('common_issues')
+                            if isinstance(ai.get('possible_issues'), list):
+                                result['possible_issues'] = ai.get('possible_issues')
                             if ai.get('estimated_yield'):
                                 result['estimated_yield'] = ai.get('estimated_yield')
                             result['ai_enriched'] = True
@@ -1165,8 +1167,12 @@ def ai_plant_recognition():
                         "growth_stage (specific stage based on what's visible in the image - flowers, fruits, leaves, etc.), "
                         "care_recommendations (object with watering, sunlight, soil, fertilizing, pruning based on current condition), "
                         "common_issues (array of specific problems you can see or likely issues based on the image), "
+                        "possible_issues (array of objects, each with: issue (string - disease/problem name), likelihood (string - 'low', 'medium', 'high'), causes (string or array - what causes this issue), actions (string or array - what to do about it), watch_for (string or array - symptoms to monitor)), "
                         "estimated_yield (realistic expectations based on current plant condition), "
                         "seasonal_notes (seasonal care tips), pest_diseases (common threats and prevention). "
+                        "CRITICAL: For possible_issues, carefully examine the image for ANY visual signs of disease, pests, nutrient deficiencies, or stress. "
+                        "Include issues you can actually see in the image (discolored leaves, spots, wilting, etc.) or that are highly likely based on visible conditions. "
+                        "If the plant appears completely healthy with no issues, return an empty array []. "
                         "Be specific about what you observe in the image and provide practical advice for home gardening. "
                         "Use simple, common plant names that everyone understands."
                     )
@@ -1304,6 +1310,10 @@ def ai_plant_recognition():
                         # Enhanced common issues with solutions
                         if isinstance(ai.get('common_issues'), list):
                             result['common_issues'] = ai['common_issues']
+                        
+                        # Enhanced possible_issues (diseases/causes) - AI-detected from image
+                        if isinstance(ai.get('possible_issues'), list):
+                            result['possible_issues'] = ai['possible_issues']
                         
                         # Enhanced yield estimation
                         if ai.get('estimated_yield'):
