@@ -123,7 +123,7 @@ const ExpertLearningPath = () => {
     }
     
     loadModules()
-  }, [])
+  }, [user?.primary_crop_focus]) // Reload modules when crop interest changes
 
   // Clear old progress data function
   const clearOldProgressData = () => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { 
-  BookOpen, Droplets, Sun, Leaf, Sprout, Thermometer, AlertCircle, CheckCircle, 
+import {
+  BookOpen, Droplets, Sun, Leaf, Sprout, Thermometer, AlertCircle, CheckCircle,
   Lock, Play, Clock, Award, ArrowRight, ArrowLeft, Eye, FileText, HelpCircle,
   Target, TrendingUp, Star, Users, Calendar, MapPin, Zap, Video, PlayCircle, X
 } from 'lucide-react'
@@ -41,15 +41,17 @@ const BeginnerLearningPath = () => {
   useEffect(() => {
     const loadModules = async () => {
       try {
+        console.log('[LEARNING PATH] Loading modules for Beginner level...')
         const response = await axios.get('/api/learning-paths/Beginner')
-        
+        console.log('[LEARNING PATH] API response received:', response.data?.length || 0, 'modules')
+
         // Check if path is deactivated (error response)
         if (response.data && response.data.error && response.data.is_active === false) {
           toast.error(response.data.message || 'This learning path has been deactivated')
           navigate('/dashboard')
           return
         }
-        
+
         // Check if response is an array (valid modules) or error object
         if (!Array.isArray(response.data)) {
           if (response.data.error) {
@@ -58,7 +60,7 @@ const BeginnerLearningPath = () => {
             return
           }
         }
-        
+
         // Check if backend returned empty array (no content in database)
         if (Array.isArray(response.data) && response.data.length === 0) {
           console.log('No content in database, using fallback data')
@@ -71,6 +73,7 @@ const BeginnerLearningPath = () => {
           setModules(fallbackModules)
         } else if (Array.isArray(response.data)) {
           // Use backend data
+          console.log('[LEARNING PATH] Processing backend modules, first module title:', response.data[0]?.title)
           const backendModules = response.data.map(module => {
             // Ensure quizzes is properly formatted as an array
             let quizzes = module.quizzes
@@ -101,7 +104,7 @@ const BeginnerLearningPath = () => {
         }
       } catch (error) {
         console.error('Error loading modules from backend:', error)
-        
+
         // Check if path is deactivated (403 error)
         if (error.response && error.response.status === 403) {
           const errorData = error.response.data
@@ -109,7 +112,7 @@ const BeginnerLearningPath = () => {
           navigate('/dashboard')
           return
         }
-        
+
         // Fallback to hardcoded data only if it's not a deactivation error
         const fallbackModules = getModuleData('Beginner').map(module => ({
           ...module,
@@ -121,15 +124,15 @@ const BeginnerLearningPath = () => {
         setLoading(false)
       }
     }
-    
+
     loadModules()
-  }, [])
+  }, [user?.primary_crop_focus]) // Reload modules when crop interest changes
 
   // Clear old progress data function
   const clearOldProgressData = () => {
     const allPossibleKeys = [
       'beginnerProgress',
-      'intermediateProgress', 
+      'intermediateProgress',
       'expertProgress',
       'learningProgress',
       'userProgress'
@@ -144,23 +147,23 @@ const BeginnerLearningPath = () => {
   // Load progress AFTER modules are loaded and validate against current modules
   useEffect(() => {
     if (modules.length === 0 || loading) return // Wait for modules to load
-    
+
     const loadProgress = () => {
       const storageKey = getStorageKey('beginnerProgress')
       const savedProgress = localStorage.getItem(storageKey)
-      
+
       if (savedProgress) {
         try {
           const progressData = JSON.parse(savedProgress)
-          
+
           // Get current module IDs
           const currentModuleIds = modules.map(m => m.id)
-          
+
           // Validate and filter completed modules - only keep those that exist in current modules
           const validCompletedModules = (progressData.completedModules || []).filter(
             moduleId => currentModuleIds.includes(moduleId)
           )
-          
+
           // Validate and filter module progress - only keep those that exist in current modules
           const validModuleProgress = {}
           Object.keys(progressData.moduleProgress || {}).forEach(moduleId => {
@@ -168,7 +171,7 @@ const BeginnerLearningPath = () => {
               validModuleProgress[moduleId] = progressData.moduleProgress[moduleId]
             }
           })
-          
+
           // Validate and filter quiz attempts - only keep those that exist in current modules
           // Quiz attempts are stored with keys like "moduleId_quizTitle"
           const validQuizAttempts = {}
@@ -183,7 +186,7 @@ const BeginnerLearningPath = () => {
               }
             }
           })
-          
+
           // Only update if we have valid progress data
           if (validCompletedModules.length > 0 || Object.keys(validModuleProgress).length > 0 || Object.keys(validQuizAttempts).length > 0) {
             setCompletedModules(validCompletedModules)
@@ -215,10 +218,10 @@ const BeginnerLearningPath = () => {
   // Check if all quizzes in a module are completed - defined early for use in save progress
   const areAllQuizzesCompleted = (module) => {
     if (!module) return false
-    
+
     const quizzes = module.quizzes || (module.quiz ? [module.quiz] : [])
     if (quizzes.length === 0) return false // No quizzes means not completed
-    
+
     // Check if all quizzes have at least one attempt
     return quizzes.every(quiz => {
       const quizKey = `${module.id}_${quiz.title}`
@@ -230,7 +233,7 @@ const BeginnerLearningPath = () => {
   // This ensures progress persists even after learning path completion
   useEffect(() => {
     if (modules.length === 0) return // Don't save if modules haven't loaded yet
-    
+
     const saveProgress = () => {
       const storageKey = getStorageKey('beginnerProgress')
       // Check if all modules are completed
@@ -238,7 +241,7 @@ const BeginnerLearningPath = () => {
         const mod = modules.find(module => module.id === m.id)
         return areAllQuizzesCompleted(mod)
       })
-      
+
       const progressData = {
         completedModules,
         moduleProgress,
@@ -269,15 +272,30 @@ const BeginnerLearningPath = () => {
     const isCompleted = isModuleCompleted(module.id)
     // Check if any quiz has been attempted
     const quizzes = module.quizzes || (module.quiz ? [module.quiz] : [])
-    const hasQuizAttempts = quizzes.some(quiz => {
+    const validQuizzes = quizzes.filter(q => q.questions && q.questions.length > 0)
+    const hasQuizAttempts = validQuizzes.some(quiz => {
       const quizKey = `${module.id}_${quiz.title}`
       return quizAttempts[quizKey] && quizAttempts[quizKey].length > 0
     })
-    
+
+    // Check if this is a quiz-only module (no lessons)
+    const isQuizOnlyModule = (!module.lessons || module.lessons.length === 0) && validQuizzes.length > 0
+
     // Allow users to review even if completed - show options screen
     if (isCompleted && hasQuizAttempts) {
       setCurrentModule(module)
       setShowRetakeOption(true)
+    } else if (isQuizOnlyModule) {
+      // Quiz-only module - go directly to quiz selection or quiz
+      setCurrentModule(module)
+      if (validQuizzes.length > 1) {
+        setShowQuizSelection(true)
+      } else if (validQuizzes.length === 1) {
+        setCurrentQuiz(validQuizzes[0])
+        setShowQuiz(true)
+      } else {
+        toast.error('This quiz module has no questions available')
+      }
     } else {
       // Start module normally (allows review even if completed)
       startModule(module)
@@ -323,21 +341,38 @@ const BeginnerLearningPath = () => {
   }
 
   const nextLesson = () => {
-    if (currentLesson < currentModule.lessons.length - 1) {
+    // Check if there are more lessons
+    if (currentModule.lessons && currentLesson < currentModule.lessons.length - 1) {
       setCurrentLesson(currentLesson + 1)
     } else {
-      // Show quiz selection if there are multiple quizzes, otherwise show the single quiz
+      // No more lessons - show quiz selection or quiz
       const quizzes = currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])
-      if (quizzes.length > 1) {
+      const validQuizzes = quizzes.filter(q => q.questions && q.questions.length > 0)
+
+      if (validQuizzes.length > 1) {
         setShowQuizSelection(true)
         setShowQuiz(false) // Ensure showQuiz is false when showing selection
-      } else if (quizzes.length === 1) {
-        setCurrentQuiz(quizzes[0])
+      } else if (validQuizzes.length === 1) {
+        setCurrentQuiz(validQuizzes[0])
         setShowQuizSelection(false)
         setShowQuiz(true)
+      } else if (quizzes.length > 0) {
+        // Quizzes exist but have no questions - create default questions
+        toast.error('This quiz has no questions. Please contact support.')
+        console.error('Quiz module has no questions:', currentModule.id, quizzes)
       } else {
-        // No quizzes available - show message or keep on last lesson
-        toast.error('No quizzes available for this module')
+        // No quizzes at all - if no lessons either, mark as complete
+        if (!currentModule.lessons || currentModule.lessons.length === 0) {
+          // Quiz-only module with no quiz - this shouldn't happen, but handle gracefully
+          toast.error('This module has no content available')
+        } else {
+          // Module completed (all lessons done, no quiz)
+          toast.success('All lessons completed! Module finished.')
+          if (!completedModules.includes(currentModule.id)) {
+            setCompletedModules(prev => [...prev, currentModule.id])
+          }
+          setCurrentModule(null)
+        }
       }
     }
   }
@@ -370,17 +405,17 @@ const BeginnerLearningPath = () => {
 
   const submitQuiz = () => {
     if (!currentQuiz) return
-    
+
     let score = 0
     currentQuiz.questions.forEach(question => {
       if (quizAnswers[question.id] === question.correct) {
         score++
       }
     })
-    
+
     setQuizScore(score)
     setShowQuizResults(true)
-    
+
     // Record quiz attempt - track by module ID and quiz title
     const quizKey = `${currentModule.id}_${currentQuiz.title}`
     const attempt = {
@@ -391,27 +426,27 @@ const BeginnerLearningPath = () => {
       quizTitle: currentQuiz.title,
       attemptNumber: (quizAttempts[quizKey]?.length || 0) + 1
     }
-    
+
     // Update quiz attempts
     const updatedQuizAttempts = {
       ...quizAttempts,
       [quizKey]: [...(quizAttempts[quizKey] || []), attempt]
     }
-    
+
     setQuizAttempts(updatedQuizAttempts)
-    
+
     // Check if all quizzes in the module are now completed
     const quizzes = currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])
     const allQuizzesCompleted = quizzes.every(quiz => {
       const qKey = `${currentModule.id}_${quiz.title}`
       return updatedQuizAttempts[qKey] && updatedQuizAttempts[qKey].length > 0
     })
-    
+
     // Mark module as completed only if all quizzes are completed
     if (allQuizzesCompleted && !completedModules.includes(currentModule.id)) {
       setCompletedModules(prev => [...prev, currentModule.id])
     }
-    
+
     // Check if all beginner modules are completed
     const allModulesCompleted = modules.every(m => {
       const mod = modules.find(module => module.id === m.id)
@@ -423,7 +458,7 @@ const BeginnerLearningPath = () => {
       const currentProgress = JSON.parse(localStorage.getItem(storageKey) || '{}')
       currentProgress.beginner = 100
       localStorage.setItem(storageKey, JSON.stringify(currentProgress))
-      
+
       // Ensure progress is saved - progress should persist even after completion
       const progressStorageKey = getStorageKey('beginnerProgress')
       const progressData = {
@@ -435,7 +470,7 @@ const BeginnerLearningPath = () => {
         pathCompleted: true // Mark path as completed but keep all progress
       }
       localStorage.setItem(progressStorageKey, JSON.stringify(progressData))
-      
+
       toast.success('🎉 Congratulations! You have completed the Beginner Learning Path! The Intermediate path is now unlocked! Your progress has been saved.')
     } else {
       // Check if all quizzes in this module are now completed
@@ -444,7 +479,7 @@ const BeginnerLearningPath = () => {
         const qKey = `${currentModule.id}_${quiz.title}`
         return updatedQuizAttempts[qKey] && updatedQuizAttempts[qKey].length > 0
       }).length
-      
+
       if (allQuizzesCompleted && quizzes.length > 1) {
         const nextModule = getNextModule()
         if (nextModule && !isModuleLocked(nextModule.id)) {
@@ -491,7 +526,7 @@ const BeginnerLearningPath = () => {
   const isModuleCompleted = (moduleId) => {
     const module = modules.find(m => m.id === moduleId)
     if (!module) return completedModules.includes(moduleId)
-    
+
     // Check if all quizzes are completed
     return areAllQuizzesCompleted(module)
   }
@@ -521,7 +556,7 @@ const BeginnerLearningPath = () => {
   if (currentModule && showRetakeOption) {
     const attempts = quizAttempts[currentModule.id] || []
     const lastAttempt = attempts[attempts.length - 1]
-    
+
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
@@ -529,7 +564,7 @@ const BeginnerLearningPath = () => {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-6">
               <div className="flex items-center">
-                <button 
+                <button
                   onClick={() => setCurrentModule(null)}
                   className="flex items-center text-gray-600 hover:text-gray-900 mr-6"
                 >
@@ -625,7 +660,7 @@ const BeginnerLearningPath = () => {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-6">
               <div className="flex items-center">
-                <button 
+                <button
                   onClick={() => setCurrentModule(null)}
                   className="flex items-center text-gray-600 hover:text-gray-900 mr-6"
                 >
@@ -659,127 +694,155 @@ const BeginnerLearningPath = () => {
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
               {/* Progress Bar */}
               <div className="bg-gray-200 h-2">
-                <div 
+                <div
                   className="bg-green-600 h-2 transition-all duration-300"
                   style={{ width: `${getProgressPercentage()}%` }}
                 ></div>
               </div>
 
-              {/* Lesson Content */}
-              <div className="p-8">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Lesson {currentLesson + 1}: {currentModule.lessons[currentLesson].title}
-                  </h2>
-                  <span className="text-sm text-gray-500">
-                    {currentLesson + 1} of {currentModule.lessons.length}
-                  </span>
-                </div>
+              {/* Lesson Content or Quiz-Only Module */}
+              {currentModule.lessons && currentModule.lessons.length > 0 ? (
+                <div className="p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Lesson {currentLesson + 1}: {currentModule.lessons[currentLesson].title}
+                    </h2>
+                    <span className="text-sm text-gray-500">
+                      {currentLesson + 1} of {currentModule.lessons.length}
+                    </span>
+                  </div>
 
-                <div className="prose max-w-none">
-                  {/* Lesson Content */}
-                  {currentModule.lessons[currentLesson].content && (
-                    <div className="mb-6">
-                      <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-line">
-                        {currentModule.lessons[currentLesson].content}
-                      </p>
-                    </div>
-                  )}
+                  <div className="prose max-w-none">
+                    {/* Lesson Content */}
+                    {currentModule.lessons[currentLesson].content && (
+                      <div className="mb-6">
+                        <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-line">
+                          {currentModule.lessons[currentLesson].content}
+                        </p>
+                      </div>
+                    )}
 
-                  {/* Lesson Images */}
-                  {currentModule.lessons[currentLesson].images && currentModule.lessons[currentLesson].images.length > 0 && (
-                    <div className="mb-6 space-y-4">
-                      {currentModule.lessons[currentLesson].images.map((image, imgIndex) => (
-                        <div key={imgIndex} className="rounded-lg overflow-hidden">
-                          <img 
-                            src={image.url || image} 
-                            alt={image.description || `Lesson image ${imgIndex + 1}`}
-                            className="w-full rounded-lg shadow-sm"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Lesson Videos */}
-                  {currentModule.lessons[currentLesson].videos && currentModule.lessons[currentLesson].videos.length > 0 && (
-                    <div className="mb-6 space-y-4">
-                      {currentModule.lessons[currentLesson].videos.map((video, vidIndex) => (
-                        <div key={vidIndex} className="rounded-lg overflow-hidden">
-                          <video 
-                            src={video.url || video} 
-                            controls
-                            className="w-full rounded-lg shadow-sm"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Points - Key Information */}
-                  {currentModule.lessons[currentLesson].points && Array.isArray(currentModule.lessons[currentLesson].points) && currentModule.lessons[currentLesson].points.length > 0 && (
-                    <div className="mt-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Key Points:</h3>
-                      <div className="space-y-3">
-                        {currentModule.lessons[currentLesson].points.map((point, index) => (
-                          <div key={index} className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg border-l-4 border-green-500">
-                            <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
-                              <span className="text-green-600 text-sm font-medium">{index + 1}</span>
-                            </div>
-                            <p className="text-gray-700 leading-relaxed flex-1">{point}</p>
+                    {/* Lesson Images */}
+                    {currentModule.lessons[currentLesson].images && currentModule.lessons[currentLesson].images.length > 0 && (
+                      <div className="mb-6 space-y-4">
+                        {currentModule.lessons[currentLesson].images.map((image, imgIndex) => (
+                          <div key={imgIndex} className="rounded-lg overflow-hidden">
+                            <img
+                              src={image.url || image}
+                              alt={image.description || `Lesson image ${imgIndex + 1}`}
+                              className="w-full rounded-lg shadow-sm"
+                            />
                           </div>
                         ))}
                       </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Navigation */}
-                <div className="flex justify-between items-center mt-8 pt-6 border-t">
-                  <button
-                    onClick={previousLesson}
-                    disabled={currentLesson === 0}
-                    className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Previous
-                  </button>
-                  
-                  <div className="flex items-center space-x-3">
-                    {/* Go to Quiz button - always visible for review */}
-                    {(currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])).length > 0 && (
-                      <button
-                        onClick={() => {
-                          const quizzes = currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])
-                          if (quizzes.length > 1) {
-                            setShowQuizSelection(true)
-                            setShowQuiz(false)
-                          } else if (quizzes.length === 1) {
-                            setCurrentQuiz(quizzes[0])
-                            setShowQuizSelection(false)
-                            setShowQuiz(true)
-                            setQuizAnswers({})
-                            setShowQuizResults(false)
-                            setQuizScore(0)
-                          }
-                        }}
-                        className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                      >
-                        <HelpCircle className="h-4 w-4 mr-2" />
-                        Go to Quiz
-                      </button>
                     )}
-                    
+
+                    {/* Lesson Videos */}
+                    {currentModule.lessons[currentLesson].videos && currentModule.lessons[currentLesson].videos.length > 0 && (
+                      <div className="mb-6 space-y-4">
+                        {currentModule.lessons[currentLesson].videos.map((video, vidIndex) => (
+                          <div key={vidIndex} className="rounded-lg overflow-hidden">
+                            <video
+                              src={video.url || video}
+                              controls
+                              className="w-full rounded-lg shadow-sm"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Points - Key Information */}
+                    {currentModule.lessons[currentLesson].points && Array.isArray(currentModule.lessons[currentLesson].points) && currentModule.lessons[currentLesson].points.length > 0 && (
+                      <div className="mt-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Key Points:</h3>
+                        <div className="space-y-3">
+                          {currentModule.lessons[currentLesson].points.map((point, index) => (
+                            <div key={index} className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg border-l-4 border-green-500">
+                              <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+                                <span className="text-green-600 text-sm font-medium">{index + 1}</span>
+                              </div>
+                              <p className="text-gray-700 leading-relaxed flex-1">{point}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Navigation */}
+                  <div className="flex justify-between items-center mt-8 pt-6 border-t">
                     <button
-                      onClick={nextLesson}
-                      className="flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      onClick={previousLesson}
+                      disabled={currentLesson === 0}
+                      className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {currentLesson === currentModule.lessons.length - 1 ? 'Start Quiz' : 'Next Lesson'}
-                      <ArrowRight className="h-4 w-4 ml-2" />
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Previous
                     </button>
+
+                    <div className="flex items-center space-x-3">
+                      {/* Go to Quiz button - always visible for review */}
+                      {(currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])).length > 0 && (
+                        <button
+                          onClick={() => {
+                            const quizzes = currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])
+                            if (quizzes.length > 1) {
+                              setShowQuizSelection(true)
+                              setShowQuiz(false)
+                            } else if (quizzes.length === 1) {
+                              setCurrentQuiz(quizzes[0])
+                              setShowQuizSelection(false)
+                              setShowQuiz(true)
+                              setQuizAnswers({})
+                              setShowQuizResults(false)
+                              setQuizScore(0)
+                            }
+                          }}
+                          className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                        >
+                          <HelpCircle className="h-4 w-4 mr-2" />
+                          Go to Quiz
+                        </button>
+                      )}
+
+                      <button
+                        onClick={nextLesson}
+                        className="flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        {currentLesson === currentModule.lessons.length - 1 ? 'Start Quiz' : 'Next Lesson'}
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                // Quiz-only module (no lessons)
+                <div className="p-8 text-center">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                    {currentModule.title}
+                  </h2>
+                  <p className="text-gray-600 mb-6">{currentModule.description}</p>
+                  <button
+                    onClick={() => {
+                      const quizzes = currentModule.quizzes || (currentModule.quiz ? [currentModule.quiz] : [])
+                      const validQuizzes = quizzes.filter(q => q.questions && q.questions.length > 0)
+                      if (validQuizzes.length > 1) {
+                        setShowQuizSelection(true)
+                      } else if (validQuizzes.length === 1) {
+                        setCurrentQuiz(validQuizzes[0])
+                        setShowQuiz(true)
+                      } else {
+                        toast.error('This quiz module has no questions available')
+                      }
+                    }}
+                    className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center mx-auto"
+                  >
+                    Start Quiz
+                    <ArrowRight className="h-5 w-5 ml-2" />
+                  </button>
+                </div>
+              )}
             </div>
           ) : showQuizSelection ? (
             // Quiz Selection Screen
@@ -812,13 +875,12 @@ const BeginnerLearningPath = () => {
                     const attempts = quizAttempts[quizKey] || []
                     const lastAttempt = attempts.length > 0 ? attempts[attempts.length - 1] : null
                     const isCompleted = attempts.length > 0
-                    
+
                     return (
-                      <div key={index} className={`border rounded-lg p-6 transition-colors ${
-                        isCompleted 
-                          ? 'border-green-300 bg-green-50' 
+                      <div key={index} className={`border rounded-lg p-6 transition-colors ${isCompleted
+                          ? 'border-green-300 bg-green-50'
                           : 'border-gray-200 hover:border-green-500'
-                      }`}>
+                        }`}>
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-1">
@@ -868,6 +930,7 @@ const BeginnerLearningPath = () => {
                   </button>
                 </div>
               </div>
+
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -879,60 +942,60 @@ const BeginnerLearningPath = () => {
 
                 {!showQuizResults ? (
                   currentQuiz ? (
-                  <div className="space-y-6">
-                    {currentQuiz.questions.map((question, index) => (
-                      <div key={question.id} className="border border-gray-200 rounded-lg p-6">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">
-                          {index + 1}. {question.question}
-                        </h3>
-                        
-                        {(question.image || question.video) && (
-                          <div className="mb-4">
-                            {question.image && (
-                              <img 
-                                src={question.image} 
-                                alt={question.imageDescription || 'Quiz image'}
-                                className="w-full max-w-md mx-auto rounded-lg shadow-sm"
-                              />
-                            )}
-                            {question.video && (
-                              <video 
-                                src={question.video} 
-                                controls
-                                className="w-full max-w-md mx-auto rounded-lg shadow-sm"
-                              />
-                            )}
+                    <div className="space-y-6">
+                      {currentQuiz.questions.map((question, index) => (
+                        <div key={question.id} className="border border-gray-200 rounded-lg p-6">
+                          <h3 className="text-lg font-medium text-gray-900 mb-4">
+                            {index + 1}. {question.question}
+                          </h3>
+
+                          {(question.image || question.video) && (
+                            <div className="mb-4">
+                              {question.image && (
+                                <img
+                                  src={question.image}
+                                  alt={question.imageDescription || 'Quiz image'}
+                                  className="w-full max-w-md mx-auto rounded-lg shadow-sm"
+                                />
+                              )}
+                              {question.video && (
+                                <video
+                                  src={question.video}
+                                  controls
+                                  className="w-full max-w-md mx-auto rounded-lg shadow-sm"
+                                />
+                              )}
+                            </div>
+                          )}
+
+                          <div className="space-y-3">
+                            {question.options.map((option, optionIndex) => (
+                              <label key={optionIndex} className="flex items-center space-x-3 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name={`question-${question.id}`}
+                                  value={optionIndex}
+                                  checked={quizAnswers[question.id] === optionIndex}
+                                  onChange={() => handleQuizAnswer(question.id, optionIndex)}
+                                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
+                                />
+                                <span className="text-gray-700">{option}</span>
+                              </label>
+                            ))}
                           </div>
-                        )}
-
-                        <div className="space-y-3">
-                          {question.options.map((option, optionIndex) => (
-                            <label key={optionIndex} className="flex items-center space-x-3 cursor-pointer">
-                              <input
-                                type="radio"
-                                name={`question-${question.id}`}
-                                value={optionIndex}
-                                checked={quizAnswers[question.id] === optionIndex}
-                                onChange={() => handleQuizAnswer(question.id, optionIndex)}
-                                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
-                              />
-                              <span className="text-gray-700">{option}</span>
-                            </label>
-                          ))}
                         </div>
-                      </div>
-                    ))}
+                      ))}
 
-                    <div className="text-center">
-                      <button
-                        onClick={submitQuiz}
-                        disabled={Object.keys(quizAnswers).length !== currentQuiz.questions.length}
-                        className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Submit Quiz
-                      </button>
+                      <div className="text-center">
+                        <button
+                          onClick={submitQuiz}
+                          disabled={Object.keys(quizAnswers).length !== currentQuiz.questions.length}
+                          className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Submit Quiz
+                        </button>
+                      </div>
                     </div>
-                  </div>
                   ) : (
                     <div className="text-center text-gray-500">
                       <p>No quiz available</p>
@@ -959,20 +1022,18 @@ const BeginnerLearningPath = () => {
                           <div className="space-y-2">
                             {question.options.map((option, optionIndex) => (
                               <div key={optionIndex} className="flex items-center space-x-3">
-                                <div className={`w-4 h-4 rounded-full ${
-                                  optionIndex === question.correct 
-                                    ? 'bg-green-500' 
-                                    : quizAnswers[question.id] === optionIndex 
-                                      ? 'bg-red-500' 
+                                <div className={`w-4 h-4 rounded-full ${optionIndex === question.correct
+                                    ? 'bg-green-500'
+                                    : quizAnswers[question.id] === optionIndex
+                                      ? 'bg-red-500'
                                       : 'bg-gray-300'
-                                }`}></div>
-                                <span className={`${
-                                  optionIndex === question.correct 
-                                    ? 'text-green-700 font-medium' 
-                                    : quizAnswers[question.id] === optionIndex 
-                                      ? 'text-red-700' 
+                                  }`}></div>
+                                <span className={`${optionIndex === question.correct
+                                    ? 'text-green-700 font-medium'
+                                    : quizAnswers[question.id] === optionIndex
+                                      ? 'text-red-700'
                                       : 'text-gray-600'
-                                }`}>
+                                  }`}>
                                   {option}
                                   {optionIndex === question.correct && ' (Correct)'}
                                   {quizAnswers[question.id] === optionIndex && optionIndex !== question.correct && ' (Your Answer)'}
@@ -1049,7 +1110,7 @@ const BeginnerLearningPath = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <button 
+              <button
                 onClick={() => navigate('/dashboard')}
                 className="flex items-center text-gray-600 hover:text-gray-900 mr-6"
               >
@@ -1078,7 +1139,7 @@ const BeginnerLearningPath = () => {
           <div className="flex items-center space-x-4">
             <div className="flex-1">
               <div className="bg-gray-200 rounded-full h-3">
-                <div 
+                <div
                   className="bg-green-600 h-3 rounded-full transition-all duration-300"
                   style={{ width: `${modules.length > 0 ? Math.round((modules.filter(m => isModuleCompleted(m.id)).length / modules.length) * 100) : 0}%` }}
                 ></div>
@@ -1098,13 +1159,12 @@ const BeginnerLearningPath = () => {
             const IconComponent = module.icon || BookOpen
 
             return (
-              <div 
-                key={module.id} 
-                className={`relative bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 ${
-                  isLocked 
-                    ? 'opacity-60 cursor-not-allowed' 
+              <div
+                key={module.id}
+                className={`relative bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 ${isLocked
+                    ? 'opacity-60 cursor-not-allowed'
                     : 'hover:shadow-xl cursor-pointer'
-                }`}
+                  }`}
                 onClick={() => !isLocked && handleModuleClick(module)}
               >
                 {/* Lock overlay */}
@@ -1141,9 +1201,44 @@ const BeginnerLearningPath = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center text-sm text-gray-500">
                       <BookOpen className="h-4 w-4 mr-1" />
-                      {module.lessons.length} lessons
+                      {(() => {
+                        const quizzes = module.quizzes || (module.quiz ? [module.quiz] : [])
+                        const validQuizzes = quizzes.filter(q => q.questions && q.questions.length > 0)
+                        const totalQuestions = validQuizzes.reduce((sum, q) => sum + (q.questions?.length || 0), 0)
+
+                        // Check if this is a quiz-focused module (by ID or title)
+                        const moduleId = (module.id || '').toLowerCase()
+                        const moduleTitle = (module.title || '').toLowerCase()
+                        const isQuizModule = (
+                          moduleId === 'quizzes' ||
+                          moduleId.includes('quiz') ||
+                          moduleTitle.includes('knowledge check') ||
+                          moduleTitle.includes('test your understanding')
+                        )
+
+                        if (isQuizModule && totalQuestions > 0) {
+                          // Quiz-focused module - prioritize showing quiz count
+                          if (module.lessons && module.lessons.length > 0) {
+                            return `${module.lessons.length} lessons • ${totalQuestions} quiz questions`
+                          } else {
+                            return `${totalQuestions} quiz questions`
+                          }
+                        } else if (totalQuestions > 0 && module.lessons && module.lessons.length > 0) {
+                          // Module with both lessons and quizzes
+                          return `${module.lessons.length} lessons • ${totalQuestions} quiz questions`
+                        } else if (totalQuestions > 0) {
+                          // Quiz-only module
+                          return `${totalQuestions} quiz questions`
+                        } else if (module.lessons && module.lessons.length > 0) {
+                          // Lesson-only module
+                          return `${module.lessons.length} lessons`
+                        } else {
+                          // No content (shouldn't happen, but handle gracefully)
+                          return 'No content'
+                        }
+                      })()}
                     </div>
-                    
+
                     {isLocked ? (
                       <span className="text-sm text-gray-500">Complete previous module</span>
                     ) : (

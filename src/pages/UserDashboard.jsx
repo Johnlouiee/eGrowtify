@@ -43,6 +43,11 @@ const UserDashboard = () => {
   // Skill level onboarding modal
   const [showSkillModal, setShowSkillModal] = useState(false)
   const [savingSkill, setSavingSkill] = useState(false)
+  
+  // Crop interest selection modal
+  const [showCropModal, setShowCropModal] = useState(false)
+  const [savingCrop, setSavingCrop] = useState(false)
+  const [selectedCrop, setSelectedCrop] = useState('')
 
   // learning_level is purely informational now; do not default it here
   const userLearningLevel = user && user.learning_level
@@ -220,10 +225,74 @@ const UserDashboard = () => {
         localStorage.setItem(key, 'completed')
       } catch {}
       setShowSkillModal(false)
+      // After skill level is set, check if crop interest needs to be set
+      if (!user.primary_crop_focus) {
+        setTimeout(() => setShowCropModal(true), 300)
+      }
     } catch (e) {
       console.error('Error updating learning level', e)
     } finally {
       setSavingSkill(false)
+    }
+  }
+
+  // Show crop interest modal after skill level is set (or if already set but crop isn't)
+  useEffect(() => {
+    if (!user) return
+    if (showSkillModal) {
+      setShowCropModal(false) // Don't show crop modal while skill modal is showing
+      return
+    }
+
+    try {
+      const cropKey = `cropInterestCompleted_user_${user.id}`
+      const cropCompleted = localStorage.getItem(cropKey)
+
+      // If backend already has primary_crop_focus, mark as completed
+      if (user.primary_crop_focus) {
+        if (!cropCompleted) {
+          localStorage.setItem(cropKey, 'completed')
+        }
+        setShowCropModal(false)
+        return
+      }
+
+      // No crop focus yet → only show if they haven't completed onboarding locally
+      // Also check if skill level is set (either in backend or localStorage)
+      const skillKey = `skillLevelCompleted_user_${user.id}`
+      const skillCompleted = localStorage.getItem(skillKey) || user.learning_level
+      
+      if (!cropCompleted && skillCompleted) {
+        setShowCropModal(true)
+      } else {
+        setShowCropModal(false)
+      }
+    } catch {
+      // If localStorage fails, check backend
+      if (!user.primary_crop_focus && user.learning_level) {
+        setShowCropModal(true)
+      } else {
+        setShowCropModal(false)
+      }
+    }
+  }, [user, showSkillModal])
+
+  const handleCropChoice = async (cropType) => {
+    if (!user) return
+    setSavingCrop(true)
+    try {
+      await updateProfile({ primary_crop_focus: cropType })
+      try {
+        const key = `cropInterestCompleted_user_${user.id}`
+        localStorage.setItem(key, 'completed')
+      } catch {}
+      setShowCropModal(false)
+      toast.success(`Your focus is set to ${cropType}!`)
+    } catch (e) {
+      console.error('Error updating crop focus', e)
+      toast.error('Failed to save crop interest')
+    } finally {
+      setSavingCrop(false)
     }
   }
 
@@ -299,7 +368,7 @@ const UserDashboard = () => {
     }
     
     loadModules()
-  }, [])
+  }, [user?.primary_crop_focus]) // Reload modules when crop interest changes
   
   useEffect(() => {
     // Fetch notifications
@@ -990,6 +1059,105 @@ const UserDashboard = () => {
 
             <p className="text-[11px] text-gray-500 mt-4">
               You can change this later in your profile settings if you pick the wrong option.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Crop Interest Selection Modal */}
+      {showCropModal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 p-6 relative">
+            <button
+              onClick={() => {
+                try {
+                  const key = `cropInterestCompleted_user_${user.id}`
+                  localStorage.setItem(key, 'skipped')
+                } catch {}
+                setShowCropModal(false)
+              }}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-sm"
+            >
+              Skip for now
+            </button>
+            <div className="flex items-center mb-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center mr-3">
+                <Leaf className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">What primary type of plant are you most interested in growing right now?</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Please select only one. This helps personalize your learning content and recommendations.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3 mt-4">
+              {['Fruits', 'Vegetables', 'Flowers', 'Herbs'].map((cropType) => {
+                const icons = {
+                  Fruits: '🍎',
+                  Vegetables: '🥬',
+                  Flowers: '🌸',
+                  Herbs: '🌿'
+                }
+                const colors = {
+                  Fruits: 'border-red-200 hover:border-red-400',
+                  Vegetables: 'border-green-200 hover:border-green-400',
+                  Flowers: 'border-pink-200 hover:border-pink-400',
+                  Herbs: 'border-purple-200 hover:border-purple-400'
+                }
+                return (
+                  <label
+                    key={cropType}
+                    className={`flex items-center space-x-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                      selectedCrop === cropType
+                        ? `${colors[cropType]} bg-opacity-10`
+                        : 'border-gray-200 hover:border-gray-300'
+                    } ${savingCrop ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="cropInterest"
+                      value={cropType}
+                      checked={selectedCrop === cropType}
+                      onChange={(e) => setSelectedCrop(e.target.value)}
+                      disabled={savingCrop}
+                      className="w-5 h-5 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-2xl">{icons[cropType]}</span>
+                    <span className="font-semibold text-gray-900 flex-1">{cropType}</span>
+                  </label>
+                )
+              })}
+            </div>
+
+            <div className="mt-6 flex space-x-3">
+              <button
+                type="button"
+                onClick={handleCropChoice.bind(null, selectedCrop)}
+                disabled={!selectedCrop || savingCrop}
+                className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingCrop ? 'Saving...' : 'Continue'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    const key = `cropInterestCompleted_user_${user.id}`
+                    localStorage.setItem(key, 'skipped')
+                  } catch {}
+                  setShowCropModal(false)
+                }}
+                className="btn-secondary"
+                disabled={savingCrop}
+              >
+                Skip
+              </button>
+            </div>
+
+            <p className="text-[11px] text-gray-500 mt-4">
+              You can change this later in your profile settings.
             </p>
           </div>
         </div>
